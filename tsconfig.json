@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "CommonJS",
+        "strict": true,
+        "esModuleInterop": true,
+        "moduleResolution": "Node",
+        "resolveJsonModule": true,
+        "outDir": "dist",
+        "rootDir": ".",
+        "skipLibCheck": true
+    },
+    "include": ["e2e/**/*.ts"],
+    "exclude": ["dist"]
+}

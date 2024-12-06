@@ -1,0 +1,44 @@
+# User-Specific or Local Config Files
+**/.localdevserver/
+**/.sfdx/
+**/.sf/
+**/.vscode/
+**/package2-descriptor.json
+
+# Temporary and Log Files
+**/temp/
+**/*.log
+**/*.tmp
+
+# Salesforce Metadata Exclusions
+# Exclude specific profiles by path
+force-app/main/default/profiles/Admin.profile-meta.xml
+force-app/main/default/profiles/B2B Reordering Portal Buyer Profile.profile-meta.xml
+
+# Exclude specific permission sets
+**/permissionsets/Admin.permissionSet-meta.xml
+
+# Translations
+**/translations/**
+
+# Apex Class Test Files
+**/classes/Test_*.cls
+**/classes/Test_*.cls-meta.xml
+
+# Experience Bundle or Community Files
+**/experiences/*/config/*_sandbox.json
+
+# Custom Metadata Types or Components Not Ready for Production
+**/customMetadata/Draft_*.md-meta.xml
+
+# Exclude LWC configuration files
+**/jsconfig.json
+**/.eslintrc.json
+**/tsconfig.json
+**/*.ts
+
+# LWC Jest Test Files
+**/__tests__/**
+
+# App Switcher
+**/appMenus/*.appMenu-meta.xml

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue>
+        <fullName>Backlog</fullName>
+        <default>false</default>
+        <label>Backlog</label>
+    </customValue>
+    <customValue>
+        <fullName>To Do</fullName>
+        <default>false</default>
+        <label>To Do</label>
+    </customValue>
+    <customValue>
+        <fullName>In Progress</fullName>
+        <default>false</default>
+        <label>In Progress</label>
+    </customValue>
+    <customValue>
+        <fullName>Testing</fullName>
+        <default>false</default>
+        <label>Testing</label>
+    </customValue>
+    <customValue>
+        <fullName>Review</fullName>
+        <default>false</default>
+        <label>Review</label>
+    </customValue>
+    <customValue>
+        <fullName>Release</fullName>
+        <default>false</default>
+        <label>Release</label>
+    </customValue>
+    <customValue>
+        <fullName>Done</fullName>
+        <default>false</default>
+        <label>Done</label>
+    </customValue>
+    <description>Contains a picklist of card status</description>
+    <masterLabel>Card Status</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>

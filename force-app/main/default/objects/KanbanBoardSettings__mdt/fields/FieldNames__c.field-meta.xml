@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>FieldNames__c</fullName>
+    <description>Comma seperated list of fields, use the API Names such as OpenSF__Status__c, ..</description>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <inlineHelpText>Comma seperated list of fields, use the API Names such as OpenSF__Status__c, ..</inlineHelpText>
+    <label>Field Names</label>
+    <length>32768</length>
+    <type>LongTextArea</type>
+    <visibleLines>10</visibleLines>
+</CustomField>

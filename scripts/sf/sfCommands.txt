@@ -1,0 +1,82 @@
+# List of useful Salesforce CLI commands
+Apex JDK locations:
+/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
+C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.9.9-hotspot
+
+
+# Authenticate to a Salesforce org
+sf org login web --alias myOrgAlias --set-default
+
+# Create a new Salesforce DX project
+sf project generate --name myProjectName
+
+# Create a scratch org
+sf org create scratch --definition-file config/project-scratch-def.json --alias myScratchOrg --set-default
+
+# Push source to the scratch org
+sf project deploy start
+
+# Pull source from the scratch org
+sf project retrieve start
+
+# Open the scratch org in a web browser
+sf org open
+
+# Open the scratch org link
+sf org open --url-only --path lightning
+
+# List all available orgs
+sf org list
+
+# Deactivate a scratch org
+sf org delete scratch --target-org myScratchOrg
+
+# Rename a scratch org
+sf org update --target-org myScratchOrg --alias newScratchOrgAlias
+
+# Project Deploy Forced
+sf project deploy start --ignore-conflicts
+
+# Start Preview Server
+sf lightning dev app -o opendev -n Alex   
+
+# Start Preview Server Desktop
+sf lightning dev app -o opendev -n Alex -t desktop
+
+# Start Preview Server Android
+sf lightning dev app -o opendev -n Alex -t android
+
+# Start Preview Server iOS
+sf lightning dev app -o opendev -n Alex -t ios
+
+# Create Managed Package
+sf package create --name "Alex - A Kanban App" --package-type Managed --path force-app --target-dev-hub OpenSF-PROD
+
+# Create Package Version
+sf package version create --package "Alex - A Kanban App" --installation-key-bypass --code-coverage --wait 10 
+
+# Create Package Version without ancestry
+sf package version create --package "Alex - A Kanban App" --installation-key-bypass --code-coverage --wait 10 --skip-ancestor-check
+
+# Promoto Package Version
+sf package version promote --package "Alex - A Kanban App@1.0.0" --wait 10
+
+# Install Package Version
+sf package install --package "Alex - A Kanban App@0.1.0-2" --wait 10 
+
+# Package Report
+sf package version report --package "Alex - A Kanban App@0.1.0-3"
+
+# List all available packages
+sf package list --target-dev-hub OpenSF-PROD
+
+# Create Scratch org without namespace
+sf org create scratch --definition-file config/project-scratch-def.json --no-namespace --duration-days 7  --alias openpackage
+
+# Run graph test
+sf scanner run dfa
+
+# Security Review Scans
+sf scanner run --format csv --outfile CodeAnalyzerGeneral.csv --target ./ --category Security
+sf scanner run dfa --format csv --outfile CodeAnalyzerDFA.csv --target ./ --projectdir ./ --category Security
+sf scanner run --engine pmd-appexchange --format csv --outfile CodeAnalyzerPmdAppExchange.csv --target ./

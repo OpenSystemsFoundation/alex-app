@@ -1,0 +1,5 @@
+sf org display --target-org <username>
+sf org list
+
+graphql url for scratch org
+https://customization-customer-5922-dev-ed.scratch.my.salesforce.com/services/data/v62.0/graphql

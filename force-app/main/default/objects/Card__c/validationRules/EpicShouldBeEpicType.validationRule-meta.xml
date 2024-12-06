@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>EpicShouldBeEpicType</fullName>
+    <active>true</active>
+    <description>Epic Lookup should be a card of Epic Type</description>
+    <errorConditionFormula>AND(
+    NOT(ISBLANK(Epic__c)), 
+    NOT(ISPICKVAL(Epic__r.CardType__c, &quot;Epic&quot;))
+)</errorConditionFormula>
+    <errorDisplayField>Epic__c</errorDisplayField>
+    <errorMessage>When linking an Epic, the Card Type must be Epic</errorMessage>
+</ValidationRule>

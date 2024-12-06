@@ -1,0 +1,19 @@
+# Run a test with logging
+pytest tests\steps\test_salesforce_login.py --capture=no
+
+# Run a test with verbose logging
+pytest tests\steps\test_salesforce_login.py --verbose
+
+# Run Pytest All Test
+pytest --capture=no
+
+# Run Pytest Specific Test
+pytest tests\steps\test_salesforce_login.py --capture=no
+
+pytest tests\steps\test_kanban_board.py --capture=no
+
+Mac Version:
+pytest tests/steps/test_salesforce_login.py --capture=no
+
+# Start Playwright Codegen
+playwright codegen

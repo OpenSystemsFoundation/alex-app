@@ -1,0 +1,68 @@
+# macOS System Files
+.DS_Store
+
+# Windows System Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Node.js Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Package Files
+*.zip
+*.tar.gz
+*.log
+
+# IDE Specific Files
+.idea/
+*.iml
+*.sublime-workspace
+*.sublime-project
+.vscode/
+.vscode/*
+!.vscode/extensions.json
+
+# Local Environment Files
+.env
+.env.local
+.env.*.local
+
+# Salesforce Specific Files
+.sfdx/
+.sf/
+.localdevserver/
+.salesforce/
+*.scratch-def.json
+*.org-def.json
+deploy-options.json
+.mpminfo
+
+# Test Results and Coverage
+test-results/
+coverage/
+junit/
+__pycache__/
+
+# Temporary and Cache Files
+tmp/
+cache/
+.eslintcache
+logs
+
+# LWC (Lightning Web Components) Specific
+jsconfig.json
+
+# Exclude Logs
+*.log
+
+# Python venv
+venv/
+.venv/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

@@ -1,0 +1,50 @@
+{
+    "plugins": ["prettier-plugin-apex"],
+    "trailingComma": "none",
+    "singleQuote": true,
+    "tabWidth": 4,
+    "requireConfig": true,
+    "printWidth": 80,
+    "overrides": [
+        {
+            "files": "**/lwc/**/*.html",
+            "options": {
+                "parser": "lwc",
+                "singleAttributePerLine": true,
+                "printWidth": 60
+            }
+        },
+        {
+            "files": "*.{cmp,page,component}",
+            "options": {
+                "parser": "html",
+                "printWidth": 60,
+                "singleAttributePerLine": true
+            }
+        },
+        {
+            "files": "*.{trigger,cls}",
+            "options": {
+                "printWidth": 80,
+                "apexInsertFinalNewline": true
+            }
+        },
+        {
+            "files": "*.{js}",
+            "options": {
+                "printWidth": 80,
+                "arrowParens": "avoid"
+            }
+        },
+        {
+            "files": "*.{ts}",
+            "options": {
+                "printWidth": 100,
+                "arrowParens": "always",
+                "semi": true,
+                "tabWidth": 2,
+                "singleQuote": false
+            }
+        }
+    ]
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>CannotChangeEpicType</fullName>
+    <active>true</active>
+    <description>When Epic Cards Count is higher than 0, Card Type cannot be edited.</description>
+    <errorConditionFormula>AND(
+    EpicCardsCount__c &gt; 0,
+    NOT(ISPICKVAL(CardType__c, &apos;Epic&apos;)),
+    ISPICKVAL(PRIORVALUE(CardType__c), &apos;Epic&apos;)
+)</errorConditionFormula>
+    <errorDisplayField>CardType__c</errorDisplayField>
+    <errorMessage>The Card Type for an Epic cannot be changed if it is linked to other cards</errorMessage>
+</ValidationRule>

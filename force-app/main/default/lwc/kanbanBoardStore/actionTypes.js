@@ -1,0 +1,13 @@
+export const INITIALIZE_BOARD = 'INITIALIZE_BOARD';
+export const SET_LOADING = 'SET_LOADING';
+export const ERROR = 'ERROR';
+export const MOVE_CARD = 'MOVE_CARD';
+export const CREATE_CARD = 'CREATE_CARD';
+export const UPDATE_CARD = 'UPDATE_CARD';
+export const UPDATE_CARDS = 'UPDATE_CARDS';
+export const DELETE_CARD = 'DELETE_CARD';
+export const UPSERT_CARD = 'UPSERT_CARD';
+export const UPSERT_CARDS = 'UPSERT_CARDS';
+export const UPDATE_COLUMN = 'UPDATE_COLUMN';
+export const DELETE_COLUMN = 'DELETE_COLUMN';
+export const UPSERT_COLUMN = 'UPSERT_COLUMN';

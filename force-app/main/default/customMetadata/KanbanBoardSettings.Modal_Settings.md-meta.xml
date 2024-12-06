@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Modal Settings</label>
+    <protected>false</protected>
+    <values>
+        <field>FieldNames__c</field>
+        <value xsi:type="xsd:string">OpenSF__Subject__c,
+OpenSF__Status__c,
+OpenSF__Epic__c,
+OpenSF__Assignee__c,
+OpenSF__CardType__c,
+OpenSF__StoryPoints__c,
+OpenSF__Priority__c,
+OpenSF__Color__c</value>
+    </values>
+</CustomMetadata>

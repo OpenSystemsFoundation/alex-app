@@ -1,0 +1,48 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+attrs = "*"
+autopep8 = "*"
+behave = "*"
+black = "*"
+certifi = "*"
+cffi = "*"
+click = "*"
+colorama = "*"
+gherkin-official = "*"
+h11 = "*"
+idna = "*"
+iniconfig = "*"
+mako = "*"
+markupsafe = "*"
+mypy-extensions = "*"
+outcome = "*"
+packaging = "*"
+parse = "*"
+parse-type = "*"
+pathspec = "*"
+platformdirs = "*"
+pluggy = "*"
+pycodestyle = "*"
+pycparser = "*"
+pysocks = "*"
+pytest = "*"
+pytest-bdd = "*"
+selenium = "*"
+six = "*"
+sniffio = "*"
+sortedcontainers = "*"
+trio = "*"
+trio-websocket = "*"
+typing-extensions = "*"
+urllib3 = "*"
+websocket-client = "*"
+wsproto = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.12"

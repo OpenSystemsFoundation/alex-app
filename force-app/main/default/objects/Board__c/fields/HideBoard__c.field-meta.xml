@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>HideBoard__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>When checked, only users with the View Hidden Boards custom permission can see the board.</description>
+    <inlineHelpText>When checked, only users with the View Hidden Boards custom permission can see the board.</inlineHelpText>
+    <label>Hide Board</label>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

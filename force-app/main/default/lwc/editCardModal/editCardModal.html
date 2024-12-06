@@ -1,0 +1,138 @@
+<template>
+    <!-- Modal -->
+    <section
+        role="dialog"
+        tabindex="-1"
+        aria-modal="true"
+        aria-labelledby="modal-heading"
+        class="slds-modal slds-fade-in-open"
+        ondblclick={handleBackdropClick}
+    >
+        <!-- Modal container -->
+        <div
+            class="slds-modal__container"
+            ondblclick={handleBackdropClick}
+        >
+            <!-- Close button -->
+            <button
+                class="slds-button slds-button_icon slds-modal__close slds-p-around_none slds-m-bottom_none"
+                title="Close"
+                onclick={closeModal}
+            >
+                <lightning-icon
+                    icon-name="utility:close"
+                    alternative-text="Close"
+                    size="small"
+                ></lightning-icon>
+            </button>
+
+            <!-- Modal header -->
+            <div
+                class="slds-modal__header slds-var-p-horizontal_medium slds-var-p-vertical_small slds-grid slds-grid_align-center"
+            >
+                <div
+                    class="slds-grid slds-grid_vertical-align-center"
+                >
+                    <h2
+                        class="slds-modal__title slds-hyphenate"
+                    >
+                        Edit Card: {cardName}
+                    </h2>
+                </div>
+            </div>
+
+            <!-- Modal content -->
+            <div class="slds-modal__content">
+                <div
+                    class="lightning-form slds-var-m-horizontal_medium"
+                >
+                    <!-- Record edit form -->
+                    <lightning-record-edit-form
+                        object-api-name={objectApiName}
+                        record-id={cardId}
+                        onsuccess={handleSuccess}
+                        class="slds-form slds-form_stacked"
+                    >
+                        <lightning-messages></lightning-messages>
+                        <div
+                            class="slds-grid slds-wrap slds-gutters"
+                        >
+                            <!-- Dynamically generated fields -->
+                            <template
+                                for:each={fields}
+                                for:item="field"
+                            >
+                                <div
+                                    key={field}
+                                    class="slds-col slds-size_1-of-2 slds-var-p-around_x-small"
+                                >
+                                    <div
+                                        class="slds-form-element"
+                                    >
+                                        <div
+                                            class="slds-form-element__control"
+                                        >
+                                            <lightning-input-field
+                                                field-name={field}
+                                            ></lightning-input-field>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Description field -->
+                        <div
+                            class="slds-col slds-size_2-of-2 slds-var-p-around_xx-small"
+                        >
+                            <div class="slds-form-element">
+                                <div
+                                    class="slds-form-element__control"
+                                >
+                                    <lightning-input-field
+                                        field-name="OpenSF__Description__c"
+                                    ></lightning-input-field>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal footer with buttons -->
+                        <div
+                            class="slds-modal__footer slds-grid slds-wrap slds-gutters slds-grid_align-spread slds-var-p-vertical_medium"
+                        >
+                            <div
+                                class="slds-var-p-left_medium"
+                            >
+                                <lightning-button
+                                    variant="destructive"
+                                    icon-name="utility:delete"
+                                    name="delete"
+                                    label="Delete"
+                                    onclick={handleDelete}
+                                ></lightning-button>
+                            </div>
+                            <div
+                                class="slds-var-p-right_medium"
+                            >
+                                <lightning-button
+                                    variant="brand"
+                                    icon-name="utility:save"
+                                    type="submit"
+                                    name="save"
+                                    label="Save"
+                                ></lightning-button>
+                            </div>
+                        </div>
+                    </lightning-record-edit-form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal Backdrop -->
+    <div
+        class="slds-backdrop slds-backdrop_open"
+        role="presentation"
+        ondblclick={handleBackdropClick}
+    ></div>
+</template>

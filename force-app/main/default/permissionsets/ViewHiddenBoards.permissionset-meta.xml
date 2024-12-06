@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>ViewHiddenBoards</name>
+    </customPermissions>
+    <description>Allow Alex users to view Hidden Boards. Contains only the custom permission.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>View Hidden Boards</label>
+</PermissionSet>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue>
+        <fullName>#EA001E</fullName>
+        <default>false</default>
+        <label>Red</label>
+    </customValue>
+    <customValue>
+        <fullName>#2E844A</fullName>
+        <default>false</default>
+        <label>Green</label>
+    </customValue>
+    <customValue>
+        <fullName>#1B96FF</fullName>
+        <default>false</default>
+        <label>Blue</label>
+    </customValue>
+    <customValue>
+        <fullName>#1AB9FF</fullName>
+        <default>false</default>
+        <label>Cloud Blue</label>
+    </customValue>
+    <customValue>
+        <fullName>#FCC003</fullName>
+        <default>false</default>
+        <label>Yellow</label>
+    </customValue>
+    <customValue>
+        <fullName>#F38303</fullName>
+        <default>false</default>
+        <label>Orange</label>
+    </customValue>
+    <customValue>
+        <fullName>#9050E9</fullName>
+        <default>false</default>
+        <label>Purple</label>
+    </customValue>
+    <customValue>
+        <fullName>#FF538A</fullName>
+        <default>false</default>
+        <label>Pink</label>
+    </customValue>
+    <customValue>
+        <fullName>#06A59A</fullName>
+        <default>false</default>
+        <label>Teal</label>
+    </customValue>
+    <customValue>
+        <fullName>#3A49DA</fullName>
+        <default>false</default>
+        <label>Indigo</label>
+    </customValue>
+    <customValue>
+        <fullName>#CB65FF</fullName>
+        <default>false</default>
+        <label>Violet</label>
+    </customValue>
+    <customValue>
+        <fullName>#FF5D2D</fullName>
+        <default>false</default>
+        <label>Hot Orange</label>
+    </customValue>
+    <description>Colors global picklist for components</description>
+    <masterLabel>Colors</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>

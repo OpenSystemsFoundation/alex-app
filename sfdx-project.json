@@ -1,0 +1,30 @@
+{
+  "packageDirectories": [
+    {
+      "versionName": "ver 1.0",
+      "versionNumber": "1.0.0.NEXT",
+      "path": "force-app",
+      "default": true,
+      "package": "Alex - A Kanban App",
+      "versionDescription": "Manage your workflows with Alex, a Kanban App. Install for Admin only and assign Alex permission sets to Admins/Users."
+    }
+  ],
+  "name": "OpenSF",
+  "namespace": "OpenSF",
+  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sourceApiVersion": "62.0",
+  "packageAliases": {
+    "Alex - A Kanban App": "0HoWV00000003nV0AQ",
+    "Alex - A Kanban App@0.1.0-1": "04tWV000000281VYAQ",
+    "Alex - A Kanban App@0.1.0-2": "04tWV00000028RJYAY",
+    "Alex - A Kanban App@0.1.0-3": "04tWV0000002ArJYAU",
+    "Alex - A Kanban App@0.1.0-4": "04tWV0000002Bk9YAE",
+    "Alex - A Kanban App@0.1.0-5": "04tWV0000002CMrYAM",
+    "Alex - A Kanban App@1.0.0-1": "04tWV0000002COTYA2"
+  },
+  "apexTestAccess": {
+    "permissionSets": [
+      "Alex_Admin"
+    ]
+  }
+}
