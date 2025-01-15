@@ -59,7 +59,7 @@ sf package version create --package "Alex - A Kanban App" --installation-key-byp
 sf package version create --package "Alex - A Kanban App" --installation-key-bypass --code-coverage --wait 10 --skip-ancestor-check
 
 # Promoto Package Version
-sf package version promote --package "Alex - A Kanban App@1.0.0" --wait 10
+sf package version promote --package "Alex - A Kanban App@1.1.0"
 
 # Install Package Version
 sf package install --package "Alex - A Kanban App@0.1.0-2" --wait 10 
