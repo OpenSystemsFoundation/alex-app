@@ -1,8 +1,8 @@
 {
   "packageDirectories": [
     {
-      "versionName": "ver 1.0",
-      "versionNumber": "1.0.0.NEXT",
+      "versionName": "ver 1.1",
+      "versionNumber": "1.1.0.NEXT",
       "path": "force-app",
       "default": true,
       "package": "Alex - A Kanban App",
@@ -20,7 +20,8 @@
     "Alex - A Kanban App@0.1.0-3": "04tWV0000002ArJYAU",
     "Alex - A Kanban App@0.1.0-4": "04tWV0000002Bk9YAE",
     "Alex - A Kanban App@0.1.0-5": "04tWV0000002CMrYAM",
-    "Alex - A Kanban App@1.0.0-1": "04tWV0000002COTYA2"
+    "Alex - A Kanban App@1.0.0-1": "04tWV0000002COTYA2",
+    "Alex - A Kanban App@1.1.0-1": "04tWV0000002L1xYAE"
   },
   "apexTestAccess": {
     "permissionSets": [

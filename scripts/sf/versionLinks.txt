@@ -9,3 +9,6 @@ https://login.salesforce.com/packaging/installPackage.apexp?p0=04tWV0000002CMrYA
 
 # Version 1.0.0 (GA) "Alex - A Kanban App@1.0.0": "04tWV0000002COTYA2"
 https://login.salesforce.com/packaging/installPackage.apexp?p0=04tWV0000002COTYA2
+
+# Version 1.1.0 (Security Review Fix) "Alex - A Kanban App@1.1.0": "04tWV0000002L1xYAE"
+https://login.salesforce.com/packaging/installPackage.apexp?p0=04tWV0000002L1xYAE

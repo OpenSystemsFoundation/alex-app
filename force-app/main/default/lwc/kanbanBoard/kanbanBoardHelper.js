@@ -64,17 +64,23 @@ export default class BoardHelper {
     }
 
     static applyCardEdge(template, cards) {
-        cards.forEach(card => {
+        cards.forEach((card) => {
             const element = template.querySelector(
                 `article[data-card-id="${card.cardId}"]`
             );
             if (element) {
+                if (card.cardColor != null) {
+                    element.classList.add('card-edge');
+                } else {
+                    element.classList.remove('card-edge');
+                }
                 element.style.setProperty('--card-color', card.cardColor);
             }
         });
     }
+
     static applyColumnBorder(template, columns) {
-        columns.forEach(column => {
+        columns.forEach((column) => {
             const element = template.querySelector(
                 `div.kanban-column[data-column-id="${column.columnId}"]`
             );
