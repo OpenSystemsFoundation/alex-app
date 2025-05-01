@@ -81,7 +81,7 @@ export default class KanbanBoard extends LightningElement {
             this.tabFocusedSubscription = subscribe(
                 this.messageContext,
                 tabFocusedChannel,
-                message => this.handleTabFocused(message)
+                (message) => this.handleTabFocused(message)
             );
         }
     }
@@ -145,9 +145,9 @@ export default class KanbanBoard extends LightningElement {
             (colA, colB) => colA.columnPosition - colB.columnPosition
         );
 
-        return sortedColumns.map(column => {
+        return sortedColumns.map((column) => {
             const columnCards = this.cards
-                .filter(card => card.columnId === column.columnId)
+                .filter((card) => card.columnId === column.columnId)
                 .sort(
                     (cardA, cardB) => cardA.cardPosition - cardB.cardPosition
                 );
@@ -172,21 +172,34 @@ export default class KanbanBoard extends LightningElement {
 
     handleDragEnter(event) {
         event.preventDefault();
-        const target = event.currentTarget.closest('article');
-        target.classList.add('over');
+        const targetElement = event.currentTarget;
+        if (targetElement) {
+            const target = targetElement.closest('article');
+            if (target) {
+                target.classList.add('over');
+            }
+        }
     }
 
     handleDragLeave(event) {
-        const target = event.currentTarget.closest('article');
-        target.classList.remove('over');
+        const targetElement = event.currentTarget;
+        if (targetElement) {
+            const target = targetElement.closest('article');
+            if (target) {
+                target.classList.remove('over');
+            }
+        }
     }
 
     handleDragOver(event) {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
-        const target = event.currentTarget.closest('article');
-        if (!target.classList.contains('over')) {
-            target.classList.add('over');
+        const targetElement = event.currentTarget;
+        if (targetElement) {
+            const target = targetElement.closest('article');
+            if (target && !target.classList.contains('over')) {
+                target.classList.add('over');
+            }
         }
     }
 
@@ -199,18 +212,29 @@ export default class KanbanBoard extends LightningElement {
         event.preventDefault();
         event.stopPropagation();
         const boardCards = this.template.querySelectorAll('.kanban-card');
-        boardCards.forEach(card => card.classList.remove('over'));
-
-        const dropData = {
-            ...JSON.parse(event.dataTransfer.getData('text/plain')),
-            ...boardHelper.getDropTargetData(event)
-        };
-
-        if (!boardHelper.isValidDrop(dropData)) {
-            return;
-        }
+        boardCards.forEach((card) => card.classList.remove('over'));
 
         try {
+            const dragData = JSON.parse(
+                event.dataTransfer.getData('text/plain')
+            );
+
+            const currentTarget = event.currentTarget;
+            if (!currentTarget) {
+                return;
+            }
+
+            const dropTargetData = boardHelper.getDropTargetData(event);
+
+            const dropData = {
+                ...dragData,
+                ...dropTargetData
+            };
+
+            if (!boardHelper.isValidDrop(dropData)) {
+                return;
+            }
+
             boardStore.moveCard(this.boardId, dropData);
         } catch (error) {
             this.handleError('Error moving card', error);
