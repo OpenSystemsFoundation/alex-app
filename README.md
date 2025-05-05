@@ -114,7 +114,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contact
 
 This app is offered through the Open Systems Foundation. For inquiries or support, please reach out to us at [support@opensf.foundation](mailto:support@opensf.foundation).
-
-## Coming Soon
-
-Alex - A Kanban Board, will soon be available on the AppExchange as a managed package!
