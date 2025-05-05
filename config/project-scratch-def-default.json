@@ -3,8 +3,7 @@
   "edition": "Partner Developer",
   "language": "en_US",
   "features": [
-    "ContactsToMultipleAccounts",
-    "Einstein1AIPlatform"
+    "ContactsToMultipleAccounts"
   ],
   "settings": {
     "mobileSettings": {
@@ -13,9 +12,6 @@
     "lightningExperienceSettings": {
         "enableS1DesktopEnabled": true,
         "enableLightningPreviewPref": true
-    },
-    "einsteinGptSettings" : {
-      "enableEinsteinGptPlatform" : true
     }
   }
 }
