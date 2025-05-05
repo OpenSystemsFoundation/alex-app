@@ -26,8 +26,17 @@ export default class BoardHelper {
     }
 
     static getDropTargetData(event) {
-        const targetCard = event.currentTarget.closest('.kanban-card'),
-            targetColumn = event.currentTarget.closest('.kanban-column');
+        const currentTarget = event.currentTarget;
+        if (!currentTarget) {
+            return {
+                targetCardId: null,
+                targetColumnId: null,
+                targetColumnStatus: null
+            };
+        }
+
+        const targetCard = currentTarget.closest('.kanban-card'),
+            targetColumn = currentTarget.closest('.kanban-column');
         return {
             targetCardId: targetCard?.dataset.cardId || null,
             targetColumnId: targetColumn?.dataset.columnId,

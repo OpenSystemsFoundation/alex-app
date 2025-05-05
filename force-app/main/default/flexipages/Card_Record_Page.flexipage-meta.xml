@@ -167,7 +167,7 @@
             <fieldInstance>
                 <fieldInstanceProperties>
                     <name>uiBehavior</name>
-                    <value>none</value>
+                    <value>readonly</value>
                 </fieldInstanceProperties>
                 <fieldItem>Record.EpicCardsCount__c</fieldItem>
                 <identifier>RecordOpenSF_EpicCardsCount_cField</identifier>

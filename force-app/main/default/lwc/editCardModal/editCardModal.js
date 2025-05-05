@@ -40,7 +40,7 @@ export default class EditCardModal extends LightningElement {
                                     developerName: DeveloperName {
                                         value
                                     }
-                                    fieldNames: FieldNames__c {
+                                    fieldNames: OpenSF__FieldNames__c {
                                         value
                                     }
                                 }
@@ -59,7 +59,7 @@ export default class EditCardModal extends LightningElement {
             if (customMetadataNode) {
                 const fieldNames = customMetadataNode.fieldNames?.value;
                 this.fields = fieldNames
-                    ? fieldNames.split(',').map(field => field.trim())
+                    ? fieldNames.split(',').map((field) => field.trim())
                     : [];
             }
         }
@@ -69,7 +69,7 @@ export default class EditCardModal extends LightningElement {
             if (errors) {
                 this.showToasts(
                     'Error',
-                    'Failed to load custom metadata, using standard fields',
+                    'Failed to load custom metadata, using default fields',
                     'error'
                 );
             }
