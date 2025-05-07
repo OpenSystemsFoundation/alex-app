@@ -46,7 +46,6 @@
         </inputParameters>
         <nameSegment>customNotificationAction</nameSegment>
         <offset>0</offset>
-        <versionSegment>1</versionSegment>
     </actionCalls>
     <actionCalls>
         <name>Send_Update_Notification</name>
@@ -88,7 +87,6 @@
         </inputParameters>
         <nameSegment>customNotificationAction</nameSegment>
         <offset>0</offset>
-        <versionSegment>1</versionSegment>
     </actionCalls>
     <apiVersion>62.0</apiVersion>
     <assignments>
@@ -195,6 +193,7 @@
         <expression>ISNEW()</expression>
     </formulas>
     <interviewLabel>Card Notifications {!$Flow.CurrentDateTime}</interviewLabel>
+    <isTemplate>true</isTemplate>
     <label>Card Notifications</label>
     <processMetadataValues>
         <name>BuilderType</name>

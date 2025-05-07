@@ -40,7 +40,6 @@
         </inputParameters>
         <nameSegment>emailSimple</nameSegment>
         <offset>0</offset>
-        <versionSegment>1</versionSegment>
     </actionCalls>
     <actionCalls>
         <name>Send_Update_Card_Email</name>
@@ -82,7 +81,6 @@
         </inputParameters>
         <nameSegment>emailSimple</nameSegment>
         <offset>0</offset>
-        <versionSegment>1</versionSegment>
     </actionCalls>
     <apiVersion>62.0</apiVersion>
     <assignments>
@@ -189,6 +187,7 @@
         <expression>ISNEW()</expression>
     </formulas>
     <interviewLabel>Card Email Notifications {!$Flow.CurrentDateTime}</interviewLabel>
+    <isTemplate>true</isTemplate>
     <label>Card Email Notifications</label>
     <processMetadataValues>
         <name>BuilderType</name>
