@@ -5,9 +5,19 @@
     <masterLabel>Alex - Kanban Board</masterLabel>
     <targets>
         <target>lightning__RecordPage</target>
+        <target>lightning__AppPage</target>
+        <target>lightning__HomePage</target>
+        <target>lightningCommunity__Page</target>
+        <target>lightningCommunity__Default</target>
     </targets>
     <targetConfigs>
         <targetConfig targets="lightning__RecordPage">
+            <property 
+                name="recordId" 
+                type="String" 
+                label="Board Record ID"
+                description="The ID of the Board record to display"
+            />
             <property 
                 name="maxHeight" 
                 type="String" 
@@ -21,6 +31,20 @@
                 <supportedFormFactor type="Small" />
                 <supportedFormFactor type="Large" />
             </supportedFormFactors>
+        </targetConfig>
+        <targetConfig targets="lightningCommunity__Default, lightning__AppPage, lightning__HomePage">
+            <property 
+                name="recordId" 
+                type="String" 
+                label="Board Record ID"
+                description="The ID of the Board record to display"
+            />
+            <property 
+                name="maxHeight" 
+                type="String" 
+                label="Max Height"
+                description="The maximum height of the board in any format. (default: 70vh)"
+            />
         </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>
