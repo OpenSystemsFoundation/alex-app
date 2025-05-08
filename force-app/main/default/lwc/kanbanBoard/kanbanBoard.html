@@ -51,17 +51,34 @@
                                 <h2
                                     class="slds-text-heading_medium slds-truncate slds-var-p-bottom_xx-small"
                                 >
-                                    <a
-                                        href={column.columnUrl}
-                                        class="slds-text-link slds-truncate"
-                                        title={column.columnHeader}
-                                        onclick={openColumn}
+                                    <template
+                                        lwc:if={experienceCloud}
                                     >
-                                        <span
-                                            class="slds-truncate"
-                                            >{column.columnHeader}</span
+                                        <a
+                                            href={column.communityUrl}
+                                            class="slds-text-link slds-truncate"
+                                            title={column.columnHeader}
+                                            onclick={openColumn}
                                         >
-                                    </a>
+                                            <span
+                                                class="slds-truncate"
+                                                >{column.columnHeader}</span
+                                            >
+                                        </a>
+                                    </template>
+                                    <template lwc:else>
+                                        <a
+                                            href={column.columnUrl}
+                                            class="slds-text-link slds-truncate"
+                                            title={column.columnHeader}
+                                            onclick={openColumn}
+                                        >
+                                            <span
+                                                class="slds-truncate"
+                                                >{column.columnHeader}</span
+                                            >
+                                        </a>
+                                    </template>
                                 </h2>
                             </div>
                         </div>
@@ -166,19 +183,40 @@
                                             <h2
                                                 class="slds-card__header-title slds-truncate slds-text-body_small"
                                             >
-                                                <a
-                                                    href={card.cardUrl}
-                                                    class="slds-text-link slds-truncate"
-                                                    title={card.cardSubject}
-                                                    onclick={openCard}
+                                                <template
+                                                    lwc:if={experienceCloud}
                                                 >
-                                                    <span
-                                                        class="slds-truncate"
+                                                    <a
+                                                        href={card.communityUrl}
+                                                        class="slds-text-link slds-truncate"
+                                                        title={card.cardSubject}
+                                                        onclick={openCard}
                                                     >
-                                                        {card.cardPosition}&nbsp;|&nbsp;
-                                                        {card.cardName}
-                                                    </span>
-                                                </a>
+                                                        <span
+                                                            class="slds-truncate"
+                                                        >
+                                                            {card.cardPosition}&nbsp;|&nbsp;
+                                                            {card.cardName}
+                                                        </span>
+                                                    </a>
+                                                </template>
+                                                <template
+                                                    lwc:else
+                                                >
+                                                    <a
+                                                        href={card.cardUrl}
+                                                        class="slds-text-link slds-truncate"
+                                                        title={card.cardSubject}
+                                                        onclick={openCard}
+                                                    >
+                                                        <span
+                                                            class="slds-truncate"
+                                                        >
+                                                            {card.cardPosition}&nbsp;|&nbsp;
+                                                            {card.cardName}
+                                                        </span>
+                                                    </a>
+                                                </template>
                                             </h2>
 
                                             <p

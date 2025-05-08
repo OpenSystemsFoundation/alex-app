@@ -21,6 +21,7 @@ export default class KanbanBoard extends LightningElement {
 
     @api recordId;
     @api maxHeight = '70vh';
+    @api experienceCloud;
     @track board;
     @track columns;
     @track cards;

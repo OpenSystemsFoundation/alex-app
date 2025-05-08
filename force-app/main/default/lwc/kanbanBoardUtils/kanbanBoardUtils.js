@@ -36,7 +36,7 @@ class KanbanBoardUtils {
                 ? result.cards.map(this.mapCard.bind(this))
                 : [],
             columns: result.columns
-                ? result.columns.map(column => ({
+                ? result.columns.map((column) => ({
                       columnColor: column?.OpenSF__Color__c ?? undefined,
                       boardId: column?.OpenSF__Board__c ?? undefined,
                       columnHeader:
@@ -48,6 +48,7 @@ class KanbanBoardUtils {
                       columnPosition: column?.OpenSF__Position__c ?? undefined,
                       columnStatus: column?.OpenSF__Status__c ?? undefined,
                       columnUrl: `/lightning/r/OpenSF__Column__c/${column?.Id}/view`,
+                      communityUrl: `/column/${column?.Id}`,
                       lastModifiedDate: this.formatDateWithoutPrecision(
                           column?.LastModifiedDate
                       )
@@ -70,6 +71,7 @@ class KanbanBoardUtils {
             cardSubject: card?.OpenSF__Subject__c ?? undefined,
             cardType: card?.OpenSF__CardType__c ?? undefined,
             cardUrl: `/lightning/r/OpenSF__Card__c/${card.Id}/view`,
+            communityUrl: `/card/${card.Id}`,
             columnId: card?.OpenSF__Column__c ?? undefined,
             lastModifiedDate: this.formatDateWithoutPrecision(
                 card?.LastModifiedDate
