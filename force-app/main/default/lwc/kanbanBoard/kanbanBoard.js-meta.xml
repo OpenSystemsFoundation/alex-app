@@ -13,12 +13,6 @@
     <targetConfigs>
         <targetConfig targets="lightning__RecordPage">
             <property 
-                name="recordId" 
-                type="String" 
-                label="Board Record ID"
-                description="The ID of the Board record to display"
-            />
-            <property 
                 name="maxHeight" 
                 type="String" 
                 label="Max Height"
