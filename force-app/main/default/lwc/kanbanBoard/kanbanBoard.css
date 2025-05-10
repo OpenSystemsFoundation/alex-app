@@ -74,8 +74,6 @@
 
 .kanban-card.start {
     opacity: 0.75;
-    transform: none;
-    box-shadow: none;
 }
 
 .kanban-card.over {
