@@ -119,6 +119,7 @@ public class TestDataFactory {
         Profile p = [
             SELECT Id
             FROM Profile
+            WHERE UserLicense.Name = 'Salesforce'
             LIMIT 1
         ];
         User user = new User(
