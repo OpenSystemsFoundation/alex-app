@@ -31,7 +31,7 @@
             name="recordId" 
             type="String" 
             label="Board Record ID"
-            description="The ID of the Board record to display. Requires a standard object page for Board."
+            description="The ID of the Board record to display. Default value requires Object Page for Board."
             default="{!recordId}"
             />
             <property 
@@ -44,7 +44,7 @@
             name="experienceCloud"
             type="Boolean"
             label="Experience Cloud Mode"
-            description="Set checkbox to enable Experience Cloud mode. Requires creating Standard Object Pages for Board, Column, and Card."
+            description="Set checkbox to enable Experience Cloud mode. Requires creating Object Pages for Board, Column, and Card with default Base URL."
             />
         </targetConfig>
         <targetConfig targets="lightning__AppPage, lightning__HomePage">

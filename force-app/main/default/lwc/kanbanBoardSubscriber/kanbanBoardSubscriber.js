@@ -29,8 +29,8 @@ export default class KanbanBoardSubscriber extends LightningElement {
 
     initializeSubscriptions() {
         if (this.retryCount < this.maxRetries) {
-            this.channels.forEach(channel => {
-                const messageCallback = response => {
+            this.channels.forEach((channel) => {
+                const messageCallback = (response) => {
                     this.handleEvent(response.data.payload, channel);
                 };
                 this.subscribeToChannel(channel, messageCallback);
@@ -46,17 +46,18 @@ export default class KanbanBoardSubscriber extends LightningElement {
 
     subscribeToChannel(channel, messageCallback) {
         subscribe(channel, REPLAY_ID, messageCallback)
-            .then(response => {
+            .then((response) => {
                 this.subscriptions.push(response);
                 this.isConnected = true;
                 this.retryCount = 0;
             })
-            .catch(error => {
+            .catch((error) => {
                 this.isConnected = false;
                 this.retryCount++;
-                this.logError(
-                    error,
-                    `Failed to subscribe to realtime updates. Retry attempt ${this.retryCount}`
+                this.showToast(
+                    `Failed to subscribe to realtime updates. Retry attempt ${this.retryCount}`,
+                    'Subscription Info',
+                    'info'
                 );
                 if (this.retryCount < this.maxRetries) {
                     this.initializeSubscriptions();
@@ -65,7 +66,7 @@ export default class KanbanBoardSubscriber extends LightningElement {
     }
 
     handleUnsubscribe() {
-        this.subscriptions.forEach(subscription => {
+        this.subscriptions.forEach((subscription) => {
             if (subscription && subscription.subscription) {
                 unsubscribe(subscription)
                     .then(() => {
@@ -75,7 +76,7 @@ export default class KanbanBoardSubscriber extends LightningElement {
                             'info'
                         );
                     })
-                    .catch(error => {
+                    .catch((error) => {
                         this.logError(
                             error,
                             `Failed to unsubscribe from realtime updates`
@@ -166,11 +167,12 @@ export default class KanbanBoardSubscriber extends LightningElement {
     }
 
     registerErrorListener() {
-        onError(error => {
+        onError((error) => {
             this.isConnected = false;
-            this.logError(
-                error,
-                'Disconnected from realtime updates. Retrying..'
+            this.showToast(
+                'Disconnected from realtime updates. Retrying..',
+                'Info',
+                'info'
             );
             this.retryConnection();
         });
