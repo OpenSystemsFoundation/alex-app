@@ -15,3 +15,6 @@ https://login.salesforce.com/packaging/installPackage.apexp?p0=04tWV0000002L1xYA
 
 # Version 1.1.1 (Hotfix 1.1.1) "Alex - A Kanban App@1.1.1": "04tWV00000036gnYAA"
 https://login.salesforce.com/packaging/installPackage.apexp?p0=04tWV00000036gnYAA
+
+# Version 1.2 (Community Support - Beta) "Alex - A Kanban App@1.2": "04tWV00000039wPYAQ"
+https://login.salesforce.com/packaging/installPackage.apexp?p0=04tWV00000039wPYAQ

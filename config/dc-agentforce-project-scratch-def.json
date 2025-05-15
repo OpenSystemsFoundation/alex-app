@@ -1,0 +1,26 @@
+{
+  "orgName": "OpenSF",
+  "edition": "Partner Developer",
+  "language": "en_US",
+  "features": [
+    "ContactsToMultipleAccounts",
+    "Einstein1AIPlatform", 
+    "CustomerDataPlatform", 
+    "CustomerDataPlatformLite"
+  ],
+  "settings": {
+    "mobileSettings": {
+        "enableS1EncryptedStoragePref2": false
+    },
+    "lightningExperienceSettings": {
+        "enableS1DesktopEnabled": true,
+        "enableLightningPreviewPref": true
+    },
+    "einsteinGptSettings" : {
+      "enableEinsteinGptPlatform" : true
+    },
+    "customerDataPlatformSettings": {
+      "enableCustomerDataPlatform": true
+    }
+  }
+}
