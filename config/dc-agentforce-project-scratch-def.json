@@ -21,6 +21,9 @@
     },
     "customerDataPlatformSettings": {
       "enableCustomerDataPlatform": true
+    },
+    "chatterSettings": {
+      "enableChatter": true
     }
   }
 }

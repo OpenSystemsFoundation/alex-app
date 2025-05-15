@@ -16,6 +16,9 @@
     },
     "einsteinGptSettings" : {
       "enableEinsteinGptPlatform" : true
+    },
+    "chatterSettings": {
+      "enableChatter": true
     }
   }
 }
