@@ -6,7 +6,7 @@
     "author": "Open Systems Foundation",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/"
+        "url": "https://github.com/OpenSystemsFoundation/alex-app"
     },
     "license": "MIT",
     "scripts": {
@@ -19,26 +19,14 @@
         "prettier": "prettier --write \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
         "prettier:verify": "prettier --check \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
         "postinstall": "husky install",
-        "precommit": "lint-staged"
+        "precommit": "lint-staged",
+        "validate": "npm run lint && npm run prettier:verify && npm run test:unit",
+        "check:security": "sf scanner run --target src --format table",
+        "check:dependencies": "npm audit --audit-level=moderate"
     },
     "devDependencies": {
-        "@lwc/eslint-plugin-lwc": "^1.8.2",
-        "@lwc/jest-preset": "^18.1.2",
-        "@playwright/test": "^1.49.0",
-        "@prettier/plugin-xml": "^3.2.2",
-        "@salesforce/eslint-config-lwc": "^3.2.3",
-        "@salesforce/eslint-plugin-aura": "^2.0.0",
-        "@salesforce/eslint-plugin-lightning": "^1.0.0",
-        "@salesforce/sfdx-lwc-jest": "^7.0.1",
-        "@types/node": "^22.10.1",
-        "eslint": "9.16.0",
-        "eslint-plugin-import": "^2.25.4",
-        "eslint-plugin-jest": "28.9.0",
-        "husky": "9.1.7",
-        "lint-staged": "^15.1.0",
-        "mocha": "^10.8.2",
-        "prettier": "^3.3.3",
-        "prettier-plugin-apex": "^2.1.5"
+        "prettier": "3.6.2",
+        "prettier-plugin-apex": "2.2.6"
     },
     "lint-staged": {
         "**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}": [
@@ -47,12 +35,5 @@
         "**/{aura,lwc}/**/*.js": [
             "eslint"
         ]
-    },
-    "dependencies": {
-        "@lwc/engine": "^1.17.6",
-        "chromedriver": "^131.0.0",
-        "dotenv": "^16.4.5",
-        "selenium-webdriver": "^4.27.0",
-        "typescript": "^5.7.2"
     }
 }
