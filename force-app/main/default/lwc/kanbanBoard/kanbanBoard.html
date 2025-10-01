@@ -123,67 +123,11 @@
                                 for:item="card"
                             >
                                 <div key={card.cardId}>
-                                    <!-- Ghost Preview Card (shows before target card) -->
                                     <template lwc:if={card.showPreviewBefore}>
-                                        <template lwc:if={column.previewCard}>
-                                            <article class="kanban-card preview-ghost slds-box slds-box_small slds-var-m-horizontal_x-small card-edge">
-                                                <!-- Card Header -->
-                                                <header class="slds-media slds-media_center slds-has-flexi-truncate slds-var-p-bottom_xx-small">
-                                                    <template lwc:if={column.previewCard.assigneeId}>
-                                                        <div class="slds-media__figure">
-                                                            <template lwc:if={column.previewCard.assigneePhoto}>
-                                                                <span class="slds-avatar slds-avatar_circle">
-                                                                    <img src={column.previewCard.assigneePhoto} alt="User Photo" title={column.previewCard.assigneeName} />
-                                                                </span>
-                                                            </template>
-                                                            <template lwc:else>
-                                                                <span class="slds-avatar slds-avatar_circle slds-avatar_medium">
-                                                                    <lightning-icon icon-name="standard:user" size="small" alternative-text="Default Image"></lightning-icon>
-                                                                </span>
-                                                            </template>
-                                                        </div>
-                                                    </template>
-                                                    <div class="slds-media__body slds-truncate">
-                                                        <h2 class="slds-card__header-title slds-truncate slds-text-body_small">
-                                                            <span class="slds-truncate">
-                                                                {column.previewCard.cardPosition}&nbsp;|&nbsp;{column.previewCard.cardName}
-                                                            </span>
-                                                        </h2>
-                                                        <p class="slds-text-body_small slds-truncate">
-                                                            <template lwc:if={column.previewCard.cardType}>
-                                                                <span>{column.previewCard.cardType}&nbsp;-&nbsp;</span>
-                                                            </template>
-                                                            <template lwc:if={column.previewCard.cardStatus}>
-                                                                <span>{column.previewCard.cardStatus}</span>
-                                                            </template>
-                                                        </p>
-                                                    </div>
-                                                </header>
-                                                <!-- Card Body -->
-                                                <div class="kanban-card__body slds-text-body_regular">
-                                                    <template lwc:if={column.previewCard.cardSubject}>
-                                                        <p class="slds-truncate">
-                                                            <span>{column.previewCard.cardSubject}</span>
-                                                        </p>
-                                                    </template>
-                                                    <div class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-end slds-var-p-top_small">
-                                                        <template lwc:if={column.previewCard.cardPriority}>
-                                                            <div class="slds-col slds-var-p-right_small">
-                                                                <lightning-badge label={column.previewCard.cardPriority} class="icon-badge"></lightning-badge>
-                                                            </div>
-                                                        </template>
-                                                        <template lwc:if={column.previewCard.storyPoints}>
-                                                            <div class="slds-col icon-container">
-                                                                <lightning-badge label={column.previewCard.storyPoints} class="icon-badge"></lightning-badge>
-                                                            </div>
-                                                        </template>
-                                                    </div>
-                                                </div>
-                                            </article>
-                                        </template>
+                                        <c-kanban-card-preview lwc:if={column.previewCard} card={column.previewCard}></c-kanban-card-preview>
                                     </template>
                                     
-                                    <!-- Actual Card -->
+                                    <!-- Card -->
                                     <article
                                         class={card.cardClass}
                                         data-card-id={card.cardId}
@@ -350,128 +294,16 @@
                                         </div>
                                     </div>
                                 </article>
-                                
-                                <!-- Ghost Preview Card (shows after target card) -->
+
                                 <template lwc:if={card.showPreviewAfter}>
-                                    <template lwc:if={column.previewCard}>
-                                        <article class="kanban-card preview-ghost slds-box slds-box_small slds-var-m-horizontal_x-small card-edge">
-                                            <!-- Card Header -->
-                                            <header class="slds-media slds-media_center slds-has-flexi-truncate slds-var-p-bottom_xx-small">
-                                                <template lwc:if={column.previewCard.assigneeId}>
-                                                    <div class="slds-media__figure">
-                                                        <template lwc:if={column.previewCard.assigneePhoto}>
-                                                            <span class="slds-avatar slds-avatar_circle">
-                                                                <img src={column.previewCard.assigneePhoto} alt="User Photo" title={column.previewCard.assigneeName} />
-                                                            </span>
-                                                        </template>
-                                                        <template lwc:else>
-                                                            <span class="slds-avatar slds-avatar_circle slds-avatar_medium">
-                                                                <lightning-icon icon-name="standard:user" size="small" alternative-text="Default Image"></lightning-icon>
-                                                            </span>
-                                                        </template>
-                                                    </div>
-                                                </template>
-                                                <div class="slds-media__body slds-truncate">
-                                                    <h2 class="slds-card__header-title slds-truncate slds-text-body_small">
-                                                        <span class="slds-truncate">
-                                                            {column.previewCard.cardPosition}&nbsp;|&nbsp;{column.previewCard.cardName}
-                                                        </span>
-                                                    </h2>
-                                                    <p class="slds-text-body_small slds-truncate">
-                                                        <template lwc:if={column.previewCard.cardType}>
-                                                            <span>{column.previewCard.cardType}&nbsp;-&nbsp;</span>
-                                                        </template>
-                                                        <template lwc:if={column.previewCard.cardStatus}>
-                                                            <span>{column.previewCard.cardStatus}</span>
-                                                        </template>
-                                                    </p>
-                                                </div>
-                                            </header>
-                                            <!-- Card Body -->
-                                            <div class="kanban-card__body slds-text-body_regular">
-                                                <template lwc:if={column.previewCard.cardSubject}>
-                                                    <p class="slds-truncate">
-                                                        <span>{column.previewCard.cardSubject}</span>
-                                                    </p>
-                                                </template>
-                                                <div class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-end slds-var-p-top_small">
-                                                    <template lwc:if={column.previewCard.cardPriority}>
-                                                        <div class="slds-col slds-var-p-right_small">
-                                                            <lightning-badge label={column.previewCard.cardPriority} class="icon-badge"></lightning-badge>
-                                                        </div>
-                                                    </template>
-                                                    <template lwc:if={column.previewCard.storyPoints}>
-                                                        <div class="slds-col icon-container">
-                                                            <lightning-badge label={column.previewCard.storyPoints} class="icon-badge"></lightning-badge>
-                                                        </div>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                        </article>
-                                    </template>
+                                    <c-kanban-card-preview lwc:if={column.previewCard} card={column.previewCard}></c-kanban-card-preview>
                                 </template>
                                 </div>
                             </template>
                         </template>
                         
-                        <!-- Ghost Preview Card at end of column (outside cards.length check for empty columns) -->
                         <template lwc:if={column.showPreviewAtEnd}>
-                            <template lwc:if={column.previewCard}>
-                                <article class="kanban-card preview-ghost slds-box slds-box_small slds-var-m-horizontal_x-small card-edge">
-                                    <!-- Card Header -->
-                                    <header class="slds-media slds-media_center slds-has-flexi-truncate slds-var-p-bottom_xx-small">
-                                        <template lwc:if={column.previewCard.assigneeId}>
-                                            <div class="slds-media__figure">
-                                                <template lwc:if={column.previewCard.assigneePhoto}>
-                                                    <span class="slds-avatar slds-avatar_circle">
-                                                        <img src={column.previewCard.assigneePhoto} alt="User Photo" title={column.previewCard.assigneeName} />
-                                                    </span>
-                                                </template>
-                                                <template lwc:else>
-                                                    <span class="slds-avatar slds-avatar_circle slds-avatar_medium">
-                                                        <lightning-icon icon-name="standard:user" size="small" alternative-text="Default Image"></lightning-icon>
-                                                    </span>
-                                                </template>
-                                            </div>
-                                        </template>
-                                        <div class="slds-media__body slds-truncate">
-                                            <h2 class="slds-card__header-title slds-truncate slds-text-body_small">
-                                                <span class="slds-truncate">
-                                                    {column.previewCard.cardPosition}&nbsp;|&nbsp;{column.previewCard.cardName}
-                                                </span>
-                                            </h2>
-                                            <p class="slds-text-body_small slds-truncate">
-                                                <template lwc:if={column.previewCard.cardType}>
-                                                    <span>{column.previewCard.cardType}&nbsp;-&nbsp;</span>
-                                                </template>
-                                                <template lwc:if={column.previewCard.cardStatus}>
-                                                    <span>{column.previewCard.cardStatus}</span>
-                                                </template>
-                                            </p>
-                                        </div>
-                                    </header>
-                                    <!-- Card Body -->
-                                    <div class="kanban-card__body slds-text-body_regular">
-                                        <template lwc:if={column.previewCard.cardSubject}>
-                                            <p class="slds-truncate">
-                                                <span>{column.previewCard.cardSubject}</span>
-                                            </p>
-                                        </template>
-                                        <div class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-end slds-var-p-top_small">
-                                            <template lwc:if={column.previewCard.cardPriority}>
-                                                <div class="slds-col slds-var-p-right_small">
-                                                    <lightning-badge label={column.previewCard.cardPriority} class="icon-badge"></lightning-badge>
-                                                </div>
-                                            </template>
-                                            <template lwc:if={column.previewCard.storyPoints}>
-                                                <div class="slds-col icon-container">
-                                                    <lightning-badge label={column.previewCard.storyPoints} class="icon-badge"></lightning-badge>
-                                                </div>
-                                            </template>
-                                        </div>
-                                    </div>
-                                </article>
-                            </template>
+                            <c-kanban-card-preview lwc:if={column.previewCard} card={column.previewCard}></c-kanban-card-preview>
                         </template>
                     </div>
                 </div>

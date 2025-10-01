@@ -1,5 +1,5 @@
 .kanban-board, .kanban-column, .kanban-column__card-wrapper, .kanban-card {
-    user-select: none; /* Disables text selection */
+    user-select: none;
 }
 
 .kanban-board {
@@ -28,7 +28,7 @@
 }
 
 .kanban-column__card-wrapper {
-    height: calc(100% - 32px); /* Leaves a 10px gap at the bottom */
+    height: calc(100% - 32px);
     min-height: 150px;
     scroll-behavior: smooth;
     transition: transform 0.3s ease-in-out;
@@ -44,7 +44,6 @@
     border-radius: 0.3rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     margin-bottom: 0.5rem;
-    /* No transitions on drag - applied only on hover */
 }
 
 .card-edge {
@@ -60,7 +59,6 @@
     pointer-events: none !important;
     cursor: default !important;
     z-index: 10;
-    /* Fast transition only for preview appearance */
     transition: opacity 0.1s ease, transform 0.1s ease;
 }
 
@@ -72,19 +70,15 @@
 .kanban-card.dragging {
     opacity: 0.4;
     transform: scale(0.95);
-    /* Fast transition for drag state */
     transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .kanban-card.start {
     opacity: 0.4;
     transform: scale(0.95);
-    /* Instant transition for start state */
-    /* NO pointer-events: none - card must remain draggable */
     transition: none;
 }
 
-/* Preview Ghost Card - simple greyed out version of the card being dragged */
 .preview-ghost {
     opacity: 0.5;
     background-color: var(--slds-g-color-neutral-base-95, #f4f6f9);
@@ -113,7 +107,6 @@
 .kanban-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    /* Quick transition only on hover */
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -125,7 +118,6 @@
 .kanban-card.start {
     opacity: 0.4;
     transform: scale(0.95);
-    /* Instant transition for start state */
     transition: none;
 }
 

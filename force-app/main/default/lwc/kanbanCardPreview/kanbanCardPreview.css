@@ -1,0 +1,24 @@
+.kanban-card {
+    user-select: none;
+    margin-bottom: 0.5rem;
+}
+
+.preview-ghost {
+    opacity: 0.5;
+    background-color: var(--slds-g-color-neutral-base-95, #f4f6f9);
+    filter: grayscale(100%);
+    pointer-events: none !important;
+    cursor: default !important;
+    user-select: none;
+}
+
+.preview-ghost * {
+    pointer-events: none !important;
+    cursor: default !important;
+    user-select: none;
+}
+
+.card-edge {
+    border-left: 0.3rem solid var(--card-color, #C9C9C9);
+    border-radius: 0.3rem;
+}
