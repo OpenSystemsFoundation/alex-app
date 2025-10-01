@@ -4,6 +4,8 @@ import {
     ERROR,
     INITIALIZE_BOARD,
     MOVE_CARD,
+    PREVIEW_MOVE_CARD,
+    CANCEL_PREVIEW_MOVE,
     SET_LOADING,
     UPDATE_CARD,
     UPDATE_CARDS,
@@ -35,7 +37,9 @@ const updateBoardState = (state, boardId, updates) => ({
                 board: {},
                 columns: [],
                 cards: [],
-                isLoading: false
+                isLoading: false,
+                previewState: null,
+                originalCards: null
             }),
             ...updates
         }
@@ -149,12 +153,14 @@ function kanbanReducer(state = initialState, action) {
                 sourceColumnId,
                 targetColumnId,
                 targetCardId,
-                targetColumnStatus
+                targetColumnStatus,
+                insertPosition
             } = action.payload;
             const board = state.boards[boardId];
             if (!board) return state;
 
-            const { cards } = board;
+            // Use originalCards if in preview state, otherwise use current cards
+            const cards = board.originalCards || board.cards;
 
             const cardToMove = {
                 ...cards.find(card => card.cardId === cardId)
@@ -189,55 +195,21 @@ function kanbanReducer(state = initialState, action) {
                 : MINUS_ONE;
 
             if (targetCardIndex !== MINUS_ONE) {
-                // Determine if targetCard is the top or bottom card
-                const isTopCard = targetCardIndex === ZERO;
-                const isBottomCard =
-                    targetCardIndex === destinationListCards.length - ONE;
-
-                if (sourceColumnId === targetColumnId) {
-                    // Moving within the same column
-                    if (
-                        cardToMove.cardPosition <
-                        destinationListCards[targetCardIndex].cardPosition
-                    ) {
-                        // Moving downwards, place after the targetCard
-                        destinationListCards.splice(
-                            targetCardIndex + ONE,
-                            ZERO,
-                            cardToMove
-                        );
-                    } else {
-                        // Moving upwards, place before the targetCard
-                        destinationListCards.splice(
-                            targetCardIndex,
-                            ZERO,
-                            cardToMove
-                        );
-                    }
+                // Use insertPosition if provided, otherwise use smart defaults
+                if (insertPosition === 'after') {
+                    // Insert after the targetCard
+                    destinationListCards.splice(
+                        targetCardIndex + ONE,
+                        ZERO,
+                        cardToMove
+                    );
                 } else {
-                    // Moving between columns
-                    if (isTopCard) {
-                        // Insert before the top card
-                        destinationListCards.splice(
-                            targetCardIndex,
-                            ZERO,
-                            cardToMove
-                        );
-                    } else if (isBottomCard) {
-                        // Insert after the bottom card
-                        destinationListCards.splice(
-                            targetCardIndex + ONE,
-                            ZERO,
-                            cardToMove
-                        );
-                    } else {
-                        // Default behavior: Insert before the target card
-                        destinationListCards.splice(
-                            targetCardIndex,
-                            ZERO,
-                            cardToMove
-                        );
-                    }
+                    // Insert before the targetCard (default or 'before')
+                    destinationListCards.splice(
+                        targetCardIndex,
+                        ZERO,
+                        cardToMove
+                    );
                 }
             } else {
                 // If no targetCardId is provided, add card to the end
@@ -276,7 +248,51 @@ function kanbanReducer(state = initialState, action) {
             ];
 
             return updateBoardState(state, boardId, {
-                cards: finalCards
+                cards: finalCards,
+                originalCards: null,
+                previewState: null
+            });
+        }
+
+        case PREVIEW_MOVE_CARD: {
+            const {
+                boardId,
+                cardId,
+                sourceColumnId,
+                targetColumnId,
+                targetCardId,
+                targetColumnStatus,
+                insertPosition
+            } = action.payload;
+            const board = state.boards[boardId];
+            if (!board) return state;
+
+            // Store original cards for revert on cancel
+            const originalCards = board.originalCards || board.cards;
+
+            // DON'T modify the cards array - just store preview metadata
+            // The UI will handle visual preview using CSS classes only
+            return updateBoardState(state, boardId, {
+                originalCards: originalCards,
+                previewState: {
+                    cardId,
+                    sourceColumnId,
+                    targetColumnId,
+                    targetCardId,
+                    insertPosition
+                }
+            });
+        }
+
+        case CANCEL_PREVIEW_MOVE: {
+            const { boardId } = action.payload;
+            const board = state.boards[boardId];
+            if (!board || !board.originalCards) return state;
+
+            return updateBoardState(state, boardId, {
+                cards: board.originalCards,
+                originalCards: null,
+                previewState: null
             });
         }
 

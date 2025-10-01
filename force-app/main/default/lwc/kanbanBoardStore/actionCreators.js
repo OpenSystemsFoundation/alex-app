@@ -4,6 +4,8 @@ import {
     ERROR,
     INITIALIZE_BOARD,
     MOVE_CARD,
+    PREVIEW_MOVE_CARD,
+    CANCEL_PREVIEW_MOVE,
     SET_LOADING,
     UPDATE_CARD,
     UPDATE_CARDS,
@@ -42,6 +44,16 @@ const deleteCard = (boardId, cardId) => ({
 const moveCard = (boardId, dropData) => ({
     type: MOVE_CARD,
     payload: { boardId, ...dropData }
+});
+
+const previewMoveCard = (boardId, dropData) => ({
+    type: PREVIEW_MOVE_CARD,
+    payload: { boardId, ...dropData }
+});
+
+const cancelPreviewMove = (boardId) => ({
+    type: CANCEL_PREVIEW_MOVE,
+    payload: { boardId }
 });
 
 const updateCard = (boardId, cardData) => ({
@@ -86,6 +98,8 @@ export {
     createCard,
     deleteCard,
     moveCard,
+    previewMoveCard,
+    cancelPreviewMove,
     updateCard,
     updateCards,
     upsertCard,

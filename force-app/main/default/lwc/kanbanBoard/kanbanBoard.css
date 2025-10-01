@@ -37,19 +37,67 @@
 
 .kanban-card {
     min-width: 200px;
-    z-index: 1; /* Ensure it's low enough to appear behind other UI elements */
+    z-index: 1;
     position: relative;
     background-color: var(--slds-g-color-neutral-base-100, #FFFFFF);
     border: 1px solid var(--slds-g-color-neutral-base-80, #C9C9C9);
     border-radius: 0.3rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
     margin-bottom: 0.5rem;
+    /* No transitions on drag - applied only on hover */
 }
 
 .card-edge {
     border-left: 0.3rem solid var(--card-color, #C9C9C9);
     border-radius: 0.3rem;
+}
+
+.kanban-card.preview {
+    opacity: 0.5;
+    background-color: var(--slds-g-color-neutral-base-95, #f4f6f9);
+    border: 2px dashed var(--slds-g-color-brand-base-50, #0176D3);
+    transform: scale(0.98);
+    pointer-events: none !important;
+    cursor: default !important;
+    z-index: 10;
+    /* Fast transition only for preview appearance */
+    transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+.kanban-card.preview * {
+    pointer-events: none !important;
+    cursor: default !important;
+}
+
+.kanban-card.dragging {
+    opacity: 0.4;
+    transform: scale(0.95);
+    /* Fast transition for drag state */
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.kanban-card.start {
+    opacity: 0.4;
+    transform: scale(0.95);
+    /* Instant transition for start state */
+    /* NO pointer-events: none - card must remain draggable */
+    transition: none;
+}
+
+/* Preview Ghost Card - simple greyed out version of the card being dragged */
+.preview-ghost {
+    opacity: 0.5;
+    background-color: var(--slds-g-color-neutral-base-95, #f4f6f9);
+    filter: grayscale(100%);
+    pointer-events: none !important;
+    cursor: default !important;
+    user-select: none;
+}
+
+.preview-ghost * {
+    pointer-events: none !important;
+    cursor: default !important;
+    user-select: none;
 }
 
 .kanban-column__dropzone {
@@ -59,12 +107,14 @@
     background-color: var(--slds-g-color-neutral-base-95, #f4f6f9);
     color: var( --slds-g-color-neutral-base-40, #69727d);
     border-radius: 8px;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .kanban-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    /* Quick transition only on hover */
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .kanban-card:active {
@@ -73,7 +123,10 @@
 }
 
 .kanban-card.start {
-    opacity: 0.75;
+    opacity: 0.4;
+    transform: scale(0.95);
+    /* Instant transition for start state */
+    transition: none;
 }
 
 .kanban-card.over {

@@ -3,6 +3,8 @@ import {
     deleteCard,
     initializeBoard,
     moveCard,
+    previewMoveCard,
+    cancelPreviewMove,
     setError,
     setLoading,
     updateCard,
@@ -65,13 +67,23 @@ class BoardStore {
     async moveCard(boardId, dropData) {
         this.dispatch(setLoading(boardId, true));
         try {
-            this.dispatch(moveCard(boardId, dropData));
+            // Clear any preview state first
             const board = this.state.boards[boardId];
-            if (!board) {
+            if (board?.previewState) {
+                // If we have preview state, the cards are already positioned correctly
+                // Just need to clear the preview markers and sync to backend
+                this.dispatch(moveCard(boardId, dropData));
+            } else {
+                // No preview, do the regular move
+                this.dispatch(moveCard(boardId, dropData));
+            }
+            
+            const updatedBoard = this.state.boards[boardId];
+            if (!updatedBoard) {
                 throw new Error(`Board with ID ${boardId} not found.`);
             }
             const updatedCards = await boardService.queueUpdateCards(
-                board.cards.filter(
+                updatedBoard.cards.filter(
                     card =>
                         card.columnId === dropData.sourceColumnId ||
                         card.columnId === dropData.targetColumnId
@@ -82,6 +94,22 @@ class BoardStore {
             this.dispatch(setError(error, true));
         } finally {
             this.dispatch(setLoading(boardId, false));
+        }
+    }
+
+    previewMoveCard(boardId, dropData) {
+        try {
+            this.dispatch(previewMoveCard(boardId, dropData));
+        } catch (error) {
+            this.dispatch(setError(error));
+        }
+    }
+
+    cancelPreviewMove(boardId) {
+        try {
+            this.dispatch(cancelPreviewMove(boardId));
+        } catch (error) {
+            this.dispatch(setError(error));
         }
     }
 
