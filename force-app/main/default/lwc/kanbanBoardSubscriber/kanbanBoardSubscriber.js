@@ -1,13 +1,16 @@
 import { api, LightningElement } from 'lwc';
 import { onError, subscribe, unsubscribe } from 'lightning/empApi';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import Id from '@salesforce/user/Id';
 import kanbanStore from 'c/kanbanBoardStore';
 import kanbanUtils from 'c/kanbanBoardUtils';
 
 const REPLAY_ID = -1;
+const DEBOUNCE_DELAY = 100; // milliseconds
 
 export default class KanbanBoardSubscriber extends LightningElement {
     @api boardId;
+    userId = Id;
     channels = [
         '/event/OpenSF__CardUpdateEvent__e',
         '/event/OpenSF__ColumnUpdateEvent__e'
@@ -17,6 +20,9 @@ export default class KanbanBoardSubscriber extends LightningElement {
     isConnected = false;
     retryCount = 0;
     maxRetries = 5;
+    pendingCardUpdates = new Map();
+    pendingColumnUpdates = new Map();
+    debounceTimer = null;
 
     connectedCallback() {
         this.registerErrorListener();
@@ -112,13 +118,20 @@ export default class KanbanBoardSubscriber extends LightningElement {
             throw new Error('boardId is missing in event data');
         }
 
+        // Filter own updates - skip events from current user (already applied locally)
+        if (eventData.OpenSF__LastModifiedById__c === this.userId) {
+            return;
+        }
+
         try {
             switch (eventData.OpenSF__EventType__c) {
                 case 'CardCreate':
                     kanbanStore.addCard(this.boardId, cardData);
                     break;
                 case 'CardUpdate':
-                    kanbanStore.updateCard(this.boardId, cardData);
+                    // Debounce updates to reduce re-renders
+                    this.pendingCardUpdates.set(cardData.cardId, cardData);
+                    this.debouncedFlushUpdates();
                     break;
                 case 'CardDelete':
                     kanbanStore.deleteCard(this.boardId, cardData.cardId);
@@ -141,13 +154,20 @@ export default class KanbanBoardSubscriber extends LightningElement {
             throw new Error('boardId is missing in event data');
         }
 
+        // Filter own updates - skip events from current user
+        if (eventData.OpenSF__LastModifiedById__c === this.userId) {
+            return;
+        }
+
         try {
             switch (eventData.OpenSF__EventType__c) {
                 case 'ColumnCreate':
                     kanbanStore.addColumn(columnData.boardId, columnData);
                     break;
                 case 'ColumnUpdate':
-                    kanbanStore.updateColumn(columnData.boardId, columnData);
+                    // Debounce updates
+                    this.pendingColumnUpdates.set(columnData.columnId, columnData);
+                    this.debouncedFlushUpdates();
                     break;
                 case 'ColumnDelete':
                     kanbanStore.deleteColumn(
@@ -163,6 +183,37 @@ export default class KanbanBoardSubscriber extends LightningElement {
                 error,
                 `Error processing column event: ${eventData.OpenSF__EventType__c}`
             );
+        }
+    }
+
+    debouncedFlushUpdates() {
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => {
+            this.flushPendingUpdates();
+        }, DEBOUNCE_DELAY);
+    }
+
+    flushPendingUpdates() {
+        try {
+            // Batch update cards
+            if (this.pendingCardUpdates.size > 0) {
+                const cardUpdates = Array.from(this.pendingCardUpdates.values());
+                cardUpdates.forEach(cardData => {
+                    kanbanStore.updateCard(this.boardId, cardData);
+                });
+                this.pendingCardUpdates.clear();
+            }
+
+            // Batch update columns
+            if (this.pendingColumnUpdates.size > 0) {
+                const columnUpdates = Array.from(this.pendingColumnUpdates.values());
+                columnUpdates.forEach(columnData => {
+                    kanbanStore.updateColumn(columnData.boardId, columnData);
+                });
+                this.pendingColumnUpdates.clear();
+            }
+        } catch (error) {
+            this.logError(error, 'Error flushing pending updates');
         }
     }
 

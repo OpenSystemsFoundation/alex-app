@@ -48,7 +48,8 @@ public class ColumnDomain {
     ) {
         List<OpenSF__ColumnUpdateEvent__e> events = new List<OpenSF__ColumnUpdateEvent__e>();
         for (OpenSF__Column__c column : newList) {
-            if (hasColumnChanged(column, oldMap.get(column.Id))) {
+            // Only publish events for significant changes
+            if (shouldPublishEvent(column, oldMap.get(column.Id))) {
                 events.add(createEvent('ColumnUpdate', column));
             }
         }
@@ -118,6 +119,33 @@ public class ColumnDomain {
     }
 
     /**
+     * @description Determines if a platform event should be published for this column change.
+     * @param newColumn The new `OpenSF__Column__c` record.
+     * @param oldColumn The old `OpenSF__Column__c` record.
+     * @return Boolean indicating whether a platform event should be published.
+     */
+    private static Boolean shouldPublishEvent(
+        OpenSF__Column__c newColumn,
+        OpenSF__Column__c oldColumn
+    ) {
+        // Define significant fields that trigger platform events
+        Set<String> significantFields = new Set<String>{
+            'OpenSF__Board__c',
+            'OpenSF__Position__c',
+            'OpenSF__Status__c',
+            'OpenSF__Color__c',
+            'OpenSF__ColumnHeader__c'
+        };
+
+        for (String field : significantFields) {
+            if (newColumn.get(field) != oldColumn.get(field)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * @description Creates an event for a column.
      * @param eventType The type of event (e.g., 'ColumnUpdate').
      * @param column The `OpenSF__Column__c` record for which the event is created.
@@ -136,6 +164,7 @@ public class ColumnDomain {
             OpenSF__ColumnPosition__c = column.OpenSF__Position__c,
             OpenSF__ColumnStatus__c = column.OpenSF__Status__c,
             OpenSF__EventType__c = eventType,
+            OpenSF__LastModifiedById__c = column.LastModifiedById,
             OpenSF__LastModifiedDate__c = column.LastModifiedDate
         );
     }

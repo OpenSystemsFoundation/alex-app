@@ -51,7 +51,8 @@ public class CardDomain {
     ) {
         List<OpenSF__CardUpdateEvent__e> events = new List<OpenSF__CardUpdateEvent__e>();
         for (OpenSF__Card__c card : newList) {
-            if (hasCardChanged(card, oldMap.get(card.Id))) {
+            // Only publish events for significant changes
+            if (shouldPublishEvent(card, oldMap.get(card.Id))) {
                 events.add(createEvent('CardUpdate', card));
             }
         }
@@ -124,6 +125,38 @@ public class CardDomain {
     }
 
     /**
+     * @description Determines if a platform event should be published for this card change.
+     *              Only publishes events for significant field changes to reduce event bus load.
+     * @param newCard The new Card__c record after update.
+     * @param oldCard The old Card__c record before update.
+     * @return Boolean indicating whether a platform event should be published.
+     */
+    private static Boolean shouldPublishEvent(
+        OpenSF__Card__c newCard,
+        OpenSF__Card__c oldCard
+    ) {
+        // Define fields that trigger platform events (exclude insignificant changes)
+        Set<String> significantFields = new Set<String>{
+            'OpenSF__Assignee__c',
+            'OpenSF__CardType__c',
+            'OpenSF__Color__c',
+            'OpenSF__Column__c',
+            'OpenSF__Position__c',
+            'OpenSF__Priority__c',
+            'OpenSF__Status__c',
+            'OpenSF__StoryPoints__c',
+            'OpenSF__Subject__c'
+        };
+
+        for (String field : significantFields) {
+            if (newCard.get(field) != oldCard.get(field)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * @description Creates a CardUpdateEvent__e event based on a given Card__c record and event type.
      * @param eventType The type of event (e.g., 'CardCreate', 'CardUpdate', 'CardDelete').
      * @param card The Card__c record for which the event is being created.
@@ -145,6 +178,7 @@ public class CardDomain {
             OpenSF__CardType__c = card.OpenSF__CardType__c,
             OpenSF__ColumnId__c = card.OpenSF__Column__c,
             OpenSF__EventType__c = eventType,
+            OpenSF__LastModifiedById__c = card.LastModifiedById,
             OpenSF__LastModifiedDate__c = card.LastModifiedDate,
             OpenSF__StoryPoints__c = card.OpenSF__StoryPoints__c
         );
