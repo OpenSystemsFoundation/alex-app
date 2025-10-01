@@ -10,7 +10,7 @@ TEST_EMAIL = "support@opensf.foundation"
 PERMSET_NAME = "Alex_Admin"
 
 
-# Function to get the default org username
+# Function to get default org username
 def get_default_org():
     """Get the default Salesforce org username."""
     try:
@@ -26,98 +26,92 @@ def get_default_org():
         output = json.loads(result.stdout)
         username = output.get("result", {}).get("username", None)
         org_id = output.get("result", {}).get("id", None)
+        instance_url = output.get("result", {}).get("instanceUrl", None)
         
         if username:
-            return username, org_id
+            return username, org_id, instance_url
         else:
             raise ValueError("Default org username not found.")
     except subprocess.CalledProcessError as e:
         print(f"Error getting default org: {e.stderr.decode()}")
-        return None, None
+        return None, None, None
 
 
 # Function to create a test user
 def create_test_user(target_org):
-    """Create a new test user in Salesforce using Apex script."""
+    """Create a new test user in Salesforce using SF CLI."""
     try:
-        print("Checking for existing user and creating/updating test user...")
+        print("Checking for existing user...")
         
-        # Path to the permanent Apex script
-        apex_file = os.path.join(os.path.dirname(__file__), '..', 'apex', 'CreateTestUser.apex')
+        # First check if user already exists
+        user_query = f"SELECT Id, Username FROM User WHERE Username = '{TEST_USERNAME}' LIMIT 1"
+        user_command = f'sf data query --query "{user_query}" --target-org {target_org} --json'
         
-        if not os.path.exists(apex_file):
-            print(f"Error: Apex script not found at {apex_file}")
-            return None, None, None
-        
-        # Execute the Apex script
-        apex_command = f'sf apex run --file "{apex_file}" --target-org {target_org}'
-        
-        apex_result = subprocess.run(
-            apex_command,
+        user_result = subprocess.run(
+            user_command,
             shell=True,
-            check=False,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        
+        user_output = json.loads(user_result.stdout)
+        user_records = user_output.get("result", {}).get("records", [])
+        
+        if user_records:
+            # User exists
+            user_id = user_records[0]["Id"]
+            print(f"User exists: {TEST_USERNAME} (ID: {user_id})")
+            return TEST_USERNAME, user_id, "EXISTS"
+        
+        # User doesn't exist, create using SF CLI
+        print(f"Creating new user: {TEST_USERNAME}...")
+        
+        # Create user with command line options
+        create_command = (
+            f'sf org create user '
+            f'username={TEST_USERNAME} '
+            f'email={TEST_EMAIL} '
+            f'LastName=Admin '
+            f'FirstName=Alex '
+            f'Alias=alexadm '
+            f'profileName="System Administrator" '
+            f'generatepassword=true '
+            f'--target-org {target_org} --json'
+        )
+        
+        create_result = subprocess.run(
+            create_command,
+            shell=True,
+            check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
         )
         
-        # Check if there was an error
-        if apex_result.returncode != 0:
-            error_output = apex_result.stderr if apex_result.stderr else apex_result.stdout
-            print(f"Apex execution error: {error_output}")
+        create_output = json.loads(create_result.stdout)
+        result_data = create_output.get("result", {})
+        
+        # Extract user ID from the result
+        user_id = result_data.get("fields", {}).get("id") or result_data.get("userId")
+        
+        if user_id:
+            print(f"User created: {TEST_USERNAME} (ID: {user_id})")
+            return TEST_USERNAME, user_id, "CREATED"
+        else:
+            print("Error: Failed to retrieve user ID after creation.")
+            print(f"Response: {json.dumps(create_output, indent=2)}")
             return None, None, None
         
-        # Parse the output
-        output_lines = apex_result.stdout
-        user_id = None
-        user_status = "UNKNOWN"
-        
-        for line in output_lines.split('\n'):
-            if 'USER_CREATED:' in line:
-                user_id = line.split('USER_CREATED:')[1].strip().split()[0]
-                user_id = ''.join(c for c in user_id if c.isalnum())
-                user_status = "CREATED"
-            elif 'USER_EXISTS:' in line:
-                user_id = line.split('USER_EXISTS:')[1].strip().split()[0]
-                user_id = ''.join(c for c in user_id if c.isalnum())
-                user_status = "EXISTS"
-        
-        if not user_id or len(user_id) < 15:
-            # Try to query for the user
-            print("Verifying user...")
-            user_query = f"SELECT Id FROM User WHERE Username = '{TEST_USERNAME}' LIMIT 1"
-            user_command = f'sf data query --query "{user_query}" --target-org {target_org} --json'
-            
-            user_result = subprocess.run(
-                user_command,
-                shell=True,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            
-            user_output = json.loads(user_result.stdout)
-            user_records = user_output.get("result", {}).get("records", [])
-            
-            if user_records:
-                user_id = user_records[0]["Id"]
-            else:
-                print("Error: Failed to retrieve user ID.")
-                return None, None, None
-        
-        print(f"User {user_status.lower()}: {TEST_USERNAME} (ID: {user_id})")
-        
-        return TEST_USERNAME, user_id
-        
     except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.decode() if hasattr(e.stderr, 'decode') else str(e.stderr) if e.stderr else str(e)
+        error_msg = e.stderr if e.stderr else str(e)
         print(f"Error creating user: {error_msg}")
-        return None, None
+        return None, None, None
     except Exception as e:
         print(f"Unexpected error: {str(e)}")
         import traceback
         traceback.print_exc()
-        return None, None
+        return None, None, None
 
 
 # Function to assign permission set to user
@@ -171,20 +165,82 @@ def assign_permset_to_user(username, permset_name, target_org):
         return False
 
 
+# Function to generate password for user
+def generate_password(username, target_org):
+    """Generate a password for the test user."""
+    try:
+        print(f"Generating password for user...")
+        
+        command = (
+            f'sf org generate password --on-behalf-of {username} '
+            f'--target-org {target_org} --length 16 --complexity 5 --json'
+        )
+        
+        result = subprocess.run(
+            command,
+            shell=True,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        
+        output = json.loads(result.stdout)
+        password = output.get("result", {}).get("password", None)
+        
+        if password:
+            print(f"Password generated successfully!")
+            return password
+        else:
+            print("Warning: Password generation completed but password not returned.")
+            return None
+        
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.decode() if e.stderr else str(e)
+        print(f"Warning: Could not generate password: {error_msg}")
+        print("Note: Password generation only works for scratch org users.")
+        return None
+    except Exception as e:
+        print(f"Unexpected error generating password: {str(e)}")
+        return None
+
+
+# Function to display user information
+def display_user_info(username, target_org):
+    """Display user information including password if available."""
+    try:
+        command = f'sf org display user --target-org {target_org} --json'
+        
+        result = subprocess.run(
+            command,
+            shell=True,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        
+        output = json.loads(result.stdout)
+        user_info = output.get("result", {})
+        
+        return user_info.get("password", None)
+        
+    except Exception as e:
+        return None
+
+
 # Main execution
 def main():
     print("Setting up test user...")
     print()
     
     # Get the default org
-    target_org, org_id = get_default_org()
+    target_org, org_id, instance_url = get_default_org()
     
     if not target_org:
         print("Error: Could not determine the default org.")
         return
     
     # Create or update the test user
-    username, user_id = create_test_user(target_org)
+    username, user_id, status = create_test_user(target_org)
     
     if not username:
         print("Failed to create/update test user.")
@@ -192,6 +248,14 @@ def main():
     
     # Assign the Alex_Admin permission set
     success = assign_permset_to_user(username, PERMSET_NAME, target_org)
+    
+    # Generate password for the user (works for both new and existing users)
+    print()
+    password = generate_password(username, target_org)
+    
+    # If password generation failed, try to retrieve existing password
+    if not password:
+        password = display_user_info(username, target_org)
     
     # Confirm permission set assignment
     print()
@@ -211,6 +275,9 @@ def main():
         verify_output = json.loads(verify_result.stdout)
         assignments = verify_output.get("result", {}).get("records", [])
         
+        # Use the base instance URL
+        login_url = instance_url if instance_url else "https://login.salesforce.com"
+        
         print()
         print("=" * 80)
         print("✓ TEST USER CONFIGURED SUCCESSFULLY")
@@ -219,9 +286,23 @@ def main():
         print(f"Email:    {TEST_EMAIL}")
         print(f"User ID:  {user_id}")
         print(f"Permission Set: {PERMSET_NAME} {'✓ ASSIGNED' if assignments else '✗ NOT ASSIGNED'}")
-        print()
-        print("Next step: Reset password in Setup > Users")
-        print(f"Password reset email will be sent to {TEST_EMAIL}")
+        
+        if password:
+            print()
+            print(f"Password: {password}")
+            print()
+            print(f"Login URL: {login_url}")
+            print()
+            print("⚠️  IMPORTANT: Save this password securely!")
+            print("   This password is only shown once at generation time.")
+        else:
+            print()
+            print("Note: Password not available (only works for scratch org users)")
+            print("For non-scratch orgs, reset password in Setup > Users")
+            print(f"Password reset email will be sent to {TEST_EMAIL}")
+            print()
+            print(f"Login URL: {login_url}")
+        
         print("=" * 80)
         
     except Exception as e:
@@ -229,6 +310,10 @@ def main():
         print()
         print(f"Username: {username}")
         print(f"User ID:  {user_id}")
+        if password:
+            print(f"Password: {password}")
+        if instance_url:
+            print(f"Login URL: {instance_url}")
 
 
 if __name__ == "__main__":
