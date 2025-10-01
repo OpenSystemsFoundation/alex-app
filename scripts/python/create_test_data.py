@@ -9,6 +9,16 @@ def generate_name(base):
     return f"{base}_" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
 
 def generate_data(num_boards=1, cards_per_column=0):
+    """
+    Generate test data structure for Kanban boards, columns, and cards.
+    
+    Args:
+        num_boards (int): Number of boards to generate (default: 1)
+        cards_per_column (int): Number of cards to create per column (default: 0)
+    
+    Returns:
+        dict: Dictionary containing boards, columns, and cards lists
+    """
     data = {
         "boards": [],
         "columns": [],
@@ -61,7 +71,8 @@ def execute_sf_command(command):
         sys.exit(1)
 
 def generate_and_execute_commands(data):
-    # Mapping from column Position to column ID
+    """Execute Salesforce CLI commands to create boards, columns, and cards."""
+    # Mapping to track column IDs by their (board_name, position) for card creation
     column_position_to_id = {}
     
     # Create Boards
@@ -71,9 +82,10 @@ def generate_and_execute_commands(data):
         board_id = result["result"]["id"]
         print(f"Created Board: {board['Name']} with ID: {board_id}")
     
-    # Create columns and store column IDs
+    # Create columns and store column IDs for later card association
     for column_ in data['columns']:
-        parent_board_id = board_id  # Since we assume one board per run
+        # Using the last created board_id (assumes single board per execution)
+        parent_board_id = board_id
 
         command = (
             f'sf data create record --sobject OpenSF__Column__c '

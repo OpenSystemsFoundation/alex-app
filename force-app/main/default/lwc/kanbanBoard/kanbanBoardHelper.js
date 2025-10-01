@@ -30,7 +30,8 @@ export default class BoardHelper {
         let targetColumn = null;
         let isOverPlaceholder = false;
         
-        // Salesforce: Use event.target for reliable Shadow DOM detection
+        // Use event.target for reliable Shadow DOM detection in Salesforce Lightning framework
+        // This ensures proper element identification across shadow boundaries
         const hoveredElement = event.target;
         if (hoveredElement) {
             if (hoveredElement.classList.contains('preview-ghost') || 

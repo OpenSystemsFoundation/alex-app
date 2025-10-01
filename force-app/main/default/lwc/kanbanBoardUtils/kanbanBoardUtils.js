@@ -14,7 +14,8 @@ class KanbanBoardUtils {
         return KanbanBoardUtils.instance;
     }
 
-    // Utility function to format Salesforce Date/Time field value without precision .000
+    // Format Salesforce DateTime field by removing millisecond precision (.000)
+    // This ensures consistent date comparisons and prevents false positive change detection
     formatDateWithoutPrecision(dateString) {
         if (!dateString) {
             return undefined;

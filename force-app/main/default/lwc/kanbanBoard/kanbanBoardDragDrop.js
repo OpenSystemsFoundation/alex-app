@@ -89,7 +89,7 @@ export default class KanbanBoardDragDrop {
                 component.lastTargetKey = currentTargetKey;
             }
         } catch (error) {
-            // Silent
+            // Intentionally ignore DOMException from preventDefault if event is not cancelable
         }
     }
 

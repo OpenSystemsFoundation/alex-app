@@ -14,7 +14,8 @@ export default class KanbanBoardLifecycle {
      * @param {Object} component - Reference to the LWC component
      */
     static async onConnected(component) {
-        // Subscribe to store changes
+        // Subscribe to global store changes for reactive updates
+        // This implements a Redux-like pattern for state management across components
         component.subscriptionCallback = component.handleStateChange.bind(component);
         boardStore.subscribe(component.subscriptionCallback);
 

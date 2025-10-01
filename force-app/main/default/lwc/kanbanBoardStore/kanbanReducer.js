@@ -159,7 +159,8 @@ function kanbanReducer(state = initialState, action) {
             const board = state.boards[boardId];
             if (!board) return state;
 
-            // Use originalCards if in preview state, otherwise use current cards
+            // Use originalCards (pre-preview state) if in preview mode, otherwise use current cards
+            // This ensures move calculations are based on the actual persisted state, not temporary UI preview
             const cards = board.originalCards || board.cards;
 
             const cardToMove = {
@@ -181,7 +182,8 @@ function kanbanReducer(state = initialState, action) {
                 card => card.columnId === targetColumnId
             );
 
-            // If moving within the same column, remove the card from the destination list too
+            // When moving within the same column, remove the card from the destination list
+            // to prevent duplicate entries before re-inserting at the new position
             if (sourceColumnId === targetColumnId) {
                 destinationListCards = destinationListCards.filter(
                     card => card.cardId !== cardId
@@ -195,7 +197,8 @@ function kanbanReducer(state = initialState, action) {
                 : MINUS_ONE;
 
             if (targetCardIndex !== MINUS_ONE) {
-                // Use insertPosition if provided, otherwise use smart defaults
+                // Determine insertion position based on drop location relative to target card
+                // 'after' places card below target, 'before' (or default) places it above
                 if (insertPosition === 'after') {
                     // Insert after the targetCard
                     destinationListCards.splice(
@@ -212,7 +215,7 @@ function kanbanReducer(state = initialState, action) {
                     );
                 }
             } else {
-                // If no targetCardId is provided, add card to the end
+                // When no specific target card is provided, append card to the end of the column
                 destinationListCards.push(cardToMove);
             }
 
@@ -270,8 +273,9 @@ function kanbanReducer(state = initialState, action) {
             // Store original cards for revert on cancel
             const originalCards = board.originalCards || board.cards;
 
-            // DON'T modify the cards array - just store preview metadata
-            // The UI will handle visual preview using CSS classes only
+            // Store preview metadata without modifying cards array
+            // The UI renders the preview visually using CSS classes and ghost elements
+            // This approach allows instant cancellation without state rollback
             return updateBoardState(state, boardId, {
                 originalCards: originalCards,
                 previewState: {

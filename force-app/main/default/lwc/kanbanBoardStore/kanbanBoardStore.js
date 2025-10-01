@@ -70,7 +70,8 @@ class BoardStore {
             const board = this.state.boards[boardId];
             const originalCards = board?.originalCards || board?.cards || [];
             
-            // Optimistic update - no loading state for better UX
+            // Perform optimistic update immediately without loading state for instant user feedback
+            // This provides a responsive UI while the server processes the request in the background
             if (board?.previewState) {
                 this.dispatch(moveCard(boardId, dropData));
             } else {
@@ -82,7 +83,8 @@ class BoardStore {
                 throw new Error(`Board with ID ${boardId} not found.`);
             }
             
-            // OPTIMIZATION: Only send cards that actually changed
+            // OPTIMIZATION: Only send cards with changed positions/columns to the server
+            // This reduces payload size and server processing time significantly
             const cardsToUpdate = this.getCardsWithChangedPositions(
                 updatedBoard.cards,
                 originalCards,
