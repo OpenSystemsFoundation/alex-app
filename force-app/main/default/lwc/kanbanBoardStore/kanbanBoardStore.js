@@ -65,16 +65,15 @@ class BoardStore {
     }
 
     async moveCard(boardId, dropData) {
-        this.dispatch(setLoading(boardId, true));
         try {
-            // Clear any preview state first
+            // Get board state before optimistic update
             const board = this.state.boards[boardId];
+            const originalCards = board?.originalCards || board?.cards || [];
+            
+            // Optimistic update - no loading state for better UX
             if (board?.previewState) {
-                // If we have preview state, the cards are already positioned correctly
-                // Just need to clear the preview markers and sync to backend
                 this.dispatch(moveCard(boardId, dropData));
             } else {
-                // No preview, do the regular move
                 this.dispatch(moveCard(boardId, dropData));
             }
             
@@ -82,19 +81,59 @@ class BoardStore {
             if (!updatedBoard) {
                 throw new Error(`Board with ID ${boardId} not found.`);
             }
-            const updatedCards = await boardService.queueUpdateCards(
-                updatedBoard.cards.filter(
-                    card =>
-                        card.columnId === dropData.sourceColumnId ||
-                        card.columnId === dropData.targetColumnId
-                )
+            
+            // OPTIMIZATION: Only send cards that actually changed
+            const cardsToUpdate = this.getCardsWithChangedPositions(
+                updatedBoard.cards,
+                originalCards,
+                dropData
             );
-            this.dispatch(updateCards(boardId, updatedCards));
+            
+            // Background sync - only if there are changes
+            if (cardsToUpdate.length > 0) {
+                const updatedCards = await boardService.queueUpdateCards(cardsToUpdate);
+                // Only update if backend has different data
+                if (this.hasBackendChanges(boardId, updatedCards)) {
+                    this.dispatch(updateCards(boardId, updatedCards));
+                }
+            }
         } catch (error) {
+            // Only on error, revert the optimistic update
             this.dispatch(setError(error, true));
-        } finally {
-            this.dispatch(setLoading(boardId, false));
         }
+    }
+
+    getCardsWithChangedPositions(currentCards, originalCards, dropData) {
+        return currentCards.filter(card => {
+            // Only include cards from affected columns
+            if (card.columnId !== dropData.sourceColumnId && 
+                card.columnId !== dropData.targetColumnId) {
+                return false;
+            }
+            
+            const original = originalCards.find(c => c.cardId === card.cardId);
+            if (!original) return true; // New card
+            
+            // Check if position or column changed
+            return original.cardPosition !== card.cardPosition ||
+                   original.columnId !== card.columnId ||
+                   original.cardStatus !== card.cardStatus;
+        });
+    }
+
+    hasBackendChanges(boardId, incomingCards) {
+        const board = this.state.boards[boardId];
+        if (!board) return true;
+        
+        // Check if any incoming card has different data than current state
+        return incomingCards.some(incomingCard => {
+            const currentCard = board.cards.find(c => c.cardId === incomingCard.cardId);
+            if (!currentCard) return true;
+            
+            return currentCard.cardPosition !== incomingCard.cardPosition ||
+                   currentCard.columnId !== incomingCard.columnId ||
+                   currentCard.lastModifiedDate < incomingCard.lastModifiedDate;
+        });
     }
 
     previewMoveCard(boardId, dropData) {
@@ -137,13 +176,11 @@ class BoardStore {
     }
 
     updateCard(boardId, cardData) {
-        this.dispatch(setLoading(boardId, true));
         try {
+            // No loading state for platform event updates (better UX)
             this.dispatch(updateCard(boardId, cardData));
         } catch (error) {
             this.dispatch(setError(error));
-        } finally {
-            this.dispatch(setLoading(boardId, false));
         }
     }
 
