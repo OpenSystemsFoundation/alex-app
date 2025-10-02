@@ -1,8 +1,9 @@
 const FIRST_INDEX = 0;
 class KanbanBoardUtils {
+    static instance = null;
     constructor() {
         if (KanbanBoardUtils.instance) {
-            return;
+            return KanbanBoardUtils.instance;
         }
         KanbanBoardUtils.instance = this;
     }

@@ -17,10 +17,22 @@ import {
 import boardService from 'c/kanbanBoardService';
 
 class BoardStore {
+    static instance = null;
     constructor() {
+        if (BoardStore.instance) {
+            return BoardStore.instance;
+        }
         this.state = initialState;
         this.previousState = initialState;
         this.listeners = [];
+        BoardStore.instance = this;
+    }
+
+    static getInstance() {
+        if (!BoardStore.instance) {
+            BoardStore.instance = new BoardStore();
+        }
+        return BoardStore.instance;
     }
 
     dispatch(action) {
@@ -228,5 +240,4 @@ class BoardStore {
     }
 }
 
-const boardStore = new BoardStore();
-export default boardStore;
+export default BoardStore.getInstance();

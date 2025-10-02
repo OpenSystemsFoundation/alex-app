@@ -1,54 +1,5 @@
 <template>
     <article class="kanban-card preview-ghost slds-box slds-box_small slds-var-m-horizontal_x-small card-edge">
-        <header class="slds-media slds-media_center slds-has-flexi-truncate slds-var-p-bottom_xx-small">
-            <template lwc:if={card.assigneeId}>
-                <div class="slds-media__figure">
-                    <template lwc:if={card.assigneePhoto}>
-                        <span class="slds-avatar slds-avatar_circle">
-                            <img src={card.assigneePhoto} alt="User Photo" title={card.assigneeName} />
-                        </span>
-                    </template>
-                    <template lwc:else>
-                        <span class="slds-avatar slds-avatar_circle slds-avatar_medium">
-                            <lightning-icon icon-name="standard:user" size="small" alternative-text="Default Image"></lightning-icon>
-                        </span>
-                    </template>
-                </div>
-            </template>
-            <div class="slds-media__body slds-truncate">
-                <h2 class="slds-card__header-title slds-truncate slds-text-body_small">
-                    <span class="slds-truncate">
-                        {card.cardPosition}&nbsp;|&nbsp;{card.cardName}
-                    </span>
-                </h2>
-                <p class="slds-text-body_small slds-truncate">
-                    <template lwc:if={card.cardType}>
-                        <span>{card.cardType}&nbsp;-&nbsp;</span>
-                    </template>
-                    <template lwc:if={card.cardStatus}>
-                        <span>{card.cardStatus}</span>
-                    </template>
-                </p>
-            </div>
-        </header>
-        <div class="kanban-card__body slds-text-body_regular">
-            <template lwc:if={card.cardSubject}>
-                <p class="slds-truncate">
-                    <span>{card.cardSubject}</span>
-                </p>
-            </template>
-            <div class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-end slds-var-p-top_small">
-                <template lwc:if={card.cardPriority}>
-                    <div class="slds-col slds-var-p-right_small">
-                        <lightning-badge label={card.cardPriority} class="icon-badge"></lightning-badge>
-                    </div>
-                </template>
-                <template lwc:if={card.storyPoints}>
-                    <div class="slds-col icon-container">
-                        <lightning-badge label={card.storyPoints} class="icon-badge"></lightning-badge>
-                    </div>
-                </template>
-            </div>
-        </div>
+        <c-kanban-card card={card} experience-cloud={experienceCloud}></c-kanban-card>
     </article>
 </template>

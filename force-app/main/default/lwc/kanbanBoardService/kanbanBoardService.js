@@ -9,13 +9,12 @@ class BoardService {
     static instance = null;
     constructor() {
         if (BoardService.instance) {
-            throw new Error(
-                'Cannot instantiate directly. Use BoardService.getInstance()'
-            );
+            return BoardService.instance;
         }
         this.queue = [];
         this.isProcessing = false;
         this.isLoading = false;
+        BoardService.instance = this;
     }
 
     static getInstance() {

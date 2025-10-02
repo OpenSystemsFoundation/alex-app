@@ -130,15 +130,24 @@ export default class KanbanBoard extends LightningElement {
     }
 
     openCard(event) {
-        event.stopPropagation();
+        const originalEvent = event.detail?.originalEvent || event;
+        const cardId = event.detail?.cardId;
+        
+        originalEvent.stopPropagation();
         if (!this.isConsoleNavigation) {
             return;
         }
-        event.preventDefault();
+        originalEvent.preventDefault();
+
+        // Find the article element with the card data
+        const cardElement = originalEvent.target.closest('.kanban-card');
+        if (!cardElement) {
+            return;
+        }
 
         boardHelper.openItem({
             dataAttribute: 'cardId',
-            event,
+            event: originalEvent,
             isConsoleNavigation: this.isConsoleNavigation,
             selector: '.kanban-card'
         });

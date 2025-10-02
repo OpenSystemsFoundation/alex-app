@@ -1,0 +1,83 @@
+<template>
+    <!-- Card Header -->
+    <header class="slds-media slds-media_center slds-has-flexi-truncate slds-var-p-bottom_xx-small">
+        <template lwc:if={card.assigneeId}>
+            <!-- Assignee Avatar -->
+            <div class="slds-media__figure">
+                <template lwc:if={card.assigneePhoto}>
+                    <span class="slds-avatar slds-avatar_circle">
+                        <img src={card.assigneePhoto} alt="User Photo" title={card.assigneeName} />
+                    </span>
+                </template>
+                <template lwc:else>
+                    <span class="slds-avatar slds-avatar_circle slds-avatar_medium">
+                        <lightning-icon icon-name="standard:user" size="small" alternative-text="Default Image"></lightning-icon>
+                    </span>
+                </template>
+            </div>
+        </template>
+
+        <!-- Card Title and Subtitle -->
+        <div class="slds-media__body slds-truncate">
+            <h2 class="slds-card__header-title slds-truncate slds-text-body_small">
+                <template lwc:if={experienceCloud}>
+                    <a
+                        href={card.communityUrl}
+                        class="slds-text-link slds-truncate"
+                        title={card.cardSubject}
+                        onclick={handleLinkClick}
+                    >
+                        <span class="slds-truncate">
+                            {card.cardPosition}&nbsp;|&nbsp;{card.cardName}
+                        </span>
+                    </a>
+                </template>
+                <template lwc:else>
+                    <a
+                        href={card.cardUrl}
+                        class="slds-text-link slds-truncate"
+                        title={card.cardSubject}
+                        onclick={handleLinkClick}
+                    >
+                        <span class="slds-truncate">
+                            {card.cardPosition}&nbsp;|&nbsp;{card.cardName}
+                        </span>
+                    </a>
+                </template>
+            </h2>
+
+            <p class="slds-text-body_small slds-truncate">
+                <template lwc:if={card.cardType}>
+                    <span>{card.cardType}&nbsp;-&nbsp;</span>
+                </template>
+                <template lwc:if={card.cardStatus}>
+                    <span>{card.cardStatus}</span>
+                </template>
+            </p>
+        </div>
+    </header>
+
+    <!-- Card Body -->
+    <div class="kanban-card__body slds-text-body_regular">
+        <template lwc:if={card.cardSubject}>
+            <p class="slds-truncate">
+                <span>{card.cardSubject}</span>
+            </p>
+        </template>
+
+        <!-- Card Icons -->
+        <div class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-end slds-var-p-top_small">
+            <template lwc:if={card.cardPriority}>
+                <div class="slds-col slds-var-p-right_small">
+                    <lightning-badge label={card.cardPriority} class="icon-badge"></lightning-badge>
+                </div>
+            </template>
+
+            <template lwc:if={card.storyPoints}>
+                <div class="slds-col icon-container">
+                    <lightning-badge label={card.storyPoints} class="icon-badge"></lightning-badge>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>
