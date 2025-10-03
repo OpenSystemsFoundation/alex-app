@@ -1,4 +1,10 @@
 import { LightningElement, api, track } from 'lwc';
+import { NavigationMixin } from 'lightning/navigation';
+import {
+    IsConsoleNavigation,
+    openTab,
+    getFocusedTabInfo
+} from 'lightning/platformWorkspaceApi';
 import getBoardData from '@salesforce/apex/KanbanBoardController.getBoardData';
 import { createStore } from 'c/kanbanStore';
 import DataManager from './dataManager';
@@ -8,16 +14,16 @@ import EventHandler from './eventHandler';
 import ToastManager from './toastManager';
 import ServerOperations from './serverOperations';
 
-export default class KanbanBoard extends LightningElement {
+export default class KanbanBoard extends NavigationMixin(LightningElement) {
     // API properties
     _recordId;
     @api height = '600px';
-    
+
     // Store management
     store = createStore();
     storeUnsubscribe = null;
     @track _columnsCache = []; // Tracked property for reactivity
-    
+
     // UI state
     @track cardsByColumn = {};
     @track board = null;
@@ -25,20 +31,20 @@ export default class KanbanBoard extends LightningElement {
     @track showCardDetail = false;
     @track isLoading = true;
     @track error = null;
-    
+
     // Managers (initialized in connectedCallback)
     dragDropManager = null;
     subscriptionManager = null;
     eventHandler = null;
     toastManager = null;
-    
+
     /**
      * Get columns from store - returns cached tracked value for reactivity
      */
     get columns() {
         return this._columnsCache;
     }
-    
+
     /**
      * Set columns - no-op, use store dispatch instead
      * Setter required for LWC proxy reactivity
@@ -47,13 +53,13 @@ export default class KanbanBoard extends LightningElement {
         // This setter is required for LWC reactivity but we don't use it
         // All updates go through the store
     }
-    
+
     // Getter/setter for recordId to trigger data load
     @api
     get recordId() {
         return this._recordId;
     }
-    
+
     set recordId(value) {
         this._recordId = value;
         // Load board data when recordId changes
@@ -61,52 +67,51 @@ export default class KanbanBoard extends LightningElement {
             this.loadBoardData();
         }
     }
-    
+
     connectedCallback() {
         // Initialize managers
         this.dragDropManager = new DragDropManager(this.template);
         this.toastManager = new ToastManager(this);
         this.eventHandler = new EventHandler();
-        
+
         // Initialize subscription manager
         const channelName = '/event/OpenSF__CardUpdateEvent__e';
         this.subscriptionManager = new SubscriptionManager(
             channelName,
             (response) => this.handlePlatformEvent(response.data.payload),
-            (variant, title, message) => this.handleSubscriptionMessage(variant, title, message)
+            (variant, title, message) =>
+                this.handleSubscriptionMessage(variant, title, message)
         );
-        
+
         // Subscribe to store changes
         this.storeUnsubscribe = this.store.subscribe(() => {
-            requestAnimationFrame(() => {
-                this._columnsCache = [...this.store.getColumns()];
-            });
+            this._columnsCache = [...this.store.getColumns()];
         });
-        
+
         // Initialize cache
         this._columnsCache = [...this.store.getColumns()];
-        
+
         // Register platform event error listener
         this.subscriptionManager.registerErrorListener();
-        
+
         // Load initial data if recordId is set
         if (this._recordId) {
             this.loadBoardData();
         }
     }
-    
+
     disconnectedCallback() {
         // Clean up subscriptions
         if (this.subscriptionManager) {
             this.subscriptionManager.unsubscribe();
         }
-        
+
         // Unsubscribe from store
         if (this.storeUnsubscribe) {
             this.storeUnsubscribe();
         }
     }
-    
+
     /**
      * Load board data imperatively
      */
@@ -114,30 +119,32 @@ export default class KanbanBoard extends LightningElement {
         if (!this._recordId) {
             return;
         }
-        
+
         this.isLoading = true;
         this.error = null;
-        
+
         try {
             const data = await getBoardData({ boardId: this._recordId });
-            
+
             this.board = data.board || null;
             this.store.dispatch({ type: 'SET_BOARD', payload: data.board });
-            
+
             // Process columns and cards using DataManager
             const columns = DataManager.processColumns(data.columns || []);
-            const { processedColumns, cardsByColumn } = DataManager.processCards(
-                data.cards || [], 
-                columns
-            );
-            
+            const { processedColumns, cardsByColumn } =
+                DataManager.processCards(data.cards || [], columns);
+
             this.cardsByColumn = cardsByColumn;
-            this.store.dispatch({ type: 'SET_COLUMNS', payload: processedColumns });
-            
+            this.store.dispatch({
+                type: 'SET_COLUMNS',
+                payload: processedColumns
+            });
+
             // Subscribe to platform events after board is loaded
-            if (this.board && this.subscriptionManager.getStatus() === 'disconnected') {
-                this.subscriptionManager.subscribe();
-            }
+            // TEMPORARILY DISABLED
+            // if (this.board && this.subscriptionManager.getStatus() === 'disconnected') {
+            //     this.subscriptionManager.subscribe();
+            // }
         } catch (error) {
             this.error = error;
             this.toastManager.showError('Error loading board', error);
@@ -145,38 +152,38 @@ export default class KanbanBoard extends LightningElement {
             this.isLoading = false;
         }
     }
-    
+
     /**
      * Handle drag start
      */
     handleDragStart(event) {
         this.dragDropManager.handleDragStart(event, this.store);
     }
-    
+
     /**
      * Handle drag end - clear drag state
      */
     handleDragEnd(event) {
         this.dragDropManager.handleDragEnd(event, this.store);
     }
-    
+
     /**
      * Handle drag over - live state update with optimistic preview (throttled)
      */
     handleDragOver(event) {
         this.dragDropManager.handleDragOver(event, this.store);
     }
-    
+
     /**
      * Handle drop - commit drag state and sync with server
      */
     async handleDrop(event) {
         const dropData = this.dragDropManager.handleDrop(event, this.store);
-        
+
         if (!dropData) {
             return; // Drop was cancelled or invalid
         }
-        
+
         // Sync with server (optimistic update already applied)
         await this.moveCardToColumn(
             dropData.cardId,
@@ -185,11 +192,16 @@ export default class KanbanBoard extends LightningElement {
             dropData.targetPosition
         );
     }
-    
+
     /**
      * Move card with optimistic update and server sync
      */
-    async moveCardToColumn(cardId, sourceColumnId, targetColumnId, targetPosition) {
+    async moveCardToColumn(
+        cardId,
+        sourceColumnId,
+        targetColumnId,
+        targetPosition
+    ) {
         try {
             // Server update
             const result = await ServerOperations.moveCard(
@@ -198,44 +210,159 @@ export default class KanbanBoard extends LightningElement {
                 targetPosition,
                 this.columns
             );
-            
+
             // Track this change to ignore immediate platform event echo
             this.eventHandler.trackChange(cardId);
-            
+
             // Update position in store
             this.store.dispatch({
                 type: 'UPDATE_CARD',
-                payload: { 
+                payload: {
                     cardId: cardId,
-                    updates: { position: result.newPosition } 
+                    updates: { position: result.newPosition }
                 }
             });
-            
         } catch (error) {
             // Rollback would be handled by store if needed
             this.toastManager.showError('Error moving card', error);
         }
     }
-    
+
     /**
      * Handle card click for editing
      */
     handleCardClick(event) {
         const cardId = event.currentTarget.dataset.cardId;
-        
+
         // Find the card
         let card = null;
         for (let column of this.columns) {
-            card = column.cards.find(c => c.Id === cardId);
+            card = column.cards.find((c) => c.Id === cardId);
             if (card) break;
         }
-        
+
         if (card) {
             this.selectedCard = card;
             this.showCardDetail = true;
         }
     }
-    
+
+    /**
+     * Handle card name click for navigation
+     */
+    async handleCardNameClick(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const cardId = event.currentTarget.dataset.cardId;
+
+        if (!cardId) {
+            console.warn('No cardId found for navigation');
+            return;
+        }
+
+        const pageReference = {
+            type: 'standard__recordPage',
+            attributes: {
+                recordId: cardId,
+                objectApiName: 'OpenSF__Card__c',
+                actionName: 'view'
+            }
+        };
+
+        try {
+            // Check if we're in console navigation
+            const isConsole = await IsConsoleNavigation();
+
+            if (isConsole) {
+                // Open in a new subtab in console
+                try {
+                    const focusedTab = await getFocusedTabInfo();
+                    await openTab({
+                        pageReference: pageReference,
+                        focus: true,
+                        parentTabId: focusedTab.tabId
+                    });
+                } catch (error) {
+                    console.warn(
+                        'Failed to get focused tab, opening without parent:',
+                        error
+                    );
+                    // Fallback if getFocusedTabInfo fails
+                    await openTab({
+                        pageReference: pageReference,
+                        focus: true
+                    });
+                }
+            } else {
+                // Regular navigation
+                this[NavigationMixin.Navigate](pageReference);
+            }
+        } catch (error) {
+            console.error('Navigation error, using fallback:', error);
+            // Fallback to regular navigation if IsConsoleNavigation fails
+            this[NavigationMixin.Navigate](pageReference);
+        }
+    }
+
+    /**
+     * Handle column header click for navigation
+     */
+    async handleColumnClick(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const columnId = event.currentTarget.dataset.columnId;
+
+        if (!columnId) {
+            console.warn('No columnId found for navigation');
+            return;
+        }
+
+        const pageReference = {
+            type: 'standard__recordPage',
+            attributes: {
+                recordId: columnId,
+                objectApiName: 'OpenSF__Column__c',
+                actionName: 'view'
+            }
+        };
+
+        try {
+            // Check if we're in console navigation
+            const isConsole = await IsConsoleNavigation();
+
+            if (isConsole) {
+                // Open in a new subtab in console
+                try {
+                    const focusedTab = await getFocusedTabInfo();
+                    await openTab({
+                        pageReference: pageReference,
+                        focus: true,
+                        parentTabId: focusedTab.tabId
+                    });
+                } catch (error) {
+                    console.warn(
+                        'Failed to get focused tab, opening without parent:',
+                        error
+                    );
+                    // Fallback if getFocusedTabInfo fails
+                    await openTab({
+                        pageReference: pageReference,
+                        focus: true
+                    });
+                }
+            } else {
+                // Regular navigation
+                this[NavigationMixin.Navigate](pageReference);
+            }
+        } catch (error) {
+            console.error('Navigation error, using fallback:', error);
+            // Fallback to regular navigation if IsConsoleNavigation fails
+            this[NavigationMixin.Navigate](pageReference);
+        }
+    }
+
     /**
      * Handle card detail close
      */
@@ -243,7 +370,7 @@ export default class KanbanBoard extends LightningElement {
         this.showCardDetail = false;
         this.selectedCard = null;
     }
-    
+
     /**
      * Handle card updated from modal
      */
@@ -253,7 +380,7 @@ export default class KanbanBoard extends LightningElement {
         }
         this.loadBoardData();
     }
-    
+
     /**
      * Handle card deleted from modal
      */
@@ -265,49 +392,63 @@ export default class KanbanBoard extends LightningElement {
         this.selectedCard = null;
         this.loadBoardData();
     }
-    
+
     /**
      * Handle refresh button
      */
     handleRefresh() {
         this.loadBoardData();
     }
-    
+
     /**
      * Handle add card
      */
     async handleAddCard(event) {
         const columnId = event.target.dataset.columnId;
-        
+
         try {
             const newCard = await ServerOperations.createCard(
                 columnId,
                 'New Card',
                 this.columns
             );
-            
+
             // Track this change to ignore immediate platform event echo
             this.eventHandler.trackChange(newCard.Id);
-            
+
+            // Enrich the card with UI properties before adding to store
+            const enrichedCard = DataManager.enrichCard(newCard);
+
+            // Dispatch ADD_CARD action to update the store
+            this.store.dispatch({
+                type: 'ADD_CARD',
+                payload: {
+                    card: enrichedCard,
+                    columnId: columnId
+                }
+            });
+
             this.toastManager.showSuccess('Card created successfully');
-            
         } catch (error) {
             this.toastManager.showError('Error creating card', error);
         }
     }
-    
+
     /**
      * Handle platform event
      */
     handlePlatformEvent(event) {
-        const needsRefresh = this.eventHandler.handlePlatformEvent(event, this.store);
-        
+        const needsRefresh = this.eventHandler.handlePlatformEvent(
+            event,
+            this.store
+        );
+
         // Fallback: refresh entire board if event processing failed
         if (needsRefresh) {
             this.loadBoardData();
         }
     }
-    
+
     /**
      * Handle subscription status messages
      */
@@ -322,34 +463,34 @@ export default class KanbanBoard extends LightningElement {
             this.toastManager.showError(title, message);
         }
     }
-    
+
     /**
      * Getters for template
      */
     get boardStyle() {
         return `height: ${this.height}`;
     }
-    
+
     get hasColumns() {
         return this.columns && this.columns.length > 0;
     }
-    
+
     get boardName() {
         return this.board?.Name || 'Kanban Board';
     }
-    
+
     get showEmptyState() {
         return !this.isLoading && !this.hasColumns;
     }
-    
+
     get connectionStatusIcon() {
         return this.subscriptionManager?.getStatusIcon() || '⚪';
     }
-    
+
     get connectionStatusText() {
         return this.subscriptionManager?.getStatusText() || 'Unknown';
     }
-    
+
     get connectionStatusClass() {
         return this.subscriptionManager?.getStatusClass() || 'status-unknown';
     }

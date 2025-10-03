@@ -1,106 +1,11 @@
-/* SLDS Modal Styling */
+/* SLDS Modal Styling - Minimal overrides */
 
-/* Modal Container */
+/* Modal size control */
 .slds-modal__container {
-    border-radius: 0.25rem;
-    box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.16);
+    max-width: 50rem;
 }
 
-/* Modal Header */
-.slds-modal__header {
-    background-color: rgb(255, 255, 255);
-    border-bottom: 1px solid rgb(221, 219, 218);
-    padding: 1rem 1.5rem;
-}
-
-.slds-modal__header h2 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: rgb(8, 7, 7);
-    display: flex;
-    align-items: center;
-    line-height: 1.25;
-    overflow: hidden;
-    max-width: 100%;
-}
-
-.slds-modal__header h2 .slds-truncate {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex: 1;
-    min-width: 0;
-}
-
-/* Close Button */
-.slds-modal__close {
-    margin-right: -0.5rem;
-}
-
-.slds-modal__close:hover {
-    background-color: rgb(243, 242, 242);
-}
-
-/* Modal Content - Clean white background */
-.slds-modal__content {
-    background-color: rgb(255, 255, 255);
-    padding: 1rem 1.5rem;
-}
-
-/* Form Styling */
-.slds-form {
-    width: 100%;
-}
-
-/* Field Spacing */
-.slds-col {
-    padding: 0.25rem 0.5rem;
-}
-
-/* Footer Styling */
-.slds-modal__footer {
-    border-top: 1px solid rgb(221, 219, 218);
-    background-color: rgb(255, 255, 255);
-    padding: 0.75rem 1rem;
-}
-
-.slds-modal__footer .slds-grid {
-    width: 100%;
-}
-
-.slds-modal__footer lightning-button {
-    margin-left: 0.5rem;
-}
-
-.slds-modal__footer lightning-button:first-child {
-    margin-left: 0;
-}
-
-/* Backdrop */
-.slds-backdrop {
-    background-color: rgba(126, 140, 153, 0.8);
-}
-
-/* Animation */
-.slds-modal.slds-fade-in-open {
-    animation: sldsFadeIn 0.2s linear;
-}
-
-@keyframes sldsFadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-/* Input Field Styling */
-lightning-input-field {
-    display: block;
-}
-
-/* Rich Text Editor - Minimize toolbar */
+/* Rich Text Editor sizing */
 lightning-input-field {
     --slds-c-textarea-sizing-min-height: 6rem;
 }
@@ -111,12 +16,8 @@ lightning-input-field {
         max-width: 95% !important;
         margin: 0 auto;
     }
-    
+
     .slds-col.slds-size_1-of-2 {
         width: 100% !important;
-    }
-    
-    .slds-modal__header h2 {
-        font-size: 1rem;
     }
 }

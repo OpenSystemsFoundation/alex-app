@@ -11,15 +11,16 @@ export default class DataManager {
         if (!columns || columns.length === 0) {
             return [];
         }
-        
-        return columns.map(col => ({
+
+        return columns.map((col) => ({
             ...col,
             cardCount: 0,
             cards: [],
-            columnStyle: col.color ? `background-color: ${col.color}` : ''
+            columnStyle: col.color ? `border-top: 4px solid ${col.color}` : '',
+            columnUrl: `/lightning/r/OpenSF__Column__c/${col.Id}/view`
         }));
     }
-    
+
     /**
      * Process cards data and assign to columns
      */
@@ -27,23 +28,25 @@ export default class DataManager {
         if (!cards || !columns || columns.length === 0) {
             return { processedColumns: columns, cardsByColumn: {} };
         }
-        
+
         // Create working copy
         const processedColumns = JSON.parse(JSON.stringify(columns));
         const cardsByColumn = {};
-        
+
         // Initialize columns
-        processedColumns.forEach(col => {
+        processedColumns.forEach((col) => {
             col.cards = [];
             col.cardCount = 0;
             cardsByColumn[col.Id] = [];
         });
-        
+
         // Group cards by column
         const cardsNotPlaced = [];
-        
-        cards.forEach(card => {
-            const column = processedColumns.find(col => col.Id === card.columnId);
+
+        cards.forEach((card) => {
+            const column = processedColumns.find(
+                (col) => col.Id === card.columnId
+            );
             if (column) {
                 const enrichedCard = DataManager.enrichCard(card);
                 column.cards.push(enrichedCard);
@@ -57,10 +60,10 @@ export default class DataManager {
                 });
             }
         });
-        
+
         return { processedColumns, cardsByColumn };
     }
-    
+
     /**
      * Enrich card with computed UI properties
      */
@@ -70,36 +73,42 @@ export default class DataManager {
             priorityClass: DataManager.getPriorityClass(card.priority),
             assigneeInitials: DataManager.getInitials(card.assignee?.name),
             hasAssignee: !!card.assigneeId,
-            formattedDueDate: card.dueDate ? DataManager.formatDate(card.dueDate) : null,
-            isOverdue: card.dueDate ? new Date(card.dueDate) < new Date() : false,
-            cardStyle: card.color ? `border-left: 4px solid ${card.color}` : ''
+            formattedDueDate: card.dueDate
+                ? DataManager.formatDate(card.dueDate)
+                : null,
+            isOverdue: card.dueDate
+                ? new Date(card.dueDate) < new Date()
+                : false,
+            cardStyle: card.color ? `border-left: 4px solid ${card.color}` : '',
+            recordUrl: `/lightning/r/OpenSF__Card__c/${card.Id}/view`
         };
     }
-    
+
     /**
      * Get priority CSS class
      */
     static getPriorityClass(priority) {
         const priorityMap = {
-            'High': 'priority-high',
-            'Medium': 'priority-medium',
-            'Low': 'priority-low'
+            High: 'priority-high',
+            Medium: 'priority-medium',
+            Low: 'priority-low'
         };
         return priorityMap[priority] || '';
     }
-    
+
     /**
      * Get initials from name
      */
     static getInitials(name) {
         if (!name) return '';
-        return name.split(' ')
-            .map(n => n[0])
+        return name
+            .split(' ')
+            .map((n) => n[0])
             .join('')
             .toUpperCase()
             .substring(0, 2);
     }
-    
+
     /**
      * Format date for display
      */
