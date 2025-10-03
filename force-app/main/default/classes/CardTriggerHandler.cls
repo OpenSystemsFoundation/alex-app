@@ -15,20 +15,17 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
     
     protected override void afterInsert() {
         this.newCards = (List<OpenSF__Card__c>) this.newList;
-        System.debug('🎯 CardTrigger.afterInsert: Processing ' + this.newCards.size() + ' card(s)');
         publishCardEvents(this.newCards, 'create');
     }
     
     protected override void afterUpdate() {
         this.newCards = (List<OpenSF__Card__c>) this.newList;
         this.oldCardMap = (Map<Id, OpenSF__Card__c>) this.oldMap;
-        System.debug('🔄 CardTrigger.afterUpdate: Processing ' + this.newCards.size() + ' card(s)');
         publishCardEvents(this.newCards, 'update');
     }
     
     protected override void afterDelete() {
         this.oldCards = (List<OpenSF__Card__c>) this.oldList;
-        System.debug('🗑️ CardTrigger.afterDelete: Processing ' + this.oldCards.size() + ' card(s)');
         publishCardEvents(this.oldCards, 'delete');
     }
     
@@ -41,7 +38,6 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
      * Publish platform events for card changes
      */
     private void publishCardEvents(List<OpenSF__Card__c> cards, String eventType) {
-        System.debug('📡 publishCardEvents START: eventType=' + eventType + ', cards=' + cards.size());
         List<OpenSF__CardUpdateEvent__e> events = new List<OpenSF__CardUpdateEvent__e>();
         
         // Get card IDs for full query (to get related data)
@@ -49,7 +45,6 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
         for (OpenSF__Card__c card : cards) {
             cardIds.add(card.Id);
         }
-        System.debug('📋 Card IDs to process: ' + cardIds);
         
         // Query cards with all relationships for complete DTO data
         Map<Id, OpenSF__Card__c> fullCardMap = new Map<Id, OpenSF__Card__c>();
@@ -86,13 +81,11 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
                 events.add(event);
                 
             } catch (Exception e) {
-                System.debug('Error creating event payload for card ' + card.Id + ': ' + e.getMessage());
             }
         }
         
         // Publish events
         if (!events.isEmpty()) {
-            System.debug('🚀 Publishing ' + events.size() + ' CardUpdateEvent__e(s) to EventBus');
             List<Database.SaveResult> results = EventBus.publish(events);
             
             // Log results
@@ -103,13 +96,9 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
                     successCount++;
                 } else {
                     failureCount++;
-                    System.debug('❌ Error publishing event for card: ' + 
-                        results[i].getErrors()[0].getMessage());
                 }
             }
-            System.debug('✅ Platform events published: ' + successCount + ' success, ' + failureCount + ' failed');
         } else {
-            System.debug('⚠️ No events to publish');
         }
     }
     

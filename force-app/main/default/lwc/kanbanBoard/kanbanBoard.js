@@ -68,7 +68,6 @@ export default class KanbanBoard extends LightningElement {
     set columns(value) {
         // This setter is required for LWC reactivity but we don't use it
         // All updates go through the store
-        console.log('⚠️ Direct columns setter called, use store.dispatch instead');
     }
     
     // Getter/setter for recordId to trigger data load
@@ -86,15 +85,10 @@ export default class KanbanBoard extends LightningElement {
     }
     
     connectedCallback() {
-        console.log('🔌 Connected to DOM', JSON.stringify({
-            boardId: this._recordId
-        }, null, 2));
-        
         // Subscribe to store changes and update cached columns
         this.storeUnsubscribe = this.store.subscribe(() => {
             // Use requestAnimationFrame for smooth updates
             requestAnimationFrame(() => {
-                console.log('🔄 Store state changed, updating columns cache');
                 // Update tracked cache to trigger re-render
                 this._columnsCache = [...this.store.getColumns()];
             });
@@ -111,7 +105,6 @@ export default class KanbanBoard extends LightningElement {
     }
     
     disconnectedCallback() {
-        console.log('🔌 Disconnected from DOM');
         this.unsubscribeFromPlatformEvents();
         this.stopPolling();
         
@@ -134,22 +127,11 @@ export default class KanbanBoard extends LightningElement {
             return;
         }
         
-        console.log('🔄 LOAD BOARD DATA', JSON.stringify({
-            boardId: this._recordId,
-            timestamp: new Date().toISOString()
-        }, null, 2));
-        
         this.isLoading = true;
         this.error = null;
         
         try {
             const data = await getBoardData({ boardId: this._recordId });
-            
-            console.log('📊 Data received from server:', JSON.stringify({
-                boardName: data.board?.Name,
-                columnsCount: data.columns?.length,
-                cardsCount: data.cards?.length
-            }, null, 2));
             
             this.board = data.board || null;
             this.store.dispatch({ type: 'SET_BOARD', payload: data.board });
@@ -157,14 +139,11 @@ export default class KanbanBoard extends LightningElement {
             this.processColumns(data.columns || []);
             this.processCards(data.cards || []);
             
-            console.log('✅ Board data processed successfully');
-            
             // Subscribe to platform events after board is loaded
             if (!this.subscription.channel && this.board) {
                 this.subscribeToPlatformEvents();
             }
         } catch (error) {
-            console.error('❌ Error loading board data:', error);
             this.error = error;
             this.showError('Error loading board', error);
         } finally {
@@ -176,13 +155,7 @@ export default class KanbanBoard extends LightningElement {
      * Process columns data
      */
     processColumns(columns) {
-        console.log('🏗️ PROCESS COLUMNS', JSON.stringify({
-            columnsReceived: columns?.length || 0,
-            columnData: columns
-        }, null, 2));
-        
         if (!columns || columns.length === 0) {
-            console.log('⚠️ No columns to process');
             this.store.dispatch({ type: 'SET_COLUMNS', payload: [] });
             this.cardsByColumn = {};
             return;
@@ -195,11 +168,6 @@ export default class KanbanBoard extends LightningElement {
             columnStyle: col.color ? `background-color: ${col.color}` : ''
         }));
         
-        console.log('✅ Columns mapped:', JSON.stringify({
-            columnsCount: columnsArray.length,
-            columnIds: columnsArray.map(c => c.Id)
-        }, null, 2));
-        
         // Initialize cardsByColumn
         columnsArray.forEach(col => {
             this.cardsByColumn[col.Id] = [];
@@ -207,8 +175,6 @@ export default class KanbanBoard extends LightningElement {
         
         // Dispatch to store
         this.store.dispatch({ type: 'SET_COLUMNS', payload: columnsArray });
-        
-        console.log('🔄 Columns set in store');
     }
     
     /**
@@ -218,24 +184,9 @@ export default class KanbanBoard extends LightningElement {
         // Get columns directly from store state (don't rely on cached tracked property)
         const storeColumns = this.store.getState().columns;
         
-        console.log('🃏 PROCESS CARDS', JSON.stringify({
-            cardsReceived: cards?.length || 0,
-            hasColumns: !!storeColumns,
-            columnsCount: storeColumns?.length || 0
-        }, null, 2));
-        
         if (!cards || !storeColumns || storeColumns.length === 0) {
-            console.log('⚠️ Cannot process cards - missing data');
             return;
         }
-        
-        console.log('📋 Cards to process:', JSON.stringify(
-            cards.map(c => ({
-                id: c.Id,
-                subject: c.subject,
-                columnId: c.columnId
-            })), null, 2
-        ));
         
         // Get current columns from store and create a working copy
         const currentColumns = JSON.parse(JSON.stringify(storeColumns));
@@ -245,8 +196,6 @@ export default class KanbanBoard extends LightningElement {
             col.cards = [];
             col.cardCount = 0;
         });
-        
-        console.log('🧹 Existing cards cleared from all columns');
         
         // Group cards by column
         let cardsPlaced = 0;
@@ -258,22 +207,14 @@ export default class KanbanBoard extends LightningElement {
                 column.cards.push(this.enrichCard(card));
                 column.cardCount++;
                 cardsPlaced++;
-                console.log(`✅ Card placed: "${card.subject}" -> Column: "${column.Name}"`);
             } else {
                 cardsNotPlaced.push({
                     cardId: card.Id,
                     cardSubject: card.subject,
                     columnId: card.columnId
                 });
-                console.log(`❌ Card NOT placed: "${card.subject}" - Column ID: ${card.columnId} not found`);
             }
         });
-        
-        console.log('📊 Card placement summary:', JSON.stringify({
-            cardsPlaced,
-            cardsNotPlaced: cardsNotPlaced.length,
-            notPlacedDetails: cardsNotPlaced
-        }, null, 2));
         
         // Update cardsByColumn
         currentColumns.forEach(col => {
@@ -282,16 +223,6 @@ export default class KanbanBoard extends LightningElement {
         
         // Dispatch updated columns to store
         this.store.dispatch({ type: 'UPDATE_COLUMNS', payload: currentColumns });
-        
-        // Log final state
-        console.log('🎯 Final column state:', JSON.stringify(
-            currentColumns.map(col => ({
-                id: col.Id,
-                name: col.Name,
-                cardsCount: col.cardCount,
-                cards: col.cards.map(c => c.subject)
-            })), null, 2
-        ));
     }
     
     /**
@@ -320,28 +251,18 @@ export default class KanbanBoard extends LightningElement {
         const columns = this.store.getState().columns;
         
         if (!columns || columns.length === 0) {
-            console.error('❌ Cannot start drag: no columns in store');
             return;
         }
         
         const sourceColumn = columns.find(col => col.Id === columnId);
         if (!sourceColumn) {
-            console.error('❌ Cannot start drag: source column not found', { columnId });
             return;
         }
         
         const cardIndex = sourceColumn.cards?.findIndex(c => c.Id === cardId);
         if (cardIndex === -1 || cardIndex === undefined) {
-            console.error('❌ Cannot start drag: card not found in column', { cardId, columnId });
             return;
         }
-        
-        console.log('🎯 DRAG START', JSON.stringify({
-            cardId,
-            columnId,
-            cardIndex,
-            timestamp: new Date().toISOString()
-        }, null, 2));
         
         this.draggedCard = {
             id: cardId,
@@ -356,8 +277,6 @@ export default class KanbanBoard extends LightningElement {
                 source: { columnId, cardIndex }
             }
         });
-        
-        console.log('📦 Drag started in store');
         
         // Add dragging class for visual feedback
         event.target.classList.add('dragging');
@@ -374,20 +293,11 @@ export default class KanbanBoard extends LightningElement {
      * Handle drag end - clear drag state
      */
     handleDragEnd(event) {
-        console.log('🏁 DRAG END', JSON.stringify({
-            draggedCard: this.draggedCard,
-            dropSuccessful: this.dropSuccessful,
-            timestamp: new Date().toISOString()
-        }, null, 2));
-        
         event.target.classList.remove('dragging');
         
         // Only cancel drag if drop was not successful (e.g., drag cancelled)
         if (!this.dropSuccessful) {
-            console.log('❌ Drop was not successful, reverting state');
             this.store.dispatch({ type: 'CANCEL_DRAG' });
-        } else {
-            console.log('✅ Drop was successful, keeping committed state');
         }
         
         // Reset drag state
@@ -403,8 +313,6 @@ export default class KanbanBoard extends LightningElement {
         this.template.querySelectorAll('.drag-active').forEach(el => {
             el.classList.remove('drag-active');
         });
-        
-        console.log('🧹 Drag state cleaned up');
     }
     
     /**
@@ -472,11 +380,6 @@ export default class KanbanBoard extends LightningElement {
             columnId: targetColumnId,
             targetIndex: targetIndex
         };
-        
-        console.log('👆 DRAG OVER', JSON.stringify({
-            targetColumn: targetColumnId,
-            targetIndex: targetIndex
-        }, null, 2));
     }
     
     /**
@@ -494,14 +397,7 @@ export default class KanbanBoard extends LightningElement {
             el.classList.remove('drag-active');
         });
         
-        console.log('💧 DROP EVENT', JSON.stringify({
-            draggedCard: this.draggedCard,
-            placeholder: this.dragPlaceholder,
-            timestamp: new Date().toISOString()
-        }, null, 2));
-        
         if (!this.draggedCard || !this.dragPlaceholder) {
-            console.warn('⚠️ No dragged card or placeholder found on drop');
             this.store.dispatch({ type: 'CANCEL_DRAG' });
             return;
         }
@@ -516,7 +412,6 @@ export default class KanbanBoard extends LightningElement {
             
             // Account for removal when calculating same position
             if (currentIndex === targetPosition || currentIndex + 1 === targetPosition) {
-                console.log('ℹ️ Dropped in same position, skipping move');
                 this.store.dispatch({ type: 'CANCEL_DRAG' });
                 return;
             }
@@ -528,8 +423,6 @@ export default class KanbanBoard extends LightningElement {
         // Mark drop as successful so handleDragEnd doesn't revert
         this.dropSuccessful = true;
         
-        console.log('🚀 Committing move to server', { targetColumnId, targetPosition });
-        
         // Sync with server (optimistic update already applied)
         await this.moveCardToColumn(this.draggedCard.id, targetColumnId, targetPosition);
     }
@@ -540,22 +433,9 @@ export default class KanbanBoard extends LightningElement {
     async moveCardToColumn(cardId, targetColumnId, targetPosition) {
         const sourceColumnId = this.draggedCard.columnId;
         
-        console.log('📦 MOVE CARD TO COLUMN', JSON.stringify({
-            cardId,
-            sourceColumnId,
-            targetColumnId,
-            targetPosition
-        }, null, 2));
-        
         // Find positions
         const targetColumn = this.columns.find(col => col.Id === targetColumnId);
         const cards = targetColumn.cards;
-        
-        console.log('🎯 Target column found:', JSON.stringify({
-            columnId: targetColumn.Id,
-            columnName: targetColumn.Name,
-            existingCardsCount: cards.length
-        }, null, 2));
         
         let previousPosition = null;
         let nextPosition = null;
@@ -575,13 +455,7 @@ export default class KanbanBoard extends LightningElement {
             }
         }
         
-        console.log('📍 Position calculation:', JSON.stringify({
-            previousPosition,
-            nextPosition
-        }, null, 2));
-        
         try {
-            console.log('☁️ Calling server moveCard (minimal response)...');
             
             // Server update - returns minimal data now (no full query)
             const result = await moveCard({
@@ -591,21 +465,11 @@ export default class KanbanBoard extends LightningElement {
                 nextCardPosition: nextPosition
             });
             
-            console.log('✅ Server response (minimal):', JSON.stringify({
-                success: result.success,
-                newPosition: result.newPosition,
-                cardId: result.cardId,
-                columnId: result.columnId
-            }, null, 2));
-            
             // Update ONLY the position in store (no full state refresh needed)
             // The optimistic update already moved the card visually
             this.updateCardPositionOnly(cardId, result.newPosition);
             
-            console.log('🔄 Position synced with server (no full refresh)');
-            
         } catch (error) {
-            console.error('❌ Error moving card:', error);
             // Rollback optimistic update
             this.rollbackOptimisticMove(cardId, targetColumnId, sourceColumnId);
             this.showError('Error moving card', error);
@@ -616,23 +480,11 @@ export default class KanbanBoard extends LightningElement {
      * Apply optimistic move
      */
     applyOptimisticMove(cardId, sourceColumnId, targetColumnId) {
-        console.log('⚡ APPLY OPTIMISTIC MOVE', JSON.stringify({
-            cardId,
-            sourceColumnId,
-            targetColumnId
-        }, null, 2));
-        
         // Remove from source
         const sourceColumn = this.columns.find(col => col.Id === sourceColumnId);
         const cardIndex = sourceColumn.cards.findIndex(c => c.Id === cardId);
         const card = sourceColumn.cards.splice(cardIndex, 1)[0];
         sourceColumn.cardCount--;
-        
-        console.log('📤 Removed from source column:', JSON.stringify({
-            sourceColumnName: sourceColumn.Name,
-            cardSubject: card.subject,
-            remainingCards: sourceColumn.cardCount
-        }, null, 2));
         
         // Add to target
         const targetColumn = this.columns.find(col => col.Id === targetColumnId);
@@ -640,14 +492,7 @@ export default class KanbanBoard extends LightningElement {
         targetColumn.cards.push(card);
         targetColumn.cardCount++;
         
-        console.log('📥 Added to target column:', JSON.stringify({
-            targetColumnName: targetColumn.Name,
-            cardSubject: card.subject,
-            totalCards: targetColumn.cardCount
-        }, null, 2));
-        
         // Note: Reactivity handled by store, no manual trigger needed
-        console.log('🔄 Card moved in local state');
     }
     
     /**
@@ -662,8 +507,6 @@ export default class KanbanBoard extends LightningElement {
      * Update only card position (minimal update for performance)
      */
     updateCardPositionOnly(cardId, newPosition) {
-        console.log('📍 Updating card position in store:', { cardId, newPosition });
-        
         // Dispatch minimal update to store
         this.store.dispatch({
             type: 'UPDATE_CARD',
@@ -678,11 +521,6 @@ export default class KanbanBoard extends LightningElement {
      * Update card in state with full data (legacy method for non-move operations)
      */
     updateCardInState(updatedCard) {
-        console.log('🔄 UPDATE CARD IN STATE', JSON.stringify({
-            cardId: updatedCard.Id,
-            cardSubject: updatedCard.subject,
-            newColumnId: updatedCard.columnId
-        }, null, 2));
         
         const enriched = this.enrichCard(updatedCard);
         
@@ -691,24 +529,20 @@ export default class KanbanBoard extends LightningElement {
             if (index !== -1) {
                 if (column.Id === updatedCard.columnId) {
                     // Update in same column
-                    console.log('🔄 Updating card in same column:', column.Name);
                     column.cards[index] = enriched;
                 } else {
                     // Remove from old column
-                    console.log('📤 Removing from old column:', column.Name);
                     column.cards.splice(index, 1);
                     column.cardCount--;
                 }
             } else if (column.Id === updatedCard.columnId) {
                 // Add to new column
-                console.log('📥 Adding to new column:', column.Name);
                 column.cards.push(enriched);
                 column.cardCount++;
             }
         });
         
         this.columns = [...this.columns];
-        console.log('✅ Card state update complete');
     }
     
     /**
@@ -788,8 +622,6 @@ export default class KanbanBoard extends LightningElement {
                 columnId: columnId
             });
             
-            console.log('📝 Pre-tracking card creation (temp ID):', tempId);
-            
             // Create card with default subject
             const newCard = await createCard({
                 columnId: columnId,
@@ -810,8 +642,6 @@ export default class KanbanBoard extends LightningElement {
             setTimeout(() => {
                 this.optimisticUpdates.delete(updateId);
             }, 5000);
-            
-            console.log('📝 Updated tracking with real card ID:', newCard.Id);
             
             // Add to store using dispatch (proper state management)
             this.store.dispatch({
@@ -835,20 +665,15 @@ export default class KanbanBoard extends LightningElement {
     subscribeToPlatformEvents() {
         // Only subscribe if we have a valid recordId
         if (!this._recordId) {
-            console.log('⏸️ Skipping subscription - no recordId');
             return;
         }
         
         if (this.subscription && this.subscription.channel) {
-            console.log('✅ Already subscribed to:', this.channelName);
             return;
         }
-        
-        console.log('🔄 Attempting to subscribe to:', this.channelName);
         this.subscriptionStatus = 'connecting';
         
         const messageCallback = (response) => {
-            console.log('📨 Platform event received:', response);
             const event = response.data.payload;
             
             // Mark subscription as healthy
@@ -856,7 +681,6 @@ export default class KanbanBoard extends LightningElement {
                 this.subscriptionStatus = 'connected';
                 this.subscriptionRetryCount = 0;
                 this.showInfo('Real-time updates connected');
-                console.log('✅ Subscription established successfully');
                 
                 // Stop polling if it was running
                 this.stopPolling();
@@ -870,11 +694,9 @@ export default class KanbanBoard extends LightningElement {
                 this.subscription = response;
                 this.subscriptionStatus = 'connected';
                 this.subscriptionRetryCount = 0;
-                console.log('✅ Subscribed to platform events:', response);
                 this.showSuccess('Real-time updates enabled');
             })
             .catch(error => {
-                console.error('❌ Error subscribing to platform events:', error);
                 this.subscriptionStatus = 'error';
                 this.handleSubscriptionError(error);
             });
@@ -886,11 +708,8 @@ export default class KanbanBoard extends LightningElement {
     handleSubscriptionError(error) {
         this.subscriptionRetryCount++;
         
-        console.error(`❌ Subscription error (attempt ${this.subscriptionRetryCount}/${this.maxRetryAttempts}):`, error);
-        
         if (this.subscriptionRetryCount < this.maxRetryAttempts) {
             const retryDelay = 2000 * this.subscriptionRetryCount; // Exponential backoff
-            console.log(`🔄 Retrying subscription in ${retryDelay}ms...`);
             
             this.showWarning(`Connection lost. Retrying (${this.subscriptionRetryCount}/${this.maxRetryAttempts})...`);
             
@@ -898,7 +717,6 @@ export default class KanbanBoard extends LightningElement {
                 this.subscribeToPlatformEvents();
             }, retryDelay);
         } else {
-            console.error('❌ Max retry attempts reached. Falling back to polling.');
             this.showError('Real-time updates unavailable', 'Using polling fallback');
             this.startPolling();
         }
@@ -909,9 +727,7 @@ export default class KanbanBoard extends LightningElement {
      */
     unsubscribeFromPlatformEvents() {
         if (this.subscription && this.subscription.channel) {
-            console.log('🔌 Unsubscribing from:', this.subscription.channel);
             unsubscribe(this.subscription, response => {
-                console.log('✅ Unsubscribed from channel');
                 this.subscriptionStatus = 'disconnected';
                 this.subscription = {};
             });
@@ -923,11 +739,9 @@ export default class KanbanBoard extends LightningElement {
      */
     startPolling() {
         if (this.pollingInterval) {
-            console.log('⚠️ Polling already active');
             return;
         }
         
-        console.log(`🔄 Starting polling fallback (every ${this.pollingFrequency}ms)`);
         this.subscriptionStatus = 'polling';
         
         this.pollingInterval = setInterval(() => {
@@ -943,7 +757,6 @@ export default class KanbanBoard extends LightningElement {
      */
     stopPolling() {
         if (this.pollingInterval) {
-            console.log('⏹️ Stopping polling fallback');
             clearInterval(this.pollingInterval);
             this.pollingInterval = null;
             this.consecutiveFailedPolls = 0;
@@ -955,17 +768,14 @@ export default class KanbanBoard extends LightningElement {
      */
     async pollForUpdates() {
         try {
-            console.log('🔍 Polling for updates...');
             await this.loadBoardData();
             this.lastSuccessfulPoll = Date.now();
             this.consecutiveFailedPolls = 0;
             
         } catch (error) {
-            console.error('❌ Polling failed:', error);
             this.consecutiveFailedPolls++;
             
             if (this.consecutiveFailedPolls >= this.maxFailedPolls) {
-                console.error('❌ Max failed polls reached. Stopping polling.');
                 this.stopPolling();
                 this.showError('Connection lost', 'Please refresh the page');
             }
@@ -981,17 +791,8 @@ export default class KanbanBoard extends LightningElement {
             const payload = JSON.parse(event.OpenSF__Payload__c);
             const eventType = event.OpenSF__EventType__c;
             
-            console.log('📡 PLATFORM EVENT RECEIVED', JSON.stringify({
-                eventType: eventType,
-                cardId: payload.Id,
-                cardSubject: payload.subject,
-                columnId: payload.columnId,
-                timestamp: new Date().toISOString()
-            }, null, 2));
-            
             // Check if this is our own recent update (pass columnId for race condition handling)
             const isOwnUpdate = this.isRecentOptimisticUpdate(payload.Id, payload.columnId);
-            console.log(isOwnUpdate ? '🔇 Ignoring own update' : '📢 Processing external update');
             
             if (isOwnUpdate) {
                 return; // Skip our own updates
@@ -999,21 +800,16 @@ export default class KanbanBoard extends LightningElement {
             
             if (eventType === 'move' || eventType === 'update') {
                 // For move/update, we can use the payload DTO directly (no full refresh needed)
-                console.log('🔄 Updating card from event payload');
                 this.updateCardInStateFromDTO(payload);
             } else if (eventType === 'create') {
                 // Add new card from payload
-                console.log('➕ Adding new card from event payload');
                 this.addCardToStateFromDTO(payload);
             } else if (eventType === 'delete') {
                 // Remove card
-                console.log('🗑️ Removing card from state due to delete event');
                 this.removeCardFromState(payload.Id);
             }
         } catch (error) {
-            console.error('❌ Error handling platform event:', error);
             // Fallback: refresh entire board
-            console.log('🔄 Falling back to full board refresh');
             this.loadBoardData();
         }
     }
@@ -1033,20 +829,12 @@ export default class KanbanBoard extends LightningElement {
                 card: enrichedCard
             }
         });
-        
-        console.log('✅ Card updated via store dispatch');
     }
     
     /**
      * Add new card to state from DTO payload
      */
     addCardToStateFromDTO(cardDTO) {
-        console.log('📥 Platform event: ADD card', {
-            cardId: cardDTO.Id,
-            subject: cardDTO.subject,
-            columnId: cardDTO.columnId
-        });
-        
         const enrichedCard = this.enrichCard(cardDTO);
         
         // Check if card already exists in state
@@ -1056,7 +844,6 @@ export default class KanbanBoard extends LightningElement {
         );
         
         if (cardExists) {
-            console.log('⚠️ Card already exists in state, skipping duplicate add:', cardDTO.Id);
             return;
         }
         
@@ -1068,8 +855,6 @@ export default class KanbanBoard extends LightningElement {
                 columnId: cardDTO.columnId
             }
         });
-        
-        console.log('✅ Card added via store dispatch from platform event');
     }
     
     /**
@@ -1085,11 +870,6 @@ export default class KanbanBoard extends LightningElement {
             
             // Check by card ID (primary check)
             if (update.cardId === cardId && age < timeWindow) {
-                console.log('🔇 Filtering out own optimistic update by cardId:', {
-                    cardId,
-                    type: update.type,
-                    age
-                });
                 return true;
             }
             
@@ -1100,12 +880,6 @@ export default class KanbanBoard extends LightningElement {
                 columnId && 
                 update.columnId === columnId && 
                 age < 2000) {
-                console.log('🔇 Filtering out own optimistic update by columnId + timing:', {
-                    cardId,
-                    columnId,
-                    type: update.type,
-                    age
-                });
                 return true;
             }
         }
@@ -1131,7 +905,6 @@ export default class KanbanBoard extends LightningElement {
      */
     registerErrorListener() {
         onError(error => {
-            console.error('❌ Platform event connection error:', error);
             this.subscriptionStatus = 'error';
             
             // Show toast notification
