@@ -126,7 +126,7 @@
         <offset>0</offset>
         <versionSegment>1</versionSegment>
     </actionCalls>
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>64.0</apiVersion>
     <assignments>
         <name>Set_Recipient_to_Open_Systems_Foundation</name>
         <label>Set Recipient to Open Systems Foundation</label>

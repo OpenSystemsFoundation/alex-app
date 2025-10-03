@@ -90,7 +90,7 @@
         <offset>0</offset>
         <versionSegment>1</versionSegment>
     </actionCalls>
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>64.0</apiVersion>
     <assignments>
         <name>Assign_Update_Recipients</name>
         <label>Assign Update Recipients</label>
