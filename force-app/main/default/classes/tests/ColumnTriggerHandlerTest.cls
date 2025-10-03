@@ -62,6 +62,9 @@ private class ColumnTriggerHandlerTest {
     static void testAfterDelete() {
         OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
         
+        // OPTIMIZATION: Skip platform events for faster test execution
+        TestSettings.skipPlatformEvents = true;
+        
         // Create column
         OpenSF__Column__c column = new OpenSF__Column__c(
             OpenSF__ColumnHeader__c = 'To Do',

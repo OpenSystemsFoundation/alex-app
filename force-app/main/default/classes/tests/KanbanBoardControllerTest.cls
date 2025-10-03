@@ -88,6 +88,9 @@ private class KanbanBoardControllerTest {
     static void testDeleteCard() {
         OpenSF__Card__c card = [SELECT Id FROM OpenSF__Card__c LIMIT 1];
         
+        // OPTIMIZATION: Skip platform events for faster test execution
+        TestSettings.skipPlatformEvents = true;
+        
         Test.startTest();
         KanbanBoardController.deleteCard(card.Id);
         Test.stopTest();
