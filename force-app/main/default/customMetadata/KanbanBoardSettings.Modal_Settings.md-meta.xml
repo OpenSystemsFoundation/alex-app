@@ -5,12 +5,15 @@
     <values>
         <field>FieldNames__c</field>
         <value xsi:type="xsd:string">OpenSF__Subject__c,
+OpenSF__Description__c,
 OpenSF__Status__c,
+OpenSF__CardType__c,
+OpenSF__Priority__c,
 OpenSF__Epic__c,
 OpenSF__Assignee__c,
-OpenSF__CardType__c,
+OpenSF__PeerReviewer__c,
+OpenSF__DueDate__c,
 OpenSF__StoryPoints__c,
-OpenSF__Priority__c,
 OpenSF__Color__c</value>
     </values>
 </CustomMetadata>

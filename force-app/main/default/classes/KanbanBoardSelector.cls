@@ -43,7 +43,7 @@ public with sharing class KanbanBoardSelector {
                    OpenSF__Assignee__c, OpenSF__Assignee__r.Name, OpenSF__Assignee__r.SmallPhotoUrl,
                    OpenSF__PeerReviewer__c, OpenSF__PeerReviewer__r.Name,
                    OpenSF__Epic__c, OpenSF__Epic__r.OpenSF__Subject__c, OpenSF__Locked__c,
-                   LastModifiedDate
+                   LastModifiedDate, LastModifiedById
             FROM OpenSF__Card__c
             WHERE OpenSF__Column__r.OpenSF__Board__c = :boardId
             ORDER BY OpenSF__LexoRankPosition__c ASC NULLS LAST
@@ -61,7 +61,7 @@ public with sharing class KanbanBoardSelector {
                    OpenSF__Assignee__c, OpenSF__Assignee__r.Name, OpenSF__Assignee__r.SmallPhotoUrl,
                    OpenSF__PeerReviewer__c, OpenSF__PeerReviewer__r.Name,
                    OpenSF__Epic__c, OpenSF__Epic__r.OpenSF__Subject__c, OpenSF__Locked__c,
-                   LastModifiedDate
+                   LastModifiedDate, LastModifiedById
             FROM OpenSF__Card__c
             WHERE Id = :cardId
             LIMIT 1
@@ -77,7 +77,7 @@ public with sharing class KanbanBoardSelector {
                    OpenSF__LexoRankPosition__c, OpenSF__Color__c, OpenSF__Priority__c, OpenSF__Status__c,
                    OpenSF__CardType__c, OpenSF__DueDate__c, OpenSF__StoryPoints__c,
                    OpenSF__Assignee__c, OpenSF__Assignee__r.Name, OpenSF__Assignee__r.SmallPhotoUrl,
-                   LastModifiedDate
+                   LastModifiedDate, LastModifiedById
             FROM OpenSF__Card__c
             WHERE OpenSF__Column__c = :columnId
             ORDER BY OpenSF__LexoRankPosition__c ASC NULLS LAST
@@ -108,7 +108,7 @@ public with sharing class KanbanBoardSelector {
                    OpenSF__Assignee__c, OpenSF__Assignee__r.Name, OpenSF__Assignee__r.SmallPhotoUrl,
                    OpenSF__PeerReviewer__c, OpenSF__PeerReviewer__r.Name,
                    OpenSF__Epic__c, OpenSF__Epic__r.OpenSF__Subject__c, OpenSF__Locked__c,
-                   LastModifiedDate
+                   LastModifiedDate, LastModifiedById
             FROM OpenSF__Card__c
             WHERE Id IN :cardIds
         ];

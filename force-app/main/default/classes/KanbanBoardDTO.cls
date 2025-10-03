@@ -78,6 +78,7 @@ public with sharing class KanbanBoardDTO {
         @AuraEnabled public EpicDTO epic;
         @AuraEnabled public Boolean locked;
         @AuraEnabled public DateTime lastModifiedDate;
+        @AuraEnabled public Id lastModifiedById;
         
         public CardDTO(OpenSF__Card__c card) {
             this.Id = card.Id;
@@ -97,6 +98,7 @@ public with sharing class KanbanBoardDTO {
             this.epicId = card.OpenSF__Epic__c;
             this.locked = card.OpenSF__Locked__c;
             this.lastModifiedDate = card.LastModifiedDate;
+            this.lastModifiedById = card.LastModifiedById;
             
             // Map nested relationships
             if (card.OpenSF__Assignee__r != null) {

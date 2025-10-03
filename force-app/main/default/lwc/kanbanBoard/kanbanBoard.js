@@ -5,10 +5,15 @@ import getBoardData from '@salesforce/apex/KanbanBoardController.getBoardData';
 import moveCard from '@salesforce/apex/KanbanBoardController.moveCard';
 import createCard from '@salesforce/apex/KanbanBoardController.createCard';
 import { createStore } from 'c/kanbanStore';
+import userId from '@salesforce/user/Id';
 
 export default class KanbanBoard extends LightningElement {
     _recordId;
     @api height = '600px';
+    
+    // Track recent changes from THIS window only (lightweight, short-lived)
+    recentChanges = new Map(); // cardId -> timestamp
+    changeTrackingWindow = 2000; // 2 seconds - just long enough to ignore immediate echo
     
     // Store reference and subscription - each component instance gets its own store
     store = createStore();
@@ -27,7 +32,6 @@ export default class KanbanBoard extends LightningElement {
     draggedOverColumn = null;
     draggedOverCard = null;
     dragPlaceholder = null;
-    optimisticUpdates = new Map();
     dropSuccessful = false; // Track if drop was successful
     
     // Performance optimization for drag
@@ -286,7 +290,7 @@ export default class KanbanBoard extends LightningElement {
         event.dataTransfer.setData('text/plain', cardId);
         
         // Use the original card as the drag image (browser default behavior)
-        // No custom drag image needed - the browser will handle it naturally
+        // This ensures proper styling is maintained during drag
     }
     
     /**
@@ -465,6 +469,10 @@ export default class KanbanBoard extends LightningElement {
                 nextCardPosition: nextPosition
             });
             
+            // Track this change to ignore immediate platform event echo
+            this.recentChanges.set(cardId, Date.now());
+            setTimeout(() => this.recentChanges.delete(cardId), this.changeTrackingWindow);
+            
             // Update ONLY the position in store (no full state refresh needed)
             // The optimistic update already moved the card visually
             this.updateCardPositionOnly(cardId, result.newPosition);
@@ -576,6 +584,11 @@ export default class KanbanBoard extends LightningElement {
      * Handle card updated from modal
      */
     handleCardUpdated() {
+        // Track this card to ignore immediate platform event echo
+        if (this.selectedCard) {
+            this.recentChanges.set(this.selectedCard.Id, Date.now());
+            setTimeout(() => this.recentChanges.delete(this.selectedCard.Id), this.changeTrackingWindow);
+        }
         this.loadBoardData();
     }
     
@@ -583,6 +596,11 @@ export default class KanbanBoard extends LightningElement {
      * Handle card deleted from modal
      */
     handleCardDeleted() {
+        // Track this card to ignore immediate platform event echo
+        if (this.selectedCard) {
+            this.recentChanges.set(this.selectedCard.Id, Date.now());
+            setTimeout(() => this.recentChanges.delete(this.selectedCard.Id), this.changeTrackingWindow);
+        }
         this.showCardDetail = false;
         this.selectedCard = null;
         this.loadBoardData();
@@ -611,17 +629,6 @@ export default class KanbanBoard extends LightningElement {
                 previousPosition = cards[cards.length - 1].position;
             }
             
-            // Pre-track with a temporary marker BEFORE the server call
-            // This prevents race conditions where platform event arrives first
-            const tempId = `temp_${Date.now()}_${Math.random()}`;
-            const updateId = Date.now();
-            this.optimisticUpdates.set(updateId, {
-                cardId: tempId, // Temporary until we get real ID
-                type: 'create',
-                timestamp: updateId,
-                columnId: columnId
-            });
-            
             // Create card with default subject
             const newCard = await createCard({
                 columnId: columnId,
@@ -630,18 +637,9 @@ export default class KanbanBoard extends LightningElement {
                 nextCardPosition: null
             });
             
-            // Update the tracking with the real card ID
-            this.optimisticUpdates.set(updateId, {
-                cardId: newCard.Id,
-                type: 'create',
-                timestamp: updateId,
-                columnId: columnId
-            });
-            
-            // Clean up old optimistic updates after 5 seconds (increased for safety)
-            setTimeout(() => {
-                this.optimisticUpdates.delete(updateId);
-            }, 5000);
+            // Track this change to ignore immediate platform event echo
+            this.recentChanges.set(newCard.Id, Date.now());
+            setTimeout(() => this.recentChanges.delete(newCard.Id), this.changeTrackingWindow);
             
             // Add to store using dispatch (proper state management)
             this.store.dispatch({
@@ -791,11 +789,11 @@ export default class KanbanBoard extends LightningElement {
             const payload = JSON.parse(event.OpenSF__Payload__c);
             const eventType = event.OpenSF__EventType__c;
             
-            // Check if this is our own recent update (pass columnId for race condition handling)
-            const isOwnUpdate = this.isRecentOptimisticUpdate(payload.Id, payload.columnId);
-            
-            if (isOwnUpdate) {
-                return; // Skip our own updates
+            // Ignore events for cards we just changed in THIS window (within last 2 seconds)
+            // This prevents duplicate updates while still allowing changes from other windows/users
+            const recentChangeTime = this.recentChanges.get(payload.Id);
+            if (recentChangeTime && (Date.now() - recentChangeTime) < this.changeTrackingWindow) {
+                return; // Skip - we just made this change
             }
             
             if (eventType === 'move' || eventType === 'update') {
@@ -855,35 +853,6 @@ export default class KanbanBoard extends LightningElement {
                 columnId: cardDTO.columnId
             }
         });
-    }
-    
-    /**
-     * Check if this is a recent optimistic update
-     * Enhanced to handle race conditions where platform event arrives before server response
-     */
-    isRecentOptimisticUpdate(cardId, columnId = null) {
-        const now = Date.now();
-        const timeWindow = 5000; // 5 seconds to handle slow server responses
-        
-        for (let [updateId, update] of this.optimisticUpdates) {
-            const age = now - updateId;
-            
-            // Check by card ID (primary check)
-            if (update.cardId === cardId && age < timeWindow) {
-                return true;
-            }
-            
-            // Fallback: Check by columnId + recent timestamp for race condition handling
-            // If we have a very recent create operation (< 2 seconds) in the same column,
-            // it's likely our own operation
-            if (update.type === 'create' && 
-                columnId && 
-                update.columnId === columnId && 
-                age < 2000) {
-                return true;
-            }
-        }
-        return false;
     }
     
     /**

@@ -189,6 +189,57 @@ public with sharing class KanbanBoardController {
     }
     
     /**
+     * Get modal settings from custom metadata
+     */
+    @AuraEnabled(cacheable=true)
+    public static ModalSettings getModalSettings() {
+        try {
+            KanbanBoardSettings__mdt settings = [
+                SELECT FieldNames__c 
+                FROM KanbanBoardSettings__mdt 
+                WHERE DeveloperName = 'Modal_Settings' 
+                LIMIT 1
+            ];
+            
+            ModalSettings result = new ModalSettings();
+            if (settings != null && String.isNotBlank(settings.FieldNames__c)) {
+                // Parse comma-separated field names and clean them
+                List<String> fields = settings.FieldNames__c.split(',');
+                result.visibleFields = new List<String>();
+                for (String field : fields) {
+                    String cleanField = field.trim();
+                    if (String.isNotBlank(cleanField)) {
+                        result.visibleFields.add(cleanField);
+                    }
+                }
+            } else {
+                // Default fields if not configured
+                result.visibleFields = new List<String>{
+                    'OpenSF__Subject__c',
+                    'OpenSF__Description__c',
+                    'OpenSF__Priority__c',
+                    'OpenSF__CardType__c',
+                    'OpenSF__Assignee__c',
+                    'OpenSF__DueDate__c',
+                    'OpenSF__StoryPoints__c',
+                    'OpenSF__Color__c'
+                };
+            }
+            return result;
+        } catch (Exception e) {
+            // Return defaults on error
+            ModalSettings result = new ModalSettings();
+            result.visibleFields = new List<String>{
+                'OpenSF__Subject__c',
+                'OpenSF__Description__c',
+                'OpenSF__Priority__c',
+                'OpenSF__CardType__c'
+            };
+            return result;
+        }
+    }
+    
+    /**
      * Wrapper classes
      */
     public class BoardData {
@@ -203,5 +254,9 @@ public with sharing class KanbanBoardController {
         @AuraEnabled public String newPosition;
         @AuraEnabled public Id cardId; // For minimal updates
         @AuraEnabled public Id columnId; // For minimal updates
+    }
+    
+    public class ModalSettings {
+        @AuraEnabled public List<String> visibleFields;
     }
 }

@@ -1,110 +1,94 @@
-import { LightningElement, api, track } from 'lwc';
+import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import updateCard from '@salesforce/apex/KanbanBoardController.updateCard';
 import deleteCard from '@salesforce/apex/KanbanBoardController.deleteCard';
-import searchUsers from '@salesforce/apex/KanbanBoardController.searchUsers';
+import getModalSettings from '@salesforce/apex/KanbanBoardController.getModalSettings';
 
 export default class KanbanCardDetail extends LightningElement {
-    _card;
+    @api card;
     @api isOpen = false;
     
-    @track editMode = false;
-    @track formData = {};
-    @track searchResults = [];
-    @track isSearching = false;
+    @track modalSettings = null;
+    @track formFields = [];
     
-    priorityOptions = [
-        { label: 'High', value: 'High' },
-        { label: 'Medium', value: 'Medium' },
-        { label: 'Low', value: 'Low' }
-    ];
+    // Field metadata for layout and sizing
+    fieldMetadata = {
+        'OpenSF__Subject__c': { fullWidth: true, isTextarea: false },
+        'OpenSF__Description__c': { fullWidth: true, isTextarea: true },
+        'OpenSF__Status__c': { fullWidth: false, isTextarea: false },
+        'OpenSF__CardType__c': { fullWidth: false, isTextarea: false },
+        'OpenSF__Priority__c': { fullWidth: false, isTextarea: false },
+        'OpenSF__Epic__c': { fullWidth: false, isTextarea: false },
+        'OpenSF__Assignee__c': { fullWidth: false, isTextarea: false },
+        'OpenSF__PeerReviewer__c': { fullWidth: false, isTextarea: false },
+        'OpenSF__DueDate__c': { fullWidth: false, isTextarea: false },
+        'OpenSF__StoryPoints__c': { fullWidth: false, isTextarea: false },
+        'OpenSF__Color__c': { fullWidth: false, isTextarea: false }
+    };
     
-    cardTypeOptions = [
-        { label: 'Story', value: 'Story' },
-        { label: 'Bug', value: 'Bug' },
-        { label: 'Task', value: 'Task' },
-        { label: 'Epic', value: 'Epic' }
-    ];
-    
-    connectedCallback() {
-        if (this.card) {
-            this.initFormData();
+    @wire(getModalSettings)
+    wiredSettings({ error, data }) {
+        if (data) {
+            this.modalSettings = data;
+            if (data.visibleFields) {
+                this.processFields(data.visibleFields);
+            }
+        } else if (error) {
+            console.error('Error loading modal settings:', error);
+            // Use defaults
+            this.processFields([
+                'OpenSF__Subject__c',
+                'OpenSF__Description__c',
+                'OpenSF__Priority__c',
+                'OpenSF__CardType__c',
+                'OpenSF__Assignee__c',
+                'OpenSF__DueDate__c',
+                'OpenSF__StoryPoints__c',
+                'OpenSF__Color__c'
+            ]);
         }
     }
     
-    @api
-    set card(value) {
-        this._card = value;
-        if (value) {
-            this.initFormData();
-        }
-    }
-    
-    get card() {
-        return this._card;
-    }
-    
-    initFormData() {
-        if (this.card) {
-            this.formData = {
-                subject: this.card.Subject__c,
-                description: this.card.Description__c,
-                priority: this.card.Priority__c,
-                cardType: this.card.CardType__c,
-                dueDate: this.card.DueDate__c,
-                storyPoints: this.card.StoryPoints__c,
-                assigneeId: this.card.Assignee__c,
-                color: this.card.Color__c
+    processFields(fieldNames) {
+        this.formFields = fieldNames.map((fieldName, index) => {
+            const metadata = this.fieldMetadata[fieldName] || { fullWidth: false, isTextarea: false };
+            return {
+                fieldName: fieldName,
+                key: `field-${index}`,
+                fullWidth: metadata.fullWidth,
+                isTextarea: metadata.isTextarea,
+                isRegularField: !metadata.isTextarea,
+                columnClass: metadata.fullWidth ? 'slds-col slds-size_1-of-1' : 'slds-col slds-size_1-of-2'
             };
-        }
+        });
     }
     
     handleClose() {
         this.dispatchEvent(new CustomEvent('close'));
     }
     
-    handleEdit() {
-        this.editMode = true;
-    }
-    
-    handleCancel() {
-        this.editMode = false;
-        this.initFormData();
-    }
-    
-    handleFieldChange(event) {
-        const field = event.target.dataset.field;
-        this.formData[field] = event.target.value;
-    }
-    
-    async handleSave() {
-        try {
-            const updates = {
-                subject: this.formData.subject,
-                description: this.formData.description,
-                priority: this.formData.priority,
-                color: this.formData.color,
-                dueDate: this.formData.dueDate,
-                storyPoints: this.formData.storyPoints,
-                assigneeId: this.formData.assigneeId
-            };
-            
-            await updateCard({
-                cardId: this.card.Id,
-                updates: updates
-            });
-            
-            this.editMode = false;
-            this.showSuccess('Card updated successfully');
-            
-            // Notify parent to refresh
-            this.dispatchEvent(new CustomEvent('cardupdated', {
-                detail: { cardId: this.card.Id }
-            }));
-            
-        } catch (error) {
-            this.showError('Error updating card', error);
+    handleSave() {
+        // Trigger the form submit
+        const form = this.template.querySelector('lightning-record-edit-form');
+        if (form) {
+            form.submit();
         }
+    }
+    
+    handleSuccess() {
+        this.showSuccess('Card updated successfully');
+        
+        // Notify parent to refresh
+        this.dispatchEvent(new CustomEvent('cardupdated', {
+            detail: { cardId: this.card.Id }
+        }));
+        
+        // Close the modal after successful save
+        this.handleClose();
+    }
+    
+    handleError(event) {
+        const message = event.detail?.message || 'Error updating card';
+        this.showError('Error', message);
     }
     
     async handleDelete() {
@@ -122,37 +106,8 @@ export default class KanbanCardDetail extends LightningElement {
             }));
             
         } catch (error) {
-            this.showError('Error deleting card', error);
+            this.showError('Error deleting card', error.body?.message || error.message);
         }
-    }
-    
-    async handleUserSearch(event) {
-        const searchTerm = event.target.value;
-        
-        if (searchTerm.length < 2) {
-            this.searchResults = [];
-            return;
-        }
-        
-        this.isSearching = true;
-        
-        try {
-            const users = await searchUsers({ searchTerm });
-            this.searchResults = users.map(user => ({
-                ...user,
-                selected: user.Id === this.formData.assigneeId
-            }));
-        } catch (error) {
-            this.showError('Error searching users', error);
-        } finally {
-            this.isSearching = false;
-        }
-    }
-    
-    handleUserSelect(event) {
-        const userId = event.currentTarget.dataset.userId;
-        this.formData.assigneeId = userId;
-        this.searchResults = [];
     }
     
     showSuccess(message) {
@@ -163,14 +118,7 @@ export default class KanbanCardDetail extends LightningElement {
         }));
     }
     
-    showError(title, error) {
-        let message = 'Unknown error';
-        if (error?.body?.message) {
-            message = error.body.message;
-        } else if (error?.message) {
-            message = error.message;
-        }
-        
+    showError(title, message) {
         this.dispatchEvent(new ShowToastEvent({
             title: title,
             message: message,
@@ -186,7 +134,15 @@ export default class KanbanCardDetail extends LightningElement {
         return this.isOpen ? 'slds-backdrop slds-backdrop_open' : 'slds-backdrop';
     }
     
-    get assigneeName() {
-        return this.card?.Assignee__r?.Name || 'Unassigned';
+    get hasFields() {
+        return this.formFields && this.formFields.length > 0;
+    }
+    
+    get descriptionField() {
+        return this.formFields.find(field => field.isTextarea);
+    }
+    
+    get regularFields() {
+        return this.formFields.filter(field => field.isRegularField);
     }
 }

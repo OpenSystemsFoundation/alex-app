@@ -1,189 +1,79 @@
 <template>
-    <section class={modalClass} role="dialog">
-        <div class="slds-modal__container">
+    <section class={modalClass} role="dialog" aria-labelledby="modal-heading">
+        <div class="slds-modal__container" style="max-width: 50rem;">
             <!-- Modal Header -->
             <header class="slds-modal__header">
                 <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
-                        title="Close" onclick={handleClose}>
+                        title="Close" onclick={handleClose} aria-label="Close">
                     <lightning-icon icon-name="utility:close" alternative-text="close" size="small"></lightning-icon>
+                    <span class="slds-assistive-text">Close</span>
                 </button>
-                <h2 class="slds-modal__title slds-hyphenate">{card.Name}</h2>
+                <h2 id="modal-heading" class="slds-modal__title slds-text-heading_medium">
+                    <lightning-icon icon-name="standard:task" size="small" class="slds-m-right_x-small"></lightning-icon>
+                    <span class="slds-truncate" title={card.name}>{card.name}</span>
+                </h2>
             </header>
             
             <!-- Modal Body -->
-            <div class="slds-modal__content slds-p-around_medium">
-                <template if:false={editMode}>
-                    <!-- View Mode -->
-                    <div class="view-mode">
-                        <div class="slds-form" role="list">
-                            <div class="slds-form__row">
-                                <div class="slds-form__item" role="listitem">
-                                    <div class="slds-form-element">
-                                        <span class="slds-form-element__label">Subject</span>
-                                        <div class="slds-form-element__control">
-                                            <div class="slds-text-title">{card.subject}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <template if:true={card.description}>
-                                <div class="slds-form__row">
-                                    <div class="slds-form__item" role="listitem">
-                                        <div class="slds-form-element">
-                                            <span class="slds-form-element__label">Description</span>
-                                            <div class="slds-form-element__control">
-                                                <div class="slds-text-body_regular">{card.description}</div>
-                                            </div>
-                                        </div>
-                                    </div>
+            <div class="slds-modal__content slds-p-around_medium" id="modal-content">
+                <lightning-record-edit-form
+                    object-api-name="OpenSF__Card__c"
+                    record-id={card.Id}
+                    onsuccess={handleSuccess}
+                    onerror={handleError}>
+                    
+                    <!-- Form Fields Container -->
+                    <div class="slds-form" role="list">
+                        <div class="slds-grid slds-wrap slds-gutters_small">
+                            <!-- Dynamic Fields from Custom Metadata -->
+                            <template for:each={regularFields} for:item="field">
+                                <div key={field.key} class={field.columnClass}>
+                                    <lightning-input-field 
+                                        field-name={field.fieldName}
+                                        variant="label-stacked">
+                                    </lightning-input-field>
                                 </div>
                             </template>
                             
-                            <div class="slds-form__row">
-                                <div class="slds-form__item" role="listitem">
-                                    <div class="slds-form-element">
-                                        <span class="slds-form-element__label">Priority</span>
-                                        <div class="slds-form-element__control">
-                                            <lightning-badge label={card.priority}></lightning-badge>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="slds-form__item" role="listitem">
-                                    <div class="slds-form-element">
-                                        <span class="slds-form-element__label">Type</span>
-                                        <div class="slds-form-element__control">
-                                            <lightning-badge label={card.cardType}></lightning-badge>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="slds-form__row">
-                                <div class="slds-form__item" role="listitem">
-                                    <div class="slds-form-element">
-                                        <span class="slds-form-element__label">Assignee</span>
-                                        <div class="slds-form-element__control">
-                                            <div class="slds-text-body_regular">{assigneeName}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <template if:true={card.dueDate}>
-                                    <div class="slds-form__item" role="listitem">
-                                        <div class="slds-form-element">
-                                            <span class="slds-form-element__label">Due Date</span>
-                                            <div class="slds-form-element__control">
-                                                <lightning-formatted-date-time value={card.dueDate}>
-                                                </lightning-formatted-date-time>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                            
-                            <template if:true={card.storyPoints}>
-                                <div class="slds-form__row">
-                                    <div class="slds-form__item" role="listitem">
-                                        <div class="slds-form-element">
-                                            <span class="slds-form-element__label">Story Points</span>
-                                            <div class="slds-form-element__control">
-                                                <div class="slds-text-body_regular">{card.storyPoints}</div>
-                                            </div>
-                                        </div>
-                                    </div>
+                            <!-- Description Field - Always at bottom -->
+                            <template lwc:if={descriptionField}>
+                                <div class="slds-col slds-size_1-of-1 slds-m-top_small">
+                                    <lightning-input-field 
+                                        field-name={descriptionField.fieldName}
+                                        variant="label-stacked">
+                                    </lightning-input-field>
                                 </div>
                             </template>
                         </div>
                     </div>
-                </template>
-                
-                <template if:true={editMode}>
-                    <!-- Edit Mode -->
-                    <div class="edit-mode">
-                        <lightning-input
-                            label="Subject"
-                            value={formData.subject}
-                            data-field="subject"
-                            onchange={handleFieldChange}
-                            required
-                        ></lightning-input>
-                        
-                        <lightning-textarea
-                            label="Description"
-                            value={formData.description}
-                            data-field="description"
-                            onchange={handleFieldChange}
-                        ></lightning-textarea>
-                        
-                        <div class="slds-grid slds-gutters">
-                            <div class="slds-col slds-size_1-of-2">
-                                <lightning-combobox
-                                    label="Priority"
-                                    value={formData.priority}
-                                    options={priorityOptions}
-                                    data-field="priority"
-                                    onchange={handleFieldChange}
-                                ></lightning-combobox>
-                            </div>
-                            
-                            <div class="slds-col slds-size_1-of-2">
-                                <lightning-combobox
-                                    label="Type"
-                                    value={formData.cardType}
-                                    options={cardTypeOptions}
-                                    data-field="cardType"
-                                    onchange={handleFieldChange}
-                                ></lightning-combobox>
-                            </div>
-                        </div>
-                        
-                        <div class="slds-grid slds-gutters">
-                            <div class="slds-col slds-size_1-of-2">
-                                <lightning-input
-                                    type="date"
-                                    label="Due Date"
-                                    value={formData.dueDate}
-                                    data-field="dueDate"
-                                    onchange={handleFieldChange}
-                                ></lightning-input>
-                            </div>
-                            
-                            <div class="slds-col slds-size_1-of-2">
-                                <lightning-input
-                                    type="number"
-                                    label="Story Points"
-                                    value={formData.storyPoints}
-                                    data-field="storyPoints"
-                                    onchange={handleFieldChange}
-                                ></lightning-input>
-                            </div>
-                        </div>
-                        
-                        <lightning-input
-                            type="color"
-                            label="Color"
-                            value={formData.color}
-                            data-field="color"
-                            onchange={handleFieldChange}
-                        ></lightning-input>
-                    </div>
-                </template>
+                </lightning-record-edit-form>
             </div>
             
             <!-- Modal Footer -->
             <footer class="slds-modal__footer">
-                <template if:false={editMode}>
-                    <lightning-button label="Edit" onclick={handleEdit}></lightning-button>
-                    <lightning-button label="Delete" variant="destructive" onclick={handleDelete}></lightning-button>
-                    <lightning-button label="Close" onclick={handleClose}></lightning-button>
-                </template>
-                
-                <template if:true={editMode}>
-                    <lightning-button label="Cancel" onclick={handleCancel}></lightning-button>
-                    <lightning-button label="Save" variant="brand" onclick={handleSave}></lightning-button>
-                </template>
+                <div class="slds-grid slds-grid_align-spread">
+                    <div>
+                        <lightning-button 
+                            variant="destructive-text" 
+                            label="Delete" 
+                            onclick={handleDelete}
+                            icon-name="utility:delete">
+                        </lightning-button>
+                    </div>
+                    <div>
+                        <lightning-button 
+                            variant="neutral" 
+                            label="Cancel" 
+                            onclick={handleClose}>
+                        </lightning-button>
+                        <lightning-button 
+                            variant="brand" 
+                            label="Save"
+                            onclick={handleSave}
+                            icon-name="utility:save">
+                        </lightning-button>
+                    </div>
+                </div>
             </footer>
         </div>
     </section>

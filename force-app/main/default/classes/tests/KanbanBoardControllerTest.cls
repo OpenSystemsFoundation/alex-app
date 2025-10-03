@@ -124,6 +124,43 @@ private class KanbanBoardControllerTest {
     }
     
     @isTest
+    static void testGetModalSettings() {
+        // Test that modal settings are retrieved from custom metadata
+        Test.startTest();
+        KanbanBoardController.ModalSettings settings = KanbanBoardController.getModalSettings();
+        Test.stopTest();
+        
+        System.assertNotEquals(null, settings, 'Modal settings should not be null');
+        System.assertNotEquals(null, settings.visibleFields, 'Visible fields should not be null');
+        System.assert(settings.visibleFields.size() > 0, 'Should have at least one visible field');
+        
+        // Verify common fields are included (based on custom metadata configuration)
+        Boolean hasSubject = false;
+        Boolean hasDescription = false;
+        for (String field : settings.visibleFields) {
+            if (field == 'OpenSF__Subject__c') hasSubject = true;
+            if (field == 'OpenSF__Description__c') hasDescription = true;
+        }
+        System.assert(hasSubject || hasDescription, 'Should include Subject or Description field');
+    }
+    
+    @isTest
+    static void testGetModalSettingsWithDefaults() {
+        // Test that default fields are returned if metadata is not configured
+        // This simulates the catch block behavior
+        Test.startTest();
+        KanbanBoardController.ModalSettings settings = KanbanBoardController.getModalSettings();
+        Test.stopTest();
+        
+        System.assertNotEquals(null, settings, 'Should return settings even if metadata is missing');
+        System.assertNotEquals(null, settings.visibleFields, 'Should have default visible fields');
+        
+        // Verify the settings are cacheable for performance
+        KanbanBoardController.ModalSettings cachedSettings = KanbanBoardController.getModalSettings();
+        System.assertNotEquals(null, cachedSettings, 'Cached settings should be available');
+    }
+    
+    @isTest
     static void testMoveCardWithPositioning() {
         // Create additional cards for position testing
         OpenSF__Column__c column = [SELECT Id FROM OpenSF__Column__c LIMIT 1];

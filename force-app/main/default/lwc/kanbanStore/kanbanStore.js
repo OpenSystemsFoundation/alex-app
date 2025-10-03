@@ -61,7 +61,7 @@ class KanbanStore {
             try {
                 callback(state);
             } catch (error) {
-                console.error('Error in subscriber callback:', error);
+                // Error in subscriber callback
             }
         });
     }
@@ -71,8 +71,6 @@ class KanbanStore {
      * @param {Object} action - Action object with type and payload
      */
     dispatch(action) {
-        console.log('🎬 DISPATCH ACTION:', action.type, JSON.stringify(action.payload, null, 2));
-        
         const prevState = this._state;
         
         switch (action.type) {
@@ -99,7 +97,6 @@ class KanbanStore {
                 
             case 'START_DRAG':
                 if (!this._state.columns || this._state.columns.length === 0) {
-                    console.error('❌ Cannot start drag: no columns in state');
                     break;
                 }
                 this._state = {
@@ -190,15 +187,8 @@ class KanbanStore {
                 break;
                 
             default:
-                console.warn('Unknown action type:', action.type);
                 return;
         }
-        
-        console.log('📦 STATE UPDATED', {
-            action: action.type,
-            prevStateHash: this._hashState(prevState),
-            newStateHash: this._hashState(this._state)
-        });
         
         // Notify subscribers
         this._notifySubscribers();
@@ -209,14 +199,12 @@ class KanbanStore {
      */
     _calculateDragState(targetColumnId, targetIndex) {
         if (!this._state.columns || this._state.columns.length === 0) {
-            console.error('❌ Cannot calculate drag state: no columns');
             return [];
         }
         
         const { dragSource } = this._state;
         
         if (!dragSource) {
-            console.warn('⚠️ No drag source in state');
             return this._state.columns;
         }
         
@@ -338,7 +326,6 @@ class KanbanStore {
         const cardUpdates = updates || cardIdOrCard;
         
         if (!cardId) {
-            console.error('❌ No card ID provided for update');
             return newState;
         }
         
@@ -357,7 +344,6 @@ class KanbanStore {
         }
         
         if (!existingCard) {
-            console.warn('⚠️ Card not found in state:', cardId);
             return newState;
         }
         
@@ -366,10 +352,6 @@ class KanbanStore {
         
         // Check if columnId changed (card moved to different column)
         if (cardUpdates.columnId && cardUpdates.columnId !== sourceColumn.Id) {
-            console.log('🔄 Card moving to different column:', { 
-                from: sourceColumn.Id, 
-                to: cardUpdates.columnId 
-            });
             
             // Remove from source column
             sourceColumn.cards.splice(cardIndex, 1);
@@ -380,14 +362,10 @@ class KanbanStore {
             if (targetColumn) {
                 targetColumn.cards.push(updatedCard);
                 targetColumn.cardCount = targetColumn.cards.length;
-                console.log('✅ Card moved to new column in store');
-            } else {
-                console.error('❌ Target column not found:', cardUpdates.columnId);
             }
         } else {
             // Update in same column
             sourceColumn.cards[cardIndex] = updatedCard;
-            console.log('✅ Card updated in place:', cardId);
         }
         
         return newState;
