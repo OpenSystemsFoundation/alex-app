@@ -4,14 +4,17 @@
  */
 
 const DRAG_UPDATE_THROTTLE = 16; // ms between drag updates (~60fps)
+const DROP_ZONE_TOLERANCE = 4; // px - small tolerance to prevent jitter
 
 export default class DragDropManager {
-    constructor() {
+    constructor(template) {
+        this.template = template;
         this.draggedCard = null;
         this.dragPlaceholder = null;
         this.dropSuccessful = false;
         this.lastDragUpdate = 0;
         this.lastDragPosition = null;
+        this.dragOffset = { x: 0, y: 0 }; // Store where user clicked on card
     }
     
     /**
@@ -36,10 +39,18 @@ export default class DragDropManager {
             return false;
         }
         
+        // Store drag offset for accurate position calculations
+        const rect = event.target.getBoundingClientRect();
+        this.dragOffset = {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top
+        };
+        
         this.draggedCard = {
             id: cardId,
             columnId: columnId,
-            element: event.target
+            element: event.target,
+            rect: rect
         };
         
         // Dispatch to store
@@ -53,8 +64,8 @@ export default class DragDropManager {
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', cardId);
         
-        // Create centered drag image
-        this._createDragImage(event);
+        // Create drag image with natural offset (where user clicked)
+        this._createDragImage(event, rect);
         
         return true;
     }
@@ -68,6 +79,13 @@ export default class DragDropManager {
         // Cancel drag if not successful
         if (!this.dropSuccessful) {
             store.dispatch({ type: 'CANCEL_DRAG' });
+        }
+        
+        // Remove all drag classes from template
+        if (this.template) {
+            this.template.querySelectorAll('.drag-active').forEach(el => {
+                el.classList.remove('drag-active');
+            });
         }
         
         // Reset state
@@ -131,6 +149,13 @@ export default class DragDropManager {
         const cardsContainer = event.currentTarget;
         cardsContainer.classList.remove('drag-active');
         
+        // Remove all visual feedback from template
+        if (this.template) {
+            this.template.querySelectorAll('.drag-active').forEach(el => {
+                el.classList.remove('drag-active');
+            });
+        }
+        
         if (!this.draggedCard || !this.dragPlaceholder) {
             store.dispatch({ type: 'CANCEL_DRAG' });
             return null;
@@ -167,6 +192,7 @@ export default class DragDropManager {
         this.dropSuccessful = false;
         this.lastDragPosition = null;
         this.lastDragUpdate = 0;
+        this.dragOffset = { x: 0, y: 0 };
     }
     
     /**
@@ -177,12 +203,15 @@ export default class DragDropManager {
     }
     
     /**
-     * Create centered drag image
+     * Create drag image with natural offset (preserves click position)
      * @private
      */
-    _createDragImage(event) {
+    _createDragImage(event, rect) {
         const dragElement = event.target;
-        const rect = dragElement.getBoundingClientRect();
+        
+        // Use pre-calculated offset for consistency
+        const offsetX = this.dragOffset.x;
+        const offsetY = this.dragOffset.y;
         
         const dragImage = dragElement.cloneNode(true);
         dragImage.style.position = 'absolute';
@@ -193,8 +222,7 @@ export default class DragDropManager {
         
         document.body.appendChild(dragImage);
         
-        const offsetX = rect.width / 2;
-        const offsetY = rect.height / 2;
+        // Use the actual click offset instead of centering
         event.dataTransfer.setDragImage(dragImage, offsetX, offsetY);
         
         setTimeout(() => {
@@ -204,6 +232,7 @@ export default class DragDropManager {
     
     /**
      * Calculate target index based on mouse position
+     * Accounts for same-column reordering where dragged card affects indices
      * @private
      */
     _calculateTargetIndex(event, cardsContainer) {
@@ -215,28 +244,39 @@ export default class DragDropManager {
             return 0;
         }
         
+        // Calculate where the TOP of the dragged card currently is
         const mouseY = event.clientY;
-        let closestDistance = Infinity;
-        let closestIndex = cardElements.length;
+        const draggedCardTop = mouseY - this.dragOffset.y;
         
+        // Check if we're in the same column as the source
+        const targetColumnId = cardsContainer.dataset.columnId;
+        const isSameColumn = this.draggedCard && this.draggedCard.columnId === targetColumnId;
+        
+        // Find insertion point
         for (let i = 0; i < cardElements.length; i++) {
-            const cardElement = cardElements[i];
-            const rect = cardElement.getBoundingClientRect();
+            const rect = cardElements[i].getBoundingClientRect();
             
-            const distanceToTop = Math.abs(mouseY - rect.top);
-            if (distanceToTop < closestDistance) {
-                closestDistance = distanceToTop;
-                closestIndex = i;
-            }
-            
-            const distanceToBottom = Math.abs(mouseY - rect.bottom);
-            if (distanceToBottom < closestDistance) {
-                closestDistance = distanceToBottom;
-                closestIndex = i + 1;
+            // For same column, use tighter logic - compare to card edges
+            if (isSameColumn) {
+                // Check if dragged card's center is above this card's center
+                const draggedCardCenter = draggedCardTop + (this.draggedCard.rect.height / 2);
+                const targetCardCenter = rect.top + (rect.height / 2);
+                
+                if (draggedCardCenter < targetCardCenter) {
+                    return i;
+                }
+            } else {
+                // Different column - use simple boundary check
+                const boundary = rect.top + (rect.height / 2);
+                
+                if (draggedCardTop < boundary - DROP_ZONE_TOLERANCE) {
+                    return i;
+                }
             }
         }
         
-        return closestIndex;
+        // Position is after all cards
+        return cardElements.length;
     }
     
     /**

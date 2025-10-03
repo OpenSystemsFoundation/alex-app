@@ -64,7 +64,7 @@ export default class KanbanBoard extends LightningElement {
     
     connectedCallback() {
         // Initialize managers
-        this.dragDropManager = new DragDropManager();
+        this.dragDropManager = new DragDropManager(this.template);
         this.toastManager = new ToastManager(this);
         this.eventHandler = new EventHandler();
         
