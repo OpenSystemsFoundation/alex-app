@@ -42,7 +42,7 @@ public with sharing class KanbanBoardController {
             OpenSF__Card__c card = new OpenSF__Card__c(
                 Id = cardId,
                 OpenSF__Column__c = targetColumnId,
-                OpenSF__Position__c = newPosition
+                OpenSF__LexoRankPosition__c = newPosition
             );
             
             update card;
@@ -78,7 +78,7 @@ public with sharing class KanbanBoardController {
             OpenSF__Card__c card = new OpenSF__Card__c(
                 OpenSF__Subject__c = subject,
                 OpenSF__Column__c = columnId,
-                OpenSF__Position__c = position
+                OpenSF__LexoRankPosition__c = position
             );
             
             insert card;
@@ -161,7 +161,7 @@ public with sharing class KanbanBoardController {
             
             OpenSF__Column__c column = new OpenSF__Column__c(
                 Id = columnId,
-                OpenSF__Position__c = newPosition
+                OpenSF__LexoRankPosition__c = newPosition
             );
             
             update column;

@@ -47,7 +47,7 @@
                             <value>ColumnHeader__c</value>
                         </valueListItems>
                         <valueListItems>
-                            <value>Position__c</value>
+                            <value>LexoRankPosition__c</value>
                         </valueListItems>
                         <valueListItems>
                             <value>Status__c</value>

@@ -168,7 +168,7 @@
                 </rightValue>
             </conditions>
             <conditions>
-                <leftValueReference>$Record.OpenSF__Position__c</leftValueReference>
+                <leftValueReference>$Record.OpenSF__LexoRankPosition__c</leftValueReference>
                 <operator>IsChanged</operator>
                 <rightValue>
                     <booleanValue>false</booleanValue>

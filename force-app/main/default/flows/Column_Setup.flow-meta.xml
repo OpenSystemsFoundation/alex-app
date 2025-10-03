@@ -31,7 +31,7 @@
             </value>
         </assignmentItems>
         <assignmentItems>
-            <assignToReference>columnRecord.Position__c</assignToReference>
+            <assignToReference>columnRecord.LexoRankPosition__c</assignToReference>
             <operator>Assign</operator>
             <value>
                 <elementReference>Loop_through_Repeater.Column_Position</elementReference>
@@ -258,7 +258,7 @@
             <inputParameters>
                 <name>columns</name>
                 <value>
-                    <stringValue>[{&quot;apiName&quot;:&quot;OpenSF__ColumnHeader__c&quot;,&quot;guid&quot;:&quot;column-99a4&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:0,&quot;label&quot;:&quot;Column Header&quot;,&quot;type&quot;:&quot;text&quot;},{&quot;apiName&quot;:&quot;OpenSF__Position__c&quot;,&quot;guid&quot;:&quot;column-8623&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:1,&quot;label&quot;:&quot;Position&quot;,&quot;type&quot;:&quot;number&quot;},{&quot;apiName&quot;:&quot;OpenSF__Status__c&quot;,&quot;guid&quot;:&quot;column-2a99&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:2,&quot;label&quot;:&quot;Status&quot;,&quot;type&quot;:&quot;text&quot;}]</stringValue>
+                    <stringValue>[{&quot;apiName&quot;:&quot;OpenSF__ColumnHeader__c&quot;,&quot;guid&quot;:&quot;column-99a4&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:0,&quot;label&quot;:&quot;Column Header&quot;,&quot;type&quot;:&quot;text&quot;},{&quot;apiName&quot;:&quot;OpenSF__LexoRankPosition__c&quot;,&quot;guid&quot;:&quot;column-8623&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:1,&quot;label&quot;:&quot;Position&quot;,&quot;type&quot;:&quot;text&quot;},{&quot;apiName&quot;:&quot;OpenSF__Status__c&quot;,&quot;guid&quot;:&quot;column-2a99&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:2,&quot;label&quot;:&quot;Status&quot;,&quot;type&quot;:&quot;text&quot;}]</stringValue>
                 </value>
             </inputParameters>
             <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>

@@ -54,7 +54,7 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Position__c</field>
+                <field>LexoRankPosition__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>

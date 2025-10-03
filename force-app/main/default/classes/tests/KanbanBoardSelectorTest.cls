@@ -148,7 +148,7 @@ private class KanbanBoardSelectorTest {
         OpenSF__Card__c card = new OpenSF__Card__c(
             OpenSF__Subject__c = 'Assigned Card',
             OpenSF__Column__c = column.Id,
-            OpenSF__Position__c = '0|h00002:',
+            OpenSF__LexoRankPosition__c = '0|h00002:',
             OpenSF__Status__c = 'To Do',
             OpenSF__Assignee__c = currentUser.Id
         );
@@ -208,7 +208,7 @@ private class KanbanBoardSelectorTest {
         OpenSF__Card__c epic = new OpenSF__Card__c(
             OpenSF__Subject__c = 'Epic Card',
             OpenSF__Column__c = column.Id,
-            OpenSF__Position__c = '0|m00000:',
+            OpenSF__LexoRankPosition__c = '0|m00000:',
             OpenSF__Status__c = 'To Do',
             OpenSF__CardType__c = 'Epic'
         );
@@ -218,7 +218,7 @@ private class KanbanBoardSelectorTest {
         OpenSF__Card__c card = new OpenSF__Card__c(
             OpenSF__Subject__c = 'Card with Relations',
             OpenSF__Column__c = column.Id,
-            OpenSF__Position__c = '0|m00001:',
+            OpenSF__LexoRankPosition__c = '0|m00001:',
             OpenSF__Status__c = 'To Do',
             OpenSF__CardType__c = 'Story',
             OpenSF__Assignee__c = UserInfo.getUserId(),

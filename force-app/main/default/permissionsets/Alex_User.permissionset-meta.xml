@@ -126,6 +126,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Card__c.LexoRankPosition__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Card__c.Priority__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -162,6 +167,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Column__c.Position__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Column__c.LexoRankPosition__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

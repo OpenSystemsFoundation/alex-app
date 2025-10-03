@@ -20,7 +20,7 @@ private class ColumnTriggerHandlerTest {
         OpenSF__Column__c column = new OpenSF__Column__c(
             OpenSF__ColumnHeader__c = 'To Do',
             OpenSF__Board__c = board.Id,
-            OpenSF__Position__c = '0|h00000:',
+            OpenSF__LexoRankPosition__c = '0|h00000:',
             OpenSF__Status__c = 'To Do',
             OpenSF__Color__c = '#1B96FF'
         );
@@ -40,7 +40,7 @@ private class ColumnTriggerHandlerTest {
         OpenSF__Column__c column = new OpenSF__Column__c(
             OpenSF__ColumnHeader__c = 'To Do',
             OpenSF__Board__c = board.Id,
-            OpenSF__Position__c = '0|h00000:',
+            OpenSF__LexoRankPosition__c = '0|h00000:',
             OpenSF__Status__c = 'To Do'
         );
         insert column;
@@ -69,7 +69,7 @@ private class ColumnTriggerHandlerTest {
         OpenSF__Column__c column = new OpenSF__Column__c(
             OpenSF__ColumnHeader__c = 'To Do',
             OpenSF__Board__c = board.Id,
-            OpenSF__Position__c = '0|h00000:',
+            OpenSF__LexoRankPosition__c = '0|h00000:',
             OpenSF__Status__c = 'To Do'
         );
         insert column;
@@ -93,7 +93,7 @@ private class ColumnTriggerHandlerTest {
             columns.add(new OpenSF__Column__c(
                 OpenSF__ColumnHeader__c = 'Column ' + i,
                 OpenSF__Board__c = board.Id,
-                OpenSF__Position__c = '0|h0000' + i + ':',
+                OpenSF__LexoRankPosition__c = '0|h0000' + i + ':',
                 OpenSF__Status__c = 'Backlog'
             ));
         }
@@ -116,7 +116,7 @@ private class ColumnTriggerHandlerTest {
             columns.add(new OpenSF__Column__c(
                 OpenSF__ColumnHeader__c = 'Column ' + i,
                 OpenSF__Board__c = board.Id,
-                OpenSF__Position__c = '0|h0000' + i + ':',
+                OpenSF__LexoRankPosition__c = '0|h0000' + i + ':',
                 OpenSF__Status__c = 'Backlog'
             ));
         }
@@ -147,7 +147,7 @@ private class ColumnTriggerHandlerTest {
         OpenSF__Column__c column = new OpenSF__Column__c(
             OpenSF__ColumnHeader__c = 'Event Test Column',
             OpenSF__Board__c = board.Id,
-            OpenSF__Position__c = '0|h00000:',
+            OpenSF__LexoRankPosition__c = '0|h00000:',
             OpenSF__Status__c = 'To Do'
         );
         insert column;

@@ -216,8 +216,8 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Record.Position__c</fieldItem>
-                <identifier>RecordOpenSF_Position_cField</identifier>
+                <fieldItem>Record.LexoRankPosition__c</fieldItem>
+                <identifier>RecordOpenSF_LexoRankPosition_cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>

@@ -46,7 +46,7 @@ public with sharing class KanbanBoardDTO {
             this.Id = column.Id;
             this.Name = column.Name;
             this.columnHeader = column.OpenSF__ColumnHeader__c;
-            this.position = column.OpenSF__Position__c;
+            this.position = column.OpenSF__LexoRankPosition__c;
             this.color = column.OpenSF__Color__c;
             this.status = column.OpenSF__Status__c;
             this.cardCount = column.OpenSF__CardCount__c;
@@ -85,7 +85,7 @@ public with sharing class KanbanBoardDTO {
             this.subject = card.OpenSF__Subject__c;
             this.description = card.OpenSF__Description__c;
             this.columnId = card.OpenSF__Column__c;
-            this.position = card.OpenSF__Position__c;
+            this.position = card.OpenSF__LexoRankPosition__c;
             this.color = card.OpenSF__Color__c;
             this.priority = card.OpenSF__Priority__c;
             this.status = card.OpenSF__Status__c;

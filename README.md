@@ -73,8 +73,10 @@ Platform Event: CardUpdateEvent__e (Real-time updates)
 ```
 
 **Position Fields:** Use LexoRank string format for efficient reordering
-- `Card__c.Position__c` (Text, 255)
-- `Column__c.Position__c` (Text, 255)
+- `Card__c.Position__c` (Number, 18) - **DEPRECATED** - Use LexoRankPosition__c
+- `Card__c.LexoRankPosition__c` (Text, 255) - LexoRank position for drag-and-drop ordering
+- `Column__c.Position__c` (Number, 18) - **DEPRECATED** - Use LexoRankPosition__c
+- `Column__c.LexoRankPosition__c` (Text, 255) - LexoRank position for drag-and-drop ordering
 
 ## 🎨 Features in Detail
 

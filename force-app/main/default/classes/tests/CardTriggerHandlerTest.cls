@@ -24,7 +24,7 @@ private class CardTriggerHandlerTest {
         OpenSF__Card__c card = new OpenSF__Card__c(
             OpenSF__Subject__c = 'Test Card',
             OpenSF__Column__c = column.Id,
-            OpenSF__Position__c = '0|h00000:',
+            OpenSF__LexoRankPosition__c = '0|h00000:',
             OpenSF__Status__c = 'To Do',
             OpenSF__CardType__c = 'Story',
             OpenSF__Priority__c = 'High'
@@ -48,7 +48,7 @@ private class CardTriggerHandlerTest {
         OpenSF__Card__c card = new OpenSF__Card__c(
             OpenSF__Subject__c = 'Test Card',
             OpenSF__Column__c = column.Id,
-            OpenSF__Position__c = '0|h00000:',
+            OpenSF__LexoRankPosition__c = '0|h00000:',
             OpenSF__Status__c = 'To Do'
         );
         insert card;
@@ -77,7 +77,7 @@ private class CardTriggerHandlerTest {
         OpenSF__Card__c card = new OpenSF__Card__c(
             OpenSF__Subject__c = 'Test Card',
             OpenSF__Column__c = column.Id,
-            OpenSF__Position__c = '0|h00000:',
+            OpenSF__LexoRankPosition__c = '0|h00000:',
             OpenSF__Status__c = 'To Do'
         );
         insert card;
@@ -103,7 +103,7 @@ private class CardTriggerHandlerTest {
         OpenSF__Card__c card = new OpenSF__Card__c(
             OpenSF__Subject__c = 'Test Card',
             OpenSF__Column__c = column.Id,
-            OpenSF__Position__c = '0|h00000:',
+            OpenSF__LexoRankPosition__c = '0|h00000:',
             OpenSF__Status__c = 'To Do'
         );
         insert card;
@@ -147,7 +147,7 @@ private class CardTriggerHandlerTest {
         OpenSF__Card__c card = new OpenSF__Card__c(
             OpenSF__Subject__c = 'Event Test Card',
             OpenSF__Column__c = column.Id,
-            OpenSF__Position__c = '0|h00000:',
+            OpenSF__LexoRankPosition__c = '0|h00000:',
             OpenSF__Status__c = 'To Do',
             OpenSF__CardType__c = 'Bug'
         );

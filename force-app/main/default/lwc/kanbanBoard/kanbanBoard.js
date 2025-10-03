@@ -805,7 +805,7 @@ export default class KanbanBoard extends LightningElement {
             
             let previousPosition = null;
             if (cards.length > 0) {
-                previousPosition = cards[cards.length - 1].Position__c;
+                previousPosition = cards[cards.length - 1].position;
             }
             
             // Create card with default subject

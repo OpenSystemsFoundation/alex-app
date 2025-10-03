@@ -101,7 +101,7 @@ private class KanbanBoardControllerTest {
     
     @isTest
     static void testMoveColumn() {
-        OpenSF__Column__c column = [SELECT Id, OpenSF__Position__c FROM OpenSF__Column__c LIMIT 1];
+        OpenSF__Column__c column = [SELECT Id, OpenSF__LexoRankPosition__c FROM OpenSF__Column__c LIMIT 1];
         
         Test.startTest();
         KanbanBoardDTO.ColumnDTO movedColumn = KanbanBoardController.moveColumn(
@@ -111,7 +111,7 @@ private class KanbanBoardControllerTest {
         );
         Test.stopTest();
         
-        System.assertNotEquals(column.OpenSF__Position__c, movedColumn.position, 'Position should be updated');
+        System.assertNotEquals(column.OpenSF__LexoRankPosition__c, movedColumn.position, 'Position should be updated');
     }
     
     @isTest
@@ -131,14 +131,14 @@ private class KanbanBoardControllerTest {
         cards.add(new OpenSF__Card__c(
             OpenSF__Subject__c = 'Card A',
             OpenSF__Column__c = column.Id,
-            OpenSF__Position__c = '0|h00000:',
+            OpenSF__LexoRankPosition__c = '0|h00000:',
             OpenSF__Status__c = 'To Do',
             OpenSF__CardType__c = 'Story'
         ));
         cards.add(new OpenSF__Card__c(
             OpenSF__Subject__c = 'Card B',
             OpenSF__Column__c = column.Id,
-            OpenSF__Position__c = '0|h00002:',
+            OpenSF__LexoRankPosition__c = '0|h00002:',
             OpenSF__Status__c = 'To Do',
             OpenSF__CardType__c = 'Story'
         ));

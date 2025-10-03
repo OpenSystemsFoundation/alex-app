@@ -69,7 +69,7 @@ public class TestFactory {
         OpenSF__Column__c column = new OpenSF__Column__c(
             OpenSF__Board__c = boardId,
             OpenSF__ColumnHeader__c = columnHeader,
-            OpenSF__Position__c = position,
+            OpenSF__LexoRankPosition__c = position,
             OpenSF__Color__c = color,
             OpenSF__Status__c = columnHeader
         );
@@ -103,7 +103,7 @@ public class TestFactory {
             columns.add(new OpenSF__Column__c(
                 OpenSF__Board__c = boardId,
                 OpenSF__ColumnHeader__c = columnHeader,
-                OpenSF__Position__c = position,
+                OpenSF__LexoRankPosition__c = position,
                 OpenSF__Color__c = '#1B96FF',
                 OpenSF__Status__c = columnHeader
             ));
@@ -128,7 +128,7 @@ public class TestFactory {
             OpenSF__Subject__c = subject,
             OpenSF__CardType__c = cardType,
             OpenSF__Status__c = status,
-            OpenSF__Position__c = position,
+            OpenSF__LexoRankPosition__c = position,
             OpenSF__Description__c = 'Test card description',
             OpenSF__Priority__c = 'High'
         );
@@ -165,7 +165,7 @@ public class TestFactory {
                 OpenSF__Subject__c = 'Test Card ' + i,
                 OpenSF__CardType__c = cardType,
                 OpenSF__Status__c = status,
-                OpenSF__Position__c = position,
+                OpenSF__LexoRankPosition__c = position,
                 OpenSF__Description__c = 'Test card description ' + i,
                 OpenSF__Priority__c = 'High'
             ));

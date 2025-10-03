@@ -85,7 +85,7 @@
     </groupingsDown>
     <groupingsDown>
         <dateGranularity>Day</dateGranularity>
-        <field>Board__c.Columns__r$Position__c</field>
+        <field>Board__c.Columns__r$LexoRankPosition__c</field>
         <sortOrder>Asc</sortOrder>
     </groupingsDown>
     <name>Board Overview</name>

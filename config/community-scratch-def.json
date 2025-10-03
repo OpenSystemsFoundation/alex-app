@@ -1,10 +1,10 @@
 {
   "orgName": "OpenSF",
-  "edition": "Developer",
+  "edition": "Partner Developer",
   "language": "en_US",
-  "release": "preview",
   "features": [
-    "ContactsToMultipleAccounts"
+    "ContactsToMultipleAccounts",
+    "Communities"
   ],
   "settings": {
     "mobileSettings": {
@@ -12,6 +12,12 @@
     },
     "lightningExperienceSettings": {
         "enableS1DesktopEnabled": true
+    },
+    "communitiesSettings": {
+      "enableNetworksEnabled": true
+    },
+    "chatterSettings": {
+      "enableChatter": true
     }
   }
 }

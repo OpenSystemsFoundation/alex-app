@@ -97,10 +97,10 @@
     <relatedLists>
         <fields>NAME</fields>
         <fields>ColumnHeader__c</fields>
-        <fields>Position__c</fields>
+        <fields>LexoRankPosition__c</fields>
         <fields>Status__c</fields>
         <relatedList>Column__c.Board__c</relatedList>
-        <sortField>Position__c</sortField>
+        <sortField>LexoRankPosition__c</sortField>
         <sortOrder>Asc</sortOrder>
     </relatedLists>
     <relatedLists>

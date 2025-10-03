@@ -5,7 +5,7 @@
     <columns>ColumnHeader__c</columns>
     <columns>Status__c</columns>
     <columns>Board__c</columns>
-    <columns>Position__c</columns>
+    <columns>LexoRankPosition__c</columns>
     <columns>CardCount__c</columns>
     <columns>CREATEDBY_USER</columns>
     <columns>CREATED_DATE</columns>
