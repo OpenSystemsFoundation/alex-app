@@ -84,4 +84,54 @@ private class LexoRankTest {
         System.assert(rank1 < middle, 'rank1 should be less than middle');
         System.assert(middle < rank2, 'middle should be less than rank2');
     }
+    
+    @isTest
+    static void testInvalidRankFormat() {
+        // Test with invalid format (no bucket separator)
+        String invalidRank = 'invalidrank';
+        String result = LexoRank.between(invalidRank, null);
+        System.assertNotEquals(null, result, 'Should return initial rank for invalid format');
+        
+        // Test between two invalid ranks
+        String result2 = LexoRank.between('invalid1', 'invalid2');
+        System.assertNotEquals(null, result2, 'Should return initial rank');
+    }
+    
+    @isTest
+    static void testEmptyStrings() {
+        // Test with empty strings (treated as null)
+        String result1 = LexoRank.between('', '');
+        System.assertNotEquals(null, result1, 'Should handle empty strings');
+        
+        String result2 = LexoRank.between('', '0|hzzzzz:');
+        System.assertNotEquals(null, result2, 'Should handle empty prev');
+        
+        String result3 = LexoRank.between('0|h00000:', '');
+        System.assertNotEquals(null, result3, 'Should handle empty next');
+    }
+    
+    @isTest
+    static void testCharacterBoundaries() {
+        // Test with ranks at character boundaries
+        String rank1 = '0|0zzzzz:';
+        String rank2 = LexoRank.between(rank1, null);
+        System.assert(rank2 > rank1, 'Should increment beyond z');
+        
+        // Test decrement at lower boundary
+        String rank3 = '0|h00000:';
+        String rank4 = LexoRank.between(null, rank3);
+        System.assert(rank4 < rank3, 'Should decrement below 0');
+    }
+    
+    @isTest
+    static void testAdjacentRanks() {
+        // Test with adjacent characters that need extension
+        String rank1 = '0|m00000:';
+        String rank2 = '0|n00000:';
+        String middle = LexoRank.between(rank1, rank2);
+        
+        System.assertNotEquals(null, middle, 'Should handle adjacent ranks');
+        System.assert(rank1 < middle, 'Middle should be greater than rank1');
+        System.assert(middle < rank2, 'Middle should be less than rank2');
+    }
 }

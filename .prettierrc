@@ -1,5 +1,6 @@
 {
-    "plugins": ["prettier-plugin-apex"],
+    "plugins": ["prettier-plugin-apex", "@prettier/plugin-xml"],
+    "$schema": "https://json.schemastore.org/prettierrc",
     "trailingComma": "none",
     "singleQuote": true,
     "tabWidth": 4,
@@ -45,6 +46,14 @@
                 "tabWidth": 2,
                 "singleQuote": false
             }
+        },
+        {
+            "files": "*.{cls, apex}",
+            "options": { "parser": "apex" }
+        },
+        {
+            "files": "**/*.xml",
+            "options": { "parser": "xml" }
         }
     ]
 }

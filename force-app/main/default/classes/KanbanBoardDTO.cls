@@ -120,7 +120,12 @@ public with sharing class KanbanBoardDTO {
         
         public UserDTO(User user) {
             this.name = user.Name;
-            this.photoUrl = user.SmallPhotoUrl;
+            // SmallPhotoUrl may not be available in test context
+            try {
+                this.photoUrl = user.SmallPhotoUrl;
+            } catch (Exception e) {
+                this.photoUrl = null;
+            }
         }
     }
     

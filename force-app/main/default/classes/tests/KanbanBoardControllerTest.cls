@@ -4,48 +4,15 @@ private class KanbanBoardControllerTest {
     @testSetup
     static void setup() {
         // Create test board
-        OpenSF__Board__c board = new OpenSF__Board__c(
-            Name = 'Test Board',
-            OpenSF__Status__c = 'Active',
-            OpenSF__Active__c = true
-        );
-        insert board;
+        OpenSF__Board__c board = TestFactory.createBoard('Test Board', 'Published', 'Project');
         
         // Create columns
-        List<OpenSF__Column__c> columns = new List<OpenSF__Column__c>();
-        columns.add(new OpenSF__Column__c(
-            OpenSF__ColumnHeader__c = 'To Do',
-            OpenSF__Board__c = board.Id,
-            OpenSF__Position__c = '0|h00000:',
-            OpenSF__Status__c = 'Active'
-        ));
-        columns.add(new OpenSF__Column__c(
-            OpenSF__ColumnHeader__c = 'In Progress',
-            OpenSF__Board__c = board.Id,
-            OpenSF__Position__c = '0|hzzzzz:',
-            OpenSF__Status__c = 'Active'
-        ));
-        insert columns;
+        OpenSF__Column__c todoColumn = TestFactory.createColumn(board.Id, 'To Do', '0|h00000:', '#1B96FF');
+        OpenSF__Column__c inProgressColumn = TestFactory.createColumn(board.Id, 'In Progress', '0|hzzzzz:', '#1B96FF');
         
         // Create cards
-        List<OpenSF__Card__c> cards = new List<OpenSF__Card__c>();
-        cards.add(new OpenSF__Card__c(
-            OpenSF__Subject__c = 'Test Card 1',
-            OpenSF__Column__c = columns[0].Id,
-            OpenSF__Position__c = '0|h00000:',
-            OpenSF__Status__c = 'Active',
-            OpenSF__CardType__c = 'Story',
-            OpenSF__Priority__c = 'High'
-        ));
-        cards.add(new OpenSF__Card__c(
-            OpenSF__Subject__c = 'Test Card 2',
-            OpenSF__Column__c = columns[0].Id,
-            OpenSF__Position__c = '0|h00001:',
-            OpenSF__Status__c = 'Active',
-            OpenSF__CardType__c = 'Bug',
-            OpenSF__Priority__c = 'Medium'
-        ));
-        insert cards;
+        TestFactory.createCard(todoColumn.Id, 'Test Card 1', 'Story', 'To Do', '0|h00000:');
+        TestFactory.createCard(todoColumn.Id, 'Test Card 2', 'Bug', 'To Do', '0|h00001:');
     }
     
     @isTest
@@ -77,7 +44,7 @@ private class KanbanBoardControllerTest {
         Test.stopTest();
         
         System.assert(result.success, 'Move should be successful');
-        System.assertEquals(targetColumn.Id, result.card.columnId, 'Card should be in target column');
+        System.assertEquals(targetColumn.Id, result.columnId, 'Card should be in target column');
         System.assertNotEquals(null, result.newPosition, 'New position should not be null');
     }
     
@@ -156,23 +123,25 @@ private class KanbanBoardControllerTest {
     @isTest
     static void testMoveCardWithPositioning() {
         // Create additional cards for position testing
-        Column__c column = [SELECT Id FROM Column__c LIMIT 1];
-        List<Card__c> cards = new List<Card__c>();
-        cards.add(new Card__c(
-            Subject__c = 'Card A',
-            Column__c = column.Id,
-            Position__c = '0|h00000:',
-            Status__c = 'Active'
+        OpenSF__Column__c column = [SELECT Id FROM OpenSF__Column__c LIMIT 1];
+        List<OpenSF__Card__c> cards = new List<OpenSF__Card__c>();
+        cards.add(new OpenSF__Card__c(
+            OpenSF__Subject__c = 'Card A',
+            OpenSF__Column__c = column.Id,
+            OpenSF__Position__c = '0|h00000:',
+            OpenSF__Status__c = 'To Do',
+            OpenSF__CardType__c = 'Story'
         ));
-        cards.add(new Card__c(
-            Subject__c = 'Card B',
-            Column__c = column.Id,
-            Position__c = '0|h00002:',
-            Status__c = 'Active'
+        cards.add(new OpenSF__Card__c(
+            OpenSF__Subject__c = 'Card B',
+            OpenSF__Column__c = column.Id,
+            OpenSF__Position__c = '0|h00002:',
+            OpenSF__Status__c = 'To Do',
+            OpenSF__CardType__c = 'Story'
         ));
         insert cards;
         
-        Column__c targetColumn = [SELECT Id FROM Column__c WHERE Id != :column.Id LIMIT 1];
+        OpenSF__Column__c targetColumn = [SELECT Id FROM OpenSF__Column__c WHERE Id != :column.Id LIMIT 1];
         
         Test.startTest();
         KanbanBoardController.CardMoveResult result = KanbanBoardController.moveCard(
@@ -185,5 +154,91 @@ private class KanbanBoardControllerTest {
         
         System.assert(result.success, 'Move should be successful');
         System.assertNotEquals(null, result.newPosition, 'Position should be calculated');
+    }
+    
+    @isTest
+    static void testGetBoardDataError() {
+        // Test with non-existent board ID
+        Id fakeBoardId = '001000000000000AAA';
+        
+        Test.startTest();
+        try {
+            KanbanBoardController.getBoardData(fakeBoardId);
+            System.assert(false, 'Should have thrown exception');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e, 'Should throw an exception');
+        }
+        Test.stopTest();
+    }
+    
+    @isTest
+    static void testMoveCardError() {
+        Id fakeCardId = '001000000000000AAA';
+        OpenSF__Column__c column = [SELECT Id FROM OpenSF__Column__c LIMIT 1];
+        
+        Test.startTest();
+        try {
+            KanbanBoardController.moveCard(fakeCardId, column.Id, null, null);
+            System.assert(false, 'Should have thrown exception');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e, 'Should throw an exception');
+        }
+        Test.stopTest();
+    }
+    
+    @isTest
+    static void testCreateCardError() {
+        Id fakeColumnId = '001000000000000AAA';
+        
+        Test.startTest();
+        try {
+            KanbanBoardController.createCard(fakeColumnId, 'Test', null, null);
+            System.assert(false, 'Should have thrown exception');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e, 'Should throw an exception');
+        }
+        Test.stopTest();
+    }
+    
+    @isTest
+    static void testUpdateCardError() {
+        Id fakeCardId = '001000000000000AAA';
+        
+        Test.startTest();
+        try {
+            KanbanBoardController.updateCard(fakeCardId, new Map<String, Object>());
+            System.assert(false, 'Should have thrown exception');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e, 'Should throw an exception');
+        }
+        Test.stopTest();
+    }
+    
+    @isTest
+    static void testDeleteCardError() {
+        Id fakeCardId = '001000000000000AAA';
+        
+        Test.startTest();
+        try {
+            KanbanBoardController.deleteCard(fakeCardId);
+            System.assert(false, 'Should have thrown exception');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e, 'Should throw an exception');
+        }
+        Test.stopTest();
+    }
+    
+    @isTest
+    static void testMoveColumnError() {
+        Id fakeColumnId = '001000000000000AAA';
+        
+        Test.startTest();
+        try {
+            KanbanBoardController.moveColumn(fakeColumnId, null, null);
+            System.assert(false, 'Should have thrown exception');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e, 'Should throw an exception');
+        }
+        Test.stopTest();
     }
 }
