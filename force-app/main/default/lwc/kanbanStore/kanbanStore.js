@@ -342,13 +342,52 @@ class KanbanStore {
             return newState;
         }
         
+        // Find the card and check if column changed
+        let sourceColumn = null;
+        let cardIndex = -1;
+        let existingCard = null;
+        
         for (const column of newState) {
-            const cardIndex = column.cards.findIndex(c => c.Id === cardId);
+            cardIndex = column.cards.findIndex(c => c.Id === cardId);
             if (cardIndex !== -1) {
-                column.cards[cardIndex] = { ...column.cards[cardIndex], ...cardUpdates };
-                console.log('✅ Card updated in store:', { cardId, updates: cardUpdates });
+                sourceColumn = column;
+                existingCard = column.cards[cardIndex];
                 break;
             }
+        }
+        
+        if (!existingCard) {
+            console.warn('⚠️ Card not found in state:', cardId);
+            return newState;
+        }
+        
+        // Merge updates
+        const updatedCard = { ...existingCard, ...cardUpdates };
+        
+        // Check if columnId changed (card moved to different column)
+        if (cardUpdates.columnId && cardUpdates.columnId !== sourceColumn.Id) {
+            console.log('🔄 Card moving to different column:', { 
+                from: sourceColumn.Id, 
+                to: cardUpdates.columnId 
+            });
+            
+            // Remove from source column
+            sourceColumn.cards.splice(cardIndex, 1);
+            sourceColumn.cardCount = sourceColumn.cards.length;
+            
+            // Add to target column
+            const targetColumn = newState.find(col => col.Id === cardUpdates.columnId);
+            if (targetColumn) {
+                targetColumn.cards.push(updatedCard);
+                targetColumn.cardCount = targetColumn.cards.length;
+                console.log('✅ Card moved to new column in store');
+            } else {
+                console.error('❌ Target column not found:', cardUpdates.columnId);
+            }
+        } else {
+            // Update in same column
+            sourceColumn.cards[cardIndex] = updatedCard;
+            console.log('✅ Card updated in place:', cardId);
         }
         
         return newState;

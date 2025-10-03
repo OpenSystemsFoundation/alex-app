@@ -215,13 +215,16 @@ export default class KanbanBoard extends LightningElement {
      * Process cards data
      */
     processCards(cards) {
+        // Get columns directly from store state (don't rely on cached tracked property)
+        const storeColumns = this.store.getState().columns;
+        
         console.log('🃏 PROCESS CARDS', JSON.stringify({
             cardsReceived: cards?.length || 0,
-            hasColumns: !!this.columns,
-            columnsCount: this.columns?.length || 0
+            hasColumns: !!storeColumns,
+            columnsCount: storeColumns?.length || 0
         }, null, 2));
         
-        if (!cards || !this.columns || this.columns.length === 0) {
+        if (!cards || !storeColumns || storeColumns.length === 0) {
             console.log('⚠️ Cannot process cards - missing data');
             return;
         }
@@ -235,7 +238,7 @@ export default class KanbanBoard extends LightningElement {
         ));
         
         // Get current columns from store and create a working copy
-        const currentColumns = JSON.parse(JSON.stringify(this.store.getState().columns));
+        const currentColumns = JSON.parse(JSON.stringify(storeColumns));
         
         // Clear existing cards
         currentColumns.forEach(col => {
@@ -363,42 +366,8 @@ export default class KanbanBoard extends LightningElement {
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', cardId);
         
-        // Create custom drag image (ghost) centered on cursor
-        const dragImage = event.target.cloneNode(true);
-        
-        // Ensure the clone has all the necessary styles
-        dragImage.style.position = 'fixed';
-        dragImage.style.top = '-10000px';
-        dragImage.style.left = '-10000px';
-        dragImage.style.width = event.target.offsetWidth + 'px';
-        dragImage.style.height = event.target.offsetHeight + 'px';
-        dragImage.style.opacity = '1';
-        dragImage.style.pointerEvents = 'none';
-        dragImage.style.zIndex = '9999';
-        
-        // Force styles for Chrome
-        dragImage.style.background = '#ffffff';
-        dragImage.style.border = '1px solid #e5e5e5';
-        dragImage.style.borderRadius = '6px';
-        dragImage.style.padding = '0.75rem';
-        dragImage.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-        
-        // Remove any classes that might affect visibility
-        dragImage.className = 'kanban-card';
-        
-        document.body.appendChild(dragImage);
-        
-        // Center the drag image on the cursor
-        const offsetX = event.target.offsetWidth / 2;
-        const offsetY = event.target.offsetHeight / 2;
-        event.dataTransfer.setDragImage(dragImage, offsetX, offsetY);
-        
-        // Remove the cloned element after a brief delay
-        setTimeout(() => {
-            if (document.body.contains(dragImage)) {
-                document.body.removeChild(dragImage);
-            }
-        }, 0);
+        // Use the original card as the drag image (browser default behavior)
+        // No custom drag image needed - the browser will handle it naturally
     }
     
     /**
@@ -808,6 +777,19 @@ export default class KanbanBoard extends LightningElement {
                 previousPosition = cards[cards.length - 1].position;
             }
             
+            // Pre-track with a temporary marker BEFORE the server call
+            // This prevents race conditions where platform event arrives first
+            const tempId = `temp_${Date.now()}_${Math.random()}`;
+            const updateId = Date.now();
+            this.optimisticUpdates.set(updateId, {
+                cardId: tempId, // Temporary until we get real ID
+                type: 'create',
+                timestamp: updateId,
+                columnId: columnId
+            });
+            
+            console.log('📝 Pre-tracking card creation (temp ID):', tempId);
+            
             // Create card with default subject
             const newCard = await createCard({
                 columnId: columnId,
@@ -816,10 +798,29 @@ export default class KanbanBoard extends LightningElement {
                 nextCardPosition: null
             });
             
-            // Add to UI
-            column.cards.push(this.enrichCard(newCard));
-            column.cardCount++;
-            this.columns = [...this.columns];
+            // Update the tracking with the real card ID
+            this.optimisticUpdates.set(updateId, {
+                cardId: newCard.Id,
+                type: 'create',
+                timestamp: updateId,
+                columnId: columnId
+            });
+            
+            // Clean up old optimistic updates after 5 seconds (increased for safety)
+            setTimeout(() => {
+                this.optimisticUpdates.delete(updateId);
+            }, 5000);
+            
+            console.log('📝 Updated tracking with real card ID:', newCard.Id);
+            
+            // Add to store using dispatch (proper state management)
+            this.store.dispatch({
+                type: 'ADD_CARD',
+                payload: {
+                    card: this.enrichCard(newCard),
+                    columnId: columnId
+                }
+            });
             
             this.showSuccess('Card created successfully');
             
@@ -988,8 +989,8 @@ export default class KanbanBoard extends LightningElement {
                 timestamp: new Date().toISOString()
             }, null, 2));
             
-            // Check if this is our own recent update
-            const isOwnUpdate = this.isRecentOptimisticUpdate(payload.Id);
+            // Check if this is our own recent update (pass columnId for race condition handling)
+            const isOwnUpdate = this.isRecentOptimisticUpdate(payload.Id, payload.columnId);
             console.log(isOwnUpdate ? '🔇 Ignoring own update' : '📢 Processing external update');
             
             if (isOwnUpdate) {
@@ -1024,70 +1025,87 @@ export default class KanbanBoard extends LightningElement {
         // Enrich the DTO with UI properties
         const enrichedCard = this.enrichCard(cardDTO);
         
-        // Find and update the card in columns
-        let updated = false;
-        this.store.getState().columns.forEach(column => {
-            const cardIndex = column.cards.findIndex(c => c.Id === cardDTO.Id);
-            
-            if (cardIndex !== -1) {
-                if (column.Id === cardDTO.columnId) {
-                    // Update in same column
-                    column.cards[cardIndex] = enrichedCard;
-                    updated = true;
-                } else {
-                    // Card moved to different column - remove from old
-                    column.cards.splice(cardIndex, 1);
-                    column.cardCount--;
-                }
+        // Use store dispatch to update card properly
+        this.store.dispatch({
+            type: 'UPDATE_CARD',
+            payload: {
+                cardId: cardDTO.Id,
+                card: enrichedCard
             }
         });
         
-        // If card moved to new column, add it there
-        if (!updated) {
-            const targetColumn = this.store.getState().columns.find(col => col.Id === cardDTO.columnId);
-            if (targetColumn) {
-                targetColumn.cards.push(enrichedCard);
-                targetColumn.cardCount++;
-            }
-        }
-        
-        // Trigger reactivity
-        this.store.dispatch({ 
-            type: 'UPDATE_COLUMNS', 
-            payload: this.store.getState().columns 
-        });
+        console.log('✅ Card updated via store dispatch');
     }
     
     /**
      * Add new card to state from DTO payload
      */
     addCardToStateFromDTO(cardDTO) {
+        console.log('📥 Platform event: ADD card', {
+            cardId: cardDTO.Id,
+            subject: cardDTO.subject,
+            columnId: cardDTO.columnId
+        });
+        
         const enrichedCard = this.enrichCard(cardDTO);
         
-        // Find the target column
-        const targetColumn = this.store.getState().columns.find(col => col.Id === cardDTO.columnId);
-        if (targetColumn) {
-            targetColumn.cards.push(enrichedCard);
-            targetColumn.cardCount++;
-            
-            // Trigger reactivity
-            this.store.dispatch({ 
-                type: 'UPDATE_COLUMNS', 
-                payload: this.store.getState().columns 
-            });
-            
-            console.log('✅ Card added to column:', targetColumn.Name);
-        } else {
-            console.warn('⚠️ Target column not found for new card');
+        // Check if card already exists in state
+        const columns = this.store.getState().columns;
+        const cardExists = columns.some(col => 
+            col.cards.some(c => c.Id === cardDTO.Id)
+        );
+        
+        if (cardExists) {
+            console.log('⚠️ Card already exists in state, skipping duplicate add:', cardDTO.Id);
+            return;
         }
+        
+        // Use store dispatch to add card properly
+        this.store.dispatch({
+            type: 'ADD_CARD',
+            payload: {
+                card: enrichedCard,
+                columnId: cardDTO.columnId
+            }
+        });
+        
+        console.log('✅ Card added via store dispatch from platform event');
     }
     
     /**
      * Check if this is a recent optimistic update
+     * Enhanced to handle race conditions where platform event arrives before server response
      */
-    isRecentOptimisticUpdate(cardId) {
+    isRecentOptimisticUpdate(cardId, columnId = null) {
+        const now = Date.now();
+        const timeWindow = 5000; // 5 seconds to handle slow server responses
+        
         for (let [updateId, update] of this.optimisticUpdates) {
-            if (update.cardId === cardId && (Date.now() - updateId < 2000)) {
+            const age = now - updateId;
+            
+            // Check by card ID (primary check)
+            if (update.cardId === cardId && age < timeWindow) {
+                console.log('🔇 Filtering out own optimistic update by cardId:', {
+                    cardId,
+                    type: update.type,
+                    age
+                });
+                return true;
+            }
+            
+            // Fallback: Check by columnId + recent timestamp for race condition handling
+            // If we have a very recent create operation (< 2 seconds) in the same column,
+            // it's likely our own operation
+            if (update.type === 'create' && 
+                columnId && 
+                update.columnId === columnId && 
+                age < 2000) {
+                console.log('🔇 Filtering out own optimistic update by columnId + timing:', {
+                    cardId,
+                    columnId,
+                    type: update.type,
+                    age
+                });
                 return true;
             }
         }
