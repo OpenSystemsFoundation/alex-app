@@ -3,8 +3,8 @@
     <actionCalls>
         <name>Send_Create_Card_Email</name>
         <label>Send Create Card Email</label>
-        <locationX>50</locationX>
-        <locationY>647</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <actionName>emailSimple</actionName>
         <actionType>emailSimple</actionType>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
@@ -40,13 +40,12 @@
         </inputParameters>
         <nameSegment>emailSimple</nameSegment>
         <offset>0</offset>
-        <versionSegment>1</versionSegment>
     </actionCalls>
     <actionCalls>
         <name>Send_Update_Card_Email</name>
         <label>Send Update Card Email</label>
-        <locationX>314</locationX>
-        <locationY>647</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <actionName>emailSimple</actionName>
         <actionType>emailSimple</actionType>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
@@ -82,14 +81,14 @@
         </inputParameters>
         <nameSegment>emailSimple</nameSegment>
         <offset>0</offset>
-        <versionSegment>1</versionSegment>
     </actionCalls>
     <apiVersion>64.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
     <assignments>
         <name>Add_Recipients</name>
         <label>Add Recipients</label>
-        <locationX>314</locationX>
-        <locationY>323</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <assignmentItems>
             <assignToReference>RecipientEmails</assignToReference>
             <operator>Add</operator>
@@ -120,8 +119,8 @@
         <name>Filter_Recipients</name>
         <elementSubtype>FilterCollectionProcessor</elementSubtype>
         <label>Filter Recipients</label>
-        <locationX>314</locationX>
-        <locationY>431</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <assignNextValueToReference>currentItem_Filter_Recipients</assignNextValueToReference>
         <collectionProcessorType>FilterCollectionProcessor</collectionProcessorType>
         <collectionReference>RecipientEmails</collectionReference>
@@ -140,8 +139,8 @@
     <decisions>
         <name>Event_Type</name>
         <label>Event Type</label>
-        <locationX>314</locationX>
-        <locationY>539</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
             <name>CardCreate</name>
@@ -189,6 +188,7 @@
         <expression>ISNEW()</expression>
     </formulas>
     <interviewLabel>Card Email Notifications {!$Flow.CurrentDateTime}</interviewLabel>
+    <isTemplate>true</isTemplate>
     <label>Card Email Notifications</label>
     <processMetadataValues>
         <name>BuilderType</name>
@@ -210,7 +210,7 @@
     </processMetadataValues>
     <processType>AutoLaunchedFlow</processType>
     <start>
-        <locationX>188</locationX>
+        <locationX>0</locationX>
         <locationY>0</locationY>
         <connector>
             <targetReference>Add_Recipients</targetReference>

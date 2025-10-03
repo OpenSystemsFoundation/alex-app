@@ -3,8 +3,8 @@
     <actionCalls>
         <name>Send_Create_Notification</name>
         <label>Send Create Notification</label>
-        <locationX>50</locationX>
-        <locationY>755</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <actionName>customNotificationAction</actionName>
         <actionType>customNotificationAction</actionType>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
@@ -46,13 +46,12 @@
         </inputParameters>
         <nameSegment>customNotificationAction</nameSegment>
         <offset>0</offset>
-        <versionSegment>1</versionSegment>
     </actionCalls>
     <actionCalls>
         <name>Send_Update_Notification</name>
         <label>Send Update Notification</label>
-        <locationX>314</locationX>
-        <locationY>755</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <actionName>customNotificationAction</actionName>
         <actionType>customNotificationAction</actionType>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
@@ -88,14 +87,14 @@
         </inputParameters>
         <nameSegment>customNotificationAction</nameSegment>
         <offset>0</offset>
-        <versionSegment>1</versionSegment>
     </actionCalls>
     <apiVersion>64.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
     <assignments>
         <name>Assign_Update_Recipients</name>
         <label>Assign Update Recipients</label>
-        <locationX>314</locationX>
-        <locationY>431</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <assignmentItems>
             <assignToReference>recipientIds</assignToReference>
             <operator>Add</operator>
@@ -126,8 +125,8 @@
         <name>FilteredRecipients</name>
         <elementSubtype>FilterCollectionProcessor</elementSubtype>
         <label>Filtered Recipients</label>
-        <locationX>314</locationX>
-        <locationY>539</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <assignNextValueToReference>currentItem_FilteredRecipients</assignNextValueToReference>
         <collectionProcessorType>FilterCollectionProcessor</collectionProcessorType>
         <collectionReference>recipientIds</collectionReference>
@@ -146,8 +145,8 @@
     <decisions>
         <name>Event_Type</name>
         <label>Event Type</label>
-        <locationX>314</locationX>
-        <locationY>647</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
             <name>CardCreate</name>
@@ -195,6 +194,7 @@
         <expression>ISNEW()</expression>
     </formulas>
     <interviewLabel>Card Notifications {!$Flow.CurrentDateTime}</interviewLabel>
+    <isTemplate>true</isTemplate>
     <label>Card Notifications</label>
     <processMetadataValues>
         <name>BuilderType</name>
@@ -218,8 +218,8 @@
     <recordLookups>
         <name>Get_Notification</name>
         <label>Get Notification</label>
-        <locationX>314</locationX>
-        <locationY>323</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
             <targetReference>Assign_Update_Recipients</targetReference>
@@ -237,7 +237,7 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <start>
-        <locationX>188</locationX>
+        <locationX>0</locationX>
         <locationY>0</locationY>
         <connector>
             <targetReference>Get_Notification</targetReference>
