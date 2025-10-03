@@ -7,7 +7,8 @@ trigger CardTrigger on OpenSF__Card__c(
     after delete,
     after undelete
 ) {
-    CardTriggerHandler.handleTrigger(
+    CardTriggerHandler handler = new CardTriggerHandler();
+    handler.setTriggerContext(
         Trigger.isBefore,
         Trigger.isAfter,
         Trigger.isInsert,
@@ -19,4 +20,5 @@ trigger CardTrigger on OpenSF__Card__c(
         Trigger.newMap,
         Trigger.oldMap
     );
+    handler.execute();
 }

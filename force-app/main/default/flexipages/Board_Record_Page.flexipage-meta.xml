@@ -3,10 +3,6 @@
     <flexiPageRegions>
         <itemInstances>
             <componentInstance>
-                <componentInstanceProperties>
-                    <name>maxHeight</name>
-                    <value>70vh</value>
-                </componentInstanceProperties>
                 <componentName>kanbanBoard</componentName>
                 <identifier>c_kanbanBoard</identifier>
             </componentInstance>

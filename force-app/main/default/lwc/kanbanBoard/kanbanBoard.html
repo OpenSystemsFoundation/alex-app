@@ -1,281 +1,158 @@
 <template>
-    <!-- Load Board Spinner -->
-    <template lwc:if={initializeBoard}>
-        <div
-            class="slds-is-relative slds-align_absolute-center slds-var-m-top_medium"
-        >
-            <lightning-spinner
-                alternative-text="Loading"
-                size="large"
-            ></lightning-spinner>
+    <lightning-card title={boardName} icon-name="custom:custom78">
+        <div slot="actions">
+            <lightning-button
+                label="Refresh"
+                icon-name="utility:refresh"
+                onclick={handleRefresh}
+            ></lightning-button>
         </div>
-    </template>
-    <!-- Kanban Board Event Subscriber -->
-    <c-kanban-board-subscriber
-        board-id={recordId}
-    ></c-kanban-board-subscriber>
-
-    <!-- Error Message -->
-    <template lwc:if={error}>
-        <div
-            class="kanban__error slds-text-color_error slds-is-relative slds-align_absolute-center slds-var-m-top_medium"
-        >
-            <lightning-formatted-text
-                value={error}
-            ></lightning-formatted-text>
-        </div>
-    </template>
-
-    <!-- Kanban Board -->
-    <div class="kanban-board slds-grid slds-scrollable_x">
-        <template lwc:if={columnsWithCards.length}>
-            <template
-                for:each={columnsWithCards}
-                for:item="column"
-            >
-                <!-- Kanban Column -->
-                <div
-                    key={column.columnId}
-                    class="kanban-column slds-col slds-grid slds-grid_vertical slds-var-m-around_x-small"
-                    data-column-id={column.columnId}
-                    data-column-status={column.columnStatus}
-                >
-                    <!-- Column Header -->
-                    <div
-                        class="kanban-column__header slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-var-p-horizontal_small slds-var-p-top_x-small"
-                    >
-                        <div class="slds-col slds-truncate">
-                            <div
-                                class="slds-media__body slds-truncate"
-                            >
-                                <h2
-                                    class="slds-text-heading_medium slds-truncate slds-var-p-bottom_xx-small"
-                                >
-                                    <a
-                                        href={column.columnUrl}
-                                        class="slds-text-link slds-truncate"
-                                        title={column.columnHeader}
-                                        onclick={openColumn}
-                                    >
-                                        <span
-                                            class="slds-truncate"
-                                            >{column.columnHeader}</span
-                                        >
-                                    </a>
-                                </h2>
-                            </div>
-                        </div>
-
-                        <!-- Add Card Button -->
-                        <div class="add-button-wrapper">
-                            <button
-                                class="add-card-button slds-button slds-button_icon slds-button_icon-border-filled"
-                                onclick={handleCreateCard}
-                                title="Add New Card"
-                                disabled={isLoading}
-                            >
-                                <lightning-icon
-                                    icon-name="utility:add"
-                                    alternative-text="Add New Card"
-                                    size="small"
-                                ></lightning-icon>
-                                <span
-                                    class="slds-assistive-text"
-                                    >Add New Card</span
-                                >
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Scrollable Card Wrapper -->
-                    <div
-                        class="kanban-column__card-wrapper slds-scrollable_y slds-var-p-top_x-small"
-                        data-column-id={column.columnId}
-                        ondragenter={handleDragEnter}
-                        ondragover={handleDragOver}
-                        ondragleave={handleDragLeave}
-                        ondrop={handleDrop}
-                        ondragend={handleDragEnd}
-                    >
-                        <template
-                            lwc:if={column.cards.length}
+        
+        <div class="kanban-container" style={boardStyle}>
+            <template if:true={hasColumns}>
+                <div class="kanban-board">
+                    <template for:each={columns} for:item="column">
+                        <div
+                            key={column.Id}
+                            class="kanban-column"
+                            data-column-id={column.Id}
                         >
-                            <template
-                                for:each={column.cards}
-                                for:item="card"
+                            <!-- Column Header -->
+                            <div class="column-header" style={column.columnStyle}>
+                                <div class="column-title">
+                                    <h3>{column.columnHeader}</h3>
+                                    <span class="card-count">{column.cardCount}</span>
+                                </div>
+                                <lightning-button-icon
+                                    icon-name="utility:add"
+                                    alternative-text="Add Card"
+                                    title="Add Card"
+                                    data-column-id={column.Id}
+                                    onclick={handleAddCard}
+                                ></lightning-button-icon>
+                            </div>
+                            
+                            <!-- Cards -->
+                            <div 
+                                class="cards-container"
+                                data-column-id={column.Id}
+                                ondragover={handleDragOver}
+                                ondrop={handleDrop}
                             >
-                                <article
-                                    key={card.cardId}
-                                    class="kanban-card slds-box slds-box_small slds-var-m-horizontal_x-small"
-                                    data-card-id={card.cardId}
-                                    data-column-id={card.columnId}
-                                    data-card-name={card.cardName}
-                                    draggable="true"
-                                    ondragstart={handleDragStart}
-                                    ondragenter={handleDragEnter}
-                                    ondragover={handleDragOver}
-                                    ondragleave={handleDragLeave}
-                                    ondrop={handleDrop}
-                                    ondragend={handleDragEnd}
-                                    onclick={handleCardClick}
-                                >
-                                    <!-- Card Header -->
-                                    <header
-                                        class="slds-media slds-media_center slds-has-flexi-truncate slds-var-p-bottom_xx-small"
+                                <template for:each={column.cards} for:item="card">
+                                    <div
+                                        key={card.Id}
+                                        class="kanban-card"
+                                        data-card-id={card.Id}
+                                        data-column-id={column.Id}
+                                        draggable="true"
+                                        ondragstart={handleDragStart}
+                                        ondragend={handleDragEnd}
+                                        onclick={handleCardClick}
+                                        style={card.cardStyle}
                                     >
-                                        <template
-                                            lwc:if={card.assigneeId}
-                                        >
-                                            <!-- Assignee Avatar -->
-                                            <div
-                                                class="slds-media__figure"
-                                            >
-                                                <template
-                                                    lwc:if={card.assigneePhoto}
-                                                >
-                                                    <span
-                                                        class="slds-avatar slds-avatar_circle"
-                                                    >
-                                                        <img
-                                                            src={card.assigneePhoto}
-                                                            alt="User Photo"
-                                                            title={card.assigneeName}
-                                                        />
+                                        <!-- Card Content -->
+                                        <div class="card-header">
+                                            <span class="card-name">{card.Name}</span>
+                                            <template if:true={card.priority}>
+                                                <span class={card.priorityClass}>
+                                                    {card.priority}
+                                                </span>
+                                            </template>
+                                        </div>
+                                        
+                                        <div class="card-subject">{card.subject}</div>
+                                        
+                                        <template if:true={card.description}>
+                                            <div class="card-description">{card.description}</div>
+                                        </template>
+                                        
+                                        <div class="card-footer">
+                                            <div class="card-meta">
+                                                <template if:true={card.cardType}>
+                                                    <span class="card-type">{card.cardType}</span>
+                                                </template>
+                                                
+                                                <template if:true={card.storyPoints}>
+                                                    <span class="story-points">
+                                                        <lightning-icon
+                                                            icon-name="utility:diamond"
+                                                            size="xx-small"
+                                                        ></lightning-icon>
+                                                        {card.storyPoints}
                                                     </span>
                                                 </template>
-                                                <template
-                                                    lwc:else
-                                                >
-                                                    <span
-                                                        class="slds-avatar slds-avatar_circle slds-avatar_medium"
-                                                    >
+                                                
+                                                <template if:true={card.formattedDueDate}>
+                                                    <span class={card.isOverdue}>
                                                         <lightning-icon
-                                                            icon-name="standard:user"
-                                                            size="small"
-                                                            alternative-text="Default Image"
+                                                            icon-name="utility:clock"
+                                                            size="xx-small"
                                                         ></lightning-icon>
+                                                        {card.formattedDueDate}
                                                     </span>
                                                 </template>
                                             </div>
-                                        </template>
-
-                                        <!-- Card Title and Subtitle -->
-                                        <div
-                                            class="slds-media__body slds-truncate"
-                                        >
-                                            <h2
-                                                class="slds-card__header-title slds-truncate slds-text-body_small"
-                                            >
-                                                <a
-                                                    href={card.cardUrl}
-                                                    class="slds-text-link slds-truncate"
-                                                    title={card.cardSubject}
-                                                    onclick={openCard}
-                                                >
-                                                    <span
-                                                        class="slds-truncate"
-                                                    >
-                                                        {card.cardPosition}&nbsp;|&nbsp;
-                                                        {card.cardName}
-                                                    </span>
-                                                </a>
-                                            </h2>
-
-                                            <p
-                                                class="slds-text-body_small slds-truncate"
-                                            >
-                                                <template
-                                                    lwc:if={card.cardType}
-                                                >
-                                                    <span
-                                                        >{card.cardType}&nbsp;-&nbsp;</span
-                                                    >
-                                                </template>
-                                                <template
-                                                    lwc:if={card.cardStatus}
-                                                >
-                                                    <span
-                                                        >{card.cardStatus}</span
-                                                    >
-                                                </template>
-                                            </p>
-                                        </div>
-                                    </header>
-
-                                    <!-- Card Body -->
-                                    <div
-                                        class="kanban-card__body slds-text-body_regular"
-                                    >
-                                        <template
-                                            lwc:if={card.cardSubject}
-                                        >
-                                            <p
-                                                class="slds-truncate"
-                                            >
-                                                <span
-                                                    >{card.cardSubject}</span
-                                                >
-                                            </p>
-                                        </template>
-
-                                        <!-- Card Icons -->
-                                        <div
-                                            class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-end slds-var-p-top_small"
-                                        >
-                                            <template
-                                                lwc:if={card.cardPriority}
-                                            >
-                                                <div
-                                                    class="slds-col slds-var-p-right_small"
-                                                >
-                                                    <lightning-badge
-                                                        label={card.cardPriority}
-                                                        class="icon-badge"
-                                                    ></lightning-badge>
-                                                </div>
-                                            </template>
-
-                                            <template
-                                                lwc:if={card.storyPoints}
-                                            >
-                                                <div
-                                                    class="slds-col icon-container"
-                                                >
-                                                    <lightning-badge
-                                                        label={card.storyPoints}
-                                                        class="icon-badge"
-                                                    ></lightning-badge>
+                                            
+                                            <template if:true={card.hasAssignee}>
+                                                <div class="assignee">
+                                                    <template if:true={card.assignee.photoUrl}>
+                                                        <img
+                                                            src={card.assignee.photoUrl}
+                                                            alt={card.assignee.name}
+                                                            class="assignee-avatar"
+                                                        />
+                                                    </template>
+                                                    <template if:false={card.assignee.photoUrl}>
+                                                        <div class="assignee-initials">
+                                                            {card.assigneeInitials}
+                                                        </div>
+                                                    </template>
                                                 </div>
                                             </template>
                                         </div>
                                     </div>
-                                </article>
-                            </template>
-                        </template>
-                    </div>
+                                </template>
+                                
+                                <!-- Empty state -->
+                                <template if:false={column.cards.length}>
+                                    <div class="empty-column">
+                                        Drop cards here
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
                 </div>
             </template>
-        </template>
-        <template lwc:else>
-            <div
-                class="slds-text-align_center slds-var-m-top_medium"
-            >
-                <p>
-                    No columns found. Create a column to get
-                    started! 🚀
-                </p>
-            </div>
-        </template>
-    </div>
-
-    <!-- Modal -->
-    <template if:true={openModal}>
-        <c-edit-card-modal
-            onclose={handleModalClose}
-            board-id={recordId}
-            card-id={modalRecordId}
-            card-name={modalRecordName}
-        >
-        </c-edit-card-modal>
+            
+            <!-- Loading state -->
+            <template if:true={isLoading}>
+                <div class="loading-state">
+                    <lightning-spinner
+                        alternative-text="Loading"
+                        size="medium"
+                    ></lightning-spinner>
+                </div>
+            </template>
+            
+            <!-- Empty state -->
+            <template if:true={showEmptyState}>
+                <div class="empty-state">
+                    <p>No columns found. Please add columns to this board.</p>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+    
+    <!-- Card Detail Modal -->
+    <template if:true={showCardDetail}>
+        <c-kanban-card-detail
+            card={selectedCard}
+            is-open={showCardDetail}
+            onclose={handleCardDetailClose}
+            oncardupdated={handleCardUpdated}
+            oncarddeleted={handleCardDeleted}
+        ></c-kanban-card-detail>
     </template>
 </template>
