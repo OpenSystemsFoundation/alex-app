@@ -7,7 +7,9 @@
     >
         <div class="slds-modal__container">
             <!-- Modal Header -->
-            <div class="slds-modal__header">
+            <div
+                class="slds-modal__header slds-modal__header_centered"
+            >
                 <button
                     class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
                     title="Close"
@@ -25,7 +27,7 @@
                 </button>
                 <h1
                     id="modal-heading"
-                    class="slds-modal__title slds-hyphenate"
+                    class="slds-modal__title slds-hyphenate slds-grid slds-grid_vertical-align-center slds-grid_align-center"
                 >
                     <lightning-icon
                         icon-name="standard:task"
@@ -99,8 +101,8 @@
                 >
                     <div>
                         <lightning-button
-                            variant="destructive-text"
-                            label="Delete"
+                            variant={deleteButtonVariant}
+                            label={deleteButtonLabel}
                             onclick={handleDelete}
                             icon-name="utility:delete"
                         >
@@ -127,5 +129,8 @@
         </div>
     </section>
 
-    <div class={backdropClass}></div>
+    <div
+        class={backdropClass}
+        onclick={handleBackdropClick}
+    ></div>
 </template>

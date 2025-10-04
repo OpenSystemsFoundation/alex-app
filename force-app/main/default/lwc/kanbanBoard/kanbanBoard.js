@@ -8,7 +8,6 @@ import {
 import getBoardData from '@salesforce/apex/KanbanBoardController.getBoardData';
 import { createStore } from 'c/kanbanStore';
 import DataManager from './dataManager';
-import DragDropManager from './dragDropManager';
 import SubscriptionManager from './subscriptionManager';
 import EventHandler from './eventHandler';
 import ToastManager from './toastManager';
@@ -17,7 +16,7 @@ import ServerOperations from './serverOperations';
 export default class KanbanBoard extends NavigationMixin(LightningElement) {
     // API properties
     _recordId;
-    @api height = '600px';
+    @api height = '720px';
 
     // Store management
     store = createStore();
@@ -32,8 +31,12 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
     @track isLoading = true;
     @track error = null;
 
+    // Drag state - Simplified
+    dragData = null;
+    dragPlaceholder = null; // For visual preview during drag
+    lastPlaceholderPosition = null; // Track last position to prevent flickering
+
     // Managers (initialized in connectedCallback)
-    dragDropManager = null;
     subscriptionManager = null;
     eventHandler = null;
     toastManager = null;
@@ -70,7 +73,6 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
 
     connectedCallback() {
         // Initialize managers
-        this.dragDropManager = new DragDropManager(this.template);
         this.toastManager = new ToastManager(this);
         this.eventHandler = new EventHandler();
 
@@ -154,77 +156,269 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
     }
 
     /**
-     * Handle drag start
+     * Handle drag start - Simplified approach
      */
     handleDragStart(event) {
-        this.dragDropManager.handleDragStart(event, this.store);
+        const cardId = event.target.dataset.cardId;
+        const columnId = event.target.dataset.columnId;
+
+        // Store drag data including the card element's height
+        const cardHeight = event.target.offsetHeight;
+        
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', cardId);
+        event.dataTransfer.setData('columnId', columnId);
+
+        // Visual feedback
+        event.target.classList.add('dragging');
+        
+        // Store in component for drop handler
+        this.dragData = { cardId, columnId, cardHeight };
     }
 
     /**
      * Handle drag end - clear drag state
      */
     handleDragEnd(event) {
-        this.dragDropManager.handleDragEnd(event, this.store);
+        event.target.classList.remove('dragging');
+        
+        // Remove placeholder if it exists
+        if (this.dragPlaceholder && this.dragPlaceholder.parentNode) {
+            this.dragPlaceholder.parentNode.removeChild(this.dragPlaceholder);
+        }
+        
+        this.dragData = null;
+        this.dragPlaceholder = null;
+        this.lastPlaceholderPosition = null;
     }
 
     /**
-     * Handle drag over - live state update with optimistic preview (throttled)
+     * Handle drag over - show visual preview with placeholder
      */
     handleDragOver(event) {
-        this.dragDropManager.handleDragOver(event, this.store);
-    }
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
 
-    /**
-     * Handle drop - commit drag state and sync with server
-     */
-    async handleDrop(event) {
-        const dropData = this.dragDropManager.handleDrop(event, this.store);
-
-        if (!dropData) {
-            return; // Drop was cancelled or invalid
+        if (!this.dragData) {
+            return;
         }
 
-        // Sync with server (optimistic update already applied)
-        await this.moveCardToColumn(
-            dropData.cardId,
-            dropData.sourceColumnId,
-            dropData.targetColumnId,
-            dropData.targetPosition
-        );
+        const cardsContainer = event.currentTarget;
+        const targetColumnId = cardsContainer.dataset.columnId;
+        const targetPosition = this.calculateDropPosition(event, cardsContainer);
+        
+        // Don't show placeholder if hovering over the original position in the same column
+        const isSameColumn = this.dragData.columnId === targetColumnId;
+        if (isSameColumn) {
+            const sourceColumn = this.columns.find(col => col.Id === this.dragData.columnId);
+            if (sourceColumn) {
+                const sourceIndex = sourceColumn.cards.findIndex(c => c.Id === this.dragData.cardId);
+                
+                // Don't show placeholder at the original position
+                if (sourceIndex === targetPosition) {
+                    // Remove placeholder if it exists
+                    if (this.dragPlaceholder && this.dragPlaceholder.parentNode) {
+                        this.dragPlaceholder.parentNode.removeChild(this.dragPlaceholder);
+                        this.lastPlaceholderPosition = null;
+                    }
+                    return;
+                }
+            }
+        }
+        
+        // Create position key to check if position changed
+        const positionKey = `${targetColumnId}-${targetPosition}`;
+        
+        // Only update placeholder if position actually changed
+        if (this.lastPlaceholderPosition !== positionKey) {
+            this.lastPlaceholderPosition = positionKey;
+            this.updateDragPlaceholder(cardsContainer, targetPosition);
+        }
     }
 
     /**
-     * Move card with optimistic update and server sync
+     * Handle drop - Simplified synchronous approach
      */
-    async moveCardToColumn(
-        cardId,
-        sourceColumnId,
-        targetColumnId,
-        targetPosition
-    ) {
+    async handleDrop(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!this.dragData) {
+            return;
+        }
+
+        const { cardId, columnId: sourceColumnId } = this.dragData;
+        const cardsContainer = event.currentTarget;
+        const targetColumnId = cardsContainer.dataset.columnId;
+
+        // Calculate visual drop position (excluding the dragged card for UI)
+        const visualPosition = this.calculateDropPosition(event, cardsContainer);
+
+        // Check if position actually changed
+        const sourceColumn = this.columns.find(col => col.Id === sourceColumnId);
+        if (!sourceColumn) {
+            return;
+        }
+
+        const sourceIndex = sourceColumn.cards.findIndex(c => c.Id === cardId);
+        
+        // Convert visual position to actual array position for the target column
+        // The visualPosition is calculated without the dragged card in the DOM
+        // We need to determine what index to pass to ServerOperations
+        const targetColumn = this.columns.find(col => col.Id === targetColumnId);
+        let targetIndex = visualPosition;
+        
+        // If same column, we need to account for the card being removed
+        if (sourceColumnId === targetColumnId) {
+            // If moving down, visualPosition already accounts for removal
+            // If moving up, visualPosition is correct as-is
+            // The visual position IS the final position after the card is removed and re-inserted
+            targetIndex = visualPosition;
+        }
+        
+        console.log('Drop Debug:', JSON.stringify({
+            cardId,
+            sourceColumnId,
+            targetColumnId,
+            sourceIndex,
+            visualPosition,
+            targetIndex,
+            sameColumn: sourceColumnId === targetColumnId,
+            sourceColumnCardCount: sourceColumn.cards.length,
+            targetColumnCardCount: targetColumn.cards.length
+        }, null, 2));
+        
+        // For same column, check if position really changed
+        if (sourceColumnId === targetColumnId) {
+            // If dropping in the exact same position, skip
+            if (sourceIndex === targetIndex) {
+                console.log('No movement detected - same position');
+                return;
+            }
+        }
+
         try {
-            // Server update
+            // Call Apex to move the card
+            // ServerOperations will look at the cards array and get the LexoRank positions
+            // of the cards at targetIndex-1 and targetIndex to calculate the new position
             const result = await ServerOperations.moveCard(
                 cardId,
                 targetColumnId,
-                targetPosition,
+                targetIndex,
                 this.columns
             );
 
-            // Track this change to ignore immediate platform event echo
-            this.eventHandler.trackChange(cardId);
+            console.log('Move result:', result);
 
-            // Update position in store
+            // Update local state directly
+            const updatedColumns = JSON.parse(JSON.stringify(this.columns));
+            
+            // Find and remove card from source column
+            const sourceCol = updatedColumns.find(col => col.Id === sourceColumnId);
+            const cardIndex = sourceCol.cards.findIndex(c => c.Id === cardId);
+            const [movedCard] = sourceCol.cards.splice(cardIndex, 1);
+            sourceCol.cardCount = sourceCol.cards.length;
+
+            // Update card properties
+            movedCard.columnId = targetColumnId;
+            movedCard.position = result.newPosition;
+
+            // Add to target column at the calculated position
+            const targetCol = updatedColumns.find(col => col.Id === targetColumnId);
+            
+            console.log('Inserting at index:', targetIndex, 'in column with', targetCol.cards.length, 'cards');
+            
+            targetCol.cards.splice(targetIndex, 0, movedCard);
+            targetCol.cardCount = targetCol.cards.length;
+
+            // Update store
             this.store.dispatch({
-                type: 'UPDATE_CARD',
-                payload: {
-                    cardId: cardId,
-                    updates: { position: result.newPosition }
-                }
+                type: 'SET_COLUMNS',
+                payload: updatedColumns
             });
+
+            this.toastManager.showSuccess('Card moved successfully');
         } catch (error) {
-            // Rollback would be handled by store if needed
+            console.error('Error moving card:', error);
             this.toastManager.showError('Error moving card', error);
+            // Reload on error to restore correct state
+            this.loadBoardData();
+        }
+    }
+
+    /**
+     * Calculate drop position based on mouse location
+     * Returns the index where the card should be inserted (excluding the dragged card)
+     */
+    calculateDropPosition(event, cardsContainer) {
+        const cardElements = Array.from(
+            cardsContainer.querySelectorAll('.kanban-card:not(.dragging):not(.drag-placeholder)')
+        );
+
+        if (cardElements.length === 0) {
+            return 0;
+        }
+
+        const mouseY = event.clientY;
+
+        // Find insertion point based on mouse position
+        // Use bottom quarter of the card (75% from top) for more accurate mouse tracking
+        for (let i = 0; i < cardElements.length; i++) {
+            const rect = cardElements[i].getBoundingClientRect();
+            // Use bottom quarter of the card as the threshold
+            const threshold = rect.top + (rect.height * 0.75);
+
+            if (mouseY < threshold) {
+                return i;
+            }
+        }
+
+        // Drop after all cards
+        return cardElements.length;
+    }
+
+    /**
+     * Update drag placeholder for visual preview
+     */
+    updateDragPlaceholder(cardsContainer, targetPosition) {
+        // Get all non-dragging, non-placeholder cards
+        const cardElements = Array.from(
+            cardsContainer.querySelectorAll('.kanban-card:not(.dragging):not(.drag-placeholder)')
+        );
+
+        // Create placeholder if it doesn't exist
+        if (!this.dragPlaceholder) {
+            this.dragPlaceholder = document.createElement('div');
+            this.dragPlaceholder.className = 'kanban-card drag-placeholder';
+            
+            // Use the actual dragged card's height
+            const cardHeight = this.dragData?.cardHeight || 80;
+            this.dragPlaceholder.style.height = `${cardHeight}px`;
+            
+            this.dragPlaceholder.style.margin = '0 var(--lwc-spacingXSmall) var(--lwc-spacingXSmall)';
+            this.dragPlaceholder.style.border = '2px dashed #0176d3';
+            this.dragPlaceholder.style.borderRadius = '0.25rem';
+            this.dragPlaceholder.style.backgroundColor = 'rgba(1, 118, 211, 0.05)';
+            this.dragPlaceholder.style.display = 'flex';
+            this.dragPlaceholder.style.alignItems = 'center';
+            this.dragPlaceholder.style.justifyContent = 'center';
+        }
+
+        // Remove placeholder from current position if it exists
+        if (this.dragPlaceholder.parentNode) {
+            this.dragPlaceholder.parentNode.removeChild(this.dragPlaceholder);
+        }
+
+        // Insert placeholder at target position
+        if (targetPosition >= cardElements.length) {
+            // Append to end
+            cardsContainer.appendChild(this.dragPlaceholder);
+        } else {
+            // Insert before target card
+            const targetCard = cardElements[targetPosition];
+            if (targetCard) {
+                cardsContainer.insertBefore(this.dragPlaceholder, targetCard);
+            }
         }
     }
 
@@ -372,25 +566,56 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
     }
 
     /**
-     * Handle card updated from modal
+     * Handle card updated from modal - Simplified synchronous approach
      */
     handleCardUpdated() {
-        if (this.selectedCard) {
-            this.eventHandler.trackChange(this.selectedCard.Id);
-        }
+        // Close the modal
+        this.showCardDetail = false;
+        
+        // Reload board data to get the updated card with all its relationships
+        // This is simpler than trying to fetch and merge just the updated card
         this.loadBoardData();
+        
+        // Clear selected card after reload starts
+        this.selectedCard = null;
     }
 
     /**
-     * Handle card deleted from modal
+     * Handle card deleted from modal - Simplified synchronous approach
      */
     handleCardDeleted() {
-        if (this.selectedCard) {
-            this.eventHandler.trackChange(this.selectedCard.Id);
+        const cardId = this.selectedCard?.Id;
+        
+        if (!cardId) {
+            console.error('No card ID provided for deletion');
+            return;
         }
+
+        // Find and remove the card from columns
+        const updatedColumns = JSON.parse(JSON.stringify(this.columns));
+        let found = false;
+        
+        for (const column of updatedColumns) {
+            const cardIndex = column.cards.findIndex(c => c.Id === cardId);
+            if (cardIndex !== -1) {
+                column.cards.splice(cardIndex, 1);
+                column.cardCount = column.cards.length;
+                found = true;
+                break;
+            }
+        }
+        
+        if (found) {
+            // Update store with new columns
+            this.store.dispatch({
+                type: 'SET_COLUMNS',
+                payload: updatedColumns
+            });
+        }
+        
+        // Close modal and clear selection
         this.showCardDetail = false;
         this.selectedCard = null;
-        this.loadBoardData();
     }
 
     /**
@@ -401,36 +626,55 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
     }
 
     /**
-     * Handle add card
+     * Handle add card - Simplified synchronous approach
      */
     async handleAddCard(event) {
-        const columnId = event.target.dataset.columnId;
+        // Use currentTarget to get the button element, not the clicked child element
+        const button = event.currentTarget;
+        const columnId = button.dataset.columnId;
+
+        if (!columnId) {
+            console.error('Column ID not found on button:', button);
+            this.toastManager.showError('Invalid column', 'Column ID not found');
+            return;
+        }
 
         try {
+            // Show loading state
+            button.disabled = true;
+
+            // Call Apex synchronously to create the card
             const newCard = await ServerOperations.createCard(
                 columnId,
                 'New Card',
                 this.columns
             );
 
-            // Track this change to ignore immediate platform event echo
-            this.eventHandler.trackChange(newCard.Id);
-
-            // Enrich the card with UI properties before adding to store
+            // Enrich the card with UI properties
             const enrichedCard = DataManager.enrichCard(newCard);
 
-            // Dispatch ADD_CARD action to update the store
-            this.store.dispatch({
-                type: 'ADD_CARD',
-                payload: {
-                    card: enrichedCard,
-                    columnId: columnId
-                }
-            });
+            // Find the column and add the card directly
+            const columnIndex = this.columns.findIndex(col => col.Id === columnId);
+            if (columnIndex !== -1) {
+                // Create a new columns array with the updated column
+                const updatedColumns = JSON.parse(JSON.stringify(this.columns));
+                updatedColumns[columnIndex].cards.push(enrichedCard);
+                updatedColumns[columnIndex].cardCount = updatedColumns[columnIndex].cards.length;
+
+                // Update store with new columns
+                this.store.dispatch({
+                    type: 'SET_COLUMNS',
+                    payload: updatedColumns
+                });
+            }
 
             this.toastManager.showSuccess('Card created successfully');
         } catch (error) {
+            console.error('Error creating card:', error);
             this.toastManager.showError('Error creating card', error);
+        } finally {
+            // Re-enable button
+            button.disabled = false;
         }
     }
 

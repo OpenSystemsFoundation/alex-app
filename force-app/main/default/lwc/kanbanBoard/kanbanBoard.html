@@ -203,16 +203,20 @@
                                                         <span
                                                             >{card.cardType}</span
                                                         >
+                                                        <template
+                                                            lwc:if={card.status}
+                                                        >
+                                                            <span
+                                                                >&nbsp;-&nbsp;</span
+                                                            >
+                                                        </template>
                                                     </template>
                                                     <template
-                                                        lwc:if={card.priority}
+                                                        lwc:if={card.status}
                                                     >
-                                                        <span
-                                                            >&nbsp;-&nbsp;</span
-                                                        >
-                                                        <lightning-badge
-                                                            label={card.priority}
-                                                        ></lightning-badge>
+                                                        <span>
+                                                            {card.status}
+                                                        </span>
                                                     </template>
                                                 </p>
                                             </div>
@@ -244,35 +248,51 @@
 
                                             <!-- Card Icons -->
                                             <div
-                                                class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-end slds-var-p-top_small"
+                                                class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-spread slds-var-p-top_small"
                                             >
+                                                <!-- Left side: Priority and Due Date -->
+                                                <div class="slds-grid slds-grid_vertical-align-center">
+                                                    <template
+                                                        lwc:if={card.priority}
+                                                    >
+                                                        <div
+                                                            class="slds-var-p-right_small"
+                                                        >
+                                                            <span class="slds-badge priority-pill">
+                                                                <span class={card.priorityClass}>
+                                                                    {card.priority}
+                                                                </span>
+                                                            </span>
+                                                        </div>
+                                                    </template>
+                                                    
+                                                    <template
+                                                        lwc:if={card.formattedDueDate}
+                                                    >
+                                                        <div>
+                                                            <span class="slds-badge due-date-pill">
+                                                                <lightning-icon
+                                                                    icon-name="utility:clock"
+                                                                    size="xx-small"
+                                                                    class="date-icon"
+                                                                ></lightning-icon>
+                                                                <span class={card.isOverdue}>
+                                                                    {card.formattedDueDate}
+                                                                </span>
+                                                            </span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                                
+                                                <!-- Right side: Story Points -->
                                                 <template
                                                     lwc:if={card.storyPoints}
                                                 >
-                                                    <div
-                                                        class="slds-col slds-var-p-right_small"
-                                                    >
-                                                        <lightning-badge
-                                                            label={card.storyPoints}
-                                                            class="icon-badge"
-                                                        ></lightning-badge>
-                                                    </div>
-                                                </template>
-
-                                                <template
-                                                    lwc:if={card.formattedDueDate}
-                                                >
-                                                    <div
-                                                        class="slds-col icon-container"
-                                                    >
-                                                        <span
-                                                            class={card.isOverdue}
-                                                        >
-                                                            <lightning-icon
-                                                                icon-name="utility:clock"
-                                                                size="xx-small"
-                                                            ></lightning-icon>
-                                                            {card.formattedDueDate}
+                                                    <div>
+                                                        <span class="slds-avatar slds-avatar_circle slds-avatar_x-small story-points-badge">
+                                                            <span class="slds-avatar__initials">
+                                                                {card.storyPoints}
+                                                            </span>
                                                         </span>
                                                     </div>
                                                 </template>

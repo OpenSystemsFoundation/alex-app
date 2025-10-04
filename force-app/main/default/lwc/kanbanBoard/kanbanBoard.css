@@ -98,8 +98,8 @@
 
 /* Drag Placeholder */
 .drag-placeholder {
-    height: 40px;
-    margin: 0.5rem 0;
+    /* Height set dynamically in JS to match dragged card */
+    margin: 0 0.5rem 0.5rem;
     background: rgb(216, 230, 254); /* SLDS: PALETTE_BLUE_90 */
     border: 2px dashed rgb(1, 118, 211); /* SLDS: BRAND_ACCESSIBLE */
     border-radius: 0.25rem; /* SLDS: BORDER_RADIUS_MEDIUM */
@@ -107,6 +107,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.15s ease-in-out;
 }
 
 .drag-placeholder::before {
@@ -136,6 +138,59 @@
     align-items: center;
     gap: 0.25rem;
     font-size: 0.75rem;
+}
+
+/* Story Points Circle Badge */
+.story-points-badge {
+    background-color: rgb(1, 118, 211); /* SLDS: BRAND_ACCESSIBLE */
+    font-weight: 600;
+}
+
+.story-points-badge .slds-avatar__initials {
+    background-color: rgb(1, 118, 211); /* SLDS: BRAND_ACCESSIBLE */
+    color: rgb(255, 255, 255); /* White text */
+    font-size: 0.75rem;
+}
+
+/* Priority Pill */
+.priority-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    background-color: rgb(243, 243, 243); /* SLDS: PALETTE_NEUTRAL_95 */
+    border-radius: 0.75rem;
+    font-size: 0.75rem;
+}
+
+/* Due Date Pill */
+.due-date-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    background-color: rgb(243, 243, 243); /* SLDS: PALETTE_NEUTRAL_95 */
+    border-radius: 0.75rem;
+    font-size: 0.75rem;
+}
+
+.due-date-pill .date-icon {
+    margin-right: 0.25rem;
+}
+
+/* Priority Text Styling */
+.priority-high {
+    color: rgb(234, 0, 30); /* SLDS: PALETTE_RED_50 */
+    font-weight: 600;
+}
+
+.priority-medium {
+    color: rgb(255, 154, 60); /* SLDS: PALETTE_ORANGE_50 */
+    font-weight: 600;
+}
+
+.priority-low {
+    color: rgb(87, 163, 0); /* SLDS: PALETTE_GREEN_50 */
+    font-weight: 600;
 }
 
 /* Due Date Overdue */

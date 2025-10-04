@@ -5,6 +5,11 @@
     max-width: 50rem;
 }
 
+/* Modal header title - bolder font */
+.slds-modal__title {
+    font-weight: 700;
+}
+
 /* Rich Text Editor sizing */
 lightning-input-field {
     --slds-c-textarea-sizing-min-height: 6rem;
