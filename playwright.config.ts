@@ -90,9 +90,9 @@ export default defineConfig({
                 ...devices['iPhone 12']
             }
         }
-    ]
+    ],
 
-    // Global setup/teardown
-    // globalSetup: require.resolve('./tests/e2e/global-setup'),
-    // globalTeardown: require.resolve('./tests/e2e/global-teardown'),
+    // Global setup/teardown for scratch org
+    globalSetup: require.resolve('./tests/e2e/global-setup-scratch'),
+    globalTeardown: require.resolve('./tests/e2e/global-teardown')
 });

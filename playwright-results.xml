@@ -1,342 +1,98 @@
-<testsuites
-    id=""
-    name=""
-    tests="30"
-    failures="1"
-    skipped="29"
-    errors="0"
-    time="34.130071"
->
-<testsuite
-        name="specs\drag-card-within-column.spec.ts"
-        timestamp="2025-10-04T14:59:16.610Z"
-        hostname="chromium"
-        tests="6"
-        failures="1"
-        skipped="5"
-        time="32.896"
-        errors="0"
-    >
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="32.896"
-        >
-<failure
-                message="drag-card-within-column.spec.ts:69:9 should drag a card from first to last position within column 0"
-                type="FAILURE"
-            >
-<![CDATA[  [chromium] › specs\drag-card-within-column.spec.ts:69:9 › Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0 
-
-    Error: locator.waitFor: Target page, context or browser has been closed
-    Call log:
-      - waiting for locator('.kanban-column h2').first() to be visible
-
-
-       at pages\KanbanBoardPage.ts:41
-
-      39 |         // This verifies the board component is rendering
-      40 |         const columns = this.page.locator('.kanban-column h2');
-    > 41 |         await columns.first().waitFor({ state: 'visible', timeout: 30000 });
-         |                               ^
-      42 |         // Small additional wait for any remaining rendering
-      43 |         await this.page.waitForTimeout(500);
-      44 |     }
-        at KanbanBoardPage.waitForBoardToLoad (C:\Users\jeffk\Projects\alex-app\tests\e2e\pages\KanbanBoardPage.ts:41:31)
-        at KanbanBoardPage.goto (C:\Users\jeffk\Projects\alex-app\tests\e2e\pages\KanbanBoardPage.ts:31:20)
-        at C:\Users\jeffk\Projects\alex-app\tests\e2e\specs\drag-card-within-column.spec.ts:73:9
-
-    Error: page.goto: Target page, context or browser has been closed
-
-       at pages\KanbanBoardPage.ts:30
-
-      28 |      */
-      29 |     async goto(recordId: string) {
-    > 30 |         await this.page.goto(`/lightning/r/${recordId}/view`);
-         |                         ^
-      31 |         await this.waitForBoardToLoad();
-      32 |     }
-      33 |
-        at KanbanBoardPage.goto (C:\Users\jeffk\Projects\alex-app\tests\e2e\pages\KanbanBoardPage.ts:30:25)
-        at C:\Users\jeffk\Projects\alex-app\tests\e2e\specs\drag-card-within-column.spec.ts:15:33
+<testsuites id="" name="" tests="12" failures="0" skipped="0" errors="0" time="157.945804">
+<testsuite name="specs\00-setup-verification.spec.ts" timestamp="2025-10-04T15:06:48.023Z" hostname="chromium" tests="2" failures="0" skipped="0" time="4.833" errors="0">
+<testcase name="E2E Setup Verification › should have org info and authentication" classname="specs\00-setup-verification.spec.ts" time="0.007">
+<system-out>
+<![CDATA[✅ Org info loaded successfully
+   Instance: https://agility-app-8592-dev-ed.scratch.my.salesforce.com
+   Board ID: a00QI00000RnT1LYAV
 ]]>
-</failure>
+</system-out>
 </testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
+<testcase name="E2E Setup Verification › should load board with expected columns" classname="specs\00-setup-verification.spec.ts" time="4.826">
+<system-out>
+<![CDATA[✅ Board loaded successfully with 3 columns
+]]>
+</system-out>
 </testcase>
 </testsuite>
-<testsuite
-        name="specs\drag-card-within-column.spec.ts"
-        timestamp="2025-10-04T14:59:16.610Z"
-        hostname="firefox"
-        tests="6"
-        failures="0"
-        skipped="6"
-        time="0"
-        errors="0"
-    >
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
+<testsuite name="specs\add-card.spec.ts" timestamp="2025-10-04T15:06:48.023Z" hostname="chromium" tests="5" failures="0" skipped="0" time="79.084" errors="0">
+<testcase name="Kanban Board - Add Card › should add a new card to a column using the Add Card button" classname="specs\add-card.spec.ts" time="14.843">
+<system-out>
+<![CDATA[Deleting all cards via Anonymous Apex...
+Successfully deleted all cards via Anonymous Apex
+]]>
+</system-out>
 </testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
+<testcase name="Kanban Board - Add Card › should add multiple cards to the same column" classname="specs\add-card.spec.ts" time="17.625">
+<system-out>
+<![CDATA[Deleting all cards via Anonymous Apex...
+Successfully deleted all cards via Anonymous Apex
+]]>
+</system-out>
 </testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
+<testcase name="Kanban Board - Add Card › should add cards to different columns" classname="specs\add-card.spec.ts" time="17.666">
+<system-out>
+<![CDATA[Deleting all cards via Anonymous Apex...
+Successfully deleted all cards via Anonymous Apex
+]]>
+</system-out>
 </testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
+<testcase name="Kanban Board - Add Card › should update column badge count after adding card" classname="specs\add-card.spec.ts" time="13.894">
+<system-out>
+<![CDATA[Deleting all cards via Anonymous Apex...
+Successfully deleted all cards via Anonymous Apex
+]]>
+</system-out>
 </testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
+<testcase name="Kanban Board - Add Card › should maintain card order when adding new cards" classname="specs\add-card.spec.ts" time="15.056">
+<system-out>
+<![CDATA[Deleting all cards via Anonymous Apex...
+Successfully deleted all cards via Anonymous Apex
+]]>
+</system-out>
 </testcase>
 </testsuite>
-<testsuite
-        name="specs\drag-card-within-column.spec.ts"
-        timestamp="2025-10-04T14:59:16.610Z"
-        hostname="webkit"
-        tests="6"
-        failures="0"
-        skipped="6"
-        time="0"
-        errors="0"
-    >
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
+<testsuite name="specs\delete-card.spec.ts" timestamp="2025-10-04T15:06:48.023Z" hostname="chromium" tests="1" failures="0" skipped="0" time="18.725" errors="0">
+<testcase name="Kanban Board - Delete Card › should delete a card using the modal delete workflow" classname="specs\delete-card.spec.ts" time="18.725">
+<system-out>
+<![CDATA[Deleting all cards via Anonymous Apex...
+Successfully deleted all cards via Anonymous Apex
+]]>
+</system-out>
 </testcase>
 </testsuite>
-<testsuite
-        name="specs\drag-card-within-column.spec.ts"
-        timestamp="2025-10-04T14:59:16.610Z"
-        hostname="mobile-chrome"
-        tests="6"
-        failures="0"
-        skipped="6"
-        time="0"
-        errors="0"
-    >
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
+<testsuite name="specs\drag-card-to-column.spec.ts" timestamp="2025-10-04T15:06:48.023Z" hostname="chromium" tests="1" failures="0" skipped="0" time="18.344" errors="0">
+<testcase name="Kanban Board - Drag Card to Another Column › should drag a card from column 0 to column 1" classname="specs\drag-card-to-column.spec.ts" time="18.344">
+<system-out>
+<![CDATA[Deleting all cards via Anonymous Apex...
+Successfully deleted all cards via Anonymous Apex
+]]>
+</system-out>
 </testcase>
 </testsuite>
-<testsuite
-        name="specs\drag-card-within-column.spec.ts"
-        timestamp="2025-10-04T14:59:16.610Z"
-        hostname="mobile-safari"
-        tests="6"
-        failures="0"
-        skipped="6"
-        time="0"
-        errors="0"
-    >
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
+<testsuite name="specs\scratch\00-setup-verification.spec.ts" timestamp="2025-10-04T15:06:48.023Z" hostname="chromium" tests="2" failures="0" skipped="0" time="3.867" errors="0">
+<testcase name="Scratch Org Setup Verification › should have org info from global setup" classname="specs\scratch\00-setup-verification.spec.ts" time="0.002">
+<system-out>
+<![CDATA[✅ Org Alias: playwright-test
+✅ Instance URL: https://agility-app-8592-dev-ed.scratch.my.salesforce.com
+✅ Board ID: a00QI00000RnT1LYAV
+]]>
+</system-out>
 </testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
+<testcase name="Scratch Org Setup Verification › should load board with all expected columns" classname="specs\scratch\00-setup-verification.spec.ts" time="3.865">
+<system-out>
+<![CDATA[✅ Board loaded successfully with all columns: To Do, In Progress, Done
+]]>
+</system-out>
 </testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
-</testcase>
-<testcase
-            name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions"
-            classname="specs\drag-card-within-column.spec.ts"
-            time="0"
-        >
-<skipped>
-</skipped>
+</testsuite>
+<testsuite name="specs\update-card.spec.ts" timestamp="2025-10-04T15:06:48.023Z" hostname="chromium" tests="1" failures="0" skipped="0" time="18.07" errors="0">
+<testcase name="Kanban Board - Update Card › should update card subject and save through the modal" classname="specs\update-card.spec.ts" time="18.07">
+<system-out>
+<![CDATA[Deleting all cards via Anonymous Apex...
+Successfully deleted all cards via Anonymous Apex
+]]>
+</system-out>
 </testcase>
 </testsuite>
 </testsuites>

@@ -1,86 +1,78 @@
-import { test as base, expect } from '@playwright/test';
-import { SalesforceLoginPage } from '../pages/SalesforceLoginPage';
+import { test as base } from '@playwright/test';
 import { KanbanBoardPage } from '../pages/KanbanBoardPage';
 import * as fs from 'fs';
 import * as path from 'path';
 
 /**
- * Extended test fixtures with authenticated context and page objects
+ * Extended test fixtures with scratch org context
  */
 type TestFixtures = {
-    loginPage: SalesforceLoginPage;
     kanbanPage: KanbanBoardPage;
     authenticatedPage: KanbanBoardPage;
+    orgInfo: {
+        instanceUrl: string;
+        accessToken: string;
+        boardId: string;
+        orgAlias: string;
+    };
 };
-
-/**
- * Storage state file for authenticated sessions
- */
-const authFile = path.join(__dirname, '../.auth/user.json');
 
 /**
  * Extend Playwright test with custom fixtures
  */
 export const test = base.extend<TestFixtures>({
     /**
-     * Login page fixture
+     * Org info fixture - loads scratch org information
      */
-    loginPage: async ({ page }, use) => {
-        const loginPage = new SalesforceLoginPage(page);
-        await use(loginPage);
+    orgInfo: async ({}, use) => {
+        const orgInfoPath = path.join(__dirname, '../.auth/org-info.json');
+
+        if (!fs.existsSync(orgInfoPath)) {
+            throw new Error(
+                'Org info not found. Global setup may have failed.'
+            );
+        }
+
+        const orgInfo = JSON.parse(fs.readFileSync(orgInfoPath, 'utf-8'));
+        await use(orgInfo);
     },
 
     /**
      * Kanban board page fixture
      */
-    kanbanPage: async ({ page }, use) => {
-        const kanbanPage = new KanbanBoardPage(page);
+    kanbanPage: async ({ page, orgInfo }, use) => {
+        const kanbanPage = new KanbanBoardPage(
+            page,
+            orgInfo.accessToken,
+            orgInfo.instanceUrl
+        );
         await use(kanbanPage);
     },
 
     /**
-     * Authenticated page fixture - automatically logs in before each test
+     * Authenticated page fixture - uses saved authentication state
      */
-    authenticatedPage: async ({ browser }, use) => {
-        // Check if we have a saved auth state
-        let context;
+    authenticatedPage: async ({ browser, orgInfo }, use) => {
+        const authFile = path.join(__dirname, '../.auth/user.json');
 
-        if (fs.existsSync(authFile)) {
-            // Use saved authentication state
-            context = await browser.newContext({ storageState: authFile });
-        } else {
-            // Create new context and authenticate
-            context = await browser.newContext();
-            const page = await context.newPage();
-
-            // Login
-            const loginPage = new SalesforceLoginPage(page);
-            await loginPage.goto();
-
-            const username = process.env.SF_USERNAME || '';
-            const password = process.env.SF_PASSWORD || '';
-
-            if (!username || !password) {
-                throw new Error(
-                    'SF_USERNAME and SF_PASSWORD must be set in environment variables'
-                );
-            }
-
-            await loginPage.login(username, password);
-
-            // Save authentication state
-            const authDir = path.dirname(authFile);
-            if (!fs.existsSync(authDir)) {
-                fs.mkdirSync(authDir, { recursive: true });
-            }
-            await context.storageState({ path: authFile });
-
-            await page.close();
+        if (!fs.existsSync(authFile)) {
+            throw new Error(
+                'Authentication state not found. Global setup may have failed.'
+            );
         }
 
-        // Create a new page with authenticated context
+        // Create context with saved authentication
+        const context = await browser.newContext({
+            storageState: authFile,
+            baseURL: orgInfo.instanceUrl
+        });
+
         const page = await context.newPage();
-        const kanbanPage = new KanbanBoardPage(page);
+        const kanbanPage = new KanbanBoardPage(
+            page,
+            orgInfo.accessToken,
+            orgInfo.instanceUrl
+        );
 
         await use(kanbanPage);
 
