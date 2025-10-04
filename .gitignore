@@ -64,7 +64,19 @@ jsconfig.json
 # Python venv
 venv/
 .venv/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
+
+# Playwright Test Results
+.auth/
+test-results/
+playwright-report/
 playwright-results.xml
+blob-report/
+playwright/.cache/
+
+# Playwright Videos and Screenshots
+*.webm
+*.png
+!*.spec.ts
+
+# Playwright Traces
+trace.zip
