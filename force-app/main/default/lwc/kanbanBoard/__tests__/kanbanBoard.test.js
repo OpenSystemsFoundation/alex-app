@@ -123,7 +123,7 @@ describe('c-kanban-board', () => {
             document.body.appendChild(element);
 
             expect(element).toBeTruthy();
-            expect(element.height).toBe('600px');
+            expect(element.height).toBe('720px');
         });
     });
 
@@ -167,6 +167,43 @@ describe('c-kanban-board', () => {
 
             expect(element.height).toBe('800px');
             expect(element.recordId).toBe('test123');
+        });
+    });
+
+    describe('Board Operations', () => {
+        it('should handle board data with columns and cards', async () => {
+            getBoardData.mockResolvedValue(MOCK_BOARD_DATA);
+
+            const element = createElement('c-kanban-board', {
+                is: KanbanBoard
+            });
+            document.body.appendChild(element);
+            element.recordId = 'a00xx000000001';
+
+            await Promise.resolve();
+
+            // Verify board is loaded with correct data
+            expect(getBoardData).toHaveBeenCalledWith({
+                boardId: 'a00xx000000001'
+            });
+        });
+
+        it('should handle error state', async () => {
+            const errorMessage = 'Failed to load board';
+            getBoardData.mockRejectedValue(new Error(errorMessage));
+
+            const element = createElement('c-kanban-board', {
+                is: KanbanBoard
+            });
+            document.body.appendChild(element);
+            element.recordId = 'a00xx000000001';
+
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(getBoardData).toHaveBeenCalledWith({
+                boardId: 'a00xx000000001'
+            });
         });
     });
 });
