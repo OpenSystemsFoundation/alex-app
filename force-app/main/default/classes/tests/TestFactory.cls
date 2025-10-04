@@ -84,8 +84,35 @@ public class TestFactory {
             OpenSF__Board__c = boardId,
             OpenSF__ColumnHeader__c = columnHeader,
             OpenSF__LexoRankPosition__c = position,
+            OpenSF__Color__c = color
+            // Status is optional and not set by default
+        );
+        insert column;
+        return column;
+    }
+
+    /**
+     * Creates a test Column with status
+     * @param boardId The ID of the parent board
+     * @param columnHeader The header text for the column
+     * @param position The position of the column
+     * @param color The color of the column (hex value)
+     * @param status The status value for the column
+     * @return The created Column record
+     */
+    public static OpenSF__Column__c createColumn(
+        Id boardId,
+        String columnHeader,
+        String position,
+        String color,
+        String status
+    ) {
+        OpenSF__Column__c column = new OpenSF__Column__c(
+            OpenSF__Board__c = boardId,
+            OpenSF__ColumnHeader__c = columnHeader,
+            OpenSF__LexoRankPosition__c = position,
             OpenSF__Color__c = color,
-            OpenSF__Status__c = columnHeader
+            OpenSF__Status__c = status
         );
         insert column;
         return column;

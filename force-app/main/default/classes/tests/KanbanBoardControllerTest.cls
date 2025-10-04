@@ -9,18 +9,20 @@ private class KanbanBoardControllerTest {
             'Project'
         );
 
-        // Create columns
+        // Create columns with explicit status values
         OpenSF__Column__c todoColumn = TestFactory.createColumn(
             board.Id,
             'To Do',
             '0|h00000:',
-            '#1B96FF'
+            '#1B96FF',
+            'To Do' // Explicit status
         );
         OpenSF__Column__c inProgressColumn = TestFactory.createColumn(
             board.Id,
             'In Progress',
             '0|hzzzzz:',
-            '#1B96FF'
+            '#1B96FF',
+            'In Progress' // Explicit status
         );
 
         // Create cards
@@ -164,14 +166,14 @@ private class KanbanBoardControllerTest {
 
         // Create a new column with the same status as the card's current status
         OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
-        OpenSF__Column__c targetColumn = TestFactory.createColumn(
-            board.Id,
-            'Same Status Column',
-            '0|m00000:',
-            '#1B96FF'
+        OpenSF__Column__c targetColumn = new OpenSF__Column__c(
+            OpenSF__Board__c = board.Id,
+            OpenSF__ColumnHeader__c = 'Same Status Column',
+            OpenSF__LexoRankPosition__c = '0|m00000:',
+            OpenSF__Color__c = '#1B96FF',
+            OpenSF__Status__c = card.OpenSF__Status__c // Use the same status as the card
         );
-        targetColumn.OpenSF__Status__c = card.OpenSF__Status__c;
-        update targetColumn;
+        insert targetColumn;
 
         String initialStatus = card.OpenSF__Status__c;
 
