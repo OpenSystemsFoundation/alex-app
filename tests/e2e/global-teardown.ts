@@ -38,6 +38,8 @@ async function globalTeardown(config: FullConfig) {
         );
 
         try {
+            // Delete cards first, then boards (which will delete columns via cascade)
+            await kanbanPage.deleteAllCardsViaApi();
             await kanbanPage.deleteAllBoardsViaApi();
             console.log('✅ Test data cleaned up successfully');
         } catch (error: any) {
@@ -78,9 +80,6 @@ async function globalTeardown(config: FullConfig) {
             fs.rmSync(authDir, { recursive: true, force: true });
             console.log('✅ Auth files cleaned up');
         }
-
-        // Clean up temp apex files
-        sfCli.cleanupTempApexFiles();
 
         console.log('\n✅ Teardown complete!\n');
     } catch (error: any) {
