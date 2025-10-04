@@ -297,30 +297,10 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
             targetIndex = visualPosition;
         }
 
-        console.log(
-            'Drop Debug:',
-            JSON.stringify(
-                {
-                    cardId,
-                    sourceColumnId,
-                    targetColumnId,
-                    sourceIndex,
-                    visualPosition,
-                    targetIndex,
-                    sameColumn: sourceColumnId === targetColumnId,
-                    sourceColumnCardCount: sourceColumn.cards.length,
-                    targetColumnCardCount: targetColumn.cards.length
-                },
-                null,
-                2
-            )
-        );
-
         // For same column, check if position really changed
         if (sourceColumnId === targetColumnId) {
             // If dropping in the exact same position, skip
             if (sourceIndex === targetIndex) {
-                console.log('No movement detected - same position');
                 return;
             }
         }
@@ -335,8 +315,6 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
                 targetIndex,
                 this.columns
             );
-
-            console.log('Move result:', result);
 
             // Update local state directly
             const updatedColumns = JSON.parse(JSON.stringify(this.columns));
@@ -356,14 +334,6 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
             // Add to target column at the calculated position
             const targetCol = updatedColumns.find(
                 (col) => col.Id === targetColumnId
-            );
-
-            console.log(
-                'Inserting at index:',
-                targetIndex,
-                'in column with',
-                targetCol.cards.length,
-                'cards'
             );
 
             targetCol.cards.splice(targetIndex, 0, movedCard);
