@@ -1,23 +1,17 @@
-import { test, expect } from '../fixtures/test-fixtures-scratch';
+import { test, expect } from '../fixtures/test-fixtures';
 
 /**
  * E2E Test for Dragging Cards Between Columns
  *
  * Simple test: Add a card to column 0, drag it to column 1, verify it moved
+ *
+ * Each test gets its own isolated board that is automatically cleaned up.
  */
 test.describe('Kanban Board - Drag Card to Another Column', () => {
-    // Clean up all cards after each test
-    test.afterEach(async ({ authenticatedPage, orgInfo }) => {
-        await authenticatedPage.goto(orgInfo.boardId);
-        await authenticatedPage.waitForBoardToLoad();
-        await authenticatedPage.deleteAllCardsViaApi();
-    });
-
     test('should drag a card from column 0 to column 1', async ({
-        authenticatedPage,
-        orgInfo
+        authenticatedPage
     }) => {
-        await authenticatedPage.goto(orgInfo.boardId);
+        await authenticatedPage.waitForBoardToLoad();
 
         // Get initial card counts
         const initialCountCol0 =

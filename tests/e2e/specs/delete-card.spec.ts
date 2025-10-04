@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/test-fixtures-scratch';
+import { test, expect } from '../fixtures/test-fixtures';
 
 /**
  * E2E Tests for Deleting Cards from Kanban Board
@@ -15,20 +15,13 @@ import { test, expect } from '../fixtures/test-fixtures-scratch';
  * 1. Click card -> Modal opens
  * 2. Click "Delete" button -> Button changes to "Confirm?" (destructive variant)
  * 3. Click "Confirm?" button -> Card is deleted, modal closes
+ *
+ * Each test gets its own isolated board that is automatically cleaned up.
  */
 test.describe('Kanban Board - Delete Card', () => {
-    // Clean up all cards after each test
-    test.afterEach(async ({ authenticatedPage, orgInfo }) => {
-        await authenticatedPage.goto(orgInfo.boardId);
-        await authenticatedPage.waitForBoardToLoad();
-        await authenticatedPage.deleteAllCardsViaApi();
-    });
-
     test('should delete a card using the modal delete workflow', async ({
-        authenticatedPage,
-        orgInfo
+        authenticatedPage
     }) => {
-        await authenticatedPage.goto(orgInfo.boardId);
         await authenticatedPage.waitForBoardToLoad();
 
         // Get initial card count (should be 0 in new board)

@@ -27,7 +27,10 @@ export class KanbanBoardPage {
      * Navigate to Kanban Board page for a specific record
      */
     async goto(recordId: string) {
-        await this.page.goto(`/lightning/r/${recordId}/view`);
+        const url = this.instanceUrl
+            ? `${this.instanceUrl}/lightning/r/${recordId}/view`
+            : `/lightning/r/${recordId}/view`;
+        await this.page.goto(url);
         await this.waitForBoardToLoad();
     }
 
@@ -710,8 +713,57 @@ Database.delete(cards, false);`;
     }
 
     /**
+     * Delete a specific board via API
+     * Uses anonymous Apex for reliable deletion with cascade
+     */
+    async deleteBoardViaApi(boardId: string) {
+        if (!this.accessToken || !this.instanceUrl) {
+            throw new Error(
+                'Access token and instance URL required for API calls'
+            );
+        }
+
+        console.log(`Deleting board ${boardId} via Anonymous Apex...`);
+
+        // Anonymous Apex code to delete specific board (cascade delete handles columns and cards)
+        const apexCode = `OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c WHERE Id = '${boardId}' LIMIT 1];
+delete board;`;
+
+        // Execute anonymous Apex via Tooling API
+        const response = await this.page.request.get(
+            `${this.instanceUrl}/services/data/v60.0/tooling/executeAnonymous/?anonymousBody=${encodeURIComponent(apexCode)}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${this.accessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        if (!response.ok()) {
+            const errorText = await response.text();
+            console.warn(`Failed to delete board via Apex: ${errorText}`);
+            throw new Error(`Failed to delete board via API: ${errorText}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+            console.warn(
+                `Apex execution failed: ${result.compileProblem || result.exceptionMessage}`
+            );
+            throw new Error(
+                `Apex execution failed: ${result.compileProblem || result.exceptionMessage}`
+            );
+        }
+
+        console.log(`Successfully deleted board ${boardId} via Anonymous Apex`);
+    }
+
+    /**
      * Delete all boards via API (for final test cleanup)
      * Uses anonymous Apex for reliable bulk deletion
+     * WARNING: This deletes ALL boards in the org. Use with caution.
      */
     async deleteAllBoardsViaApi() {
         if (!this.accessToken || !this.instanceUrl) {

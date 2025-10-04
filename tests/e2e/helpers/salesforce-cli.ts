@@ -226,9 +226,10 @@ export class SalesforceCLI {
         console.log('Creating test board...');
 
         // Create an Apex script to create a board and return its ID
+        // Note: Using OpenSF namespace prefix for all custom objects/fields
         const apexScript = `
 // Create Board
-Board__c board = new Board__c(
+OpenSF__Board__c board = new OpenSF__Board__c(
     Name = 'E2E Test Board'
 );
 insert board;
@@ -241,21 +242,21 @@ String[] positions = new String[]{
 };
 
 // Create columns with LexoRank positions
-List<Column__c> columns = new List<Column__c>();
-columns.add(new Column__c(
-    ColumnHeader__c = 'To Do',
-    Board__c = board.Id,
-    LexoRankPosition__c = positions[0]
+List<OpenSF__Column__c> columns = new List<OpenSF__Column__c>();
+columns.add(new OpenSF__Column__c(
+    OpenSF__ColumnHeader__c = 'To Do',
+    OpenSF__Board__c = board.Id,
+    OpenSF__LexoRankPosition__c = positions[0]
 ));
-columns.add(new Column__c(
-    ColumnHeader__c = 'In Progress',
-    Board__c = board.Id,
-    LexoRankPosition__c = positions[1]
+columns.add(new OpenSF__Column__c(
+    OpenSF__ColumnHeader__c = 'In Progress',
+    OpenSF__Board__c = board.Id,
+    OpenSF__LexoRankPosition__c = positions[1]
 ));
-columns.add(new Column__c(
-    ColumnHeader__c = 'Done',
-    Board__c = board.Id,
-    LexoRankPosition__c = positions[2]
+columns.add(new OpenSF__Column__c(
+    OpenSF__ColumnHeader__c = 'Done',
+    OpenSF__Board__c = board.Id,
+    OpenSF__LexoRankPosition__c = positions[2]
 ));
 insert columns;
 
@@ -350,14 +351,65 @@ System.debug('BOARD_ID:' + board.Id);
     }
 
     /**
+     * Setup without creating a board (optimized for tests that create their own boards)
+     */
+    async setupWithoutBoard(): Promise<{
+        instanceUrl: string;
+        accessToken: string;
+    }> {
+        console.log(
+            '🚀 Starting Salesforce scratch org setup (without board)...\n'
+        );
+
+        // Check if SF CLI is installed
+        if (!(await this.isInstalled())) {
+            throw new Error(
+                'Salesforce CLI is not installed. Please install it from https://developer.salesforce.com/tools/sfdxcli'
+            );
+        }
+
+        // Check if scratch org already exists
+        const exists = await this.scratchOrgExists();
+
+        if (!exists) {
+            // Create scratch org
+            await this.createScratchOrg(1);
+
+            // Deploy metadata
+            await this.deployMetadata();
+
+            // Assign permission sets (optional, may not exist)
+            try {
+                await this.assignPermissionSet('Alex_Admin');
+            } catch (error) {
+                console.log('⚠️  Skipping permission set assignment');
+            }
+        } else {
+            console.log(`✅ Using existing scratch org: ${this.orgAlias}`);
+        }
+
+        // Get org info
+        const orgInfo = await this.getOrgInfo();
+
+        console.log('\n✅ Setup complete!');
+        console.log(`Instance URL: ${orgInfo.instanceUrl}`);
+
+        return {
+            instanceUrl: orgInfo.instanceUrl,
+            accessToken: orgInfo.accessToken
+        };
+    }
+
+    /**
      * Delete a board and all related data (columns, cards)
      */
     async deleteBoard(boardId: string): Promise<void> {
         console.log(`Deleting test board: ${boardId}...`);
 
         // Create Apex script to delete board (cascade delete will handle columns and cards)
+        // Note: Using OpenSF namespace prefix
         const apexScript = `
-Board__c board = [SELECT Id FROM Board__c WHERE Id = '${boardId}' LIMIT 1];
+OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c WHERE Id = '${boardId}' LIMIT 1];
 delete board;
 System.debug('Board deleted: ${boardId}');
         `.trim();

@@ -2,6 +2,7 @@
     "orgName": "OpenSF",
     "edition": "Partner Developer",
     "language": "en_US",
+    "namespace": "OpenSF",
     "release": "preview",
     "features": ["ContactsToMultipleAccounts"],
     "settings": {

@@ -1,5 +1,5 @@
-import { test, expect } from '../fixtures/test-fixtures-scratch';
-import { generateTestCard } from '../helpers/test-data-scratch';
+import { test, expect } from '../fixtures/test-fixtures';
+import { generateTestCard } from '../helpers/test-data';
 
 /**
  * E2E Tests for Adding Cards to Kanban Board
@@ -12,21 +12,13 @@ import { generateTestCard } from '../helpers/test-data-scratch';
  *
  * Note: The LWC automatically creates a card when the Add Card button is clicked.
  * No modal interaction is needed for basic card creation.
+ * Each test gets its own isolated board that is automatically cleaned up.
  */
 test.describe('Kanban Board - Add Card', () => {
-    // Clean up all cards after each test
-    test.afterEach(async ({ authenticatedPage, orgInfo }) => {
-        await authenticatedPage.goto(orgInfo.boardId);
-        await authenticatedPage.waitForBoardToLoad();
-        await authenticatedPage.deleteAllCardsViaApi();
-    });
-
     test('should add a new card to a column using the Add Card button', async ({
-        authenticatedPage,
-        orgInfo
+        authenticatedPage
     }) => {
-        // Navigate to the board
-        await authenticatedPage.goto(orgInfo.boardId);
+        // authenticatedPage is already on the board
         await authenticatedPage.waitForBoardToLoad();
 
         // Get initial card count in first column
@@ -52,10 +44,8 @@ test.describe('Kanban Board - Add Card', () => {
     });
 
     test('should add multiple cards to the same column', async ({
-        authenticatedPage,
-        orgInfo
+        authenticatedPage
     }) => {
-        await authenticatedPage.goto(orgInfo.boardId);
         await authenticatedPage.waitForBoardToLoad();
 
         // Get initial count
@@ -74,10 +64,8 @@ test.describe('Kanban Board - Add Card', () => {
     });
 
     test('should add cards to different columns', async ({
-        authenticatedPage,
-        orgInfo
+        authenticatedPage
     }) => {
-        await authenticatedPage.goto(orgInfo.boardId);
         await authenticatedPage.waitForBoardToLoad();
 
         // Get column count
@@ -108,10 +96,8 @@ test.describe('Kanban Board - Add Card', () => {
     });
 
     test('should update column badge count after adding card', async ({
-        authenticatedPage,
-        orgInfo
+        authenticatedPage
     }) => {
-        await authenticatedPage.goto(orgInfo.boardId);
         await authenticatedPage.waitForBoardToLoad();
 
         // Get initial counts
@@ -135,10 +121,8 @@ test.describe('Kanban Board - Add Card', () => {
     });
 
     test('should maintain card order when adding new cards', async ({
-        authenticatedPage,
-        orgInfo
+        authenticatedPage
     }) => {
-        await authenticatedPage.goto(orgInfo.boardId);
         await authenticatedPage.waitForBoardToLoad();
 
         // Get initial count in second column

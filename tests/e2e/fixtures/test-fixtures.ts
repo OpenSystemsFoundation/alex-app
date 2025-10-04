@@ -1,18 +1,23 @@
 import { test as base } from '@playwright/test';
 import { KanbanBoardPage } from '../pages/KanbanBoardPage';
+import { SalesforceCLI } from '../helpers/salesforce-cli';
 import * as fs from 'fs';
 import * as path from 'path';
 
 /**
- * Extended test fixtures with scratch org context
+ * Extended test fixtures with board creation per test
+ * All boards are cleaned up at the end of the test suite (global teardown)
  */
 type TestFixtures = {
     kanbanPage: KanbanBoardPage;
     authenticatedPage: KanbanBoardPage;
+    testBoard: {
+        boardId: string;
+        cleanup: () => Promise<void>;
+    };
     orgInfo: {
         instanceUrl: string;
         accessToken: string;
-        boardId: string;
         orgAlias: string;
     };
 };
@@ -29,7 +34,7 @@ export const test = base.extend<TestFixtures>({
 
         if (!fs.existsSync(orgInfoPath)) {
             throw new Error(
-                'Org info not found. Global setup may have failed.'
+                `Org info not found. Global setup may have failed. Expected: ${orgInfoPath}`
             );
         }
 
@@ -38,9 +43,30 @@ export const test = base.extend<TestFixtures>({
     },
 
     /**
+     * Test board fixture - creates a unique board for each test
+     * All boards are cleaned up at the end of the test suite (global teardown)
+     */
+    testBoard: async ({ orgInfo }, use, testInfo) => {
+        const sfCli = new SalesforceCLI(orgInfo.orgAlias);
+
+        console.log(`  📋 Creating test board for: ${testInfo.title}`);
+        const boardId = await sfCli.createTestBoard();
+
+        const cleanup = async () => {
+            console.log(`  🧹 Cleaning up board: ${boardId}`);
+            await sfCli.deleteBoard(boardId);
+        };
+
+        // Provide board ID and cleanup function to the test (cleanup function available if needed manually)
+        await use({ boardId, cleanup });
+
+        // No automatic cleanup - all boards will be deleted together in global teardown
+    },
+
+    /**
      * Kanban board page fixture
      */
-    kanbanPage: async ({ page, orgInfo }, use) => {
+    kanbanPage: async ({ page, orgInfo, testBoard }, use) => {
         const kanbanPage = new KanbanBoardPage(
             page,
             orgInfo.accessToken,
@@ -50,39 +76,37 @@ export const test = base.extend<TestFixtures>({
     },
 
     /**
-     * Authenticated page fixture - uses saved authentication state
+     * Authenticated page fixture - ensures user is logged in
      */
-    authenticatedPage: async ({ browser, orgInfo }, use) => {
-        const authFile = path.join(__dirname, '../.auth/user.json');
+    authenticatedPage: async ({ page, context, orgInfo, testBoard }, use) => {
+        // Set the base URL for the page from org info
+        const instanceUrl = orgInfo.instanceUrl;
 
-        if (!fs.existsSync(authFile)) {
-            throw new Error(
-                'Authentication state not found. Global setup may have failed.'
-            );
-        }
+        // Set access token as cookie for authentication
+        await context.addCookies([
+            {
+                name: 'sid',
+                value: orgInfo.accessToken,
+                domain: new URL(instanceUrl).hostname,
+                path: '/',
+                httpOnly: true,
+                secure: true,
+                sameSite: 'None'
+            }
+        ]);
 
-        // Create context with saved authentication
-        const context = await browser.newContext({
-            storageState: authFile,
-            baseURL: orgInfo.instanceUrl
-        });
-
-        const page = await context.newPage();
         const kanbanPage = new KanbanBoardPage(
             page,
             orgInfo.accessToken,
-            orgInfo.instanceUrl
+            instanceUrl
         );
 
-        await use(kanbanPage);
+        // Navigate to the board using the full URL
+        await page.goto(`${instanceUrl}/lightning/r/${testBoard.boardId}/view`);
+        await kanbanPage.waitForBoardToLoad();
 
-        // Cleanup
-        await page.close();
-        await context.close();
+        await use(kanbanPage);
     }
 });
 
-/**
- * Export expect from Playwright
- */
 export { expect } from '@playwright/test';

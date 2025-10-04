@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/test-fixtures-scratch';
+import { test, expect } from '../fixtures/test-fixtures';
 
 /**
  * E2E Tests for Updating Cards in Kanban Board
@@ -9,20 +9,13 @@ import { test, expect } from '../fixtures/test-fixtures-scratch';
  * - Updating card subject field
  * - Saving changes
  * - Verifying the card name is updated on the board
+ *
+ * Each test gets its own isolated board that is automatically cleaned up.
  */
 test.describe('Kanban Board - Update Card', () => {
-    // Clean up all cards after each test
-    test.afterEach(async ({ authenticatedPage, orgInfo }) => {
-        await authenticatedPage.goto(orgInfo.boardId);
-        await authenticatedPage.waitForBoardToLoad();
-        await authenticatedPage.deleteAllCardsViaApi();
-    });
-
     test('should update card subject and save through the modal', async ({
-        authenticatedPage,
-        orgInfo
+        authenticatedPage
     }) => {
-        await authenticatedPage.goto(orgInfo.boardId);
         await authenticatedPage.waitForBoardToLoad();
 
         // Get initial card count (should be 0 in new board)

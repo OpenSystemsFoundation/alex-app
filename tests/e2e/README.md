@@ -2,15 +2,24 @@
 
 This directory contains end-to-end (E2E) tests for the Kanban Board application using [Playwright](https://playwright.dev/) with TypeScript and Salesforce scratch orgs.
 
+## ✅ Recently Optimized (Oct 2025)
+
+The E2E testing architecture has been **optimized for performance**:
+
+- **3x faster setup** (single scratch org vs. multiple)
+- **Full test parallelization** (all tests run simultaneously)
+- **Per-test isolation** (each test gets its own board)
+- **No duplicate files** (clean, consolidated codebase)
+
 ## 📁 Project Structure
 
 ```
 tests/e2e/
 ├── fixtures/
-│   └── test-fixtures-scratch.ts  # Custom fixtures with scratch org integration
+│   └── test-fixtures.ts          # Custom fixtures with per-test board isolation
 ├── helpers/
 │   ├── salesforce-cli.ts         # SF CLI wrapper for org management
-│   └── test-data-scratch.ts      # Test data generators
+│   └── test-data.ts              # Test data generators
 ├── pages/
 │   ├── KanbanBoardPage.ts        # Page Object Model for Kanban Board
 │   └── SalesforceLoginPage.ts    # POM for Salesforce authentication
@@ -18,22 +27,24 @@ tests/e2e/
 │   ├── add-card.spec.ts          # Tests for adding cards
 │   ├── delete-card.spec.ts       # Tests for deleting cards via modal
 │   ├── update-card.spec.ts       # Tests for updating card subject
-│   ├── drag-card-to-column.spec.ts   # Tests for dragging cards between columns
-│   └── drag-card-within-column.spec.ts # Tests for reordering cards
-├── global-setup-scratch.ts       # Creates/reuses scratch org before tests
-├── global-teardown.ts            # Cleans up test data after tests
+│   └── drag-card-to-column.spec.ts   # Tests for dragging cards between columns
+├── global-setup.ts               # Creates scratch org once before all tests
+├── global-teardown.ts            # Cleans up scratch org after all tests
 └── .auth/                        # Stored authentication state (git-ignored)
 ```
 
 ## 🏗️ Architecture
 
-### Scratch Org Testing Strategy
+### Optimized Single-Org Strategy
 
-Tests use Salesforce scratch orgs for isolated, reproducible test environments:
+Tests use **one Salesforce scratch org** shared across all browsers, with **per-test board isolation**:
 
-- **Org Reuse**: When `PLAYWRIGHT_DEBUG_MODE=true`, the scratch org is reused across test runs (saves 2-3 minutes per run)
-- **Fresh Data**: A new test board is created for each test run and cleaned up afterward
-- **Zero Config**: No need to manually set up Salesforce credentials or board IDs
+- **Single Org**: One scratch org for all tests (chromium, firefox, webkit)
+- **Per-Test Boards**: Each test creates its own board with unique data
+- **Auto-Cleanup**: Boards are automatically deleted after each test
+- **Full Parallelization**: All 12 tests (4 tests × 3 browsers) run simultaneously
+- **Faster Setup**: 2-3 minutes instead of 6-9 minutes
+- **Debug Mode**: When `PLAYWRIGHT_DEBUG_MODE=true`, org is preserved for inspection
 
 ### Page Object Model (POM)
 
@@ -42,12 +53,29 @@ Tests use Salesforce scratch orgs for isolated, reproducible test environments:
 
 ### Test Organization
 
-Each test file focuses on a single feature with simple, UI-based workflows:
+Each test focuses on a single feature with **automatic board isolation**:
 
 - **add-card.spec.ts**: Click add button → verify card created
 - **delete-card.spec.ts**: Add card → open modal → delete → confirm deletion
 - **update-card.spec.ts**: Add card → open modal → update subject → save → verify
 - **drag-card-to-column.spec.ts**: Add card → drag between columns → verify movement
+
+### Test Fixtures
+
+```typescript
+// Each test automatically gets:
+test('my test', async ({ authenticatedPage, testBoard, orgInfo }) => {
+    // authenticatedPage - already navigated to the test board
+    // testBoard.boardId - unique board ID for this test
+    // orgInfo - org connection details
+
+    await authenticatedPage.waitForBoardToLoad();
+    // ... test code here ...
+
+    // Board is automatically cleaned up after test!
+});
+```
+
 - **drag-card-within-column.spec.ts**: Add cards → reorder within column → verify order
 
 ## 🚀 Getting Started

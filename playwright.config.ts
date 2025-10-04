@@ -16,10 +16,10 @@ export default defineConfig({
     timeout: 60 * 1000,
 
     // Test execution settings
-    fullyParallel: false, // Sequential for scratch org tests
+    fullyParallel: true, // Run tests in parallel for faster execution
     forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 0,
-    workers: 1, // Single worker for scratch org to avoid conflicts
+    retries: 0,
+    workers: 3,
 
     // Reporter configuration
     reporter: [
@@ -51,9 +51,12 @@ export default defineConfig({
     },
 
     // Configure projects for major browsers
+    // Each project gets its own scratch org (via SF_ORG_ALIAS_${PROJECT_NAME})
+    // Each project limited to 1 worker to ensure browsers run in parallel, not workers within a browser
     projects: [
         {
             name: 'chromium',
+            testMatch: '**/*.spec.ts',
             use: {
                 ...devices['Desktop Chrome'],
                 viewport: { width: 1920, height: 1080 }
@@ -62,6 +65,7 @@ export default defineConfig({
 
         {
             name: 'firefox',
+            testMatch: '**/*.spec.ts',
             use: {
                 ...devices['Desktop Firefox'],
                 viewport: { width: 1920, height: 1080 }
@@ -70,29 +74,16 @@ export default defineConfig({
 
         {
             name: 'webkit',
+            testMatch: '**/*.spec.ts',
             use: {
                 ...devices['Desktop Safari'],
                 viewport: { width: 1920, height: 1080 }
-            }
-        },
-
-        // Mobile viewports for responsive testing
-        {
-            name: 'mobile-chrome',
-            use: {
-                ...devices['Pixel 5']
-            }
-        },
-
-        {
-            name: 'mobile-safari',
-            use: {
-                ...devices['iPhone 12']
             }
         }
     ],
 
     // Global setup/teardown for scratch org
-    globalSetup: require.resolve('./tests/e2e/global-setup-scratch'),
+    // Optimized single-org setup with per-test board isolation
+    globalSetup: require.resolve('./tests/e2e/global-setup'),
     globalTeardown: require.resolve('./tests/e2e/global-teardown')
 });

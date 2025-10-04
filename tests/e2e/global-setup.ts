@@ -1,61 +1,144 @@
 import { chromium, FullConfig } from '@playwright/test';
-import { SalesforceLoginPage } from './pages/SalesforceLoginPage';
 import * as fs from 'fs';
 import * as path from 'path';
+import { SalesforceCLI } from './helpers/salesforce-cli';
 
 /**
- * Global setup - runs once before all tests
- * Authenticates to Salesforce and saves session state
+ * Global setup for Playwright with Salesforce scratch org
+ * Creates ONE scratch org shared by all browsers for optimal performance
+ * Each test will create its own board for isolation
+ *
+ * Environment Variables:
+ * - PLAYWRIGHT_DEBUG_MODE=true : Reuse existing org, deploy metadata with --ignore-conflicts
+ * - SF_ORG_ALIAS=alias : Custom org alias (default: playwright-test)
+ *
+ * When PLAYWRIGHT_DEBUG_MODE=true:
+ * 1. Uses existing scratch org (creates it initially if it doesn't exist)
+ * 2. Always deploys latest metadata changes with --ignore-conflicts flag
  */
 async function globalSetup(config: FullConfig) {
-    const authFile = path.join(__dirname, '.auth/user.json');
+    console.log('🎭 Playwright Global Setup - Single Org Optimized Mode\n');
 
-    // Skip if auth file already exists
-    if (fs.existsSync(authFile)) {
-        console.log('✅ Authentication file already exists, skipping login');
-        return;
-    }
+    const orgAlias = process.env.SF_ORG_ALIAS || 'playwright-test';
+    const reuseOrg = process.env.PLAYWRIGHT_DEBUG_MODE === 'true';
+    const sfCli = new SalesforceCLI(orgAlias);
 
-    console.log('🔐 Authenticating to Salesforce...');
-
-    const { baseURL } = config.projects[0].use;
-    const browser = await chromium.launch();
-    const context = await browser.newContext();
-    const page = await context.newPage();
+    console.log(`📋 Setting up scratch org: ${orgAlias}\n`);
 
     try {
-        // Navigate to Salesforce login
-        const loginPage = new SalesforceLoginPage(page);
-        await loginPage.goto();
+        let instanceUrl: string;
+        let accessToken: string;
 
-        // Login with credentials
-        const username = process.env.SF_USERNAME;
-        const password = process.env.SF_PASSWORD;
+        if (reuseOrg) {
+            const orgExists = await sfCli.scratchOrgExists();
 
-        if (!username || !password) {
-            throw new Error(
-                'SF_USERNAME and SF_PASSWORD must be set in environment variables'
+            if (orgExists) {
+                console.log(`✅ Found existing scratch org - reusing it`);
+
+                // Get existing org info
+                const orgInfo = await sfCli.getOrgInfo();
+                instanceUrl = orgInfo.instanceUrl;
+                accessToken = orgInfo.accessToken;
+
+                // Always deploy metadata with conflict ignore when reusing org
+                console.log(`📦 Deploying latest metadata changes...`);
+                await sfCli.deployMetadata(true);
+            } else {
+                console.log(
+                    `🆕 No existing org found - creating new scratch org`
+                );
+                // Don't create board in setup - tests will create their own
+                const setup = await sfCli.setupWithoutBoard();
+                instanceUrl = setup.instanceUrl;
+                accessToken = setup.accessToken;
+            }
+        } else {
+            console.log(`🆕 Creating new scratch org and deploying...`);
+            // Don't create board in setup - tests will create their own
+            const setup = await sfCli.setupWithoutBoard();
+            instanceUrl = setup.instanceUrl;
+            accessToken = setup.accessToken;
+        }
+
+        // Store org info for all tests to use
+        const orgInfoPath = path.join(__dirname, '.auth/org-info.json');
+        const orgInfoDir = path.dirname(orgInfoPath);
+
+        if (!fs.existsSync(orgInfoDir)) {
+            fs.mkdirSync(orgInfoDir, { recursive: true });
+        }
+
+        fs.writeFileSync(
+            orgInfoPath,
+            JSON.stringify(
+                {
+                    instanceUrl,
+                    accessToken,
+                    orgAlias
+                },
+                null,
+                2
+            )
+        );
+
+        // Authenticate browser session
+        console.log(`🔐 Authenticating browser session...`);
+
+        const browser = await chromium.launch();
+        const context = await browser.newContext();
+
+        // Set access token as cookie
+        await context.addCookies([
+            {
+                name: 'sid',
+                value: accessToken,
+                domain: new URL(instanceUrl).hostname,
+                path: '/',
+                httpOnly: true,
+                secure: true,
+                sameSite: 'None'
+            }
+        ]);
+
+        const page = await context.newPage();
+
+        try {
+            await page.goto(`${instanceUrl}/lightning/page/home`, {
+                waitUntil: 'domcontentloaded',
+                timeout: 60000
+            });
+
+            await page.waitForTimeout(3000);
+
+            const isAuthenticated = await page.evaluate(() => {
+                return (
+                    document
+                        .querySelector('body')
+                        ?.classList.contains('slds-scope') ||
+                    document.querySelector('[class*="oneOne"]') !== null
+                );
+            });
+
+            if (!isAuthenticated) {
+                console.warn(`⚠️  Warning: Authentication verification failed`);
+            }
+
+            // Save authentication state for all tests to use
+            const authFile = path.join(__dirname, `.auth/user.json`);
+            await context.storageState({ path: authFile });
+
+            console.log(`✅ Setup complete!`);
+            console.log(`   Instance: ${instanceUrl}`);
+            console.log(`   Org: ${orgAlias}`);
+            console.log(
+                `\n💡 Note: Each test will create its own board for isolation\n`
             );
+        } finally {
+            await browser.close();
         }
-
-        await loginPage.login(username, password);
-
-        // Wait for successful login
-        await page.waitForLoadState('networkidle');
-
-        // Save authentication state
-        const authDir = path.dirname(authFile);
-        if (!fs.existsSync(authDir)) {
-            fs.mkdirSync(authDir, { recursive: true });
-        }
-
-        await context.storageState({ path: authFile });
-        console.log('✅ Authentication successful and saved');
-    } catch (error) {
-        console.error('❌ Authentication failed:', error);
+    } catch (error: any) {
+        console.error('\n❌ Setup failed:', error.message);
         throw error;
-    } finally {
-        await browser.close();
     }
 }
 
