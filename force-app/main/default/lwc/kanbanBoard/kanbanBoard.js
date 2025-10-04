@@ -164,14 +164,14 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
 
         // Store drag data including the card element's height
         const cardHeight = event.target.offsetHeight;
-        
+
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', cardId);
         event.dataTransfer.setData('columnId', columnId);
 
         // Visual feedback
         event.target.classList.add('dragging');
-        
+
         // Store in component for drop handler
         this.dragData = { cardId, columnId, cardHeight };
     }
@@ -181,12 +181,12 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
      */
     handleDragEnd(event) {
         event.target.classList.remove('dragging');
-        
+
         // Remove placeholder if it exists
         if (this.dragPlaceholder && this.dragPlaceholder.parentNode) {
             this.dragPlaceholder.parentNode.removeChild(this.dragPlaceholder);
         }
-        
+
         this.dragData = null;
         this.dragPlaceholder = null;
         this.lastPlaceholderPosition = null;
@@ -205,30 +205,42 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
 
         const cardsContainer = event.currentTarget;
         const targetColumnId = cardsContainer.dataset.columnId;
-        const targetPosition = this.calculateDropPosition(event, cardsContainer);
-        
+        const targetPosition = this.calculateDropPosition(
+            event,
+            cardsContainer
+        );
+
         // Don't show placeholder if hovering over the original position in the same column
         const isSameColumn = this.dragData.columnId === targetColumnId;
         if (isSameColumn) {
-            const sourceColumn = this.columns.find(col => col.Id === this.dragData.columnId);
+            const sourceColumn = this.columns.find(
+                (col) => col.Id === this.dragData.columnId
+            );
             if (sourceColumn) {
-                const sourceIndex = sourceColumn.cards.findIndex(c => c.Id === this.dragData.cardId);
-                
+                const sourceIndex = sourceColumn.cards.findIndex(
+                    (c) => c.Id === this.dragData.cardId
+                );
+
                 // Don't show placeholder at the original position
                 if (sourceIndex === targetPosition) {
                     // Remove placeholder if it exists
-                    if (this.dragPlaceholder && this.dragPlaceholder.parentNode) {
-                        this.dragPlaceholder.parentNode.removeChild(this.dragPlaceholder);
+                    if (
+                        this.dragPlaceholder &&
+                        this.dragPlaceholder.parentNode
+                    ) {
+                        this.dragPlaceholder.parentNode.removeChild(
+                            this.dragPlaceholder
+                        );
                         this.lastPlaceholderPosition = null;
                     }
                     return;
                 }
             }
         }
-        
+
         // Create position key to check if position changed
         const positionKey = `${targetColumnId}-${targetPosition}`;
-        
+
         // Only update placeholder if position actually changed
         if (this.lastPlaceholderPosition !== positionKey) {
             this.lastPlaceholderPosition = positionKey;
@@ -252,22 +264,31 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
         const targetColumnId = cardsContainer.dataset.columnId;
 
         // Calculate visual drop position (excluding the dragged card for UI)
-        const visualPosition = this.calculateDropPosition(event, cardsContainer);
+        const visualPosition = this.calculateDropPosition(
+            event,
+            cardsContainer
+        );
 
         // Check if position actually changed
-        const sourceColumn = this.columns.find(col => col.Id === sourceColumnId);
+        const sourceColumn = this.columns.find(
+            (col) => col.Id === sourceColumnId
+        );
         if (!sourceColumn) {
             return;
         }
 
-        const sourceIndex = sourceColumn.cards.findIndex(c => c.Id === cardId);
-        
+        const sourceIndex = sourceColumn.cards.findIndex(
+            (c) => c.Id === cardId
+        );
+
         // Convert visual position to actual array position for the target column
         // The visualPosition is calculated without the dragged card in the DOM
         // We need to determine what index to pass to ServerOperations
-        const targetColumn = this.columns.find(col => col.Id === targetColumnId);
+        const targetColumn = this.columns.find(
+            (col) => col.Id === targetColumnId
+        );
         let targetIndex = visualPosition;
-        
+
         // If same column, we need to account for the card being removed
         if (sourceColumnId === targetColumnId) {
             // If moving down, visualPosition already accounts for removal
@@ -275,19 +296,26 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
             // The visual position IS the final position after the card is removed and re-inserted
             targetIndex = visualPosition;
         }
-        
-        console.log('Drop Debug:', JSON.stringify({
-            cardId,
-            sourceColumnId,
-            targetColumnId,
-            sourceIndex,
-            visualPosition,
-            targetIndex,
-            sameColumn: sourceColumnId === targetColumnId,
-            sourceColumnCardCount: sourceColumn.cards.length,
-            targetColumnCardCount: targetColumn.cards.length
-        }, null, 2));
-        
+
+        console.log(
+            'Drop Debug:',
+            JSON.stringify(
+                {
+                    cardId,
+                    sourceColumnId,
+                    targetColumnId,
+                    sourceIndex,
+                    visualPosition,
+                    targetIndex,
+                    sameColumn: sourceColumnId === targetColumnId,
+                    sourceColumnCardCount: sourceColumn.cards.length,
+                    targetColumnCardCount: targetColumn.cards.length
+                },
+                null,
+                2
+            )
+        );
+
         // For same column, check if position really changed
         if (sourceColumnId === targetColumnId) {
             // If dropping in the exact same position, skip
@@ -312,10 +340,12 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
 
             // Update local state directly
             const updatedColumns = JSON.parse(JSON.stringify(this.columns));
-            
+
             // Find and remove card from source column
-            const sourceCol = updatedColumns.find(col => col.Id === sourceColumnId);
-            const cardIndex = sourceCol.cards.findIndex(c => c.Id === cardId);
+            const sourceCol = updatedColumns.find(
+                (col) => col.Id === sourceColumnId
+            );
+            const cardIndex = sourceCol.cards.findIndex((c) => c.Id === cardId);
             const [movedCard] = sourceCol.cards.splice(cardIndex, 1);
             sourceCol.cardCount = sourceCol.cards.length;
 
@@ -324,10 +354,18 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
             movedCard.position = result.newPosition;
 
             // Add to target column at the calculated position
-            const targetCol = updatedColumns.find(col => col.Id === targetColumnId);
-            
-            console.log('Inserting at index:', targetIndex, 'in column with', targetCol.cards.length, 'cards');
-            
+            const targetCol = updatedColumns.find(
+                (col) => col.Id === targetColumnId
+            );
+
+            console.log(
+                'Inserting at index:',
+                targetIndex,
+                'in column with',
+                targetCol.cards.length,
+                'cards'
+            );
+
             targetCol.cards.splice(targetIndex, 0, movedCard);
             targetCol.cardCount = targetCol.cards.length;
 
@@ -352,7 +390,9 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
      */
     calculateDropPosition(event, cardsContainer) {
         const cardElements = Array.from(
-            cardsContainer.querySelectorAll('.kanban-card:not(.dragging):not(.drag-placeholder)')
+            cardsContainer.querySelectorAll(
+                '.kanban-card:not(.dragging):not(.drag-placeholder)'
+            )
         );
 
         if (cardElements.length === 0) {
@@ -366,7 +406,7 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
         for (let i = 0; i < cardElements.length; i++) {
             const rect = cardElements[i].getBoundingClientRect();
             // Use bottom quarter of the card as the threshold
-            const threshold = rect.top + (rect.height * 0.75);
+            const threshold = rect.top + rect.height * 0.75;
 
             if (mouseY < threshold) {
                 return i;
@@ -383,22 +423,26 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
     updateDragPlaceholder(cardsContainer, targetPosition) {
         // Get all non-dragging, non-placeholder cards
         const cardElements = Array.from(
-            cardsContainer.querySelectorAll('.kanban-card:not(.dragging):not(.drag-placeholder)')
+            cardsContainer.querySelectorAll(
+                '.kanban-card:not(.dragging):not(.drag-placeholder)'
+            )
         );
 
         // Create placeholder if it doesn't exist
         if (!this.dragPlaceholder) {
             this.dragPlaceholder = document.createElement('div');
             this.dragPlaceholder.className = 'kanban-card drag-placeholder';
-            
+
             // Use the actual dragged card's height
             const cardHeight = this.dragData?.cardHeight || 80;
             this.dragPlaceholder.style.height = `${cardHeight}px`;
-            
-            this.dragPlaceholder.style.margin = '0 var(--lwc-spacingXSmall) var(--lwc-spacingXSmall)';
+
+            this.dragPlaceholder.style.margin =
+                '0 var(--lwc-spacingXSmall) var(--lwc-spacingXSmall)';
             this.dragPlaceholder.style.border = '2px dashed #0176d3';
             this.dragPlaceholder.style.borderRadius = '0.25rem';
-            this.dragPlaceholder.style.backgroundColor = 'rgba(1, 118, 211, 0.05)';
+            this.dragPlaceholder.style.backgroundColor =
+                'rgba(1, 118, 211, 0.05)';
             this.dragPlaceholder.style.display = 'flex';
             this.dragPlaceholder.style.alignItems = 'center';
             this.dragPlaceholder.style.justifyContent = 'center';
@@ -571,11 +615,11 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
     handleCardUpdated() {
         // Close the modal
         this.showCardDetail = false;
-        
+
         // Reload board data to get the updated card with all its relationships
         // This is simpler than trying to fetch and merge just the updated card
         this.loadBoardData();
-        
+
         // Clear selected card after reload starts
         this.selectedCard = null;
     }
@@ -583,9 +627,9 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
     /**
      * Handle card deleted from modal - Simplified synchronous approach
      */
-    handleCardDeleted() {
-        const cardId = this.selectedCard?.Id;
-        
+    handleCardDeleted(event) {
+        const cardId = event?.detail?.cardId;
+
         if (!cardId) {
             console.error('No card ID provided for deletion');
             return;
@@ -594,9 +638,9 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
         // Find and remove the card from columns
         const updatedColumns = JSON.parse(JSON.stringify(this.columns));
         let found = false;
-        
+
         for (const column of updatedColumns) {
-            const cardIndex = column.cards.findIndex(c => c.Id === cardId);
+            const cardIndex = column.cards.findIndex((c) => c.Id === cardId);
             if (cardIndex !== -1) {
                 column.cards.splice(cardIndex, 1);
                 column.cardCount = column.cards.length;
@@ -604,7 +648,7 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
                 break;
             }
         }
-        
+
         if (found) {
             // Update store with new columns
             this.store.dispatch({
@@ -612,7 +656,7 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
                 payload: updatedColumns
             });
         }
-        
+
         // Close modal and clear selection
         this.showCardDetail = false;
         this.selectedCard = null;
@@ -635,7 +679,10 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
 
         if (!columnId) {
             console.error('Column ID not found on button:', button);
-            this.toastManager.showError('Invalid column', 'Column ID not found');
+            this.toastManager.showError(
+                'Invalid column',
+                'Column ID not found'
+            );
             return;
         }
 
@@ -654,12 +701,15 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
             const enrichedCard = DataManager.enrichCard(newCard);
 
             // Find the column and add the card directly
-            const columnIndex = this.columns.findIndex(col => col.Id === columnId);
+            const columnIndex = this.columns.findIndex(
+                (col) => col.Id === columnId
+            );
             if (columnIndex !== -1) {
                 // Create a new columns array with the updated column
                 const updatedColumns = JSON.parse(JSON.stringify(this.columns));
                 updatedColumns[columnIndex].cards.push(enrichedCard);
-                updatedColumns[columnIndex].cardCount = updatedColumns[columnIndex].cards.length;
+                updatedColumns[columnIndex].cardCount =
+                    updatedColumns[columnIndex].cards.length;
 
                 // Update store with new columns
                 this.store.dispatch({
