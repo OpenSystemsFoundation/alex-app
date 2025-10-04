@@ -327,15 +327,21 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
             const [movedCard] = sourceCol.cards.splice(cardIndex, 1);
             sourceCol.cardCount = sourceCol.cards.length;
 
-            // Update card properties
-            movedCard.columnId = targetColumnId;
-            movedCard.position = result.newPosition;
-
-            // Add to target column at the calculated position
+            // Find target column
             const targetCol = updatedColumns.find(
                 (col) => col.Id === targetColumnId
             );
 
+            // Update card properties
+            movedCard.columnId = targetColumnId;
+            movedCard.position = result.newPosition;
+
+            // If the target column has a status, update the card's status to match
+            if (targetCol.status) {
+                movedCard.status = targetCol.status;
+            }
+
+            // Add to target column at the calculated position
             targetCol.cards.splice(targetIndex, 0, movedCard);
             targetCol.cardCount = targetCol.cards.length;
 
