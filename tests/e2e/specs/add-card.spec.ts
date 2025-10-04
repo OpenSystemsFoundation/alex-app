@@ -55,7 +55,11 @@ test.describe('Kanban Board - Add Card', () => {
         const cardsToAdd = 3;
         for (let i = 0; i < cardsToAdd; i++) {
             await authenticatedPage.clickAddCard(0);
-            await authenticatedPage.page.waitForTimeout(2000);
+
+            // Wait for the new card to appear
+            await expect(
+                authenticatedPage.getCardsInColumn(0).nth(initialCount + i)
+            ).toBeVisible({ timeout: 10000 });
         }
 
         // Verify count increased by 3
@@ -85,7 +89,11 @@ test.describe('Kanban Board - Add Card', () => {
         // Add cards
         for (let i = 0; i < columnsToTest; i++) {
             await authenticatedPage.clickAddCard(i);
-            await authenticatedPage.page.waitForTimeout(2000);
+
+            // Wait for the card to be created and visible
+            await expect(
+                authenticatedPage.getCardsInColumn(i).nth(initialCounts[i])
+            ).toBeVisible({ timeout: 10000 });
         }
 
         // Verify each column has one more card

@@ -79,6 +79,9 @@ async function globalTeardown(config: FullConfig) {
             console.log('✅ Auth files cleaned up');
         }
 
+        // Clean up temp apex files
+        sfCli.cleanupTempApexFiles();
+
         console.log('\n✅ Teardown complete!\n');
     } catch (error: any) {
         console.error('⚠️  Teardown error:', error.message);

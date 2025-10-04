@@ -11,6 +11,9 @@ const execAsync = promisify(exec);
 export class SalesforceCLI {
     private orgAlias: string;
     private configFile: string;
+    private tempDir: string;
+    private createBoardFile: string;
+    private deleteBoardFile: string;
 
     constructor(
         orgAlias: string = 'playwright-test',
@@ -18,6 +21,59 @@ export class SalesforceCLI {
     ) {
         this.orgAlias = orgAlias;
         this.configFile = configFile;
+        this.tempDir = path.join(process.cwd(), '.temp');
+        this.createBoardFile = path.join(this.tempDir, 'create-board.apex');
+        this.deleteBoardFile = path.join(this.tempDir, 'delete-board.apex');
+    }
+
+    /**
+     * Initialize temp apex files for the test suite
+     * Call this once at the start of tests
+     */
+    initializeTempApexFiles(): void {
+        // Create temp directory if it doesn't exist
+        if (!fs.existsSync(this.tempDir)) {
+            fs.mkdirSync(this.tempDir, { recursive: true });
+        }
+
+        // Read templates from scripts/apex
+        const createTemplate = fs.readFileSync(
+            path.join(process.cwd(), 'scripts', 'apex', 'CreateBoard.apex'),
+            'utf-8'
+        );
+        const deleteTemplate = fs.readFileSync(
+            path.join(process.cwd(), 'scripts', 'apex', 'DeleteBoard.apex'),
+            'utf-8'
+        );
+
+        // Write initial templates to temp directory
+        fs.writeFileSync(this.createBoardFile, createTemplate);
+        fs.writeFileSync(this.deleteBoardFile, deleteTemplate);
+    }
+
+    /**
+     * Cleanup temp apex files at the end of the test suite
+     */
+    cleanupTempApexFiles(): void {
+        try {
+            if (fs.existsSync(this.createBoardFile)) {
+                fs.unlinkSync(this.createBoardFile);
+            }
+            if (fs.existsSync(this.deleteBoardFile)) {
+                fs.unlinkSync(this.deleteBoardFile);
+            }
+            // Try to remove temp dir if empty
+            if (fs.existsSync(this.tempDir)) {
+                const files = fs.readdirSync(this.tempDir);
+                if (files.length === 0) {
+                    fs.rmdirSync(this.tempDir);
+                }
+            }
+        } catch (error: any) {
+            console.warn(
+                `⚠️  Warning: Error cleaning up temp files: ${error.message}`
+            );
+        }
     }
 
     /**
@@ -225,54 +281,38 @@ export class SalesforceCLI {
     async createTestBoard(): Promise<string> {
         console.log('Creating test board...');
 
-        // Create an Apex script to create a board and return its ID
-        // Note: Using OpenSF namespace prefix for all custom objects/fields
-        const apexScript = `
-// Create Board
-OpenSF__Board__c board = new OpenSF__Board__c(
-    Name = 'E2E Test Board'
-);
-insert board;
-
-// Generate LexoRank positions for columns
-String[] positions = new String[]{
-    '0|h00000:',
-    '0|h55555:',
-    '0|hzzzzz:'
-};
-
-// Create columns with LexoRank positions
-List<OpenSF__Column__c> columns = new List<OpenSF__Column__c>();
+        // Build column creation code
+        const columnScript = `
 columns.add(new OpenSF__Column__c(
     OpenSF__ColumnHeader__c = 'To Do',
     OpenSF__Board__c = board.Id,
-    OpenSF__LexoRankPosition__c = positions[0]
+    OpenSF__LexoRankPosition__c = '0|h00000:'
 ));
 columns.add(new OpenSF__Column__c(
     OpenSF__ColumnHeader__c = 'In Progress',
     OpenSF__Board__c = board.Id,
-    OpenSF__LexoRankPosition__c = positions[1]
+    OpenSF__LexoRankPosition__c = '0|h55555:'
 ));
 columns.add(new OpenSF__Column__c(
     OpenSF__ColumnHeader__c = 'Done',
     OpenSF__Board__c = board.Id,
-    OpenSF__LexoRankPosition__c = positions[2]
-));
-insert columns;
+    OpenSF__LexoRankPosition__c = '0|hzzzzz:'
+));`;
 
-System.debug('BOARD_ID:' + board.Id);
-    `.trim();
+        // Read current template and update it with new values
+        const template = fs.readFileSync(
+            path.join(process.cwd(), 'scripts', 'apex', 'CreateBoard.apex'),
+            'utf-8'
+        );
+        const apexScript = template
+            .replace('{{BOARD_NAME}}', 'E2E Test Board')
+            .replace('{{COLUMNS}}', columnScript);
 
-        // Write to temp file in project root .temp directory
-        const tempDir = path.join(process.cwd(), '.temp');
-        if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
-        }
-        const tempFile = path.join(tempDir, 'create-board.apex');
-        fs.writeFileSync(tempFile, apexScript);
+        // Update the persistent temp file
+        fs.writeFileSync(this.createBoardFile, apexScript);
 
         try {
-            const command = `sf apex run --file ${tempFile} --target-org ${this.orgAlias}`;
+            const command = `sf apex run --file ${this.createBoardFile} --target-org ${this.orgAlias}`;
             const { stdout, stderr } = await execAsync(command);
 
             // Extract board ID from debug output
@@ -286,11 +326,8 @@ System.debug('BOARD_ID:' + board.Id);
             } else {
                 throw new Error('Could not extract board ID from Apex output');
             }
-        } finally {
-            // Cleanup temp file
-            if (fs.existsSync(tempFile)) {
-                fs.unlinkSync(tempFile);
-            }
+        } catch (error: any) {
+            throw new Error(`Error creating test board: ${error.message}`);
         }
     }
 
@@ -406,33 +443,22 @@ System.debug('BOARD_ID:' + board.Id);
     async deleteBoard(boardId: string): Promise<void> {
         console.log(`Deleting test board: ${boardId}...`);
 
-        // Create Apex script to delete board (cascade delete will handle columns and cards)
-        // Note: Using OpenSF namespace prefix
-        const apexScript = `
-OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c WHERE Id = '${boardId}' LIMIT 1];
-delete board;
-System.debug('Board deleted: ${boardId}');
-        `.trim();
+        // Read template and update with board ID
+        const template = fs.readFileSync(
+            path.join(process.cwd(), 'scripts', 'apex', 'DeleteBoard.apex'),
+            'utf-8'
+        );
+        const apexScript = template.replace(/{{BOARD_ID}}/g, boardId);
 
-        // Write to temp file in project root .temp directory
-        const tempDir = path.join(process.cwd(), '.temp');
-        if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
-        }
-        const tempFile = path.join(tempDir, 'delete-board.apex');
-        fs.writeFileSync(tempFile, apexScript);
+        // Update the persistent temp file
+        fs.writeFileSync(this.deleteBoardFile, apexScript);
 
         try {
-            const command = `sf apex run --file ${tempFile} --target-org ${this.orgAlias}`;
+            const command = `sf apex run --file ${this.deleteBoardFile} --target-org ${this.orgAlias}`;
             await execAsync(command);
             console.log('✅ Test board and related data deleted successfully');
         } catch (error: any) {
             console.warn(`⚠️  Warning: Error deleting board: ${error.message}`);
-        } finally {
-            // Cleanup temp file
-            if (fs.existsSync(tempFile)) {
-                fs.unlinkSync(tempFile);
-            }
         }
     }
 

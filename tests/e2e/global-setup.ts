@@ -23,6 +23,9 @@ async function globalSetup(config: FullConfig) {
     const reuseOrg = process.env.PLAYWRIGHT_DEBUG_MODE === 'true';
     const sfCli = new SalesforceCLI(orgAlias);
 
+    // Initialize temp apex files for the test suite
+    sfCli.initializeTempApexFiles();
+
     console.log(`📋 Setting up scratch org: ${orgAlias}\n`);
 
     try {
