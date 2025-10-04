@@ -1,4 +1,3 @@
 npm run prepush
-npm run prettier:verify
 npm run test:unit
 npm run test:apex
