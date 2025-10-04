@@ -19,7 +19,7 @@ export default defineConfig({
     fullyParallel: true, // Run tests in parallel for faster execution
     forbidOnly: !!process.env.CI,
     retries: 0,
-    workers: 2,
+    workers: 10,
 
     // Reporter configuration
     reporter: [

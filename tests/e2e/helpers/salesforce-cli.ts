@@ -393,7 +393,7 @@ columns.add(new OpenSF__Column__c(
             // Deploy metadata
             await this.deployMetadata();
 
-            // Assign permission sets (optional, may not exist)
+            // Assign permission set
             try {
                 await this.assignPermissionSet('Alex_Admin');
             } catch (error) {
