@@ -4,7 +4,6 @@
     "trailingComma": "none",
     "singleQuote": true,
     "tabWidth": 4,
-    "requireConfig": true,
     "printWidth": 80,
     "overrides": [
         {

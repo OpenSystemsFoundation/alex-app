@@ -1,7 +1,31 @@
-<testsuites id="" name="" tests="30" failures="1" skipped="29" errors="0" time="34.130071">
-<testsuite name="specs\drag-card-within-column.spec.ts" timestamp="2025-10-04T14:59:16.610Z" hostname="chromium" tests="6" failures="1" skipped="5" time="32.896" errors="0">
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0" classname="specs\drag-card-within-column.spec.ts" time="32.896">
-<failure message="drag-card-within-column.spec.ts:69:9 should drag a card from first to last position within column 0" type="FAILURE">
+<testsuites
+    id=""
+    name=""
+    tests="30"
+    failures="1"
+    skipped="29"
+    errors="0"
+    time="34.130071"
+>
+<testsuite
+        name="specs\drag-card-within-column.spec.ts"
+        timestamp="2025-10-04T14:59:16.610Z"
+        hostname="chromium"
+        tests="6"
+        failures="1"
+        skipped="5"
+        time="32.896"
+        errors="0"
+    >
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="32.896"
+        >
+<failure
+                message="drag-card-within-column.spec.ts:69:9 should drag a card from first to last position within column 0"
+                type="FAILURE"
+            >
 <![CDATA[  [chromium] › specs\drag-card-within-column.spec.ts:69:9 › Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0 
 
     Error: locator.waitFor: Target page, context or browser has been closed
@@ -38,127 +62,279 @@
 ]]>
 </failure>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions" classname="specs\drag-card-within-column.spec.ts" time="0">
-<skipped>
-</skipped>
-</testcase>
-</testsuite>
-<testsuite name="specs\drag-card-within-column.spec.ts" timestamp="2025-10-04T14:59:16.610Z" hostname="firefox" tests="6" failures="0" skipped="6" time="0" errors="0">
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
-<skipped>
-</skipped>
-</testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
-<skipped>
-</skipped>
-</testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
-<skipped>
-</skipped>
-</testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
-<skipped>
-</skipped>
-</testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
-<skipped>
-</skipped>
-</testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="specs\drag-card-within-column.spec.ts" timestamp="2025-10-04T14:59:16.610Z" hostname="webkit" tests="6" failures="0" skipped="6" time="0" errors="0">
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testsuite
+        name="specs\drag-card-within-column.spec.ts"
+        timestamp="2025-10-04T14:59:16.610Z"
+        hostname="firefox"
+        tests="6"
+        failures="0"
+        skipped="6"
+        time="0"
+        errors="0"
+    >
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="specs\drag-card-within-column.spec.ts" timestamp="2025-10-04T14:59:16.610Z" hostname="mobile-chrome" tests="6" failures="0" skipped="6" time="0" errors="0">
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testsuite
+        name="specs\drag-card-within-column.spec.ts"
+        timestamp="2025-10-04T14:59:16.610Z"
+        hostname="webkit"
+        tests="6"
+        failures="0"
+        skipped="6"
+        time="0"
+        errors="0"
+    >
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="specs\drag-card-within-column.spec.ts" timestamp="2025-10-04T14:59:16.610Z" hostname="mobile-safari" tests="6" failures="0" skipped="6" time="0" errors="0">
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testsuite
+        name="specs\drag-card-within-column.spec.ts"
+        timestamp="2025-10-04T14:59:16.610Z"
+        hostname="mobile-chrome"
+        tests="6"
+        failures="0"
+        skipped="6"
+        time="0"
+        errors="0"
+    >
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions" classname="specs\drag-card-within-column.spec.ts" time="0">
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite
+        name="specs\drag-card-within-column.spec.ts"
+        timestamp="2025-10-04T14:59:16.610Z"
+        hostname="mobile-safari"
+        tests="6"
+        failures="0"
+        skipped="6"
+        time="0"
+        errors="0"
+    >
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from first to last position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
+<skipped>
+</skipped>
+</testcase>
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from last to first position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
+<skipped>
+</skipped>
+</testcase>
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from middle to first position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
+<skipped>
+</skipped>
+</testcase>
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from first to middle position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
+<skipped>
+</skipped>
+</testcase>
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag a card from middle to last position within column 0"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
+<skipped>
+</skipped>
+</testcase>
+<testcase
+            name="Kanban Board - Drag Card Within Column › should drag adjacent cards - swap positions"
+            classname="specs\drag-card-within-column.spec.ts"
+            time="0"
+        >
 <skipped>
 </skipped>
 </testcase>
