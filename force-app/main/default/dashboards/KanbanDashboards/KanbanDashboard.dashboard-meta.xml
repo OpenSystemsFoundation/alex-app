@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <Dashboard xmlns="http://soap.sforce.com/2006/04/metadata">
     <backgroundEndColor>#FFFFFF</backgroundEndColor>
     <backgroundFadeDirection>Diagonal</backgroundFadeDirection>
@@ -42,7 +42,7 @@
                 <drillToDetailEnabled>false</drillToDetailEnabled>
                 <enableHover>false</enableHover>
                 <expandOthers>false</expandOthers>
-                <groupingSortProperties/>
+                <groupingSortProperties />
                 <header>Board Overview</header>
                 <report>KanbanReports/Alex_Board_Overview</report>
                 <showPercentage>false</showPercentage>
@@ -76,7 +76,8 @@
                 <enableHover>false</enableHover>
                 <expandOthers>false</expandOthers>
                 <groupingColumn>Board__c$Name</groupingColumn>
-                <groupingColumn>Board__c.Columns__r$ColumnHeader__c</groupingColumn>
+                <groupingColumn
+                >Board__c.Columns__r$ColumnHeader__c</groupingColumn>
                 <groupingSortProperties>
                     <groupingSorts>
                         <groupingLevel>g1</groupingLevel>

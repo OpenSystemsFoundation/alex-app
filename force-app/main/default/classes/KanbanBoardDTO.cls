@@ -3,20 +3,27 @@
  * Maps namespaced objects to plain objects for LWC consumption
  */
 public with sharing class KanbanBoardDTO {
-    
     /**
      * Board DTO
      */
     public class BoardDTO {
-        @AuraEnabled public Id Id;
-        @AuraEnabled public String Name;
-        @AuraEnabled public String description;
-        @AuraEnabled public String status;
-        @AuraEnabled public String type;
-        @AuraEnabled public Boolean active;
-        @AuraEnabled public Boolean emailNotifications;
-        @AuraEnabled public Boolean salesforceNotifications;
-        
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public String Name;
+        @AuraEnabled
+        public String description;
+        @AuraEnabled
+        public String status;
+        @AuraEnabled
+        public String type;
+        @AuraEnabled
+        public Boolean active;
+        @AuraEnabled
+        public Boolean emailNotifications;
+        @AuraEnabled
+        public Boolean salesforceNotifications;
+
         public BoardDTO(OpenSF__Board__c board) {
             this.Id = board.Id;
             this.Name = board.Name;
@@ -28,20 +35,28 @@ public with sharing class KanbanBoardDTO {
             this.salesforceNotifications = board.OpenSF__SalesforceNotifications__c;
         }
     }
-    
+
     /**
      * Column DTO
      */
     public class ColumnDTO {
-        @AuraEnabled public Id Id;
-        @AuraEnabled public String Name;
-        @AuraEnabled public String columnHeader;
-        @AuraEnabled public String position;
-        @AuraEnabled public String color;
-        @AuraEnabled public String status;
-        @AuraEnabled public Decimal cardCount;
-        @AuraEnabled public Id boardId;
-        
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public String Name;
+        @AuraEnabled
+        public String columnHeader;
+        @AuraEnabled
+        public String position;
+        @AuraEnabled
+        public String color;
+        @AuraEnabled
+        public String status;
+        @AuraEnabled
+        public Decimal cardCount;
+        @AuraEnabled
+        public Id boardId;
+
         public ColumnDTO(OpenSF__Column__c column) {
             this.Id = column.Id;
             this.Name = column.Name;
@@ -53,33 +68,54 @@ public with sharing class KanbanBoardDTO {
             this.boardId = column.OpenSF__Board__c;
         }
     }
-    
+
     /**
      * Card DTO with nested User DTO
      */
     public class CardDTO {
-        @AuraEnabled public Id Id;
-        @AuraEnabled public String Name;
-        @AuraEnabled public String subject;
-        @AuraEnabled public String description;
-        @AuraEnabled public Id columnId;
-        @AuraEnabled public String position;
-        @AuraEnabled public String color;
-        @AuraEnabled public String priority;
-        @AuraEnabled public String status;
-        @AuraEnabled public String cardType;
-        @AuraEnabled public Date dueDate;
-        @AuraEnabled public Decimal storyPoints;
-        @AuraEnabled public Id assigneeId;
-        @AuraEnabled public UserDTO assignee;
-        @AuraEnabled public Id peerReviewerId;
-        @AuraEnabled public UserDTO peerReviewer;
-        @AuraEnabled public Id epicId;
-        @AuraEnabled public EpicDTO epic;
-        @AuraEnabled public Boolean locked;
-        @AuraEnabled public DateTime lastModifiedDate;
-        @AuraEnabled public Id lastModifiedById;
-        
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public String Name;
+        @AuraEnabled
+        public String subject;
+        @AuraEnabled
+        public String description;
+        @AuraEnabled
+        public Id columnId;
+        @AuraEnabled
+        public String position;
+        @AuraEnabled
+        public String color;
+        @AuraEnabled
+        public String priority;
+        @AuraEnabled
+        public String status;
+        @AuraEnabled
+        public String cardType;
+        @AuraEnabled
+        public Date dueDate;
+        @AuraEnabled
+        public Decimal storyPoints;
+        @AuraEnabled
+        public Id assigneeId;
+        @AuraEnabled
+        public UserDTO assignee;
+        @AuraEnabled
+        public Id peerReviewerId;
+        @AuraEnabled
+        public UserDTO peerReviewer;
+        @AuraEnabled
+        public Id epicId;
+        @AuraEnabled
+        public EpicDTO epic;
+        @AuraEnabled
+        public Boolean locked;
+        @AuraEnabled
+        public DateTime lastModifiedDate;
+        @AuraEnabled
+        public Id lastModifiedById;
+
         public CardDTO(OpenSF__Card__c card) {
             this.Id = card.Id;
             this.Name = card.Name;
@@ -99,7 +135,7 @@ public with sharing class KanbanBoardDTO {
             this.locked = card.OpenSF__Locked__c;
             this.lastModifiedDate = card.LastModifiedDate;
             this.lastModifiedById = card.LastModifiedById;
-            
+
             // Map nested relationships
             if (card.OpenSF__Assignee__r != null) {
                 this.assignee = new UserDTO(card.OpenSF__Assignee__r);
@@ -112,14 +148,16 @@ public with sharing class KanbanBoardDTO {
             }
         }
     }
-    
+
     /**
      * User DTO for related users
      */
     public class UserDTO {
-        @AuraEnabled public String name;
-        @AuraEnabled public String photoUrl;
-        
+        @AuraEnabled
+        public String name;
+        @AuraEnabled
+        public String photoUrl;
+
         public UserDTO(User user) {
             this.name = user.Name;
             // SmallPhotoUrl may not be available in test context
@@ -130,18 +168,19 @@ public with sharing class KanbanBoardDTO {
             }
         }
     }
-    
+
     /**
      * Epic DTO for related epic cards
      */
     public class EpicDTO {
-        @AuraEnabled public String subject;
-        
+        @AuraEnabled
+        public String subject;
+
         public EpicDTO(OpenSF__Card__c epic) {
             this.subject = epic.OpenSF__Subject__c;
         }
     }
-    
+
     /**
      * Convert list of boards
      */
@@ -152,18 +191,20 @@ public with sharing class KanbanBoardDTO {
         }
         return result;
     }
-    
+
     /**
      * Convert list of columns
      */
-    public static List<ColumnDTO> convertColumns(List<OpenSF__Column__c> columns) {
+    public static List<ColumnDTO> convertColumns(
+        List<OpenSF__Column__c> columns
+    ) {
         List<ColumnDTO> result = new List<ColumnDTO>();
         for (OpenSF__Column__c column : columns) {
             result.add(new ColumnDTO(column));
         }
         return result;
     }
-    
+
     /**
      * Convert list of cards
      */

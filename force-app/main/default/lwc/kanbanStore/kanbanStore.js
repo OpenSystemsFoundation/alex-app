@@ -7,7 +7,7 @@ class KanbanStore {
     constructor() {
         // Each component gets its own store instance
         // No singleton pattern - allows multiple browser windows/tabs
-        
+
         // Initialize state
         this._state = {
             columns: [],
@@ -16,32 +16,36 @@ class KanbanStore {
             isDragging: false,
             dragSource: null
         };
-        
+
         // Subscribers for state changes
         this._subscribers = new Set();
-        
+
         // Performance optimization
         this._lastDragPosition = null; // Cache last drag position
         this._pendingUpdate = false; // Batch update flag
     }
-    
+
     /**
      * Get current state (immutable)
      */
     getState() {
         return Object.freeze({ ...this._state });
     }
-    
+
     /**
      * Get columns - returns drag preview when dragging, otherwise normal columns
      */
     getColumns() {
-        if (this._state.isDragging && this._state.dragState && Array.isArray(this._state.dragState)) {
+        if (
+            this._state.isDragging &&
+            this._state.dragState &&
+            Array.isArray(this._state.dragState)
+        ) {
             return this._state.dragState;
         }
         return this._state.columns || [];
     }
-    
+
     /**
      * Subscribe to state changes
      * @param {Function} callback - Called when state changes
@@ -51,13 +55,13 @@ class KanbanStore {
         this._subscribers.add(callback);
         return () => this._subscribers.delete(callback);
     }
-    
+
     /**
      * Notify all subscribers of state change
      */
     _notifySubscribers() {
         const state = this.getState();
-        this._subscribers.forEach(callback => {
+        this._subscribers.forEach((callback) => {
             try {
                 callback(state);
             } catch (error) {
@@ -65,14 +69,14 @@ class KanbanStore {
             }
         });
     }
-    
+
     /**
      * Dispatch action to update state
      * @param {Object} action - Action object with type and payload
      */
     dispatch(action) {
         const prevState = this._state;
-        
+
         switch (action.type) {
             case 'SET_BOARD':
                 this._state = {
@@ -80,21 +84,21 @@ class KanbanStore {
                     board: action.payload
                 };
                 break;
-                
+
             case 'SET_COLUMNS':
                 this._state = {
                     ...this._state,
                     columns: JSON.parse(JSON.stringify(action.payload))
                 };
                 break;
-                
+
             case 'UPDATE_COLUMNS':
                 this._state = {
                     ...this._state,
                     columns: JSON.parse(JSON.stringify(action.payload))
                 };
                 break;
-                
+
             case 'START_DRAG':
                 if (!this._state.columns || this._state.columns.length === 0) {
                     break;
@@ -106,7 +110,7 @@ class KanbanStore {
                     dragState: JSON.parse(JSON.stringify(this._state.columns))
                 };
                 break;
-                
+
             case 'UPDATE_DRAG_POSITION':
                 // Check if position actually changed
                 const newPosKey = `${action.payload.targetColumnId}-${action.payload.targetIndex}`;
@@ -115,7 +119,7 @@ class KanbanStore {
                     return;
                 }
                 this._lastDragPosition = newPosKey;
-                
+
                 this._state = {
                     ...this._state,
                     dragState: this._calculateDragState(
@@ -124,7 +128,7 @@ class KanbanStore {
                     )
                 };
                 break;
-                
+
             case 'COMMIT_DRAG':
                 // Commit drag state to columns
                 this._state = {
@@ -136,7 +140,7 @@ class KanbanStore {
                 };
                 this._lastDragPosition = null; // Reset cache
                 break;
-                
+
             case 'CANCEL_DRAG':
                 // Revert to original state
                 this._state = {
@@ -147,7 +151,7 @@ class KanbanStore {
                 };
                 this._lastDragPosition = null; // Reset cache
                 break;
-                
+
             case 'MOVE_CARD':
                 this._state = {
                     ...this._state,
@@ -158,7 +162,7 @@ class KanbanStore {
                     )
                 };
                 break;
-                
+
             case 'ADD_CARD':
                 this._state = {
                     ...this._state,
@@ -168,7 +172,7 @@ class KanbanStore {
                     )
                 };
                 break;
-                
+
             case 'UPDATE_CARD':
                 this._state = {
                     ...this._state,
@@ -178,22 +182,22 @@ class KanbanStore {
                     )
                 };
                 break;
-                
+
             case 'DELETE_CARD':
                 this._state = {
                     ...this._state,
                     columns: this._deleteCardFromState(action.payload.cardId)
                 };
                 break;
-                
+
             default:
                 return;
         }
-        
+
         // Notify subscribers
         this._notifySubscribers();
     }
-    
+
     /**
      * Calculate new drag state based on target position (optimized)
      */
@@ -201,15 +205,15 @@ class KanbanStore {
         if (!this._state.columns || this._state.columns.length === 0) {
             return [];
         }
-        
+
         const { dragSource } = this._state;
-        
+
         if (!dragSource) {
             return this._state.columns;
         }
-        
+
         // Clone only what we need to modify
-        const newState = this._state.columns.map(col => {
+        const newState = this._state.columns.map((col) => {
             // Only clone columns that will be modified
             if (col.Id === dragSource.columnId || col.Id === targetColumnId) {
                 return {
@@ -220,98 +224,103 @@ class KanbanStore {
             // Return unchanged columns as-is
             return col;
         });
-        
+
         // Find source column and card
-        const sourceColumn = newState.find(col => col.Id === dragSource.columnId);
+        const sourceColumn = newState.find(
+            (col) => col.Id === dragSource.columnId
+        );
         if (!sourceColumn || !sourceColumn.cards[dragSource.cardIndex]) {
             return this._state.columns;
         }
-        
+
         const draggedCard = sourceColumn.cards[dragSource.cardIndex];
-        
+
         // Remove card from source
         sourceColumn.cards.splice(dragSource.cardIndex, 1);
-        
+
         // Find target column
-        const targetColumn = newState.find(col => col.Id === targetColumnId);
+        const targetColumn = newState.find((col) => col.Id === targetColumnId);
         if (!targetColumn) {
             return this._state.columns;
         }
-        
+
         // Calculate adjusted index if moving within same column
         let adjustedIndex = targetIndex;
-        if (dragSource.columnId === targetColumnId && dragSource.cardIndex < targetIndex) {
+        if (
+            dragSource.columnId === targetColumnId &&
+            dragSource.cardIndex < targetIndex
+        ) {
             adjustedIndex = targetIndex - 1;
         }
-        
+
         // Insert at target position
         targetColumn.cards.splice(adjustedIndex, 0, draggedCard);
-        
+
         // Update card counts
         sourceColumn.cardCount = sourceColumn.cards.length;
         targetColumn.cardCount = targetColumn.cards.length;
-        
+
         return newState;
     }
-    
+
     /**
      * Move card within state
      */
     _moveCardInState(cardId, targetColumnId, targetIndex) {
         const newState = JSON.parse(JSON.stringify(this._state.columns));
-        
+
         // Find source column and card
         let sourceColumn = null;
         let cardIndex = -1;
         let card = null;
-        
+
         for (const col of newState) {
-            cardIndex = col.cards.findIndex(c => c.Id === cardId);
+            cardIndex = col.cards.findIndex((c) => c.Id === cardId);
             if (cardIndex !== -1) {
                 sourceColumn = col;
                 card = col.cards[cardIndex];
                 break;
             }
         }
-        
+
         if (!card || !sourceColumn) return newState;
-        
+
         // Remove from source
         sourceColumn.cards.splice(cardIndex, 1);
         sourceColumn.cardCount = sourceColumn.cards.length;
-        
+
         // Add to target
-        const targetColumn = newState.find(col => col.Id === targetColumnId);
+        const targetColumn = newState.find((col) => col.Id === targetColumnId);
         if (!targetColumn) return newState;
-        
+
         card.columnId = targetColumnId;
-        
+
         if (targetIndex !== undefined && targetIndex !== null) {
             targetColumn.cards.splice(targetIndex, 0, card);
         } else {
             targetColumn.cards.push(card);
         }
-        
+
         targetColumn.cardCount = targetColumn.cards.length;
-        
+
         return newState;
     }
-    
+
     /**
      * Add card to state
      */
     _addCardToState(card, columnId) {
         const newState = JSON.parse(JSON.stringify(this._state.columns));
-        const column = newState.find(col => col.Id === columnId);
-        
+        const column = newState.find((col) => col.Id === columnId);
+
         if (column) {
             column.cards.push(card);
             column.cardCount = column.cards.length;
         }
-        
+
         return newState;
     }
-    
+
     /**
      * Update card in state
      */
@@ -320,45 +329,47 @@ class KanbanStore {
      */
     _updateCardInState(cardIdOrCard, updates) {
         const newState = JSON.parse(JSON.stringify(this._state.columns));
-        
+
         // Support both formats: (cardId, updates) or (fullCard)
-        const cardId = typeof cardIdOrCard === 'string' ? cardIdOrCard : cardIdOrCard?.Id;
+        const cardId =
+            typeof cardIdOrCard === 'string' ? cardIdOrCard : cardIdOrCard?.Id;
         const cardUpdates = updates || cardIdOrCard;
-        
+
         if (!cardId) {
             return newState;
         }
-        
+
         // Find the card and check if column changed
         let sourceColumn = null;
         let cardIndex = -1;
         let existingCard = null;
-        
+
         for (const column of newState) {
-            cardIndex = column.cards.findIndex(c => c.Id === cardId);
+            cardIndex = column.cards.findIndex((c) => c.Id === cardId);
             if (cardIndex !== -1) {
                 sourceColumn = column;
                 existingCard = column.cards[cardIndex];
                 break;
             }
         }
-        
+
         if (!existingCard) {
             return newState;
         }
-        
+
         // Merge updates
         const updatedCard = { ...existingCard, ...cardUpdates };
-        
+
         // Check if columnId changed (card moved to different column)
         if (cardUpdates.columnId && cardUpdates.columnId !== sourceColumn.Id) {
-            
             // Remove from source column
             sourceColumn.cards.splice(cardIndex, 1);
             sourceColumn.cardCount = sourceColumn.cards.length;
-            
+
             // Add to target column
-            const targetColumn = newState.find(col => col.Id === cardUpdates.columnId);
+            const targetColumn = newState.find(
+                (col) => col.Id === cardUpdates.columnId
+            );
             if (targetColumn) {
                 targetColumn.cards.push(updatedCard);
                 targetColumn.cardCount = targetColumn.cards.length;
@@ -367,35 +378,35 @@ class KanbanStore {
             // Update in same column
             sourceColumn.cards[cardIndex] = updatedCard;
         }
-        
+
         return newState;
     }
-    
+
     /**
      * Delete card from state
      */
     _deleteCardFromState(cardId) {
         const newState = JSON.parse(JSON.stringify(this._state.columns));
-        
+
         for (const column of newState) {
-            const cardIndex = column.cards.findIndex(c => c.Id === cardId);
+            const cardIndex = column.cards.findIndex((c) => c.Id === cardId);
             if (cardIndex !== -1) {
                 column.cards.splice(cardIndex, 1);
                 column.cardCount = column.cards.length;
                 break;
             }
         }
-        
+
         return newState;
     }
-    
+
     /**
      * Simple state hash for logging
      */
     _hashState(state) {
         return JSON.stringify(state).length;
     }
-    
+
     /**
      * Reset store (useful for testing)
      */

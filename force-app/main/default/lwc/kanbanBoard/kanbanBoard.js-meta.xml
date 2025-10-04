@@ -1,9 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>64.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>Kanban Board</masterLabel>
-    <description>High-performance Kanban Board with drag-and-drop, real-time updates, and optimistic UI</description>
+    <description
+    >High-performance Kanban Board with drag-and-drop, real-time updates, and optimistic UI</description>
     <targets>
         <target>lightning__AppPage</target>
         <target>lightning__RecordPage</target>
@@ -17,13 +18,25 @@
                 <object>Board__c</object>
             </objects>
             <supportedFormFactors>
-                <supportedFormFactor type="Large"/>
-                <supportedFormFactor type="Small"/>
+                <supportedFormFactor type="Large" />
+                <supportedFormFactor type="Small" />
             </supportedFormFactors>
         </targetConfig>
         <targetConfig targets="lightning__AppPage,lightning__HomePage">
-            <property name="recordId" type="String" label="Board ID" description="The ID of the Board record to display" required="false" />
-            <property name="height" type="String" label="Height" description="Height of the kanban board (e.g., 600px)" default="600px" />
+            <property
+                name="recordId"
+                type="String"
+                label="Board ID"
+                description="The ID of the Board record to display"
+                required="false"
+            />
+            <property
+                name="height"
+                type="String"
+                label="Height"
+                description="Height of the kanban board (e.g., 600px)"
+                default="600px"
+            />
         </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>

@@ -1,5 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Flow xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<?xml version="1.0" encoding="UTF-8" ?>
+<Flow
+    xmlns="http://soap.sforce.com/2006/04/metadata"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+>
     <apiVersion>64.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
     <assignments>
@@ -27,14 +30,17 @@
             <assignToReference>columnRecord.ColumnHeader__c</assignToReference>
             <operator>Assign</operator>
             <value>
-                <elementReference>Loop_through_Repeater.Column_Header</elementReference>
+                <elementReference
+                >Loop_through_Repeater.Column_Header</elementReference>
             </value>
         </assignmentItems>
         <assignmentItems>
-            <assignToReference>columnRecord.LexoRankPosition__c</assignToReference>
+            <assignToReference
+            >columnRecord.LexoRankPosition__c</assignToReference>
             <operator>Assign</operator>
             <value>
-                <elementReference>Loop_through_Repeater.Column_Position</elementReference>
+                <elementReference
+                >Loop_through_Repeater.Column_Position</elementReference>
             </value>
         </assignmentItems>
         <assignmentItems>
@@ -48,7 +54,8 @@
             <assignToReference>columnRecord.Status__c</assignToReference>
             <operator>Assign</operator>
             <value>
-                <elementReference>Loop_through_Repeater.Status</elementReference>
+                <elementReference
+                >Loop_through_Repeater.Status</elementReference>
             </value>
         </assignmentItems>
         <connector>
@@ -59,8 +66,8 @@
     <dynamicChoiceSets>
         <name>ColumnStatus</name>
         <dataType>Picklist</dataType>
-        <displayField xsi:nil="true"/>
-        <object xsi:nil="true"/>
+        <displayField xsi:nil="true" />
+        <object xsi:nil="true" />
         <picklistField>Status__c</picklistField>
         <picklistObject>Column__c</picklistObject>
     </dynamicChoiceSets>
@@ -72,7 +79,8 @@
         <label>Loop through Repeater</label>
         <locationX>0</locationX>
         <locationY>0</locationY>
-        <collectionReference>ColumnHeadersRepeater.AddedItems</collectionReference>
+        <collectionReference
+        >ColumnHeadersRepeater.AddedItems</collectionReference>
         <iterationOrder>Asc</iterationOrder>
         <nextValueConnector>
             <targetReference>Assign_Values_to_Column_Fields</targetReference>
@@ -123,7 +131,8 @@
         </connector>
         <fields>
             <name>RepeaterHeader</name>
-            <fieldText>&lt;p&gt;Set up Column Headers and Positions.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;background-color: rgb(255, 255, 255); color: rgb(68, 68, 68);&quot;&gt;We suggest using Position numbers such as: 10, 20, 30.. for easier re-ordering.&lt;/span&gt;&lt;/p&gt;</fieldText>
+            <fieldText
+            >&lt;p&gt;Set up Column Headers and Positions.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;background-color: rgb(255, 255, 255); color: rgb(68, 68, 68);&quot;&gt;We suggest using Position numbers such as: 10, 20, 30.. for easier re-ordering.&lt;/span&gt;&lt;/p&gt;</fieldText>
             <fieldType>DisplayText</fieldType>
             <styleProperties>
                 <verticalAlignment>
@@ -142,7 +151,8 @@
                 <dataType>String</dataType>
                 <fieldText>Column Header</fieldText>
                 <fieldType>InputField</fieldType>
-                <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+                <inputsOnNextNavToAssocScrn
+                >UseStoredValues</inputsOnNextNavToAssocScrn>
                 <isRequired>true</isRequired>
                 <styleProperties>
                     <verticalAlignment>
@@ -158,7 +168,8 @@
                 <dataType>Number</dataType>
                 <fieldText>Column Position</fieldText>
                 <fieldType>InputField</fieldType>
-                <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+                <inputsOnNextNavToAssocScrn
+                >UseStoredValues</inputsOnNextNavToAssocScrn>
                 <isRequired>true</isRequired>
                 <scale>0</scale>
                 <styleProperties>
@@ -176,7 +187,8 @@
                 <dataType>String</dataType>
                 <fieldText>Status</fieldText>
                 <fieldType>DropdownBox</fieldType>
-                <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+                <inputsOnNextNavToAssocScrn
+                >UseStoredValues</inputsOnNextNavToAssocScrn>
                 <isRequired>false</isRequired>
                 <styleProperties>
                     <verticalAlignment>
@@ -258,10 +270,12 @@
             <inputParameters>
                 <name>columns</name>
                 <value>
-                    <stringValue>[{&quot;apiName&quot;:&quot;OpenSF__ColumnHeader__c&quot;,&quot;guid&quot;:&quot;column-99a4&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:0,&quot;label&quot;:&quot;Column Header&quot;,&quot;type&quot;:&quot;text&quot;},{&quot;apiName&quot;:&quot;OpenSF__LexoRankPosition__c&quot;,&quot;guid&quot;:&quot;column-8623&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:1,&quot;label&quot;:&quot;Position&quot;,&quot;type&quot;:&quot;text&quot;},{&quot;apiName&quot;:&quot;OpenSF__Status__c&quot;,&quot;guid&quot;:&quot;column-2a99&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:2,&quot;label&quot;:&quot;Status&quot;,&quot;type&quot;:&quot;text&quot;}]</stringValue>
+                    <stringValue
+                    >[{&quot;apiName&quot;:&quot;OpenSF__ColumnHeader__c&quot;,&quot;guid&quot;:&quot;column-99a4&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:0,&quot;label&quot;:&quot;Column Header&quot;,&quot;type&quot;:&quot;text&quot;},{&quot;apiName&quot;:&quot;OpenSF__LexoRankPosition__c&quot;,&quot;guid&quot;:&quot;column-8623&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:1,&quot;label&quot;:&quot;Position&quot;,&quot;type&quot;:&quot;text&quot;},{&quot;apiName&quot;:&quot;OpenSF__Status__c&quot;,&quot;guid&quot;:&quot;column-2a99&quot;,&quot;editable&quot;:false,&quot;hasCustomHeaderLabel&quot;:false,&quot;customHeaderLabel&quot;:&quot;&quot;,&quot;wrapText&quot;:true,&quot;order&quot;:2,&quot;label&quot;:&quot;Status&quot;,&quot;type&quot;:&quot;text&quot;}]</stringValue>
                 </value>
             </inputParameters>
-            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <inputsOnNextNavToAssocScrn
+            >UseStoredValues</inputsOnNextNavToAssocScrn>
             <isRequired>true</isRequired>
             <storeOutputAutomatically>true</storeOutputAutomatically>
             <styleProperties>
@@ -286,7 +300,8 @@
         <allowPause>true</allowPause>
         <fields>
             <name>ErrorText</name>
-            <fieldText>&lt;p&gt;Something went wrong..&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;{!$Flow.FaultMessage}&lt;/p&gt;</fieldText>
+            <fieldText
+            >&lt;p&gt;Something went wrong..&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;{!$Flow.FaultMessage}&lt;/p&gt;</fieldText>
             <fieldType>DisplayText</fieldType>
             <styleProperties>
                 <verticalAlignment>

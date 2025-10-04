@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionCalls>
         <name>Send_Create_Card_Email</name>
@@ -107,7 +107,8 @@
             <assignToReference>RecipientEmails</assignToReference>
             <operator>Add</operator>
             <value>
-                <elementReference>$Record.PeerReviewer__r.Email</elementReference>
+                <elementReference
+                >$Record.PeerReviewer__r.Email</elementReference>
             </value>
         </assignmentItems>
         <connector>
@@ -121,12 +122,15 @@
         <label>Filter Recipients</label>
         <locationX>0</locationX>
         <locationY>0</locationY>
-        <assignNextValueToReference>currentItem_Filter_Recipients</assignNextValueToReference>
-        <collectionProcessorType>FilterCollectionProcessor</collectionProcessorType>
+        <assignNextValueToReference
+        >currentItem_Filter_Recipients</assignNextValueToReference>
+        <collectionProcessorType
+        >FilterCollectionProcessor</collectionProcessorType>
         <collectionReference>RecipientEmails</collectionReference>
         <conditionLogic>and</conditionLogic>
         <conditions>
-            <leftValueReference>currentItem_Filter_Recipients</leftValueReference>
+            <leftValueReference
+            >currentItem_Filter_Recipients</leftValueReference>
             <operator>IsBlank</operator>
             <rightValue>
                 <booleanValue>false</booleanValue>
@@ -168,7 +172,8 @@
                 </rightValue>
             </conditions>
             <conditions>
-                <leftValueReference>$Record.OpenSF__LexoRankPosition__c</leftValueReference>
+                <leftValueReference
+                >$Record.OpenSF__LexoRankPosition__c</leftValueReference>
                 <operator>IsChanged</operator>
                 <rightValue>
                     <booleanValue>false</booleanValue>
@@ -180,14 +185,16 @@
             <label>Card Update</label>
         </rules>
     </decisions>
-    <description>Send email notifications on card create/update. Can be disabled per board.</description>
+    <description
+    >Send email notifications on card create/update. Can be disabled per board.</description>
     <environments>Default</environments>
     <formulas>
         <name>ISNEW</name>
         <dataType>Boolean</dataType>
         <expression>ISNEW()</expression>
     </formulas>
-    <interviewLabel>Card Email Notifications {!$Flow.CurrentDateTime}</interviewLabel>
+    <interviewLabel
+    >Card Email Notifications {!$Flow.CurrentDateTime}</interviewLabel>
     <isTemplate>true</isTemplate>
     <label>Card Email Notifications</label>
     <processMetadataValues>
@@ -215,7 +222,8 @@
         <connector>
             <targetReference>Add_Recipients</targetReference>
         </connector>
-        <filterFormula>{!$Record.Column__r.Board__r.EmailNotifications__c} = true</filterFormula>
+        <filterFormula
+        >{!$Record.Column__r.Board__r.EmailNotifications__c} = true</filterFormula>
         <object>Card__c</object>
         <recordTriggerType>CreateAndUpdate</recordTriggerType>
         <triggerType>RecordAfterSave</triggerType>
@@ -224,7 +232,8 @@
     <textTemplates>
         <name>CardCreateEmailBody</name>
         <isViewedAsPlainText>false</isViewedAsPlainText>
-        <text>&lt;p&gt;A new card has been created: {!$Record.Name}&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;</text>
+        <text
+        >&lt;p&gt;A new card has been created: {!$Record.Name}&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;</text>
     </textTemplates>
     <textTemplates>
         <name>CardCreateEmailSubject</name>

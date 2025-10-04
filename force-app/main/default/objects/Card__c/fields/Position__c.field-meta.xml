@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Position__c</fullName>
-    <description>Legacy position field. Use LexoRankPosition__c instead for drag-and-drop ordering.</description>
+    <description
+    >Legacy position field. Use LexoRankPosition__c instead for drag-and-drop ordering.</description>
     <externalId>false</externalId>
     <label>Position (Legacy)</label>
     <precision>18</precision>
