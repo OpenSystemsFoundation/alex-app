@@ -545,7 +545,7 @@ describe('EventHandler', () => {
         });
 
         it('should apply event when event has no sequence number (backward compatibility)', () => {
-            const mockStoreWithSeq = {
+            const mockStore = {
                 getState: jest.fn(() => ({
                     columns: [
                         {
@@ -554,7 +554,7 @@ describe('EventHandler', () => {
                                 {
                                     Id: 'card1',
                                     subject: 'Card',
-                                    OpenSF__SequenceNumber__c: 5
+                                    sequenceNumber: 5
                                 }
                             ]
                         }
@@ -574,9 +574,9 @@ describe('EventHandler', () => {
                 })
             };
 
-            handler.handlePlatformEvent(event, mockStoreWithoutSeq);
+            handler.handlePlatformEvent(event, mockStore);
 
-            expect(mockStoreWithSeq.dispatch).toHaveBeenCalled();
+            expect(mockStore.dispatch).toHaveBeenCalled();
         });
 
         it('should apply event for new card (not in state)', () => {
