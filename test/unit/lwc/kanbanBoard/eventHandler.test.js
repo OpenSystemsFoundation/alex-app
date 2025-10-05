@@ -387,4 +387,278 @@ describe('EventHandler', () => {
             expect(handler.recentChanges.has('card2')).toBe(false);
         });
     });
+
+    describe('Sequence Number Validation', () => {
+        it('should apply event with higher sequence number', () => {
+            const mockStoreWithSeq = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Old Card',
+                                    OpenSF__SequenceNumber__c: 5
+                                }
+                            ]
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            const event = {
+                OpenSF__EventType__c: 'update',
+                OpenSF__SequenceNumber__c: 6,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Newer Update',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(event, mockStoreWithSeq);
+
+            expect(mockStoreWithSeq.dispatch).toHaveBeenCalled();
+        });
+
+        it('should ignore event with lower sequence number', () => {
+            const consoleLogSpy = jest
+                .spyOn(console, 'log')
+                .mockImplementation();
+
+            const mockStoreWithSeq = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Current Card',
+                                    OpenSF__SequenceNumber__c: 10
+                                }
+                            ]
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            const event = {
+                OpenSF__EventType__c: 'update',
+                OpenSF__SequenceNumber__c: 8,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Stale Update',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(event, mockStoreWithSeq);
+
+            expect(mockStoreWithSeq.dispatch).not.toHaveBeenCalled();
+            expect(consoleLogSpy).toHaveBeenCalledWith(
+                expect.stringContaining('Ignoring stale event')
+            );
+
+            consoleLogSpy.mockRestore();
+        });
+
+        it('should ignore event with equal sequence number', () => {
+            const consoleLogSpy = jest
+                .spyOn(console, 'log')
+                .mockImplementation();
+
+            const mockStoreWithSeq = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Current Card',
+                                    OpenSF__SequenceNumber__c: 7
+                                }
+                            ]
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            const event = {
+                OpenSF__EventType__c: 'update',
+                OpenSF__SequenceNumber__c: 7,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Same Sequence',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(event, mockStoreWithSeq);
+
+            expect(mockStoreWithSeq.dispatch).not.toHaveBeenCalled();
+
+            consoleLogSpy.mockRestore();
+        });
+
+        it('should apply event when card has no sequence number', () => {
+            const mockStoreWithoutSeq = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Old Card'
+                                    // No OpenSF__SequenceNumber__c
+                                }
+                            ]
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            const event = {
+                OpenSF__EventType__c: 'update',
+                OpenSF__SequenceNumber__c: 5,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Update',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(event, mockStoreWithoutSeq);
+
+            expect(mockStoreWithoutSeq.dispatch).toHaveBeenCalled();
+        });
+
+        it('should apply event when event has no sequence number (backward compatibility)', () => {
+            const mockStoreWithSeq = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Card',
+                                    OpenSF__SequenceNumber__c: 5
+                                }
+                            ]
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            const event = {
+                OpenSF__EventType__c: 'update',
+                // No OpenSF__SequenceNumber__c
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Update',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(event, mockStoreWithoutSeq);
+
+            expect(mockStoreWithSeq.dispatch).toHaveBeenCalled();
+        });
+
+        it('should apply event for new card (not in state)', () => {
+            const mockStore = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: []
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            const event = {
+                OpenSF__EventType__c: 'create',
+                OpenSF__SequenceNumber__c: 1,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card2',
+                    subject: 'New Card',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(event, mockStore);
+
+            expect(mockStore.dispatch).toHaveBeenCalled();
+        });
+
+        it('should handle out-of-order events correctly', () => {
+            const mockStore = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Version 2',
+                                    OpenSF__SequenceNumber__c: 2
+                                }
+                            ]
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            // Event arrives out of order (seq 1, but state is already at seq 2)
+            const staleEvent = {
+                OpenSF__EventType__c: 'update',
+                OpenSF__SequenceNumber__c: 1,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Version 1',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(staleEvent, mockStore);
+
+            // Should be ignored
+            expect(mockStore.dispatch).not.toHaveBeenCalled();
+
+            // Now event with seq 3 arrives
+            const newerEvent = {
+                OpenSF__EventType__c: 'update',
+                OpenSF__SequenceNumber__c: 3,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Version 3',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(newerEvent, mockStore);
+
+            // Should be applied
+            expect(mockStore.dispatch).toHaveBeenCalledTimes(1);
+        });
+    });
 });

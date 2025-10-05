@@ -62,6 +62,7 @@ public with sharing class KanbanBoardController {
             );
 
             // Update position, column, status (if needed), and lastClientRequestId
+            // Sequence number will be auto-incremented by trigger
             OpenSF__Card__c card = new OpenSF__Card__c(
                 Id = cardId,
                 OpenSF__Column__c = targetColumnId,
@@ -120,12 +121,13 @@ public with sharing class KanbanBoardController {
                 columnId
             );
 
-            // Create card
+            // Create card with initial sequence number
             OpenSF__Card__c card = new OpenSF__Card__c(
                 OpenSF__Subject__c = subject,
                 OpenSF__Column__c = columnId,
                 OpenSF__LexoRankPosition__c = position,
-                OpenSF__LastClientRequestId__c = clientRequestId
+                OpenSF__LastClientRequestId__c = clientRequestId,
+                OpenSF__SequenceNumber__c = 1
             );
 
             // Apply column status to new card (currentStatus is null for new cards)

@@ -71,6 +71,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Epic__c,
                 OpenSF__Epic__r.OpenSF__Subject__c,
                 OpenSF__Locked__c,
+                OpenSF__SequenceNumber__c,
                 LastModifiedDate,
                 LastModifiedById
             FROM OpenSF__Card__c
@@ -105,6 +106,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Epic__c,
                 OpenSF__Epic__r.OpenSF__Subject__c,
                 OpenSF__Locked__c,
+                OpenSF__SequenceNumber__c,
                 LastModifiedDate,
                 LastModifiedById
             FROM OpenSF__Card__c
@@ -134,6 +136,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Assignee__c,
                 OpenSF__Assignee__r.Name,
                 OpenSF__Assignee__r.SmallPhotoUrl,
+                OpenSF__SequenceNumber__c,
                 LastModifiedDate,
                 LastModifiedById
             FROM OpenSF__Card__c
@@ -167,7 +170,7 @@ public with sharing class KanbanBoardSelector {
      */
     public static OpenSF__Card__c getCardStatusById(Id cardId) {
         return [
-            SELECT Id, OpenSF__Status__c
+            SELECT Id, OpenSF__Status__c, OpenSF__SequenceNumber__c
             FROM OpenSF__Card__c
             WHERE Id = :cardId
             LIMIT 1
@@ -200,6 +203,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Epic__c,
                 OpenSF__Epic__r.OpenSF__Subject__c,
                 OpenSF__Locked__c,
+                OpenSF__SequenceNumber__c,
                 LastModifiedDate,
                 LastModifiedById
             FROM OpenSF__Card__c

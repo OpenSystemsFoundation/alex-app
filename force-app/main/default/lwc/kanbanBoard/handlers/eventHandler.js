@@ -31,8 +31,21 @@ export default class EventHandler {
             const payload = JSON.parse(event.OpenSF__Payload__c);
             const eventType = event.OpenSF__EventType__c;
             const clientRequestId = event.OpenSF__ClientRequestId__c;
+            const sequenceNumber = event.OpenSF__SequenceNumber__c;
 
             if (!this._isEventForThisBoard(payload, store)) {
+                return false;
+            }
+
+            // Check sequence number - ignore stale events
+            if (
+                sequenceNumber != null &&
+                payload.Id &&
+                !this._shouldApplyEvent(payload.Id, sequenceNumber, store)
+            ) {
+                console.log(
+                    `Ignoring stale event for card ${payload.Id}: seq ${sequenceNumber}`
+                );
                 return false;
             }
 
@@ -92,6 +105,40 @@ export default class EventHandler {
         }
 
         return false;
+    }
+
+    /**
+     * Check if event should be applied based on sequence number
+     * Returns true if event is newer than current card state
+     * @private
+     */
+    _shouldApplyEvent(cardId, eventSequence, store) {
+        if (eventSequence == null) {
+            // No sequence number - apply event (backward compatibility)
+            return true;
+        }
+
+        const state = store.getState();
+        const columns = state.columns || [];
+
+        // Find the card in current state
+        for (const column of columns) {
+            const card = column.cards?.find((c) => c.Id === cardId);
+            if (card) {
+                const currentSequence = card.OpenSF__SequenceNumber__c;
+
+                if (currentSequence == null) {
+                    // Card has no sequence - apply event
+                    return true;
+                }
+
+                // Only apply if event sequence is greater than current
+                return eventSequence > currentSequence;
+            }
+        }
+
+        // Card not found in state - apply event (it might be new)
+        return true;
     }
 
     _isEventForThisBoard(payload, store) {

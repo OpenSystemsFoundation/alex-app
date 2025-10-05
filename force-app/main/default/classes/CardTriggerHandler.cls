@@ -13,6 +13,12 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
         super();
     }
 
+    protected override void beforeUpdate() {
+        this.newCards = (List<OpenSF__Card__c>) this.newList;
+        this.oldCardMap = (Map<Id, OpenSF__Card__c>) this.oldMap;
+        incrementSequenceNumbers(this.newCards, this.oldCardMap);
+    }
+
     protected override void afterInsert() {
         this.newCards = (List<OpenSF__Card__c>) this.newList;
         updateColumnCounts(this.newCards, null);
@@ -36,6 +42,45 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
         this.newCards = (List<OpenSF__Card__c>) this.newList;
         updateColumnCounts(this.newCards, null);
         publishCardEvents(this.newCards, 'undelete');
+    }
+
+    /**
+     * Increment sequence numbers for updated cards
+     * Only increments if the card data has actually changed
+     */
+    private void incrementSequenceNumbers(
+        List<OpenSF__Card__c> newCards,
+        Map<Id, OpenSF__Card__c> oldCardMap
+    ) {
+        for (OpenSF__Card__c newCard : newCards) {
+            OpenSF__Card__c oldCard = oldCardMap.get(newCard.Id);
+
+            // Check if any meaningful field changed (ignore system fields)
+            Boolean hasChanged = (newCard.OpenSF__Subject__c !=
+            oldCard.OpenSF__Subject__c ||
+            newCard.OpenSF__Description__c != oldCard.OpenSF__Description__c ||
+            newCard.OpenSF__Column__c != oldCard.OpenSF__Column__c ||
+            newCard.OpenSF__Priority__c != oldCard.OpenSF__Priority__c ||
+            newCard.OpenSF__DueDate__c != oldCard.OpenSF__DueDate__c ||
+            newCard.OpenSF__Assignee__c != oldCard.OpenSF__Assignee__c ||
+            newCard.OpenSF__Color__c != oldCard.OpenSF__Color__c ||
+            newCard.OpenSF__LexoRankPosition__c !=
+            oldCard.OpenSF__LexoRankPosition__c ||
+            newCard.OpenSF__Status__c != oldCard.OpenSF__Status__c ||
+            newCard.OpenSF__StoryPoints__c != oldCard.OpenSF__StoryPoints__c);
+
+            // Only increment if not explicitly set and there's a real change
+            if (
+                hasChanged &&
+                newCard.OpenSF__SequenceNumber__c ==
+                oldCard.OpenSF__SequenceNumber__c
+            ) {
+                newCard.OpenSF__SequenceNumber__c = (oldCard.OpenSF__SequenceNumber__c !=
+                    null
+                    ? oldCard.OpenSF__SequenceNumber__c + 1
+                    : 1);
+            }
+        }
     }
 
     /**
@@ -82,13 +127,15 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
                     }
                 }
 
-                // Get client request ID from card record
+                // Get client request ID and sequence number from card record
                 String clientRequestId = card.OpenSF__LastClientRequestId__c;
+                Decimal sequenceNumber = card.OpenSF__SequenceNumber__c;
 
                 OpenSF__CardUpdateEvent__e event = new OpenSF__CardUpdateEvent__e(
                     OpenSF__EventType__c = eventType,
                     OpenSF__Payload__c = jsonPayload,
-                    OpenSF__ClientRequestId__c = clientRequestId
+                    OpenSF__ClientRequestId__c = clientRequestId,
+                    OpenSF__SequenceNumber__c = sequenceNumber
                 );
 
                 events.add(event);
