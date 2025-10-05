@@ -122,10 +122,11 @@
 }
 
 .kanban-card.dragging {
-    opacity: 0.75;
-    transform: none;
-    box-shadow: none;
+    opacity: 0.6;
+    transform: scale(0.98);
+    box-shadow: 0 0 0 2px rgb(1, 118, 211);
     cursor: grabbing;
+    background-color: rgb(244, 246, 254);
 }
 
 .kanban-card.over {

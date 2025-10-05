@@ -441,6 +441,7 @@ public with sharing class KanbanBoardController {
             List<OpenSF__Card__c> modifiedCards = [
                 SELECT
                     Id,
+                    Name,
                     OpenSF__Subject__c,
                     OpenSF__Description__c,
                     OpenSF__Priority__c,
