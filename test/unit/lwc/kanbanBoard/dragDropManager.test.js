@@ -136,6 +136,7 @@ describe('DragDropHandler', () => {
                 'columnId',
                 'col1'
             );
+            expect(event.dataTransfer.setDragImage).toHaveBeenCalled();
             expect(event.target.classList.add).toHaveBeenCalledWith('dragging');
             expect(mockComponent.dragData).toEqual({
                 cardId: 'card1',

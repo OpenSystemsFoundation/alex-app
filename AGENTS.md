@@ -1,5 +1,7 @@
 # Custom Instructions for AI Agents
 
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for technical architecture and design patterns.
+
 ## Response Style
 
 - Be concise and action-oriented

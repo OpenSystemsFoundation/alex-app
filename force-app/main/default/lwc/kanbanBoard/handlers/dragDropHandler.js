@@ -20,8 +20,55 @@ export default class DragDropHandler {
         event.dataTransfer.setData('text/plain', cardId);
         event.dataTransfer.setData('columnId', columnId);
 
+        // Create custom drag image for SLDS2 compatibility
+        this.createDragImage(event.target, event);
+
         event.target.classList.add('dragging');
         this.component.dragData = { cardId, columnId, cardHeight };
+    }
+
+    /**
+     * Create a custom drag image for better browser compatibility
+     * Required for SLDS2 where default drag ghosts may not render properly
+     */
+    createDragImage(cardElement, event) {
+        // Clone the card element
+        const dragImage = cardElement.cloneNode(true);
+
+        // Style the drag image
+        dragImage.style.position = 'absolute';
+        dragImage.style.top = '-9999px';
+        dragImage.style.left = '-9999px';
+        dragImage.style.width = cardElement.offsetWidth + 'px';
+        dragImage.style.opacity = '0.8';
+        dragImage.style.pointerEvents = 'none';
+        dragImage.style.zIndex = '9999';
+
+        // Remove dragging class from clone to show full appearance
+        dragImage.classList.remove('dragging');
+
+        // Add to body temporarily
+        document.body.appendChild(dragImage);
+
+        // Set as drag image (offset to center under cursor)
+        const rect = cardElement.getBoundingClientRect();
+        const offsetX = event.clientX - rect.left;
+        const offsetY = event.clientY - rect.top;
+
+        try {
+            event.dataTransfer.setDragImage(dragImage, offsetX, offsetY);
+        } catch (error) {
+            // Fallback: some browsers may not support setDragImage
+            console.warn('setDragImage not supported:', error);
+        }
+
+        // Clean up the drag image after a short delay
+        // (browser has already captured it by then)
+        setTimeout(() => {
+            if (dragImage.parentNode) {
+                dragImage.parentNode.removeChild(dragImage);
+            }
+        }, 0);
     }
 
     /**
