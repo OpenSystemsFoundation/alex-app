@@ -4,6 +4,7 @@
         role="dialog"
         aria-labelledby="modal-heading"
         aria-modal="true"
+        onkeydown={handleKeyDown}
     >
         <div class="slds-modal__container">
             <!-- Modal Header -->
@@ -131,6 +132,6 @@
 
     <div
         class={backdropClass}
-        onclick={handleBackdropClick}
+        ondblclick={handleBackdropDoubleClick}
     ></div>
 </template>

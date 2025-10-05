@@ -17,6 +17,12 @@
             <objects>
                 <object>Board__c</object>
             </objects>
+            <property
+                name="height"
+                type="String"
+                label="Height (Optional)"
+                description="Fixed height (e.g., 600px). Leave blank for dynamic height that adapts to viewport."
+            />
             <supportedFormFactors>
                 <supportedFormFactor type="Large" />
                 <supportedFormFactor type="Small" />
@@ -27,15 +33,14 @@
                 name="recordId"
                 type="String"
                 label="Board ID"
-                description="The ID of the Board record to display"
+                description="The ID of the Board record to display."
                 required="false"
             />
             <property
                 name="height"
                 type="String"
-                label="Height"
-                description="Height of the kanban board (e.g., 600px)"
-                default="600px"
+                label="Height (Optional)"
+                description="Fixed height (e.g., 600px). Leave blank for dynamic height that adapts to viewport."
             />
         </targetConfig>
     </targetConfigs>

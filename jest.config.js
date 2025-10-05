@@ -4,6 +4,8 @@ module.exports = {
     ...jestConfig,
     modulePathIgnorePatterns: ['<rootDir>/.localdevserver'],
     moduleNameMapper: {
+        // Map navigation mock
+        '^lightning/navigation$': '<rootDir>/test/mocks/lightning/navigation',
         // Removed global Apex mock - using inline jest.mock instead
         '^c/(.*)$': '<rootDir>/force-app/main/default/lwc/$1/$1.js' // map LWC imports
     },
@@ -12,7 +14,6 @@ module.exports = {
     // Coverage configuration
     collectCoverageFrom: [
         'force-app/main/default/lwc/**/*.js',
-        '!force-app/main/default/lwc/**/__tests__/**',
         '!force-app/main/default/lwc/**/*.test.js'
     ],
     coverageThreshold: {
@@ -35,5 +36,8 @@ module.exports = {
     verbose: true,
 
     // Test match patterns
-    testMatch: ['**/__tests__/**/*.test.js']
+    testMatch: ['**/test/unit/**/*.test.js'],
+
+    // Roots for test discovery
+    roots: ['<rootDir>/test/unit']
 };

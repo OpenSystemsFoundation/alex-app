@@ -10,7 +10,7 @@ dotenv.config();
  */
 export default defineConfig({
     // Directory where tests are located
-    testDir: './tests/e2e',
+    testDir: './test/e2e',
 
     // Maximum time one test can run for
     timeout: 60 * 1000,
@@ -84,6 +84,6 @@ export default defineConfig({
 
     // Global setup/teardown for scratch org
     // Optimized single-org setup with per-test board isolation
-    globalSetup: require.resolve('./tests/e2e/global-setup'),
-    globalTeardown: require.resolve('./tests/e2e/global-teardown')
+    globalSetup: require.resolve('./test/e2e/global-setup'),
+    globalTeardown: require.resolve('./test/e2e/global-teardown')
 });

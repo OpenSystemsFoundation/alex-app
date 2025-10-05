@@ -19,7 +19,6 @@ lightning-input-field {
 @media (max-width: 48em) {
     .slds-modal__container {
         max-width: 95% !important;
-        margin: 0 auto;
     }
 
     .slds-col.slds-size_1-of-2 {
