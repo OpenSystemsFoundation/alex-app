@@ -82,13 +82,24 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
                     }
                 }
 
+                // Get client request ID from card record
+                String clientRequestId = card.OpenSF__LastClientRequestId__c;
+
                 OpenSF__CardUpdateEvent__e event = new OpenSF__CardUpdateEvent__e(
                     OpenSF__EventType__c = eventType,
-                    OpenSF__Payload__c = jsonPayload
+                    OpenSF__Payload__c = jsonPayload,
+                    OpenSF__ClientRequestId__c = clientRequestId
                 );
 
                 events.add(event);
             } catch (Exception e) {
+                // Log error but continue processing other cards
+                System.debug(
+                    'Error creating event for card ' +
+                        card.Id +
+                        ': ' +
+                        e.getMessage()
+                );
             }
         }
 

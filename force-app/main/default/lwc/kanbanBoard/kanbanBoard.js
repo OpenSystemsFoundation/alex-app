@@ -1,744 +1,388 @@
 import { LightningElement, api, track } from 'lwc';
-import { NavigationMixin } from 'lightning/navigation';
-import {
-    IsConsoleNavigation,
-    openTab,
-    getFocusedTabInfo
-} from 'lightning/platformWorkspaceApi';
-import getBoardData from '@salesforce/apex/KanbanBoardController.getBoardData';
-import { createStore } from 'c/kanbanStore';
-import DataManager from './dataManager';
-import SubscriptionManager from './subscriptionManager';
-import EventHandler from './eventHandler';
-import ToastManager from './toastManager';
-import ServerOperations from './serverOperations';
+import { createStore, selectors } from 'c/kanbanStore';
+import EventHandler from './handlers/eventHandler';
+import RequestTracker from './helpers/requestTracker';
+import ReducerQueue from './helpers/reducerQueue';
+import LifecycleManager from './managers/lifecycleManager';
+import BoardDataLoader from './managers/boardDataLoader';
+import DragDropHandler from './handlers/dragDropHandler';
+import CardOperations from './handlers/cardOperations';
+import SubscriptionEventHandler from './handlers/subscriptionEventHandler';
 
-export default class KanbanBoard extends NavigationMixin(LightningElement) {
-    // API properties
+export default class KanbanBoard extends LightningElement {
+    @api height; // Optional fixed height, if not set uses dynamic calculation
+
+    // Private properties
     _recordId;
-    @api height = '720px';
+    _store = null;
+    _storeUnsubscribe = null;
+    _resizeObserver = null;
+    _boardElement = null;
+    _windowResizeHandler = null;
 
-    // Store management
-    store = createStore();
-    storeUnsubscribe = null;
-    @track _columnsCache = []; // Tracked property for reactivity
+    // Reactive state - only track what needs reactivity
+    @track _storeState = null;
 
-    // UI state
-    @track cardsByColumn = {};
-    @track board = null;
-    @track selectedCard = null;
-    @track showCardDetail = false;
-    @track isLoading = true;
-    @track error = null;
+    // UI State - these don't need @track as they're reassigned directly
+    selectedCard = null;
+    showCardDetail = false;
+    isLoading = true;
+    error = null;
+    @track _subscriptionStatus = 'disconnected'; // Needs @track for indicator reactivity
+    @track _eventCount = 0; // Needs @track for indicator reactivity
+    _lastSyncTime = null;
 
-    // Drag state - Simplified
+    // Drag state
     dragData = null;
-    dragPlaceholder = null; // For visual preview during drag
-    lastPlaceholderPosition = null; // Track last position to prevent flickering
+    dragPlaceholder = null;
+    lastPlaceholderPosition = null;
 
-    // Managers (initialized in connectedCallback)
-    subscriptionManager = null;
-    eventHandler = null;
+    // Child component references (set in renderedCallback)
+    subscriptionManager = null; // Only needed for polling callback
     toastManager = null;
+    navigationUtil = null;
 
-    /**
-     * Get columns from store - returns cached tracked value for reactivity
-     */
+    // Internal services
+    eventHandler = null;
+    requestTracker = null;
+    operationQueue = null;
+    windowFocusListener = null;
+    subscriptionChannelName = '/event/OpenSF__CardUpdateEvent__e';
+
+    // Lazy-loaded helper instances
+    _lifecycleManager = null;
+    _boardDataLoader = null;
+    _dragDropHandler = null;
+    _cardOperations = null;
+    _subscriptionEventHandler = null;
+
+    // Store accessor
+    get store() {
+        if (!this._store) {
+            this._store = createStore();
+        }
+        return this._store;
+    }
+
+    // Computed properties from store
     get columns() {
-        return this._columnsCache;
+        return this._storeState
+            ? selectors.getEnrichedColumns(this._storeState)
+            : [];
     }
 
-    /**
-     * Set columns - no-op, use store dispatch instead
-     * Setter required for LWC proxy reactivity
-     */
-    set columns(value) {
-        // This setter is required for LWC reactivity but we don't use it
-        // All updates go through the store
+    get cardsByColumn() {
+        return this._storeState
+            ? selectors.getCardsByColumnMap(this._storeState)
+            : {};
     }
 
-    // Getter/setter for recordId to trigger data load
+    get board() {
+        return this._storeState ? selectors.getBoard(this._storeState) : null;
+    }
+
+    get shouldAutoSubscribe() {
+        // Auto-subscribe when board is loaded and not already loading
+        return !!this.board && !this.isLoading;
+    }
+
+    // Lazy getters for helper instances
+    get lifecycleManager() {
+        if (!this._lifecycleManager) {
+            this._lifecycleManager = new LifecycleManager(this);
+        }
+        return this._lifecycleManager;
+    }
+
+    get boardDataLoader() {
+        if (!this._boardDataLoader) {
+            this._boardDataLoader = new BoardDataLoader(this);
+        }
+        return this._boardDataLoader;
+    }
+
+    get dragDropHandler() {
+        if (!this._dragDropHandler) {
+            this._dragDropHandler = new DragDropHandler(this);
+        }
+        return this._dragDropHandler;
+    }
+
+    get cardOperations() {
+        if (!this._cardOperations) {
+            this._cardOperations = new CardOperations(this);
+        }
+        return this._cardOperations;
+    }
+
+    get subscriptionEventHandler() {
+        if (!this._subscriptionEventHandler) {
+            this._subscriptionEventHandler = new SubscriptionEventHandler(this);
+        }
+        return this._subscriptionEventHandler;
+    }
+
     @api
     get recordId() {
         return this._recordId;
     }
 
     set recordId(value) {
+        const hasChanged = this._recordId !== value;
         this._recordId = value;
-        // Load board data when recordId changes
-        if (value) {
+
+        // Only load if value exists and component is connected
+        if (value && hasChanged && this._storeUnsubscribe) {
             this.loadBoardData();
         }
     }
 
     connectedCallback() {
-        // Initialize managers
-        this.toastManager = new ToastManager(this);
-        this.eventHandler = new EventHandler();
-
-        // Initialize subscription manager
-        const channelName = '/event/OpenSF__CardUpdateEvent__e';
-        this.subscriptionManager = new SubscriptionManager(
-            channelName,
-            (response) => this.handlePlatformEvent(response.data.payload),
-            (variant, title, message) =>
-                this.handleSubscriptionMessage(variant, title, message)
+        // Initialize core services
+        this.requestTracker = new RequestTracker();
+        this.operationQueue = new ReducerQueue(this.store);
+        this.eventHandler = new EventHandler(
+            this.requestTracker,
+            (message) =>
+                this.subscriptionEventHandler.handleEventActivity(message),
+            this._recordId
         );
 
-        // Subscribe to store changes
-        this.storeUnsubscribe = this.store.subscribe(() => {
-            this._columnsCache = [...this.store.getColumns()];
+        // Subscribe to store updates
+        this._storeUnsubscribe = this.store.subscribe((state) => {
+            this._storeState = state;
         });
 
-        // Initialize cache
-        this._columnsCache = [...this.store.getColumns()];
+        // Initialize lifecycle (lazy getters handle instance creation)
+        this.lifecycleManager.initialize();
+    }
+    renderedCallback() {
+        if (this.lifecycleManager) {
+            this.lifecycleManager.initializeChildComponents(this.template);
+        }
 
-        // Register platform event error listener
-        this.subscriptionManager.registerErrorListener();
-
-        // Load initial data if recordId is set
-        if (this._recordId) {
-            this.loadBoardData();
+        // Initialize dynamic height calculation
+        if (!this._resizeObserver) {
+            this.initializeDynamicHeight();
         }
     }
 
     disconnectedCallback() {
-        // Clean up subscriptions
-        if (this.subscriptionManager) {
-            this.subscriptionManager.unsubscribe();
+        // Only cleanup if lifecycle manager was instantiated
+        if (this._lifecycleManager) {
+            this._lifecycleManager.cleanup();
         }
 
-        // Unsubscribe from store
-        if (this.storeUnsubscribe) {
-            this.storeUnsubscribe();
+        // Cleanup resize observer
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+            this._resizeObserver = null;
+        }
+
+        // Cleanup window resize listener
+        if (this._windowResizeHandler) {
+            window.removeEventListener('resize', this._windowResizeHandler);
+            this._windowResizeHandler = null;
         }
     }
 
-    /**
-     * Load board data imperatively
-     */
+    // =============================================================================
+    // Data Loading
+    // =============================================================================
+
     async loadBoardData() {
         if (!this._recordId) {
             return;
         }
 
-        this.isLoading = true;
-        this.error = null;
+        // Use lazy getter to ensure boardDataLoader is instantiated
+        await this.boardDataLoader.loadBoardData();
+    } // =============================================================================
+    // Drag & Drop Event Handlers
+    // =============================================================================
 
-        try {
-            const data = await getBoardData({ boardId: this._recordId });
-
-            this.board = data.board || null;
-            this.store.dispatch({ type: 'SET_BOARD', payload: data.board });
-
-            // Process columns and cards using DataManager
-            const columns = DataManager.processColumns(data.columns || []);
-            const { processedColumns, cardsByColumn } =
-                DataManager.processCards(data.cards || [], columns);
-
-            this.cardsByColumn = cardsByColumn;
-            this.store.dispatch({
-                type: 'SET_COLUMNS',
-                payload: processedColumns
-            });
-
-            // Subscribe to platform events after board is loaded
-            // TEMPORARILY DISABLED
-            // if (this.board && this.subscriptionManager.getStatus() === 'disconnected') {
-            //     this.subscriptionManager.subscribe();
-            // }
-        } catch (error) {
-            this.error = error;
-            this.toastManager.showError('Error loading board', error);
-        } finally {
-            this.isLoading = false;
-        }
-    }
-
-    /**
-     * Handle drag start - Simplified approach
-     */
     handleDragStart(event) {
-        const cardId = event.target.dataset.cardId;
-        const columnId = event.target.dataset.columnId;
-
-        // Store drag data including the card element's height
-        const cardHeight = event.target.offsetHeight;
-
-        event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/plain', cardId);
-        event.dataTransfer.setData('columnId', columnId);
-
-        // Visual feedback
-        event.target.classList.add('dragging');
-
-        // Store in component for drop handler
-        this.dragData = { cardId, columnId, cardHeight };
+        this.dragDropHandler.handleDragStart(event);
     }
 
-    /**
-     * Handle drag end - clear drag state
-     */
     handleDragEnd(event) {
-        event.target.classList.remove('dragging');
-
-        // Remove placeholder if it exists
-        if (this.dragPlaceholder && this.dragPlaceholder.parentNode) {
-            this.dragPlaceholder.parentNode.removeChild(this.dragPlaceholder);
-        }
-
-        this.dragData = null;
-        this.dragPlaceholder = null;
-        this.lastPlaceholderPosition = null;
+        this.dragDropHandler.handleDragEnd(event);
     }
 
-    /**
-     * Handle drag over - show visual preview with placeholder
-     */
     handleDragOver(event) {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'move';
-
-        if (!this.dragData) {
-            return;
-        }
-
-        const cardsContainer = event.currentTarget;
-        const targetColumnId = cardsContainer.dataset.columnId;
-        const targetPosition = this.calculateDropPosition(
-            event,
-            cardsContainer
-        );
-
-        // Don't show placeholder if hovering over the original position in the same column
-        const isSameColumn = this.dragData.columnId === targetColumnId;
-        if (isSameColumn) {
-            const sourceColumn = this.columns.find(
-                (col) => col.Id === this.dragData.columnId
-            );
-            if (sourceColumn) {
-                const sourceIndex = sourceColumn.cards.findIndex(
-                    (c) => c.Id === this.dragData.cardId
-                );
-
-                // Don't show placeholder at the original position
-                if (sourceIndex === targetPosition) {
-                    // Remove placeholder if it exists
-                    if (
-                        this.dragPlaceholder &&
-                        this.dragPlaceholder.parentNode
-                    ) {
-                        this.dragPlaceholder.parentNode.removeChild(
-                            this.dragPlaceholder
-                        );
-                        this.lastPlaceholderPosition = null;
-                    }
-                    return;
-                }
-            }
-        }
-
-        // Create position key to check if position changed
-        const positionKey = `${targetColumnId}-${targetPosition}`;
-
-        // Only update placeholder if position actually changed
-        if (this.lastPlaceholderPosition !== positionKey) {
-            this.lastPlaceholderPosition = positionKey;
-            this.updateDragPlaceholder(cardsContainer, targetPosition);
-        }
+        this.dragDropHandler.handleDragOver(event);
     }
 
-    /**
-     * Handle drop - Simplified synchronous approach
-     */
     async handleDrop(event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        if (!this.dragData) {
-            return;
-        }
-
-        const { cardId, columnId: sourceColumnId } = this.dragData;
-        const cardsContainer = event.currentTarget;
-        const targetColumnId = cardsContainer.dataset.columnId;
-
-        // Calculate visual drop position (excluding the dragged card for UI)
-        const visualPosition = this.calculateDropPosition(
-            event,
-            cardsContainer
-        );
-
-        // Check if position actually changed
-        const sourceColumn = this.columns.find(
-            (col) => col.Id === sourceColumnId
-        );
-        if (!sourceColumn) {
-            return;
-        }
-
-        const sourceIndex = sourceColumn.cards.findIndex(
-            (c) => c.Id === cardId
-        );
-
-        // Convert visual position to actual array position for the target column
-        // The visualPosition is calculated without the dragged card in the DOM
-        // We need to determine what index to pass to ServerOperations
-        const targetColumn = this.columns.find(
-            (col) => col.Id === targetColumnId
-        );
-        let targetIndex = visualPosition;
-
-        // If same column, we need to account for the card being removed
-        if (sourceColumnId === targetColumnId) {
-            // If moving down, visualPosition already accounts for removal
-            // If moving up, visualPosition is correct as-is
-            // The visual position IS the final position after the card is removed and re-inserted
-            targetIndex = visualPosition;
-        }
-
-        // For same column, check if position really changed
-        if (sourceColumnId === targetColumnId) {
-            // If dropping in the exact same position, skip
-            if (sourceIndex === targetIndex) {
-                return;
-            }
-        }
-
-        try {
-            // Call Apex to move the card
-            // ServerOperations will look at the cards array and get the LexoRank positions
-            // of the cards at targetIndex-1 and targetIndex to calculate the new position
-            const result = await ServerOperations.moveCard(
-                cardId,
-                targetColumnId,
-                targetIndex,
-                this.columns
-            );
-
-            // Update local state directly
-            const updatedColumns = JSON.parse(JSON.stringify(this.columns));
-
-            // Find and remove card from source column
-            const sourceCol = updatedColumns.find(
-                (col) => col.Id === sourceColumnId
-            );
-            const cardIndex = sourceCol.cards.findIndex((c) => c.Id === cardId);
-            const [movedCard] = sourceCol.cards.splice(cardIndex, 1);
-            sourceCol.cardCount = sourceCol.cards.length;
-
-            // Find target column
-            const targetCol = updatedColumns.find(
-                (col) => col.Id === targetColumnId
-            );
-
-            // Update card properties
-            movedCard.columnId = targetColumnId;
-            movedCard.position = result.newPosition;
-
-            // If the target column has a status, update the card's status to match
-            if (targetCol.status) {
-                movedCard.status = targetCol.status;
-            }
-
-            // Add to target column at the calculated position
-            targetCol.cards.splice(targetIndex, 0, movedCard);
-            targetCol.cardCount = targetCol.cards.length;
-
-            // Update store
-            this.store.dispatch({
-                type: 'SET_COLUMNS',
-                payload: updatedColumns
-            });
-
-            this.toastManager.showSuccess('Card moved successfully');
-        } catch (error) {
-            console.error('Error moving card:', error);
-            this.toastManager.showError('Error moving card', error);
-            // Reload on error to restore correct state
-            this.loadBoardData();
-        }
+        await this.dragDropHandler.handleDrop(event);
     }
 
-    /**
-     * Calculate drop position based on mouse location
-     * Returns the index where the card should be inserted (excluding the dragged card)
-     */
-    calculateDropPosition(event, cardsContainer) {
-        const cardElements = Array.from(
-            cardsContainer.querySelectorAll(
-                '.kanban-card:not(.dragging):not(.drag-placeholder)'
-            )
-        );
+    // =============================================================================
+    // Card Event Handlers
+    // =============================================================================
 
-        if (cardElements.length === 0) {
-            return 0;
-        }
-
-        const mouseY = event.clientY;
-
-        // Find insertion point based on mouse position
-        // Use bottom quarter of the card (75% from top) for more accurate mouse tracking
-        for (let i = 0; i < cardElements.length; i++) {
-            const rect = cardElements[i].getBoundingClientRect();
-            // Use bottom quarter of the card as the threshold
-            const threshold = rect.top + rect.height * 0.75;
-
-            if (mouseY < threshold) {
-                return i;
-            }
-        }
-
-        // Drop after all cards
-        return cardElements.length;
-    }
-
-    /**
-     * Update drag placeholder for visual preview
-     */
-    updateDragPlaceholder(cardsContainer, targetPosition) {
-        // Get all non-dragging, non-placeholder cards
-        const cardElements = Array.from(
-            cardsContainer.querySelectorAll(
-                '.kanban-card:not(.dragging):not(.drag-placeholder)'
-            )
-        );
-
-        // Create placeholder if it doesn't exist
-        if (!this.dragPlaceholder) {
-            this.dragPlaceholder = document.createElement('div');
-            this.dragPlaceholder.className = 'kanban-card drag-placeholder';
-
-            // Use the actual dragged card's height
-            const cardHeight = this.dragData?.cardHeight || 80;
-            this.dragPlaceholder.style.height = `${cardHeight}px`;
-
-            this.dragPlaceholder.style.margin =
-                '0 var(--lwc-spacingXSmall) var(--lwc-spacingXSmall)';
-            this.dragPlaceholder.style.border = '2px dashed #0176d3';
-            this.dragPlaceholder.style.borderRadius = '0.25rem';
-            this.dragPlaceholder.style.backgroundColor =
-                'rgba(1, 118, 211, 0.05)';
-            this.dragPlaceholder.style.display = 'flex';
-            this.dragPlaceholder.style.alignItems = 'center';
-            this.dragPlaceholder.style.justifyContent = 'center';
-        }
-
-        // Remove placeholder from current position if it exists
-        if (this.dragPlaceholder.parentNode) {
-            this.dragPlaceholder.parentNode.removeChild(this.dragPlaceholder);
-        }
-
-        // Insert placeholder at target position
-        if (targetPosition >= cardElements.length) {
-            // Append to end
-            cardsContainer.appendChild(this.dragPlaceholder);
-        } else {
-            // Insert before target card
-            const targetCard = cardElements[targetPosition];
-            if (targetCard) {
-                cardsContainer.insertBefore(this.dragPlaceholder, targetCard);
-            }
-        }
-    }
-
-    /**
-     * Handle card click for editing
-     */
     handleCardClick(event) {
         const cardId = event.currentTarget.dataset.cardId;
-
-        // Find the card
-        let card = null;
-        for (let column of this.columns) {
-            card = column.cards.find((c) => c.Id === cardId);
-            if (card) break;
-        }
-
-        if (card) {
-            this.selectedCard = card;
-            this.showCardDetail = true;
-        }
+        this.cardOperations.handleCardClick(cardId);
     }
 
-    /**
-     * Handle card name click for navigation
-     */
     async handleCardNameClick(event) {
         event.preventDefault();
         event.stopPropagation();
 
         const cardId = event.currentTarget.dataset.cardId;
 
-        if (!cardId) {
-            console.warn('No cardId found for navigation');
+        if (!cardId || !this.navigationUtil) {
             return;
         }
 
-        const pageReference = {
-            type: 'standard__recordPage',
-            attributes: {
-                recordId: cardId,
-                objectApiName: 'OpenSF__Card__c',
-                actionName: 'view'
-            }
-        };
+        await this.navigationUtil.navigateToRecord(cardId, 'OpenSF__Card__c');
+    }
 
-        try {
-            // Check if we're in console navigation
-            const isConsole = await IsConsoleNavigation();
+    handleCardDetailClose() {
+        this.cardOperations.handleCardDetailClose();
+    }
 
-            if (isConsole) {
-                // Open in a new subtab in console
-                try {
-                    const focusedTab = await getFocusedTabInfo();
-                    await openTab({
-                        pageReference: pageReference,
-                        focus: true,
-                        parentTabId: focusedTab.tabId
-                    });
-                } catch (error) {
-                    console.warn(
-                        'Failed to get focused tab, opening without parent:',
-                        error
-                    );
-                    // Fallback if getFocusedTabInfo fails
-                    await openTab({
-                        pageReference: pageReference,
-                        focus: true
-                    });
-                }
-            } else {
-                // Regular navigation
-                this[NavigationMixin.Navigate](pageReference);
-            }
-        } catch (error) {
-            console.error('Navigation error, using fallback:', error);
-            // Fallback to regular navigation if IsConsoleNavigation fails
-            this[NavigationMixin.Navigate](pageReference);
+    handleCardUpdated() {
+        this.cardOperations.handleCardUpdated();
+    }
+
+    handleCardDeleted(event) {
+        const cardId = event?.detail?.cardId;
+        if (cardId) {
+            this.cardOperations.handleCardDeleted(cardId);
         }
     }
 
-    /**
-     * Handle column header click for navigation
-     */
+    async handleAddCard(event) {
+        const button = event.currentTarget;
+        const columnId = button.dataset.columnId;
+        await this.cardOperations.createCard(columnId, button);
+    }
+
+    // =============================================================================
+    // Column Event Handlers
+    // =============================================================================
+
     async handleColumnClick(event) {
         event.preventDefault();
         event.stopPropagation();
 
         const columnId = event.currentTarget.dataset.columnId;
 
-        if (!columnId) {
-            console.warn('No columnId found for navigation');
+        if (!columnId || !this.navigationUtil) {
             return;
         }
 
-        const pageReference = {
-            type: 'standard__recordPage',
-            attributes: {
-                recordId: columnId,
-                objectApiName: 'OpenSF__Column__c',
-                actionName: 'view'
-            }
-        };
-
-        try {
-            // Check if we're in console navigation
-            const isConsole = await IsConsoleNavigation();
-
-            if (isConsole) {
-                // Open in a new subtab in console
-                try {
-                    const focusedTab = await getFocusedTabInfo();
-                    await openTab({
-                        pageReference: pageReference,
-                        focus: true,
-                        parentTabId: focusedTab.tabId
-                    });
-                } catch (error) {
-                    console.warn(
-                        'Failed to get focused tab, opening without parent:',
-                        error
-                    );
-                    // Fallback if getFocusedTabInfo fails
-                    await openTab({
-                        pageReference: pageReference,
-                        focus: true
-                    });
-                }
-            } else {
-                // Regular navigation
-                this[NavigationMixin.Navigate](pageReference);
-            }
-        } catch (error) {
-            console.error('Navigation error, using fallback:', error);
-            // Fallback to regular navigation if IsConsoleNavigation fails
-            this[NavigationMixin.Navigate](pageReference);
-        }
+        await this.navigationUtil.navigateToRecord(
+            columnId,
+            'OpenSF__Column__c'
+        );
     }
 
-    /**
-     * Handle card detail close
-     */
-    handleCardDetailClose() {
-        this.showCardDetail = false;
-        this.selectedCard = null;
+    // =============================================================================
+    // Subscription Event Handlers
+    // =============================================================================
+
+    handlePlatformEvent(event) {
+        this.subscriptionEventHandler.handlePlatformEvent(event);
     }
 
-    /**
-     * Handle card updated from modal - Simplified synchronous approach
-     */
-    handleCardUpdated() {
-        // Close the modal
-        this.showCardDetail = false;
-
-        // Reload board data to get the updated card with all its relationships
-        // This is simpler than trying to fetch and merge just the updated card
-        this.loadBoardData();
-
-        // Clear selected card after reload starts
-        this.selectedCard = null;
+    handleEventActivity(message) {
+        this.subscriptionEventHandler.handleEventActivity(message);
     }
 
-    /**
-     * Handle card deleted from modal - Simplified synchronous approach
-     */
-    handleCardDeleted(event) {
-        const cardId = event?.detail?.cardId;
-
-        if (!cardId) {
-            console.error('No card ID provided for deletion');
-            return;
-        }
-
-        // Find and remove the card from columns
-        const updatedColumns = JSON.parse(JSON.stringify(this.columns));
-        let found = false;
-
-        for (const column of updatedColumns) {
-            const cardIndex = column.cards.findIndex((c) => c.Id === cardId);
-            if (cardIndex !== -1) {
-                column.cards.splice(cardIndex, 1);
-                column.cardCount = column.cards.length;
-                found = true;
-                break;
-            }
-        }
-
-        if (found) {
-            // Update store with new columns
-            this.store.dispatch({
-                type: 'SET_COLUMNS',
-                payload: updatedColumns
-            });
-        }
-
-        // Close modal and clear selection
-        this.showCardDetail = false;
-        this.selectedCard = null;
+    handleSubscriptionMessage(event) {
+        const { payload } = event.detail;
+        this._eventCount++;
+        this.subscriptionEventHandler.handleSubscriptionMessage(payload);
     }
 
-    /**
-     * Handle refresh button
-     */
+    handleSubscriptionStatusMessage(event) {
+        const { variant, title, message } = event.detail;
+        this.subscriptionEventHandler.handleSubscriptionStatusMessage(
+            variant,
+            title,
+            message
+        );
+    }
+
+    handlePollingRequired() {
+        this.subscriptionEventHandler.handlePollingRequired();
+    }
+
+    handleSubscriptionStatusChange(event) {
+        const { status } = event.detail;
+        this.subscriptionEventHandler.handleSubscriptionStatusChange(status);
+    }
+
+    // =============================================================================
+    // UI Event Handlers
+    // =============================================================================
+
     handleRefresh() {
         this.loadBoardData();
     }
 
-    /**
-     * Handle add card - Simplified synchronous approach
-     */
-    async handleAddCard(event) {
-        // Use currentTarget to get the button element, not the clicked child element
-        const button = event.currentTarget;
-        const columnId = button.dataset.columnId;
+    handleWindowFocus() {
+        this.lifecycleManager.handleWindowFocus();
+    }
 
-        if (!columnId) {
-            console.error('Column ID not found on button:', button);
-            this.toastManager.showError(
-                'Invalid column',
-                'Column ID not found'
-            );
+    // =============================================================================
+    // Dynamic Height Management
+    // =============================================================================
+
+    initializeDynamicHeight() {
+        this._boardElement = this.template.querySelector('.kanban-board');
+
+        if (!this._boardElement) {
             return;
         }
 
-        try {
-            // Show loading state
-            button.disabled = true;
-
-            // Call Apex synchronously to create the card
-            const newCard = await ServerOperations.createCard(
-                columnId,
-                'New Card',
-                this.columns
-            );
-
-            // Enrich the card with UI properties
-            const enrichedCard = DataManager.enrichCard(newCard);
-
-            // Find the column and add the card directly
-            const columnIndex = this.columns.findIndex(
-                (col) => col.Id === columnId
-            );
-            if (columnIndex !== -1) {
-                // Create a new columns array with the updated column
-                const updatedColumns = JSON.parse(JSON.stringify(this.columns));
-                updatedColumns[columnIndex].cards.push(enrichedCard);
-                updatedColumns[columnIndex].cardCount =
-                    updatedColumns[columnIndex].cards.length;
-
-                // Update store with new columns
-                this.store.dispatch({
-                    type: 'SET_COLUMNS',
-                    payload: updatedColumns
-                });
-            }
-
-            this.toastManager.showSuccess('Card created successfully');
-        } catch (error) {
-            console.error('Error creating card:', error);
-            this.toastManager.showError('Error creating card', error);
-        } finally {
-            // Re-enable button
-            button.disabled = false;
+        // If height is manually set, use it and skip dynamic calculation
+        if (this.height) {
+            this._boardElement.style.setProperty('--board-height', this.height);
+            return;
         }
+
+        // Initial height calculation
+        this.updateBoardHeight();
+
+        // Create ResizeObserver to handle viewport changes, zoom, etc.
+        this._resizeObserver = new ResizeObserver(() => {
+            this.updateBoardHeight();
+        });
+
+        // Observe the board element itself
+        this._resizeObserver.observe(this._boardElement);
+
+        // Also observe viewport changes via window resize
+        this._windowResizeHandler = this.updateBoardHeight.bind(this);
+        window.addEventListener('resize', this._windowResizeHandler);
     }
 
-    /**
-     * Handle platform event
-     */
-    handlePlatformEvent(event) {
-        const needsRefresh = this.eventHandler.handlePlatformEvent(
-            event,
-            this.store
+    updateBoardHeight() {
+        if (!this._boardElement || this.height) {
+            return; // Skip dynamic calculation if height is manually set
+        }
+
+        // Get the board element's position relative to viewport
+        const rect = this._boardElement.getBoundingClientRect();
+
+        // Calculate available height:
+        // viewport height - distance from top - padding/margin buffer
+        const buffer = 80; // Space for bottom padding and any floating elements
+        const availableHeight = window.innerHeight - rect.top - buffer;
+
+        // Set minimum height to prevent collapse
+        const minHeight = 400;
+        const calculatedHeight = Math.max(minHeight, availableHeight);
+
+        // Update CSS custom property
+        this._boardElement.style.setProperty(
+            '--board-height',
+            `${calculatedHeight}px`
         );
-
-        // Fallback: refresh entire board if event processing failed
-        if (needsRefresh) {
-            this.loadBoardData();
-        }
-    }
-
-    /**
-     * Handle subscription status messages
-     */
-    handleSubscriptionMessage(variant, title, message) {
-        if (variant === 'success') {
-            this.toastManager.showSuccess(title);
-        } else if (variant === 'info') {
-            this.toastManager.showInfo(title);
-        } else if (variant === 'warning') {
-            this.toastManager.showWarning(title);
-        } else if (variant === 'error') {
-            this.toastManager.showError(title, message);
-        }
-    }
-
-    /**
-     * Getters for template
-     */
-    get boardStyle() {
-        return `height: ${this.height}`;
     }
 
     get hasColumns() {
@@ -754,14 +398,43 @@ export default class KanbanBoard extends NavigationMixin(LightningElement) {
     }
 
     get connectionStatusIcon() {
-        return this.subscriptionManager?.getStatusIcon() || '⚪';
+        const statusMap = {
+            connected: 'utility:check',
+            connecting: 'utility:sync',
+            disconnected: 'utility:offline',
+            error: 'utility:error',
+            polling: 'utility:refresh'
+        };
+        return statusMap[this._subscriptionStatus] || 'utility:question';
     }
 
     get connectionStatusText() {
-        return this.subscriptionManager?.getStatusText() || 'Unknown';
+        const textMap = {
+            connected: 'Real-time updates active',
+            connecting: 'Connecting...',
+            disconnected: 'Disconnected',
+            error: 'Connection error',
+            polling: 'Polling mode (fallback)'
+        };
+        return textMap[this._subscriptionStatus] || 'Unknown';
     }
 
     get connectionStatusClass() {
-        return this.subscriptionManager?.getStatusClass() || 'status-unknown';
+        const classMap = {
+            connected: 'status-connected',
+            connecting: 'status-connecting',
+            disconnected: 'status-disconnected',
+            error: 'status-error',
+            polling: 'status-polling'
+        };
+        return classMap[this._subscriptionStatus] || 'status-unknown';
+    }
+
+    get connectionStatus() {
+        return this._subscriptionStatus;
+    }
+
+    get eventCount() {
+        return this._eventCount;
     }
 }

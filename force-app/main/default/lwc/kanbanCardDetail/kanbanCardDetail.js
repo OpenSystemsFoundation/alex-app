@@ -143,9 +143,15 @@ export default class KanbanCardDetail extends LightningElement {
         }
     }
 
-    handleBackdropClick(event) {
-        // Only close if clicking the backdrop itself, not its children
-        if (event.target.classList.contains('slds-backdrop')) {
+    handleBackdropDoubleClick() {
+        // Close on double-click of backdrop
+        this.handleClose();
+    }
+
+    handleKeyDown(event) {
+        // Close on Escape key
+        if (event.key === 'Escape') {
+            event.preventDefault();
             this.handleClose();
         }
     }

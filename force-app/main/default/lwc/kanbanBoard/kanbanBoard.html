@@ -3,12 +3,27 @@
         title={boardName}
         icon-name="custom:custom78"
     >
-        <div slot="actions">
-            <lightning-button
-                label="Refresh"
-                icon-name="utility:refresh"
-                onclick={handleRefresh}
-            ></lightning-button>
+        <div
+            slot="actions"
+            class="slds-grid slds-grid_vertical-align-center slds-gutters_xx-small"
+        >
+            <!-- Connection Status Indicator -->
+            <div class="slds-col">
+                <c-connection-status-indicator
+                    status={connectionStatus}
+                    event-count={eventCount}
+                    last-sync-time={_lastSyncTime}
+                ></c-connection-status-indicator>
+            </div>
+
+            <!-- Refresh Button -->
+            <div class="slds-col">
+                <lightning-button
+                    label="Refresh"
+                    icon-name="utility:refresh"
+                    onclick={handleRefresh}
+                ></lightning-button>
+            </div>
         </div>
 
         <!-- Loading State -->
@@ -36,8 +51,7 @@
 
         <!-- Kanban Board -->
         <div
-            class="kanban-board slds-grid slds-scrollable_x"
-            style={boardStyle}
+            class="kanban-board slds-grid slds-scrollable_x slds-var-p-around_medium slds-var-p-around_small@mobile"
         >
             <template lwc:if={hasColumns}>
                 <template
@@ -47,44 +61,33 @@
                     <!-- Kanban Column -->
                     <div
                         key={column.Id}
-                        class="kanban-column slds-col slds-grid slds-grid_vertical slds-var-m-around_x-small"
+                        class="kanban-column slds-col slds-size_1-of-1@mobile slds-grid slds-grid_vertical slds-var-m-around_x-small slds-var-m-around_xx-small@mobile"
                         data-column-id={column.Id}
                         style={column.columnStyle}
                     >
                         <!-- Column Header -->
                         <div
-                            class="kanban-column__header slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-var-p-horizontal_small slds-var-p-top_x-small"
+                            class="kanban-column__header slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-var-p-horizontal_small slds-var-p-horizontal_x-small@mobile slds-var-p-vertical_x-small slds-var-p-vertical_xx-small@mobile"
                         >
                             <div
                                 class="slds-col slds-truncate"
                             >
-                                <div
-                                    class="slds-media__body slds-truncate"
+                                <h2
+                                    class="slds-text-heading_medium slds-truncate"
                                 >
-                                    <h2
-                                        class="slds-text-heading_medium slds-truncate slds-var-p-bottom_xx-small"
+                                    <a
+                                        href={column.columnUrl}
+                                        class="slds-text-link slds-text-color_brand slds-truncate"
+                                        title={column.columnHeader}
+                                        onclick={handleColumnClick}
+                                        data-column-id={column.Id}
                                     >
-                                        <a
-                                            href={column.columnUrl}
-                                            class="slds-text-link slds-text-color_brand slds-truncate"
-                                            title={column.columnHeader}
-                                            onclick={handleColumnClick}
-                                            data-column-id={column.Id}
+                                        <span
+                                            class="slds-truncate"
+                                            >{column.columnHeader}</span
                                         >
-                                            <span
-                                                class="slds-truncate"
-                                                >{column.columnHeader}</span
-                                            >
-                                        </a>
-                                    </h2>
-                                    <p
-                                        class="slds-text-body_small"
-                                    >
-                                        <lightning-badge
-                                            label={column.cardCount}
-                                        ></lightning-badge>
-                                    </p>
-                                </div>
+                                    </a>
+                                </h2>
                             </div>
 
                             <!-- Add Card Button -->
@@ -110,7 +113,7 @@
 
                         <!-- Scrollable Card Wrapper -->
                         <div
-                            class="kanban-column__card-wrapper slds-scrollable_y slds-var-p-top_x-small"
+                            class="kanban-column__card-wrapper slds-scrollable_y slds-var-p-top_small"
                             data-column-id={column.Id}
                             ondragover={handleDragOver}
                             ondrop={handleDrop}
@@ -124,7 +127,7 @@
                                 >
                                     <article
                                         key={card.Id}
-                                        class="kanban-card slds-box slds-box_small slds-var-m-horizontal_x-small"
+                                        class="kanban-card slds-box slds-box_small slds-box_xx-small@mobile slds-var-m-bottom_small slds-var-m-bottom_x-small@mobile"
                                         data-card-id={card.Id}
                                         data-column-id={column.Id}
                                         draggable="true"
@@ -161,7 +164,7 @@
                                                         lwc:else
                                                     >
                                                         <span
-                                                            class="slds-avatar slds-avatar_circle slds-avatar_medium"
+                                                            class="slds-avatar slds-avatar_circle slds-avatar_medium slds-avatar_small@mobile"
                                                         >
                                                             <span
                                                                 class="slds-avatar__initials"
@@ -224,31 +227,21 @@
 
                                         <!-- Card Body -->
                                         <div
-                                            class="kanban-card__body slds-text-body_regular"
+                                            class="kanban-card__body slds-text-body_regular slds-var-p-top_small"
                                         >
                                             <template
                                                 lwc:if={card.subject}
                                             >
                                                 <p
-                                                    class="slds-truncate slds-text-title"
+                                                    class="slds-truncate slds-text-body_small"
                                                 >
                                                     {card.subject}
                                                 </p>
                                             </template>
 
-                                            <template
-                                                lwc:if={card.description}
-                                            >
-                                                <p
-                                                    class="slds-text-body_small slds-truncate slds-var-m-top_xx-small"
-                                                >
-                                                    {card.description}
-                                                </p>
-                                            </template>
-
                                             <!-- Card Icons -->
                                             <div
-                                                class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-spread slds-var-p-top_small"
+                                                class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-spread slds-var-p-top_small slds-var-m-top_small slds-var-p-top_x-small@mobile slds-var-m-top_x-small@mobile"
                                             >
                                                 <!-- Left side: Priority and Due Date -->
                                                 <div
@@ -261,7 +254,7 @@
                                                             class="slds-var-p-right_small"
                                                         >
                                                             <span
-                                                                class="slds-badge priority-pill"
+                                                                class="slds-badge priority-pill slds-var-p-vertical_xxx-small slds-var-p-horizontal_small"
                                                             >
                                                                 <span
                                                                     class={card.priorityClass}
@@ -277,7 +270,7 @@
                                                     >
                                                         <div>
                                                             <span
-                                                                class="slds-badge due-date-pill"
+                                                                class="slds-badge due-date-pill slds-var-p-vertical_xxx-small slds-var-p-horizontal_small"
                                                             >
                                                                 <lightning-icon
                                                                     icon-name="utility:clock"
@@ -296,18 +289,17 @@
 
                                                 <!-- Right side: Story Points -->
                                                 <template
-                                                    lwc:if={card.storyPoints}
+                                                    lwc:if={card.hasStoryPoints}
                                                 >
-                                                    <div>
+                                                    <div
+                                                        class="slds-text-body_small slds-text-color_weak"
+                                                    >
                                                         <span
-                                                            class="slds-avatar slds-avatar_circle slds-avatar_x-small story-points-badge"
+                                                            class="slds-text-title slds-text-heading_small"
+                                                            ><strong
+                                                                >{card.storyPoints}</strong
+                                                            ></span
                                                         >
-                                                            <span
-                                                                class="slds-avatar__initials"
-                                                            >
-                                                                {card.storyPoints}
-                                                            </span>
-                                                        </span>
                                                     </div>
                                                 </template>
                                             </div>
@@ -344,4 +336,19 @@
             oncarddeleted={handleCardDeleted}
         ></c-kanban-card-detail>
     </template>
+
+    <!-- Reusable Managers -->
+    <c-subscription-manager
+        channel-name={subscriptionChannelName}
+        auto-subscribe={shouldAutoSubscribe}
+        board-id={recordId}
+        onmessage={handleSubscriptionMessage}
+        onstatusmessage={handleSubscriptionStatusMessage}
+        onstatuschange={handleSubscriptionStatusChange}
+        onpollingrequired={handlePollingRequired}
+    ></c-subscription-manager>
+
+    <c-toast-manager></c-toast-manager>
+
+    <c-navigation-util></c-navigation-util>
 </template>

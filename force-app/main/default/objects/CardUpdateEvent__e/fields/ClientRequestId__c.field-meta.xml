@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ClientRequestId__c</fullName>
+    <description
+    >UUID to track client-initiated operations and prevent race conditions</description>
+    <isFilteringDisabled>false</isFilteringDisabled>
+    <isNameField>false</isNameField>
+    <isSortingDisabled>false</isSortingDisabled>
+    <label>Client Request Id</label>
+    <length>36</length>
+    <type>Text</type>
+</CustomField>

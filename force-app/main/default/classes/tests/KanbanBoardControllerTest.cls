@@ -78,6 +78,7 @@ private class KanbanBoardControllerTest {
             card.Id,
             targetColumn.Id,
             null,
+            null,
             null
         );
         Test.stopTest();
@@ -117,6 +118,7 @@ private class KanbanBoardControllerTest {
         KanbanBoardController.CardMoveResult result = KanbanBoardController.moveCard(
             card.Id,
             targetColumn.Id,
+            null,
             null,
             null
         );
@@ -182,6 +184,7 @@ private class KanbanBoardControllerTest {
             card.Id,
             targetColumn.Id,
             null,
+            null,
             null
         );
         Test.stopTest();
@@ -221,6 +224,7 @@ private class KanbanBoardControllerTest {
             column.Id,
             'New Test Card',
             null,
+            null,
             null
         );
         Test.stopTest();
@@ -248,6 +252,7 @@ private class KanbanBoardControllerTest {
         KanbanBoardDTO.CardDTO newCard = KanbanBoardController.createCard(
             column.Id,
             'New Card with Status',
+            null,
             null,
             null
         );
@@ -453,6 +458,7 @@ private class KanbanBoardControllerTest {
             cards[0].Id,
             targetColumn.Id,
             null,
+            null,
             null
         );
         Test.stopTest();
@@ -487,7 +493,13 @@ private class KanbanBoardControllerTest {
 
         Test.startTest();
         try {
-            KanbanBoardController.moveCard(fakeCardId, column.Id, null, null);
+            KanbanBoardController.moveCard(
+                fakeCardId,
+                column.Id,
+                null,
+                null,
+                null
+            );
             System.assert(false, 'Should have thrown exception');
         } catch (Exception e) {
             System.assertNotEquals(null, e, 'Should throw an exception');
@@ -501,7 +513,13 @@ private class KanbanBoardControllerTest {
 
         Test.startTest();
         try {
-            KanbanBoardController.createCard(fakeColumnId, 'Test', null, null);
+            KanbanBoardController.createCard(
+                fakeColumnId,
+                'Test',
+                null,
+                null,
+                null
+            );
             System.assert(false, 'Should have thrown exception');
         } catch (Exception e) {
             System.assertNotEquals(null, e, 'Should throw an exception');
