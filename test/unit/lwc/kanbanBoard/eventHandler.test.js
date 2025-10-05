@@ -870,6 +870,82 @@ describe('EventHandler', () => {
             );
         });
 
+        it('should not apply own create events to prevent duplicates', () => {
+            const requestId = 'req-create-123';
+            mockRequestTracker.isOwnRequest.mockReturnValue(true);
+            mockRequestTracker.isPending.mockReturnValue(true);
+            mockRequestTracker.getRequest.mockReturnValue({
+                requestId,
+                cardId: null // Card being created
+            });
+
+            const createEvent = {
+                OpenSF__EventType__c: 'create',
+                ClientId__c: 'client-window-A',
+                OpenSF__ClientRequestId__c: requestId,
+                OpenSF__SequenceNumber__c: 1,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card-new-123',
+                    subject: 'New Card',
+                    columnId: 'col1'
+                })
+            };
+
+            mockStoreWithBoard.dispatch.mockClear();
+            windowAHandler.handlePlatformEvent(createEvent, mockStoreWithBoard);
+
+            // Should complete the request
+            expect(mockRequestTracker.completeRequest).toHaveBeenCalledWith(
+                requestId,
+                expect.objectContaining({
+                    Id: 'card-new-123'
+                })
+            );
+
+            // Should NOT dispatch ADD_CARD since it was already added optimistically
+            expect(mockStoreWithBoard.dispatch).not.toHaveBeenCalled();
+        });
+
+        it('should apply own update events even with clientRequestId', () => {
+            const requestId = 'req-update-456';
+            mockRequestTracker.isOwnRequest.mockReturnValue(true);
+            mockRequestTracker.isPending.mockReturnValue(true);
+            mockRequestTracker.getRequest.mockReturnValue({
+                requestId,
+                cardId: 'card1'
+            });
+
+            const updateEvent = {
+                OpenSF__EventType__c: 'update',
+                ClientId__c: 'client-window-A',
+                OpenSF__ClientRequestId__c: requestId,
+                OpenSF__SequenceNumber__c: 2,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Updated Card',
+                    columnId: 'col1'
+                })
+            };
+
+            mockStoreWithBoard.dispatch.mockClear();
+            windowAHandler.handlePlatformEvent(updateEvent, mockStoreWithBoard);
+
+            // Should complete the request
+            expect(mockRequestTracker.completeRequest).toHaveBeenCalledWith(
+                requestId,
+                expect.objectContaining({
+                    Id: 'card1'
+                })
+            );
+
+            // Should dispatch UPDATE_CARD
+            expect(mockStoreWithBoard.dispatch).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'UPDATE_CARD'
+                })
+            );
+        });
+
         it('should allow multiple windows to operate independently', () => {
             // Window A creates card
             mockRequestTracker.isOwnRequest.mockReturnValue(false);

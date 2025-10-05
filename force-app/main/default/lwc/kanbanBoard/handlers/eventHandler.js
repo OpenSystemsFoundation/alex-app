@@ -79,7 +79,10 @@ export default class EventHandler {
                     );
                 }
 
-                this._applyEvent(eventType, payload, store);
+                // Don't apply create events for our own requests - already added optimistically
+                if (eventType !== 'create') {
+                    this._applyEvent(eventType, payload, store);
+                }
                 return false;
             }
 
