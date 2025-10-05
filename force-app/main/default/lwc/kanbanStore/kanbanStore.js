@@ -307,15 +307,29 @@ class KanbanStore {
     }
 
     /**
-     * Add card to state
+     * Add card to state (maintains lexorank sort order)
      */
     _addCardToState(card, columnId) {
         const newState = JSON.parse(JSON.stringify(this._state.columns));
         const column = newState.find((col) => col.Id === columnId);
 
         if (column) {
+            // Add card to column
             column.cards.push(card);
+
+            // Re-sort by position (lexorank does the heavy lifting)
+            column.cards.sort((a, b) => {
+                if (!a.position && !b.position) return 0;
+                if (!a.position) return 1;
+                if (!b.position) return -1;
+                return a.position.localeCompare(b.position);
+            });
+
             column.cardCount = column.cards.length;
+
+            console.log(
+                `[Store._addCardToState] Added card ${card.Id} to column and sorted by position`
+            );
         }
 
         return newState;
@@ -326,6 +340,7 @@ class KanbanStore {
      */
     /**
      * Update card in state (supports partial or full updates)
+     * Handles position changes by re-sorting the column
      */
     _updateCardInState(cardIdOrCard, updates) {
         const newState = JSON.parse(JSON.stringify(this._state.columns));
@@ -339,7 +354,7 @@ class KanbanStore {
             return newState;
         }
 
-        // Find the card and check if column changed
+        // Find the card
         let sourceColumn = null;
         let cardIndex = -1;
         let existingCard = null;
@@ -361,7 +376,10 @@ class KanbanStore {
         const updatedCard = { ...existingCard, ...cardUpdates };
 
         // Check if columnId changed (card moved to different column)
-        if (cardUpdates.columnId && cardUpdates.columnId !== sourceColumn.Id) {
+        const columnChanged =
+            cardUpdates.columnId && cardUpdates.columnId !== sourceColumn.Id;
+
+        if (columnChanged) {
             // Remove from source column
             sourceColumn.cards.splice(cardIndex, 1);
             sourceColumn.cardCount = sourceColumn.cards.length;
@@ -371,11 +389,49 @@ class KanbanStore {
                 (col) => col.Id === cardUpdates.columnId
             );
             if (targetColumn) {
+                // Add card to target column
                 targetColumn.cards.push(updatedCard);
+
+                // Re-sort target column by position
+                targetColumn.cards.sort((a, b) => {
+                    if (!a.position && !b.position) return 0;
+                    if (!a.position) return 1;
+                    if (!b.position) return -1;
+                    return a.position.localeCompare(b.position);
+                });
+
                 targetColumn.cardCount = targetColumn.cards.length;
+
+                console.log(
+                    `[Store] Card ${cardId} moved to column ${targetColumn.Name} and sorted by position`
+                );
             }
+        } else if (cardUpdates.position) {
+            // Position update in same column
+            // Simple approach: update the card and re-sort the entire column
+            // This is what lexorank is designed for - just sort by position!
+
+            console.log(
+                `[Store._updateCardInState] Position update for ${cardId}: "${existingCard.position}" → "${updatedCard.position}"`
+            );
+
+            // Update the card in place
+            sourceColumn.cards[cardIndex] = updatedCard;
+
+            // Re-sort the entire column by position
+            sourceColumn.cards.sort((a, b) => {
+                // Handle null positions
+                if (!a.position && !b.position) return 0;
+                if (!a.position) return 1;
+                if (!b.position) return -1;
+                return a.position.localeCompare(b.position);
+            });
+
+            console.log(
+                `[Store._updateCardInState] Column re-sorted, positions: ${sourceColumn.cards.map((c, i) => `[${i}]="${c.position}"`).join(', ')}`
+            );
         } else {
-            // Update in same column
+            // No position or column change, just update properties in place
             sourceColumn.cards[cardIndex] = updatedCard;
         }
 

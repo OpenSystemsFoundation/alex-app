@@ -1,12 +1,7 @@
-/**
- * Subscription Manager for Platform Events
- * Handles real-time updates with retry logic and polling fallback
- */
-
 import { subscribe, unsubscribe, onError } from 'lightning/empApi';
 
 const MAX_RETRY_ATTEMPTS = 3;
-const POLLING_FREQUENCY = 5000; // 5 seconds
+const POLLING_FREQUENCY = 5000;
 const MAX_FAILED_POLLS = 3;
 
 export default class SubscriptionManager {
@@ -25,26 +20,29 @@ export default class SubscriptionManager {
         this.consecutiveFailedPolls = 0;
     }
 
-    /**
-     * Subscribe to platform events
-     */
     async subscribe() {
         if (this.subscription && this.subscription.channel) {
             return;
         }
 
         this.subscriptionStatus = 'connecting';
+        this.errorCallback('info', 'Connecting to real-time updates...', '');
 
         try {
             const response = await subscribe(
                 this.channelName,
                 -1,
                 (response) => {
-                    // Mark subscription as healthy
                     if (this.subscriptionStatus !== 'connected') {
                         this.subscriptionStatus = 'connected';
                         this.subscriptionRetryCount = 0;
                         this.stopPolling();
+
+                        this.errorCallback(
+                            'success',
+                            'Real-time updates active',
+                            'Platform event subscription is live'
+                        );
                     }
 
                     this.messageCallback(response);
@@ -60,9 +58,6 @@ export default class SubscriptionManager {
         }
     }
 
-    /**
-     * Unsubscribe from platform events
-     */
     unsubscribe() {
         if (this.subscription && this.subscription.channel) {
             unsubscribe(this.subscription, () => {
@@ -78,9 +73,6 @@ export default class SubscriptionManager {
         }
     }
 
-    /**
-     * Register error listener
-     */
     registerErrorListener() {
         onError((error) => {
             this.subscriptionStatus = 'error';
@@ -89,9 +81,6 @@ export default class SubscriptionManager {
         });
     }
 
-    /**
-     * Start polling fallback
-     */
     startPolling(pollCallback) {
         if (this.pollingInterval) {
             return;
@@ -104,13 +93,9 @@ export default class SubscriptionManager {
             this._poll();
         }, POLLING_FREQUENCY);
 
-        // Immediate poll
         this._poll();
     }
 
-    /**
-     * Stop polling
-     */
     stopPolling() {
         if (this.pollingInterval) {
             clearInterval(this.pollingInterval);
@@ -119,16 +104,10 @@ export default class SubscriptionManager {
         }
     }
 
-    /**
-     * Get subscription status
-     */
     getStatus() {
         return this.subscriptionStatus;
     }
 
-    /**
-     * Get status icon for UI
-     */
     getStatusIcon() {
         const statusMap = {
             connected: '✅',
@@ -140,9 +119,6 @@ export default class SubscriptionManager {
         return statusMap[this.subscriptionStatus] || '⚪';
     }
 
-    /**
-     * Get status text for UI
-     */
     getStatusText() {
         const textMap = {
             connected: 'Real-time updates active',
@@ -154,9 +130,6 @@ export default class SubscriptionManager {
         return textMap[this.subscriptionStatus] || 'Unknown';
     }
 
-    /**
-     * Get status CSS class
-     */
     getStatusClass() {
         const classMap = {
             connected: 'status-connected',
@@ -168,10 +141,6 @@ export default class SubscriptionManager {
         return classMap[this.subscriptionStatus] || 'status-unknown';
     }
 
-    /**
-     * Handle subscription error with retry
-     * @private
-     */
     _handleSubscriptionError(error) {
         this.subscriptionRetryCount++;
 
@@ -179,8 +148,9 @@ export default class SubscriptionManager {
             const retryDelay = 2000 * this.subscriptionRetryCount;
 
             this.errorCallback(
-                'warning',
-                `Connection lost. Retrying (${this.subscriptionRetryCount}/${MAX_RETRY_ATTEMPTS})...`
+                'info',
+                `Connection lost. Retrying (${this.subscriptionRetryCount}/${MAX_RETRY_ATTEMPTS})...`,
+                ''
             );
 
             this.retryTimeout = setTimeout(() => {
@@ -188,7 +158,7 @@ export default class SubscriptionManager {
             }, retryDelay);
         } else {
             this.errorCallback(
-                'error',
+                'info',
                 'Real-time updates unavailable',
                 'Using polling fallback'
             );
@@ -198,10 +168,6 @@ export default class SubscriptionManager {
         }
     }
 
-    /**
-     * Execute polling
-     * @private
-     */
     async _poll() {
         if (!this.pollCallback) {
             return;

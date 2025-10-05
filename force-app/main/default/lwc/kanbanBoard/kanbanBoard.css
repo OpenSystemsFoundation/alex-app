@@ -1,23 +1,39 @@
-/* Kanban Board Container */
 .kanban-board,
 .kanban-column,
 .kanban-column__card-wrapper,
 .kanban-card {
-    user-select: none; /* Disables text selection */
+    user-select: none;
+}
+
+.platform-event-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
+    cursor: help;
+}
+
+.platform-event-status span {
+    font-size: 1.25rem;
+    line-height: 1;
+    display: inline-block;
+}
+
+.status-disconnected {
+    opacity: 0.5;
 }
 
 .kanban-board {
     max-width: 100vw;
     max-height: var(--max-height, 70vh);
     padding: 1rem;
-    background: rgb(255, 255, 255); /* SLDS: WHITE */
+    background: rgb(255, 255, 255);
 }
 
-/* Column Styles */
 .kanban-column {
     min-width: 250px;
     max-width: 280px;
-    background-color: rgb(243, 243, 243); /* SLDS: PALETTE_NEUTRAL_95 */
+    background-color: rgb(243, 243, 243);
     border-top: 8px solid var(--column-color, rgb(229, 229, 229));
     border-radius: 0.5rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -27,7 +43,7 @@
 }
 
 .kanban-column__header {
-    background: rgb(243, 243, 243); /* SLDS: PALETTE_NEUTRAL_95 */
+    background: rgb(243, 243, 243);
 }
 
 .add-button-wrapper {
@@ -45,7 +61,6 @@
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* Cards Container */
 .kanban-column__card-wrapper {
     height: calc(100% - 32px);
     min-height: 150px;
@@ -55,16 +70,15 @@
 }
 
 .kanban-column__card-wrapper.drag-active {
-    background-color: rgb(238, 244, 255); /* SLDS: PALETTE_BLUE_95 */
+    background-color: rgb(238, 244, 255);
 }
 
-/* Card Styles */
 .kanban-card {
     min-width: 200px;
     z-index: 1;
     position: relative;
-    background-color: rgb(255, 255, 255); /* SLDS: WHITE */
-    border: 1px solid rgb(201, 201, 201); /* SLDS: PALETTE_NEUTRAL_80 */
+    background-color: rgb(255, 255, 255);
+    border: 1px solid rgb(201, 201, 201);
     border-radius: 0.3rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition:
@@ -92,17 +106,15 @@
 }
 
 .kanban-card.over {
-    border: 2px dashed rgb(1, 118, 211); /* SLDS: BRAND_ACCESSIBLE */
-    background-color: rgb(255, 255, 255); /* SLDS: WHITE */
+    border: 2px dashed rgb(1, 118, 211);
+    background-color: rgb(255, 255, 255);
 }
 
-/* Drag Placeholder */
 .drag-placeholder {
-    /* Height set dynamically in JS to match dragged card */
     margin: 0 0.5rem 0.5rem;
-    background: rgb(216, 230, 254); /* SLDS: PALETTE_BLUE_90 */
-    border: 2px dashed rgb(1, 118, 211); /* SLDS: BRAND_ACCESSIBLE */
-    border-radius: 0.25rem; /* SLDS: BORDER_RADIUS_MEDIUM */
+    background: rgb(216, 230, 254);
+    border: 2px dashed rgb(1, 118, 211);
+    border-radius: 0.25rem;
     position: relative;
     display: flex;
     align-items: center;
@@ -113,14 +125,13 @@
 
 .drag-placeholder::before {
     content: 'Drop here';
-    color: rgb(1, 118, 211); /* SLDS: BRAND_ACCESSIBLE */
+    color: rgb(1, 118, 211);
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-/* Card Body Styles */
 .kanban-card__body {
     padding-top: 0.5rem;
 }
@@ -140,35 +151,32 @@
     font-size: 0.75rem;
 }
 
-/* Story Points Circle Badge */
 .story-points-badge {
-    background-color: rgb(1, 118, 211); /* SLDS: BRAND_ACCESSIBLE */
+    background-color: rgb(1, 118, 211);
     font-weight: 600;
 }
 
 .story-points-badge .slds-avatar__initials {
-    background-color: rgb(1, 118, 211); /* SLDS: BRAND_ACCESSIBLE */
-    color: rgb(255, 255, 255); /* White text */
+    background-color: rgb(1, 118, 211);
+    color: rgb(255, 255, 255);
     font-size: 0.75rem;
 }
 
-/* Priority Pill */
 .priority-pill {
     display: inline-flex;
     align-items: center;
     padding: 0.125rem 0.5rem;
-    background-color: rgb(243, 243, 243); /* SLDS: PALETTE_NEUTRAL_95 */
+    background-color: rgb(243, 243, 243);
     border-radius: 0.75rem;
     font-size: 0.75rem;
 }
 
-/* Due Date Pill */
 .due-date-pill {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
     padding: 0.125rem 0.5rem;
-    background-color: rgb(243, 243, 243); /* SLDS: PALETTE_NEUTRAL_95 */
+    background-color: rgb(243, 243, 243);
     border-radius: 0.75rem;
     font-size: 0.75rem;
 }
@@ -177,41 +185,37 @@
     margin-right: 0.25rem;
 }
 
-/* Priority Text Styling */
 .priority-high {
-    color: rgb(234, 0, 30); /* SLDS: PALETTE_RED_50 */
+    color: rgb(234, 0, 30);
     font-weight: 600;
 }
 
 .priority-medium {
-    color: rgb(255, 154, 60); /* SLDS: PALETTE_ORANGE_50 */
+    color: rgb(255, 154, 60);
     font-weight: 600;
 }
 
 .priority-low {
-    color: rgb(87, 163, 0); /* SLDS: PALETTE_GREEN_50 */
+    color: rgb(87, 163, 0);
     font-weight: 600;
 }
 
-/* Due Date Overdue */
 .overdue {
-    color: rgb(234, 0, 30) !important; /* SLDS: PALETTE_RED_50 */
+    color: rgb(234, 0, 30) !important;
     font-weight: 600;
 }
 
-/* Error State */
 .kanban__error {
     transform: scale(1.1);
     transition: transform 0.3s ease-in-out;
 }
 
-/* Empty Column Drop Zone */
 .kanban-column__dropzone {
     min-height: 120px;
     margin-top: 0 !important;
-    border: 2px dashed rgb(216, 221, 230); /* SLDS: PALETTE_NEUTRAL_80 */
-    background-color: rgb(244, 246, 249); /* SLDS: PALETTE_NEUTRAL_95 */
-    color: rgb(105, 114, 125); /* SLDS: PALETTE_GRAY_9 */
+    border: 2px dashed rgb(216, 221, 230);
+    background-color: rgb(244, 246, 249);
+    color: rgb(105, 114, 125);
     border-radius: 8px;
     transition:
         background-color 0.3s ease,
@@ -220,32 +224,24 @@
     padding: 2rem 1rem;
 }
 
-/* Due Date Overdue */
-.overdue {
-    color: rgb(234, 0, 30) !important; /* SLDS: PALETTE_RED_50 */
-    font-weight: 600;
-}
-
-/* Scrollbar Styles */
 .kanban-column__card-wrapper::-webkit-scrollbar {
     width: 8px;
 }
 
 .kanban-column__card-wrapper::-webkit-scrollbar-track {
-    background: rgb(243, 243, 243); /* SLDS: PALETTE_NEUTRAL_95 */
+    background: rgb(243, 243, 243);
     border-radius: 0.25rem;
 }
 
 .kanban-column__card-wrapper::-webkit-scrollbar-thumb {
-    background: rgb(201, 201, 201); /* SLDS: PALETTE_NEUTRAL_80 */
+    background: rgb(201, 201, 201);
     border-radius: 0.25rem;
 }
 
 .kanban-column__card-wrapper::-webkit-scrollbar-thumb:hover {
-    background: rgb(174, 174, 174); /* SLDS: PALETTE_NEUTRAL_70 */
+    background: rgb(174, 174, 174);
 }
 
-/* Drag and Drop States */
 .kanban-card.drag-over-top::before {
     content: '';
     position: absolute;
@@ -253,14 +249,13 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: rgb(1, 118, 211); /* SLDS: BRAND_ACCESSIBLE */
+    background: rgb(1, 118, 211);
     box-shadow: 0 0 8px rgba(1, 118, 211, 0.5);
 }
 
-/* Empty column state during drag */
 .kanban-column__card-wrapper.drag-over-empty {
-    background: rgb(244, 246, 254); /* SLDS: BRAND_LIGHT */
-    border: 2px dashed rgb(1, 118, 211); /* SLDS: BRAND_ACCESSIBLE */
+    background: rgb(244, 246, 254);
+    border: 2px dashed rgb(1, 118, 211);
     border-radius: 0.25rem;
     min-height: 120px;
     display: flex;
@@ -270,12 +265,11 @@
 
 .kanban-column__card-wrapper.drag-over-empty::after {
     content: 'Drop card here';
-    color: rgb(1, 118, 211); /* SLDS: BRAND_ACCESSIBLE */
+    color: rgb(1, 118, 211);
     font-size: 0.875rem;
     font-weight: 600;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .kanban-column {
         flex: 0 0 280px;

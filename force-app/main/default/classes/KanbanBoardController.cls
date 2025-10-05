@@ -41,7 +41,8 @@ public with sharing class KanbanBoardController {
         Id cardId,
         Id targetColumnId,
         String previousCardPosition,
-        String nextCardPosition
+        String nextCardPosition,
+        String clientRequestId
     ) {
         try {
             // Calculate new position using LexoRank
@@ -60,11 +61,12 @@ public with sharing class KanbanBoardController {
                 cardId
             );
 
-            // Update position, column, and status (if needed)
+            // Update position, column, status (if needed), and lastClientRequestId
             OpenSF__Card__c card = new OpenSF__Card__c(
                 Id = cardId,
                 OpenSF__Column__c = targetColumnId,
-                OpenSF__LexoRankPosition__c = newPosition
+                OpenSF__LexoRankPosition__c = newPosition,
+                OpenSF__LastClientRequestId__c = clientRequestId
             );
 
             // Apply column status to card if applicable
@@ -103,7 +105,8 @@ public with sharing class KanbanBoardController {
         Id columnId,
         String subject,
         String previousCardPosition,
-        String nextCardPosition
+        String nextCardPosition,
+        String clientRequestId
     ) {
         try {
             // Calculate position
@@ -121,7 +124,8 @@ public with sharing class KanbanBoardController {
             OpenSF__Card__c card = new OpenSF__Card__c(
                 OpenSF__Subject__c = subject,
                 OpenSF__Column__c = columnId,
-                OpenSF__LexoRankPosition__c = position
+                OpenSF__LexoRankPosition__c = position,
+                OpenSF__LastClientRequestId__c = clientRequestId
             );
 
             // Apply column status to new card (currentStatus is null for new cards)

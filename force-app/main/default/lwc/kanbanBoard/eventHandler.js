@@ -1,56 +1,101 @@
-/**
- * Event Handler for Platform Events
- * Processes platform events and updates state
- */
-
 import DataManager from './dataManager';
 
-const CHANGE_TRACKING_WINDOW = 2000; // 2 seconds
+const CHANGE_TRACKING_WINDOW = 2000;
 
 export default class EventHandler {
-    constructor() {
-        this.recentChanges = new Map(); // cardId -> timestamp
+    constructor(requestTracker = null, activityCallback = null) {
+        this.recentChanges = new Map();
+        this.requestTracker = requestTracker;
+        this.activityCallback = activityCallback;
     }
 
-    /**
-     * Handle platform event
-     */
+    setRequestTracker(requestTracker) {
+        this.requestTracker = requestTracker;
+    }
+
+    setActivityCallback(callback) {
+        this.activityCallback = callback;
+    }
+
     handlePlatformEvent(event, store) {
         try {
             const payload = JSON.parse(event.OpenSF__Payload__c);
             const eventType = event.OpenSF__EventType__c;
+            const clientRequestId = event.OpenSF__ClientRequestId__c;
 
-            // Ignore recent changes from this window
+            if (
+                clientRequestId &&
+                this.requestTracker?.isOwnRequest(clientRequestId)
+            ) {
+                const request = this.requestTracker.getRequest(clientRequestId);
+
+                if (this.requestTracker.isPending(clientRequestId)) {
+                    if (
+                        request &&
+                        payload.Id &&
+                        request.cardId !== payload.Id
+                    ) {
+                        request.cardId = payload.Id;
+                    }
+
+                    this.requestTracker.completeRequest(
+                        clientRequestId,
+                        payload
+                    );
+                }
+
+                this._applyEvent(eventType, payload, store);
+                return false;
+            }
+
+            if (
+                payload.Id &&
+                this.requestTracker?.hasPendingOperations(payload.Id)
+            ) {
+                setTimeout(() => {
+                    if (!this.requestTracker.hasPendingOperations(payload.Id)) {
+                        this._applyEvent(eventType, payload, store);
+                    } else {
+                        return true;
+                    }
+                }, 500);
+                return false;
+            }
+
             if (this._isRecentChange(payload.Id)) {
-                return;
+                return false;
             }
 
-            switch (eventType) {
-                case 'move':
-                case 'update':
-                    this._updateCard(payload, store);
-                    break;
-                case 'create':
-                    this._addCard(payload, store);
-                    break;
-                case 'delete':
-                    this._removeCard(payload.Id, store);
-                    break;
-                default:
-                    console.warn('Unknown event type:', eventType);
+            if (
+                !clientRequestId ||
+                !this.requestTracker?.isOwnRequest(clientRequestId)
+            ) {
+                this._notifyActivity(eventType, payload);
             }
+
+            this._applyEvent(eventType, payload, store);
         } catch (error) {
-            console.error('Error handling platform event:', error);
-            // Return true to signal need for full refresh
             return true;
         }
 
         return false;
     }
 
-    /**
-     * Track a change to ignore immediate echoes
-     */
+    _applyEvent(eventType, payload, store) {
+        switch (eventType) {
+            case 'move':
+            case 'update':
+                this._updateCard(payload, store);
+                break;
+            case 'create':
+                this._addCard(payload, store);
+                break;
+            case 'delete':
+                this._removeCard(payload.Id, store);
+                break;
+        }
+    }
+
     trackChange(cardId) {
         this.recentChanges.set(cardId, Date.now());
         setTimeout(
@@ -59,10 +104,6 @@ export default class EventHandler {
         );
     }
 
-    /**
-     * Check if card was recently changed in this window
-     * @private
-     */
     _isRecentChange(cardId) {
         const recentChangeTime = this.recentChanges.get(cardId);
         if (!recentChangeTime) {
@@ -72,10 +113,33 @@ export default class EventHandler {
         return Date.now() - recentChangeTime < CHANGE_TRACKING_WINDOW;
     }
 
-    /**
-     * Update card in state
-     * @private
-     */
+    _notifyActivity(eventType, payload) {
+        if (this.activityCallback) {
+            const cardName =
+                payload.OpenSF__Subject__c || payload.Name || 'Card';
+            let message = '';
+
+            switch (eventType) {
+                case 'create':
+                    message = `Card created: ${cardName}`;
+                    break;
+                case 'update':
+                    message = `Card updated: ${cardName}`;
+                    break;
+                case 'move':
+                    message = `Card moved: ${cardName}`;
+                    break;
+                case 'delete':
+                    message = `Card deleted`;
+                    break;
+                default:
+                    message = `Card changed: ${cardName}`;
+            }
+
+            this.activityCallback(message);
+        }
+    }
+
     _updateCard(cardDTO, store) {
         const enrichedCard = DataManager.enrichCard(cardDTO);
 
@@ -88,14 +152,9 @@ export default class EventHandler {
         });
     }
 
-    /**
-     * Add card to state
-     * @private
-     */
     _addCard(cardDTO, store) {
         const enrichedCard = DataManager.enrichCard(cardDTO);
 
-        // Check if card already exists
         const columns = store.getState().columns;
         const cardExists = columns.some((col) =>
             col.cards.some((c) => c.Id === cardDTO.Id)
@@ -114,10 +173,6 @@ export default class EventHandler {
         });
     }
 
-    /**
-     * Remove card from state
-     * @private
-     */
     _removeCard(cardId, store) {
         store.dispatch({
             type: 'REMOVE_CARD',

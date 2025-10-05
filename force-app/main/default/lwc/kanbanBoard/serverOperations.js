@@ -1,54 +1,63 @@
-/**
- * Server Operations Manager
- * Handles all server-side operations (CRUD for cards)
- */
-
 import moveCard from '@salesforce/apex/KanbanBoardController.moveCard';
 import createCard from '@salesforce/apex/KanbanBoardController.createCard';
 
 export default class ServerOperations {
-    /**
-     * Move card to target column with position calculation
-     */
-    static async moveCard(cardId, targetColumnId, targetPosition, columns) {
+    static async moveCard(
+        cardId,
+        targetColumnId,
+        targetPosition,
+        columns,
+        requestId = null
+    ) {
         const targetColumn = columns.find((col) => col.Id === targetColumnId);
 
         if (!targetColumn) {
             throw new Error('Target column not found');
         }
 
-        const cards = targetColumn.cards || [];
+        const allCards = targetColumn.cards || [];
+        const currentIndex = allCards.findIndex((c) => c.Id === cardId);
+        const cardsWithoutDragged = allCards.filter((c) => c.Id !== cardId);
 
         let previousPosition = null;
         let nextPosition = null;
 
-        if (targetPosition !== null) {
-            if (targetPosition > 0 && cards[targetPosition - 1]) {
-                previousPosition = cards[targetPosition - 1].position;
+        if (targetPosition !== null && targetPosition !== undefined) {
+            if (targetPosition > 0 && cardsWithoutDragged[targetPosition - 1]) {
+                previousPosition =
+                    cardsWithoutDragged[targetPosition - 1].position;
             }
-            if (targetPosition < cards.length && cards[targetPosition]) {
-                nextPosition = cards[targetPosition].position;
+
+            if (
+                targetPosition < cardsWithoutDragged.length &&
+                cardsWithoutDragged[targetPosition]
+            ) {
+                nextPosition = cardsWithoutDragged[targetPosition].position;
             }
         } else {
-            if (cards.length > 0) {
-                previousPosition = cards[cards.length - 1].position;
+            if (cardsWithoutDragged.length > 0) {
+                previousPosition =
+                    cardsWithoutDragged[cardsWithoutDragged.length - 1]
+                        .position;
             }
         }
 
-        const result = await moveCard({
+        const params = {
             cardId: cardId,
             targetColumnId: targetColumnId,
             previousCardPosition: previousPosition,
             nextCardPosition: nextPosition
-        });
+        };
 
+        if (requestId) {
+            params.clientRequestId = requestId;
+        }
+
+        const result = await moveCard(params);
         return result;
     }
 
-    /**
-     * Create new card in column
-     */
-    static async createCard(columnId, subject, columns) {
+    static async createCard(columnId, subject, columns, requestId = null) {
         const column = columns.find((col) => col.Id === columnId);
 
         if (!column) {
@@ -62,19 +71,21 @@ export default class ServerOperations {
             previousPosition = cards[cards.length - 1].position;
         }
 
-        const newCard = await createCard({
+        const params = {
             columnId: columnId,
             subject: subject || 'New Card',
             previousCardPosition: previousPosition,
             nextCardPosition: null
-        });
+        };
 
+        if (requestId) {
+            params.clientRequestId = requestId;
+        }
+
+        const newCard = await createCard(params);
         return newCard;
     }
 
-    /**
-     * Calculate position for card insertion
-     */
     static calculatePosition(targetPosition, cards) {
         let previousPosition = null;
         let nextPosition = null;

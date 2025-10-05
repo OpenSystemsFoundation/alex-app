@@ -3,12 +3,30 @@
         title={boardName}
         icon-name="custom:custom78"
     >
-        <div slot="actions">
-            <lightning-button
-                label="Refresh"
-                icon-name="utility:refresh"
-                onclick={handleRefresh}
-            ></lightning-button>
+        <div
+            slot="actions"
+            class="slds-grid slds-grid_vertical-align-center slds-gutters_x-small"
+        >
+            <!-- Platform Event Status Indicator -->
+            <div class="slds-col">
+                <div
+                    class="platform-event-status"
+                    title={connectionStatusText}
+                >
+                    <span class={connectionStatusClass}
+                        >{connectionStatusIcon}</span
+                    >
+                </div>
+            </div>
+
+            <!-- Refresh Button -->
+            <div class="slds-col">
+                <lightning-button
+                    label="Refresh"
+                    icon-name="utility:refresh"
+                    onclick={handleRefresh}
+                ></lightning-button>
+            </div>
         </div>
 
         <!-- Loading State -->

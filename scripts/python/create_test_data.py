@@ -110,10 +110,9 @@ def generate_and_execute_commands(data):
     """Execute Salesforce CLI commands to create boards, columns, and cards."""
     # Mapping to track column IDs by their (board_name, lexorank_position) for card creation
     column_position_to_id = {}
-    
     # Create Boards
     for board in data['boards']:
-        command = f'sf data create record --sobject OpenSF__Board__c --values "Name=\'{board["Name"]}\'" --json'
+        command = f'sf data create record --sobject OpenSF__Board__c --values "Name=\'{board["Name"]}\' OpenSF__EmailNotifications__c=false OpenSF__SalesforceNotifications__c=false" --json'
         result = execute_sf_command(command)
         board_id = result["result"]["id"]
         print(f"Created Board: {board['Name']} with ID: {board_id}")

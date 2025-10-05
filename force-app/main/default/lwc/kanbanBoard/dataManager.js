@@ -1,12 +1,4 @@
-/**
- * Data Manager for Kanban Board
- * Handles data loading, processing, and card enrichment
- */
-
 export default class DataManager {
-    /**
-     * Process columns data into UI-ready format
-     */
     static processColumns(columns) {
         if (!columns || columns.length === 0) {
             return [];
@@ -21,27 +13,19 @@ export default class DataManager {
         }));
     }
 
-    /**
-     * Process cards data and assign to columns
-     */
     static processCards(cards, columns) {
         if (!cards || !columns || columns.length === 0) {
             return { processedColumns: columns, cardsByColumn: {} };
         }
 
-        // Create working copy
         const processedColumns = JSON.parse(JSON.stringify(columns));
         const cardsByColumn = {};
 
-        // Initialize columns
         processedColumns.forEach((col) => {
             col.cards = [];
             col.cardCount = 0;
             cardsByColumn[col.Id] = [];
         });
-
-        // Group cards by column
-        const cardsNotPlaced = [];
 
         cards.forEach((card) => {
             const column = processedColumns.find(
@@ -52,21 +36,22 @@ export default class DataManager {
                 column.cards.push(enrichedCard);
                 column.cardCount++;
                 cardsByColumn[column.Id] = column.cards;
-            } else {
-                cardsNotPlaced.push({
-                    cardId: card.Id,
-                    cardSubject: card.subject,
-                    columnId: card.columnId
-                });
             }
+        });
+
+        processedColumns.forEach((col) => {
+            col.cards.sort((a, b) => {
+                if (!a.position && !b.position) return 0;
+                if (!a.position) return 1;
+                if (!b.position) return -1;
+
+                return a.position.localeCompare(b.position);
+            });
         });
 
         return { processedColumns, cardsByColumn };
     }
 
-    /**
-     * Enrich card with computed UI properties
-     */
     static enrichCard(card) {
         return {
             ...card,
@@ -84,9 +69,6 @@ export default class DataManager {
         };
     }
 
-    /**
-     * Get priority CSS class
-     */
     static getPriorityClass(priority) {
         const priorityMap = {
             High: 'priority-high',
@@ -96,9 +78,6 @@ export default class DataManager {
         return priorityMap[priority] || '';
     }
 
-    /**
-     * Get initials from name
-     */
     static getInitials(name) {
         if (!name) return '';
         return name
@@ -109,9 +88,6 @@ export default class DataManager {
             .substring(0, 2);
     }
 
-    /**
-     * Format date for display
-     */
     static formatDate(dateString) {
         const date = new Date(dateString);
         return date.toLocaleDateString();

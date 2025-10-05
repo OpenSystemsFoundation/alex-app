@@ -1,8 +1,3 @@
-/**
- * Toast Manager for Kanban Board
- * Centralized toast notification handling
- */
-
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 export default class ToastManager {
@@ -10,39 +5,23 @@ export default class ToastManager {
         this.component = component;
     }
 
-    /**
-     * Show success toast
-     */
-    showSuccess(message) {
-        this._dispatchToast('Success', message, 'success');
+    showSuccess(message, mode = 'dismissible') {
+        this._dispatchToast('Success', message, 'success', mode);
     }
 
-    /**
-     * Show info toast
-     */
-    showInfo(message) {
-        this._dispatchToast('Info', message, 'info');
+    showInfo(message, mode = 'dismissible') {
+        this._dispatchToast('Info', message, 'info', mode);
     }
 
-    /**
-     * Show warning toast
-     */
-    showWarning(message) {
-        this._dispatchToast('Warning', message, 'warning');
+    showWarning(message, mode = 'dismissible') {
+        this._dispatchToast('Warning', message, 'warning', mode);
     }
 
-    /**
-     * Show error toast
-     */
     showError(title, error) {
         const message = this._extractErrorMessage(error);
         this._dispatchToast(title, message, 'error', 'sticky');
     }
 
-    /**
-     * Extract error message from various error formats
-     * @private
-     */
     _extractErrorMessage(error) {
         if (!error) {
             return 'Unknown error';
@@ -63,10 +42,6 @@ export default class ToastManager {
         return 'Unknown error';
     }
 
-    /**
-     * Dispatch toast event
-     * @private
-     */
     _dispatchToast(title, message, variant, mode = null) {
         const toastConfig = {
             title,
@@ -79,5 +54,9 @@ export default class ToastManager {
         }
 
         this.component.dispatchEvent(new ShowToastEvent(toastConfig));
+    }
+
+    showSubscriptionStatus(title, message, variant = 'info') {
+        this._dispatchToast(title, message, variant, 'dismissible');
     }
 }
