@@ -1,32 +1,75 @@
 import { LightningElement, api } from 'lwc';
 
 export default class ConnectionStatusIndicator extends LightningElement {
-    @api status = 'disconnected';
-    @api eventCount = 0;
-    @api lastEventTime = null;
-    @api lastSyncTime = null;
+    // Single config object for all status properties
+    _config = {
+        status: 'disconnected',
+        eventCount: 0,
+        lastSyncTime: null,
+        syncState: 'idle', // 'idle' | 'syncing' | 'failed'
+        pendingOperationsCount: 0,
+        lastSyncError: null,
+        pollingUpdateDetected: null
+    };
 
-    // Sync state properties
-    @api syncState = 'idle'; // 'idle' | 'syncing' | 'failed'
-    @api pendingOperationsCount = 0;
-    @api lastSyncError = null;
+    // Internal state
+    _savedFadeTimeout = null;
+    _showSavedIndicator = false;
 
-    connectedCallback() {
-        // Update time display every minute for disconnected and polling states
-        this._intervalId = setInterval(() => {
-            if (
-                (this.status === 'disconnected' || this.status === 'polling') &&
-                this.lastSyncTime
-            ) {
-                // Force re-render by triggering reactivity
-                this.lastSyncTime = this.lastSyncTime;
-            }
-        }, 60000); // Update every minute
+    @api
+    get config() {
+        return this._config;
+    }
+
+    set config(value) {
+        const previousState = this._config.syncState;
+        const previousPollingUpdate = this._config.pollingUpdateDetected;
+        this._config = { ...value };
+
+        // If polling detected an update
+        if (
+            this._config.pollingUpdateDetected &&
+            this._config.pollingUpdateDetected !== previousPollingUpdate
+        ) {
+            this._showSavedIndicator = true;
+            this._scheduleFadeAway();
+        }
+        // If sync just completed (transitioned to idle with lastSyncTime)
+        else if (
+            previousState === 'syncing' &&
+            this._config.syncState === 'idle' &&
+            this._config.lastSyncTime
+        ) {
+            this._showSavedIndicator = true;
+            this._scheduleFadeAway();
+        }
+        // If syncing again, clear fade timeout and show indicator
+        else if (this._config.syncState === 'syncing') {
+            this._clearFadeTimeout();
+            this._showSavedIndicator = true;
+        }
+        // If failed, show indicator immediately
+        else if (this._config.syncState === 'failed') {
+            this._clearFadeTimeout();
+            this._showSavedIndicator = true;
+        }
     }
 
     disconnectedCallback() {
-        if (this._intervalId) {
-            clearInterval(this._intervalId);
+        this._clearFadeTimeout();
+    }
+
+    _scheduleFadeAway() {
+        this._clearFadeTimeout();
+        this._savedFadeTimeout = setTimeout(() => {
+            this._showSavedIndicator = false;
+        }, 3000); // Fade away after 3 seconds
+    }
+
+    _clearFadeTimeout() {
+        if (this._savedFadeTimeout) {
+            clearTimeout(this._savedFadeTimeout);
+            this._savedFadeTimeout = null;
         }
     }
 
@@ -38,29 +81,22 @@ export default class ConnectionStatusIndicator extends LightningElement {
             error: 'utility:error',
             polling: 'utility:refresh'
         };
-        return statusMap[this.status] || 'utility:question';
+        return statusMap[this.config.status] || 'utility:question';
     }
 
     get statusText() {
-        if (
-            (this.status === 'disconnected' || this.status === 'polling') &&
-            this.lastSyncTime
-        ) {
-            return this.getTimeAgo(this.lastSyncTime);
-        }
-
         const textMap = {
             connected: 'Real-time',
             connecting: 'Connecting...',
             disconnected: 'Offline',
             error: 'Error',
-            polling: 'Polling'
+            polling: 'Auto-refresh'
         };
-        return textMap[this.status] || 'Unknown';
+        return textMap[this.config.status] || 'Unknown';
     }
 
     get statusClass() {
-        let classes = `status-indicator status-${this.status}`;
+        let classes = `status-indicator status-${this.config.status}`;
         if (this.showPulse) {
             classes += ' pulse-animation';
         }
@@ -71,40 +107,42 @@ export default class ConnectionStatusIndicator extends LightningElement {
     get detailedStatus() {
         // Build sync state message
         let syncMessage = '';
-        if (this.syncState === 'syncing' && this.pendingOperationsCount > 0) {
+        if (
+            this.config.syncState === 'syncing' &&
+            this.config.pendingOperationsCount > 0
+        ) {
             syncMessage =
-                this.pendingOperationsCount === 1
+                this.config.pendingOperationsCount === 1
                     ? ' • Saving 1 change'
-                    : ` • Saving ${this.pendingOperationsCount} changes`;
-        } else if (this.syncState === 'failed') {
+                    : ` • Saving ${this.config.pendingOperationsCount} changes`;
+        } else if (this.config.syncState === 'failed') {
             syncMessage = ' • Failed to save';
-        } else if (this.syncState === 'idle' && this.lastSyncTime) {
+        } else if (
+            this.config.syncState === 'idle' &&
+            this.config.lastSyncTime
+        ) {
             syncMessage = ' • All changes saved';
         }
 
         let details = '';
-        switch (this.status) {
+        switch (this.config.status) {
             case 'connected':
                 details =
-                    this.eventCount > 0
-                        ? `Active - ${this.eventCount} events received${syncMessage}`
+                    this.config.eventCount > 0
+                        ? `Active - ${this.config.eventCount} events received${syncMessage}`
                         : `Connected to real-time updates${syncMessage}`;
                 break;
             case 'connecting':
                 details = `Establishing connection...${syncMessage}`;
                 break;
             case 'polling':
-                details = `Using fallback mode - updates every 5 seconds${syncMessage}`;
+                details = `Checking for updates every 15 seconds${syncMessage}`;
                 break;
             case 'error':
                 details = `Connection failed - please refresh${syncMessage}`;
                 break;
             case 'disconnected':
-                if (this.lastSyncTime) {
-                    details = `Last refreshed ${this.getTimeAgo(this.lastSyncTime)}${syncMessage}`;
-                } else {
-                    details = `Not connected${syncMessage}`;
-                }
+                details = `Not connected${syncMessage}`;
                 break;
             default:
                 details = `Unknown status${syncMessage}`;
@@ -118,65 +156,60 @@ export default class ConnectionStatusIndicator extends LightningElement {
             syncing: 'utility:sync',
             failed: 'utility:error'
         };
-        return iconMap[this.syncState] || 'utility:question';
+        return iconMap[this.config.syncState] || 'utility:question';
     }
 
     get syncStatusText() {
-        if (this.syncState === 'syncing' && this.pendingOperationsCount > 0) {
-            return this.pendingOperationsCount === 1
+        // Show 'Updated' for polling updates (only while visible before fade)
+        if (this.config.pollingUpdateDetected && this._showSavedIndicator) {
+            return 'Updated';
+        }
+
+        if (
+            this.config.syncState === 'syncing' &&
+            this.config.pendingOperationsCount > 0
+        ) {
+            return this.config.pendingOperationsCount === 1
                 ? 'Saving...'
-                : `Saving ${this.pendingOperationsCount}...`;
-        } else if (this.syncState === 'failed') {
+                : `Saving ${this.config.pendingOperationsCount}...`;
+        } else if (this.config.syncState === 'failed') {
             return 'Save failed';
-        } else if (this.syncState === 'idle' && this.lastSyncTime) {
+        } else if (
+            this.config.syncState === 'idle' &&
+            this.config.lastSyncTime
+        ) {
             return 'Saved';
         }
         return '';
     }
 
     get showSyncStatus() {
-        // Show sync status if syncing, failed, or recently saved
+        // Show sync status if syncing, failed, recently saved, or polling update detected
         return (
-            this.syncState === 'syncing' ||
-            this.syncState === 'failed' ||
-            (this.syncState === 'idle' && this.lastSyncTime)
+            this._showSavedIndicator &&
+            (this.config.syncState === 'syncing' ||
+                this.config.syncState === 'failed' ||
+                this.config.pollingUpdateDetected ||
+                (this.config.syncState === 'idle' && this.config.lastSyncTime))
         );
     }
 
     get syncStatusClass() {
-        let classes = `sync-status sync-${this.syncState}`;
-        if (this.syncState === 'syncing') {
+        let classes = `sync-status sync-${this.config.syncState}`;
+        if (this.config.syncState === 'syncing') {
             classes += ' pulse-animation';
+        }
+        // Add fade-out class when idle and about to disappear
+        if (this.config.syncState === 'idle' && this._savedFadeTimeout) {
+            classes += ' fade-out';
         }
         return classes;
     }
 
     get showPulse() {
-        return this.status === 'connecting' || this.status === 'polling';
-    }
-
-    /**
-     * Calculate and format time ago string
-     */
-    getTimeAgo(timestamp) {
-        if (!timestamp) return 'Unknown';
-
-        const now = new Date();
-        const past = new Date(timestamp);
-        const diffMs = now - past;
-        const diffSecs = Math.floor(diffMs / 1000);
-        const diffMins = Math.floor(diffSecs / 60);
-        const diffHours = Math.floor(diffMins / 60);
-        const diffDays = Math.floor(diffHours / 24);
-
-        if (diffSecs < 60) {
-            return 'Just now';
-        } else if (diffMins < 60) {
-            return `${diffMins}m ago`;
-        } else if (diffHours < 24) {
-            return `${diffHours}h ago`;
-        } else {
-            return `${diffDays}d ago`;
-        }
+        return (
+            this.config.status === 'connecting' ||
+            this.config.status === 'polling'
+        );
     }
 }

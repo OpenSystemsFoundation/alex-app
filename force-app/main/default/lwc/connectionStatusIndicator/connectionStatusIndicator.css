@@ -149,3 +149,20 @@
 .sync-failed .sync-status-text {
     color: #ba0517;
 }
+
+/* Fade out animation for saved state */
+.fade-out {
+    animation: fadeOut 1s ease-out forwards;
+}
+
+@keyframes fadeOut {
+    0% {
+        opacity: 1;
+    }
+    70% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}

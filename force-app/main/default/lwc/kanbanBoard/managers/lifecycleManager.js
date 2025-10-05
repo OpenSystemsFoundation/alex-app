@@ -73,12 +73,17 @@ export default class LifecycleManager {
 
     /**
      * Handle window focus event
-     * Note: Subscription will auto-reconnect via shouldAutoSubscribe property changes
+     * Attempt to reconnect to platform events if in polling mode
      */
     handleWindowFocus() {
-        // Force re-render to trigger subscription check
-        if (this.component.board) {
-            this.component.isLoading = false; // Trigger reactivity
+        // If we're in polling mode, try to reconnect to platform events
+        if (
+            this.component.subscriptionManager &&
+            this.component._subscriptionStatus === 'polling'
+        ) {
+            // Stop polling and attempt to reconnect
+            this.component.subscriptionManager.stopPolling();
+            this.component.subscriptionManager.subscribe();
         }
     }
 }

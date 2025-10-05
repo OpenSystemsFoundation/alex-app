@@ -32,7 +32,7 @@ export default class KanbanBoard extends LightningElement {
     error = null;
     @track _subscriptionStatus = 'disconnected'; // Needs @track for indicator reactivity
     @track _eventCount = 0; // Needs @track for indicator reactivity
-    _lastSyncTime = null;
+    @track _lastSyncTime = null; // Needs @track for indicator reactivity
 
     // Drag state
     dragData = null;
@@ -417,48 +417,17 @@ export default class KanbanBoard extends LightningElement {
         return this.board?.Name || 'Kanban Board';
     }
 
-    get showEmptyState() {
-        return !this.isLoading && !this.hasColumns;
-    }
-
-    get connectionStatusIcon() {
-        const statusMap = {
-            connected: 'utility:check',
-            connecting: 'utility:sync',
-            disconnected: 'utility:offline',
-            error: 'utility:error',
-            polling: 'utility:refresh'
+    get connectionStatusConfig() {
+        return {
+            status: this._subscriptionStatus,
+            eventCount: this._eventCount,
+            lastSyncTime: this._lastSyncTime,
+            syncState: this.syncState,
+            pendingOperationsCount: this.pendingOperationsCount,
+            lastSyncError: this.lastSyncError,
+            pollingUpdateDetected: this._storeState
+                ? this._storeState.pollingUpdateDetected
+                : null
         };
-        return statusMap[this._subscriptionStatus] || 'utility:question';
-    }
-
-    get connectionStatusText() {
-        const textMap = {
-            connected: 'Real-time updates active',
-            connecting: 'Connecting...',
-            disconnected: 'Disconnected',
-            error: 'Connection error',
-            polling: 'Polling mode (fallback)'
-        };
-        return textMap[this._subscriptionStatus] || 'Unknown';
-    }
-
-    get connectionStatusClass() {
-        const classMap = {
-            connected: 'status-connected',
-            connecting: 'status-connecting',
-            disconnected: 'status-disconnected',
-            error: 'status-error',
-            polling: 'status-polling'
-        };
-        return classMap[this._subscriptionStatus] || 'status-unknown';
-    }
-
-    get connectionStatus() {
-        return this._subscriptionStatus;
-    }
-
-    get eventCount() {
-        return this._eventCount;
     }
 }

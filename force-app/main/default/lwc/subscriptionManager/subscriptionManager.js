@@ -1,15 +1,11 @@
 import { LightningElement, api } from 'lwc';
 import { subscribe, unsubscribe, onError } from 'lightning/empApi';
-
-const MAX_RETRY_ATTEMPTS = 3;
-const POLLING_FREQUENCY = 5000; // 5 seconds
-const MAX_FAILED_POLLS = 3;
-const HEALTH_CHECK_INTERVAL = 30000; // 30 seconds
-const EVENT_TIMEOUT = 10000; // 10 seconds - if no event received, assume issue
+import EventHealthMonitor from './eventHealthMonitor';
+import RetryManager from './retryManager';
 
 /**
  * Reusable LWC component for managing platform event subscriptions
- * with automatic retry logic and polling fallback.
+ * with automatic retry logic and health monitoring.
  */
 export default class SubscriptionManager extends LightningElement {
     _channelName;
@@ -45,20 +41,13 @@ export default class SubscriptionManager extends LightningElement {
 
     subscription = {};
     subscriptionStatus = 'disconnected';
-    subscriptionRetryCount = 0;
-    retryTimeout = null;
 
-    pollingInterval = null;
-    lastSuccessfulPoll = null;
-    consecutiveFailedPolls = 0;
-    pollCallback = null;
-
-    // Enhanced health tracking
-    lastEventReceived = null;
-    eventHealthCheckInterval = null;
-    healthCheckAttempts = 0;
-    eventCount = 0;
-    startTime = null;
+    // Subcomponents
+    healthMonitor = new EventHealthMonitor();
+    retryManager = new RetryManager(
+        () => this.subscribe(),
+        (error) => this._onMaxRetriesExceeded(error)
+    );
 
     /**
      * Subscribe to the platform event channel
@@ -76,13 +65,11 @@ export default class SubscriptionManager extends LightningElement {
                 this.channelName,
                 -1,
                 (response) => {
-                    this.lastEventReceived = Date.now();
-                    this.eventCount++;
+                    this.healthMonitor.recordEvent();
 
                     if (this.subscriptionStatus !== 'connected') {
                         this._setStatus('connected');
-                        this.subscriptionRetryCount = 0;
-                        this.stopPolling();
+                        this.retryManager.reset();
                     }
 
                     this._dispatchMessage(response);
@@ -93,11 +80,10 @@ export default class SubscriptionManager extends LightningElement {
             if (this.subscriptionStatus !== 'connected') {
                 this._setStatus('connected');
             }
-            this.subscriptionRetryCount = 0;
-            this.startTime = Date.now();
+            this.retryManager.reset();
 
             // Start health monitoring
-            this._startEventHealthCheck();
+            this.healthMonitor.start((reason) => this._switchToPolling(reason));
         } catch (error) {
             this._setStatus('error');
             this._handleSubscriptionError(error);
@@ -116,12 +102,8 @@ export default class SubscriptionManager extends LightningElement {
             });
         }
 
-        this.stopPolling();
-        this._stopEventHealthCheck();
-
-        if (this.retryTimeout) {
-            clearTimeout(this.retryTimeout);
-        }
+        this.healthMonitor.stop();
+        this.retryManager.clearTimeout();
     }
 
     /**
@@ -142,37 +124,6 @@ export default class SubscriptionManager extends LightningElement {
     @api
     isConnected() {
         return this.subscriptionStatus === 'connected';
-    }
-
-    /**
-     * Start polling mode with provided callback
-     */
-    @api
-    startPolling(pollCallback) {
-        if (this.pollingInterval) {
-            return;
-        }
-
-        this._setStatus('polling');
-        this.pollCallback = pollCallback;
-
-        this.pollingInterval = setInterval(() => {
-            this._poll();
-        }, POLLING_FREQUENCY);
-
-        this._poll();
-    }
-
-    /**
-     * Stop polling
-     */
-    @api
-    stopPolling() {
-        if (this.pollingInterval) {
-            clearInterval(this.pollingInterval);
-            this.pollingInterval = null;
-            this.consecutiveFailedPolls = 0;
-        }
     }
 
     /**
@@ -273,116 +224,34 @@ export default class SubscriptionManager extends LightningElement {
     }
 
     /**
-     * Start monitoring event health
-     * If no events received within timeout, switch to polling
-     */
-    _startEventHealthCheck() {
-        this._stopEventHealthCheck(); // Clear any existing interval
-
-        this.eventHealthCheckInterval = setInterval(() => {
-            const now = Date.now();
-            const timeSinceLastEvent = this.lastEventReceived
-                ? now - this.lastEventReceived
-                : now - this.startTime;
-
-            // If connected but no events for a while, verify health
-            if (
-                this.subscriptionStatus === 'connected' &&
-                timeSinceLastEvent > EVENT_TIMEOUT
-            ) {
-                this.healthCheckAttempts++;
-
-                if (this.healthCheckAttempts >= 2) {
-                    // After 2 failed checks, assume platform events are having issues
-                    this._switchToPolling();
-                }
-            } else {
-                this.healthCheckAttempts = 0;
-            }
-        }, HEALTH_CHECK_INTERVAL);
-    }
-
-    /**
-     * Stop event health monitoring
-     */
-    _stopEventHealthCheck() {
-        if (this.eventHealthCheckInterval) {
-            clearInterval(this.eventHealthCheckInterval);
-            this.eventHealthCheckInterval = null;
-            this.healthCheckAttempts = 0;
-        }
-    }
-
-    /**
      * Switch to polling mode (fallback)
      */
-    _switchToPolling() {
+    _switchToPolling(reason) {
         this._setStatus('polling');
-        this._stopEventHealthCheck();
+        this.healthMonitor.stop();
 
         // Dispatch event to notify parent that polling should start
         this.dispatchEvent(
             new CustomEvent('pollingrequired', {
-                detail: { reason: 'health_check_failed' }
+                detail: { reason }
+            })
+        );
+    }
+
+    /**
+     * Handle max retries exceeded
+     */
+    _onMaxRetriesExceeded(error) {
+        // Dispatch event to notify parent that polling should start
+        this.dispatchEvent(
+            new CustomEvent('pollingrequired', {
+                detail: { error, reason: 'subscription_failed' }
             })
         );
     }
 
     _handleSubscriptionError(error) {
-        this.subscriptionRetryCount++;
-
-        if (this.subscriptionRetryCount < MAX_RETRY_ATTEMPTS) {
-            const retryDelay = 2000 * this.subscriptionRetryCount;
-
-            this.retryTimeout = setTimeout(() => {
-                this.subscribe();
-            }, retryDelay);
-        } else {
-            // Dispatch event to notify parent that polling should start
-            this.dispatchEvent(
-                new CustomEvent('pollingrequired', {
-                    detail: { error, reason: 'subscription_failed' }
-                })
-            );
-        }
-    }
-
-    async _poll() {
-        if (!this.pollCallback) {
-            return;
-        }
-
-        try {
-            await this.pollCallback();
-            this.lastSuccessfulPoll = Date.now();
-            this.consecutiveFailedPolls = 0;
-
-            // Try to reconnect to platform events periodically
-            if (this.subscriptionStatus === 'polling') {
-                const timeSinceLastPoll = Date.now() - this.lastSuccessfulPoll;
-                // Every 5 minutes, try to reconnect
-                if (timeSinceLastPoll > 300000) {
-                    this._tryReconnectToEvents();
-                }
-            }
-        } catch (error) {
-            this.consecutiveFailedPolls++;
-
-            if (this.consecutiveFailedPolls >= MAX_FAILED_POLLS) {
-                this.stopPolling();
-            }
-        }
-    }
-
-    /**
-     * Attempt to reconnect to platform events from polling mode
-     */
-    async _tryReconnectToEvents() {
-        // Reset retry count for fresh attempt
-        this.subscriptionRetryCount = 0;
-        this.stopPolling();
-
-        await this.subscribe();
+        this.retryManager.scheduleRetry(error);
     }
 
     _setStatus(newStatus) {

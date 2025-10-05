@@ -30,7 +30,8 @@ export const initialState = {
     syncState: 'idle', // 'idle' | 'syncing' | 'failed'
     pendingOperations: [],
     lastSyncTime: null,
-    lastSyncError: null
+    lastSyncError: null,
+    pollingUpdateDetected: null
 };
 
 /**
