@@ -95,7 +95,7 @@ export default class CardOperations {
                     try {
                         // Use thunk to create card
                         const result = await this.component.store.dispatch(
-                            createCardAsync(columnId, 'New Card', requestId)
+                            createCardAsync(columnId, 'New Card', requestId, this.component._clientId)
                         );
 
                         const request =

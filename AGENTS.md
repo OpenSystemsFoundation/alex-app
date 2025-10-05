@@ -63,3 +63,12 @@ Salesforce Lightning Web Component (LWC) Kanban board application called "Alex".
 - Use TypeScript for test files
 - Maintain consistent code formatting
 - Write clear and descriptive commit messages
+
+### Apex Test Organization
+
+**ALWAYS** place Apex test classes in the `tests/` subdirectory:
+
+- ✅ `force-app/main/default/classes/tests/MyClassTest.cls`
+- ❌ `force-app/main/default/classes/MyClassTest.cls`
+
+This maintains separation between production code and test code, following Salesforce best practices.

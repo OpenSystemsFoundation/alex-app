@@ -23,13 +23,15 @@ import { calculateCardPosition } from '../utils/positionCalculator';
  * @param {string} targetColumnId - Target column ID
  * @param {number} targetIndex - Target index in column
  * @param {string} requestId - Optional client request ID
+ * @param {string} clientId - Optional client window ID
  * @returns {Function} Thunk function
  */
 export const moveCardAsync = (
     cardId,
     targetColumnId,
     targetIndex,
-    requestId = null
+    requestId = null,
+    clientId = null
 ) => {
     return async (dispatch, getState) => {
         const state = getState();
@@ -56,6 +58,10 @@ export const moveCardAsync = (
 
         if (requestId) {
             params.clientRequestId = requestId;
+        }
+
+        if (clientId) {
+            params.clientId = clientId;
         }
 
         try {
@@ -86,9 +92,10 @@ export const moveCardAsync = (
  * @param {string} columnId - Column ID
  * @param {string} subject - Card subject/title
  * @param {string} requestId - Optional client request ID
+ * @param {string} clientId - Optional client window ID
  * @returns {Function} Thunk function
  */
-export const createCardAsync = (columnId, subject, requestId = null) => {
+export const createCardAsync = (columnId, subject, requestId = null, clientId = null) => {
     return async (dispatch, getState) => {
         const state = getState();
         const column = findColumn(state, columnId);
@@ -116,6 +123,10 @@ export const createCardAsync = (columnId, subject, requestId = null) => {
 
         if (requestId) {
             params.clientRequestId = requestId;
+        }
+
+        if (clientId) {
+            params.clientId = clientId;
         }
 
         try {

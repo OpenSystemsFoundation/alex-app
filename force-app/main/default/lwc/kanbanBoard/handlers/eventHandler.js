@@ -6,12 +6,14 @@ export default class EventHandler {
     constructor(
         requestTracker = null,
         activityCallback = null,
-        boardId = null
+        boardId = null,
+        clientId = null
     ) {
         this.recentChanges = new Map();
         this.requestTracker = requestTracker;
         this.activityCallback = activityCallback;
         this.boardId = boardId;
+        this.clientId = clientId; // Store client ID for filtering
     }
 
     setRequestTracker(requestTracker) {
@@ -26,12 +28,17 @@ export default class EventHandler {
         this.boardId = boardId;
     }
 
+    setClientId(clientId) {
+        this.clientId = clientId;
+    }
+
     handlePlatformEvent(event, store) {
         try {
             const payload = JSON.parse(event.OpenSF__Payload__c);
             const eventType = event.OpenSF__EventType__c;
             const clientRequestId = event.OpenSF__ClientRequestId__c;
             const sequenceNumber = event.OpenSF__SequenceNumber__c;
+            const eventClientId = event.ClientId__c; // Get clientId from event
 
             if (!this._isEventForThisBoard(payload, store)) {
                 return false;
@@ -48,6 +55,9 @@ export default class EventHandler {
                 );
                 return false;
             }
+
+            // Check if this event is from THIS window/tab
+            const isOwnWindow = eventClientId && eventClientId === this.clientId;
 
             if (
                 clientRequestId &&
@@ -74,10 +84,14 @@ export default class EventHandler {
                 return false;
             }
 
+            // Only rollback optimistic updates if event is from THIS window
+            // Events from other windows should be applied immediately
             if (
+                isOwnWindow &&
                 payload.Id &&
                 this.requestTracker?.hasPendingOperations(payload.Id)
             ) {
+                // This window has pending operations - defer applying until they complete
                 setTimeout(() => {
                     if (!this.requestTracker.hasPendingOperations(payload.Id)) {
                         this._applyEvent(eventType, payload, store);
@@ -87,6 +101,9 @@ export default class EventHandler {
                 }, 500);
                 return false;
             }
+
+            // Events from other windows are applied immediately even if we have pending operations
+            // This allows both windows to see each other's changes in real-time
 
             if (this._isRecentChange(payload.Id)) {
                 return false;

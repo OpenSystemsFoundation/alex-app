@@ -8,6 +8,7 @@ import BoardDataLoader from './managers/boardDataLoader';
 import DragDropHandler from './handlers/dragDropHandler';
 import CardOperations from './handlers/cardOperations';
 import SubscriptionEventHandler from './handlers/subscriptionEventHandler';
+import { generateClientId } from './helpers/clientIdGenerator';
 
 export default class KanbanBoard extends LightningElement {
     @api height; // Optional fixed height, if not set uses dynamic calculation
@@ -19,6 +20,7 @@ export default class KanbanBoard extends LightningElement {
     _resizeObserver = null;
     _boardElement = null;
     _windowResizeHandler = null;
+    _clientId = null; // Unique ID for this browser window/tab
 
     // Reactive state - only track what needs reactivity
     @track _storeState = null;
@@ -138,14 +140,18 @@ export default class KanbanBoard extends LightningElement {
     }
 
     connectedCallback() {
+        // Generate unique client ID for this window/tab
+        this._clientId = generateClientId();
+
         // Initialize core services
-        this.requestTracker = new RequestTracker();
+        this.requestTracker = new RequestTracker(this._clientId);
         this.operationQueue = new ReducerQueue(this.store);
         this.eventHandler = new EventHandler(
             this.requestTracker,
             (message) =>
                 this.subscriptionEventHandler.handleEventActivity(message),
-            this._recordId
+            this._recordId,
+            this._clientId
         );
 
         // Subscribe to store updates

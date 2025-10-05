@@ -169,7 +169,8 @@ export default class DragDropHandler {
                                 cardId,
                                 targetColumnId,
                                 targetIndex,
-                                requestId
+                                requestId,
+                                this.component._clientId
                             )
                         );
 

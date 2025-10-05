@@ -130,12 +130,14 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
                 // Get client request ID and sequence number from card record
                 String clientRequestId = card.OpenSF__LastClientRequestId__c;
                 Decimal sequenceNumber = card.OpenSF__SequenceNumber__c;
+                String clientId = card.OpenSF__LastClientId__c;
 
                 OpenSF__CardUpdateEvent__e event = new OpenSF__CardUpdateEvent__e(
                     OpenSF__EventType__c = eventType,
                     OpenSF__Payload__c = jsonPayload,
                     OpenSF__ClientRequestId__c = clientRequestId,
-                    OpenSF__SequenceNumber__c = sequenceNumber
+                    OpenSF__SequenceNumber__c = sequenceNumber,
+                    ClientId__c = clientId
                 );
 
                 events.add(event);

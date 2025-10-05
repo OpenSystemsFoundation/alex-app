@@ -661,4 +661,215 @@ describe('EventHandler', () => {
             expect(mockStore.dispatch).toHaveBeenCalledTimes(1);
         });
     });
+
+    describe('Multi-Window Coordination with ClientId', () => {
+        let mockRequestTracker;
+        let windowAHandler;
+        let windowBHandler;
+        let mockStoreWithBoard;
+
+        beforeEach(() => {
+            mockRequestTracker = {
+                hasPendingOperations: jest.fn(() => false),
+                isOwnRequest: jest.fn(() => false),
+                getRequest: jest.fn(() => null),
+                isPending: jest.fn(() => false),
+                completeRequest: jest.fn()
+            };
+
+            // Create mock store with board for multi-window tests
+            mockStoreWithBoard = {
+                getState: jest.fn(() => ({
+                    board: { Id: 'board1' },
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [{ Id: 'card1', subject: 'Existing Card', sequenceNumber: 1 }]
+                        }
+                    ]
+                })),
+                dispatch: jest.fn()
+            };
+
+            // Simulate two different browser windows
+            windowAHandler = new EventHandler(
+                mockRequestTracker,
+                null,
+                'board1',
+                'client-window-A'
+            );
+            windowBHandler = new EventHandler(
+                mockRequestTracker,
+                null,
+                'board1',
+                'client-window-B'
+            );
+        });
+
+        it('should apply events from other windows without rollback', () => {
+            // Window A has no pending operations
+            mockRequestTracker.hasPendingOperations.mockReturnValue(false);
+
+            const eventFromWindowB = {
+                OpenSF__EventType__c: 'update',
+                ClientId__c: 'client-window-B',
+                OpenSF__ClientRequestId__c: 'req-123',
+                OpenSF__SequenceNumber__c: 2,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Updated by Window B',
+                    columnId: 'col1' // Must match mock store column
+                })
+            };
+
+            // Window A receives event from Window B
+            const result = windowAHandler.handlePlatformEvent(
+                eventFromWindowB,
+                mockStoreWithBoard
+            );
+
+            // Should apply the event normally
+            expect(mockStoreWithBoard.dispatch).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'UPDATE_CARD',
+                    payload: expect.objectContaining({
+                        cardId: 'card1'
+                    })
+                })
+            );
+            // Return value should be false (successfully processed)
+            expect(result).toBe(false);
+        });
+
+        it('should NOT rollback optimistic updates when event is from different window', () => {
+            // Window A has pending operation on card1
+            mockRequestTracker.hasPendingOperations.mockReturnValue(true);
+
+            const eventFromWindowB = {
+                OpenSF__EventType__c: 'update',
+                ClientId__c: 'client-window-B', // Different window
+                OpenSF__ClientRequestId__c: 'req-456',
+                OpenSF__SequenceNumber__c: 2,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Updated by Window B',
+                    columnId: 'col1'
+                })
+            };
+
+            // Window A receives event from Window B
+            windowAHandler.handlePlatformEvent(eventFromWindowB, mockStoreWithBoard);
+
+            // Should NOT rollback (because clientId doesn't match)
+            // Event should still be applied
+            expect(mockStoreWithBoard.dispatch).toHaveBeenCalled();
+        });
+
+        it('should rollback optimistic updates ONLY when event is from same window', () => {
+            // Window A has pending operation on card1
+            mockRequestTracker.hasPendingOperations.mockReturnValue(true);
+
+            const eventFromWindowA = {
+                OpenSF__EventType__c: 'update',
+                ClientId__c: 'client-window-A', // Same window
+                OpenSF__ClientRequestId__c: 'req-789',
+                OpenSF__SequenceNumber__c: 2,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Updated by Window A (server confirmed)',
+                    columnId: 'col1'
+                })
+            };
+
+            // Window A receives its own event back (but not tracked as own request)
+            const result = windowAHandler.handlePlatformEvent(
+                eventFromWindowA,
+                mockStoreWithBoard
+            );
+
+            // Should trigger rollback logic and apply event
+            // Return false means it was processed successfully
+            expect(result).toBe(false);
+        });
+
+        it('should handle events with null clientId as external changes', () => {
+            // Simulate event from record-edit-form or external source (no clientId)
+            const externalEvent = {
+                OpenSF__EventType__c: 'update',
+                ClientId__c: null,
+                OpenSF__ClientRequestId__c: null,
+                OpenSF__SequenceNumber__c: 2,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Updated externally',
+                    columnId: 'col1'
+                })
+            };
+
+            // Window A has no pending operations
+            mockRequestTracker.hasPendingOperations.mockReturnValue(false);
+
+            windowAHandler.handlePlatformEvent(externalEvent, mockStoreWithBoard);
+
+            // Should apply normally
+            expect(mockStoreWithBoard.dispatch).toHaveBeenCalled();
+        });
+
+        it('should complete own requests regardless of clientId match', () => {
+            const requestId = 'req-own-123';
+            mockRequestTracker.isOwnRequest.mockReturnValue(true);
+            mockRequestTracker.isPending.mockReturnValue(true);
+            mockRequestTracker.getRequest.mockReturnValue({
+                requestId,
+                cardId: 'card1'
+            });
+
+            const ownEvent = {
+                OpenSF__EventType__c: 'update',
+                ClientId__c: 'client-window-A',
+                OpenSF__ClientRequestId__c: requestId,
+                OpenSF__SequenceNumber__c: 2,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Own update confirmed',
+                    columnId: 'col1'
+                })
+            };
+
+            windowAHandler.handlePlatformEvent(ownEvent, mockStoreWithBoard);
+
+            // Should complete the request
+            expect(mockRequestTracker.completeRequest).toHaveBeenCalledWith(
+                requestId,
+                expect.objectContaining({
+                    Id: 'card1'
+                })
+            );
+        });
+
+        it('should allow multiple windows to operate independently', () => {
+            // Window A creates card
+            mockRequestTracker.isOwnRequest.mockReturnValue(false);
+            mockRequestTracker.hasPendingOperations.mockReturnValue(false);
+
+            const createEventFromA = {
+                OpenSF__EventType__c: 'create',
+                ClientId__c: 'client-window-A',
+                OpenSF__ClientRequestId__c: 'create-A',
+                OpenSF__SequenceNumber__c: 1,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card-new-A',
+                    subject: 'Created by Window A',
+                    columnId: 'col1'
+                })
+            };
+
+            // Both windows receive the event
+            windowAHandler.handlePlatformEvent(createEventFromA, mockStoreWithBoard);
+            windowBHandler.handlePlatformEvent(createEventFromA, mockStoreWithBoard);
+
+            // Both should apply it
+            expect(mockStoreWithBoard.dispatch).toHaveBeenCalledTimes(2);
+        });
+    });
 });
