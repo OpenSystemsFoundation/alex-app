@@ -295,7 +295,7 @@ describe('c-connection-status-indicator', () => {
         const statusIndicator =
             element.shadowRoot.querySelector('.status-indicator');
 
-        expect(statusIndicator.title).toBe('Last refreshed 10m ago');
+        expect(statusIndicator.title).toContain('Last refreshed 10m ago');
     });
 
     it('should return correct detailed status for disconnected state without last sync', () => {
@@ -372,5 +372,102 @@ describe('c-connection-status-indicator', () => {
         const statusText = element.shadowRoot.querySelector('.status-text');
 
         expect(statusText.textContent).toBe('Offline');
+    });
+
+    describe('Sync State', () => {
+        it('should display syncing status with pending operations', () => {
+            const element = createElement('c-connection-status-indicator', {
+                is: ConnectionStatusIndicator
+            });
+            element.status = 'connected';
+            element.syncState = 'syncing';
+            element.pendingOperationsCount = 3;
+
+            document.body.appendChild(element);
+
+            const syncStatus = element.shadowRoot.querySelector('.sync-status');
+            const syncText =
+                element.shadowRoot.querySelector('.sync-status-text');
+
+            expect(syncStatus).toBeTruthy();
+            expect(syncText.textContent).toBe('Saving 3...');
+            expect(syncStatus.classList.contains('sync-syncing')).toBe(true);
+            expect(syncStatus.classList.contains('pulse-animation')).toBe(true);
+        });
+
+        it('should display syncing status with single operation', () => {
+            const element = createElement('c-connection-status-indicator', {
+                is: ConnectionStatusIndicator
+            });
+            element.syncState = 'syncing';
+            element.pendingOperationsCount = 1;
+
+            document.body.appendChild(element);
+
+            const syncText =
+                element.shadowRoot.querySelector('.sync-status-text');
+            expect(syncText.textContent).toBe('Saving...');
+        });
+
+        it('should display saved status', () => {
+            const element = createElement('c-connection-status-indicator', {
+                is: ConnectionStatusIndicator
+            });
+            element.syncState = 'idle';
+            element.lastSyncTime = Date.now();
+
+            document.body.appendChild(element);
+
+            const syncStatus = element.shadowRoot.querySelector('.sync-status');
+            const syncText =
+                element.shadowRoot.querySelector('.sync-status-text');
+
+            expect(syncStatus).toBeTruthy();
+            expect(syncText.textContent).toBe('Saved');
+            expect(syncStatus.classList.contains('sync-idle')).toBe(true);
+        });
+
+        it('should display failed status', () => {
+            const element = createElement('c-connection-status-indicator', {
+                is: ConnectionStatusIndicator
+            });
+            element.syncState = 'failed';
+
+            document.body.appendChild(element);
+
+            const syncStatus = element.shadowRoot.querySelector('.sync-status');
+            const syncText =
+                element.shadowRoot.querySelector('.sync-status-text');
+
+            expect(syncStatus).toBeTruthy();
+            expect(syncText.textContent).toBe('Save failed');
+            expect(syncStatus.classList.contains('sync-failed')).toBe(true);
+        });
+
+        it('should not show sync status when idle with no recent sync', () => {
+            const element = createElement('c-connection-status-indicator', {
+                is: ConnectionStatusIndicator
+            });
+            element.syncState = 'idle';
+            element.lastSyncTime = null;
+
+            document.body.appendChild(element);
+
+            const syncStatus = element.shadowRoot.querySelector('.sync-status');
+            expect(syncStatus).toBeFalsy();
+        });
+
+        it('should include sync message in detailed status', () => {
+            const element = createElement('c-connection-status-indicator', {
+                is: ConnectionStatusIndicator
+            });
+            element.status = 'connected';
+            element.syncState = 'syncing';
+            element.pendingOperationsCount = 2;
+
+            document.body.appendChild(element);
+
+            expect(element.detailedStatus).toContain('Saving 2 changes');
+        });
     });
 });

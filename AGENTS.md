@@ -6,6 +6,33 @@
 - Execute code changes immediately without lengthy explanations
 - Only provide explanations when explicitly asked
 
+## Summary Format
+
+After completing operations, provide a **short, scannable summary on very high level** with bullet points:
+
+- Use bullet points for each major change or action
+- Keep each bullet point to one line when possible
+- Group related changes together
+- User can ask for details on specific items if needed
+
+**Good Example:**
+
+```
+✅ Completed:
+- Added sync state tracking to Redux store (idle/syncing/failed)
+- Updated connectionStatusIndicator with sync UI
+- Fixed 3 test failures in kanbanStore.test.js
+- All 203 tests passing
+
+Want details on any of these?
+```
+
+**Bad Example:**
+
+```
+I've successfully implemented all the changes you requested. First, I added sync state tracking to the Redux store by creating new action types including SET_SYNC_STATE, START_OPERATION, COMPLETE_OPERATION, and FAIL_OPERATION. Then I updated the connectionStatusIndicator component to display the sync state with visual indicators showing when changes are being saved, when they're saved, and when they fail. I also had to fix several test failures that occurred because cards are now enriched in the reducer instead of before being dispatched...
+```
+
 ## Documentation Policy
 
 **NEVER** create documentation files unless explicitly requested. This includes:

@@ -29,3 +29,9 @@ export const CANCEL_DRAG = 'CANCEL_DRAG';
 
 // Store Actions
 export const RESET = 'RESET';
+
+// Sync State Actions
+export const SET_SYNC_STATE = 'SET_SYNC_STATE';
+export const START_OPERATION = 'START_OPERATION';
+export const COMPLETE_OPERATION = 'COMPLETE_OPERATION';
+export const FAIL_OPERATION = 'FAIL_OPERATION';

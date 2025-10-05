@@ -83,6 +83,24 @@ export default class KanbanBoard extends LightningElement {
         return this._storeState ? selectors.getBoard(this._storeState) : null;
     }
 
+    get syncState() {
+        return this._storeState
+            ? selectors.getSyncState(this._storeState)
+            : 'idle';
+    }
+
+    get pendingOperationsCount() {
+        return this._storeState
+            ? selectors.getPendingOperations(this._storeState).length
+            : 0;
+    }
+
+    get lastSyncError() {
+        return this._storeState
+            ? selectors.getLastSyncError(this._storeState)
+            : null;
+    }
+
     get shouldAutoSubscribe() {
         // Auto-subscribe when board is loaded and not already loading
         return !!this.board && !this.isLoading;

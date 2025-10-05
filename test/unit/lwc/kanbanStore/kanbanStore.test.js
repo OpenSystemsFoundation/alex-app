@@ -396,7 +396,16 @@ describe('KanbanStore', () => {
 
             const columns = store.getState().columns;
             expect(columns[0].cards).toHaveLength(1);
-            expect(columns[0].cards[0]).toEqual(newCard);
+            // Card should be enriched with derived properties by the reducer
+            expect(columns[0].cards[0]).toEqual(
+                expect.objectContaining({
+                    Id: 'card1',
+                    subject: 'New Task',
+                    // Enriched properties added by reducer
+                    priorityClass: expect.any(String),
+                    recordUrl: expect.stringContaining('card1')
+                })
+            );
         });
 
         it('should update card count', () => {
@@ -532,6 +541,123 @@ describe('KanbanStore', () => {
             store.dispatch({ type: 'UNKNOWN_ACTION' });
 
             expect(store.getState()).toEqual(originalState);
+        });
+    });
+
+    describe('Sync State Management', () => {
+        it('should initialize with idle sync state', () => {
+            const state = store.getState();
+            expect(state.syncState).toBe('idle');
+            expect(state.pendingOperations).toEqual([]);
+            expect(state.lastSyncTime).toBeNull();
+            expect(state.lastSyncError).toBeNull();
+        });
+
+        it('should start operation and set syncing state', () => {
+            store.dispatch({
+                type: 'START_OPERATION',
+                payload: { id: 'op1', type: 'update', cardId: 'card1' }
+            });
+
+            const state = store.getState();
+            expect(state.syncState).toBe('syncing');
+            expect(state.pendingOperations).toHaveLength(1);
+            expect(state.pendingOperations[0]).toEqual(
+                expect.objectContaining({
+                    id: 'op1',
+                    type: 'update',
+                    cardId: 'card1'
+                })
+            );
+        });
+
+        it('should track multiple pending operations', () => {
+            store.dispatch({
+                type: 'START_OPERATION',
+                payload: { id: 'op1', type: 'update', cardId: 'card1' }
+            });
+            store.dispatch({
+                type: 'START_OPERATION',
+                payload: { id: 'op2', type: 'move', cardId: 'card2' }
+            });
+
+            const state = store.getState();
+            expect(state.syncState).toBe('syncing');
+            expect(state.pendingOperations).toHaveLength(2);
+        });
+
+        it('should complete operation and update state', () => {
+            store.dispatch({
+                type: 'START_OPERATION',
+                payload: { id: 'op1', type: 'update', cardId: 'card1' }
+            });
+            store.dispatch({
+                type: 'COMPLETE_OPERATION',
+                payload: { id: 'op1' }
+            });
+
+            const state = store.getState();
+            expect(state.syncState).toBe('idle');
+            expect(state.pendingOperations).toHaveLength(0);
+            expect(state.lastSyncTime).toBeTruthy();
+            expect(state.lastSyncError).toBeNull();
+        });
+
+        it('should stay in syncing state if operations remain', () => {
+            store.dispatch({
+                type: 'START_OPERATION',
+                payload: { id: 'op1', type: 'update', cardId: 'card1' }
+            });
+            store.dispatch({
+                type: 'START_OPERATION',
+                payload: { id: 'op2', type: 'move', cardId: 'card2' }
+            });
+            store.dispatch({
+                type: 'COMPLETE_OPERATION',
+                payload: { id: 'op1' }
+            });
+
+            const state = store.getState();
+            expect(state.syncState).toBe('syncing');
+            expect(state.pendingOperations).toHaveLength(1);
+            expect(state.pendingOperations[0].id).toBe('op2');
+        });
+
+        it('should set failed state on operation failure', () => {
+            store.dispatch({
+                type: 'START_OPERATION',
+                payload: { id: 'op1', type: 'update', cardId: 'card1' }
+            });
+            store.dispatch({
+                type: 'FAIL_OPERATION',
+                payload: { id: 'op1', error: 'Network error' }
+            });
+
+            const state = store.getState();
+            expect(state.syncState).toBe('failed');
+            expect(state.pendingOperations).toHaveLength(0);
+            expect(state.lastSyncError).toEqual(
+                expect.objectContaining({
+                    operationId: 'op1',
+                    error: 'Network error'
+                })
+            );
+        });
+
+        it('should set sync state directly', () => {
+            store.dispatch({
+                type: 'SET_SYNC_STATE',
+                payload: 'syncing'
+            });
+
+            expect(store.getState().syncState).toBe('syncing');
+
+            store.dispatch({
+                type: 'SET_SYNC_STATE',
+                payload: 'idle'
+            });
+
+            expect(store.getState().syncState).toBe('idle');
         });
     });
 });

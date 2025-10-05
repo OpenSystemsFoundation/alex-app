@@ -102,3 +102,50 @@
         opacity: 0.5;
     }
 }
+
+/* Sync Status Styling */
+.sync-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e5e5e5;
+    transition: all 0.3s ease;
+}
+
+.sync-status-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+.sync-idle {
+    border-color: #4bca81;
+    background-color: rgba(75, 202, 129, 0.1);
+}
+
+.sync-idle .sync-status-text {
+    color: #027e46;
+}
+
+.sync-syncing {
+    border-color: #0176d3;
+    background-color: rgba(1, 118, 211, 0.1);
+}
+
+.sync-syncing .sync-status-text {
+    color: #014486;
+}
+
+.sync-failed {
+    border-color: #ea001e;
+    background-color: rgba(234, 0, 30, 0.1);
+}
+
+.sync-failed .sync-status-text {
+    color: #ba0517;
+}

@@ -1,5 +1,3 @@
-import { enrichCardData } from 'c/kanbanStore';
-
 const CHANGE_TRACKING_WINDOW = 2000;
 
 export default class EventHandler {
@@ -250,20 +248,18 @@ export default class EventHandler {
     }
 
     _updateCard(cardDTO, store) {
-        const enrichedCard = enrichCardData(cardDTO);
-
+        // Card will be enriched automatically in the reducer
         store.dispatch({
             type: 'UPDATE_CARD',
             payload: {
                 cardId: cardDTO.Id,
-                card: enrichedCard
+                updates: cardDTO
             }
         });
     }
 
     _addCard(cardDTO, store) {
-        const enrichedCard = enrichCardData(cardDTO);
-
+        // Card will be enriched automatically in the reducer
         const columns = store.getState().columns;
         const cardExists = columns.some((col) =>
             col.cards.some((c) => c.Id === cardDTO.Id)
@@ -276,7 +272,7 @@ export default class EventHandler {
         store.dispatch({
             type: 'ADD_CARD',
             payload: {
-                card: enrichedCard,
+                card: cardDTO,
                 columnId: cardDTO.columnId
             }
         });
@@ -284,7 +280,7 @@ export default class EventHandler {
 
     _removeCard(cardId, store) {
         store.dispatch({
-            type: 'REMOVE_CARD',
+            type: 'DELETE_CARD',
             payload: { cardId }
         });
     }

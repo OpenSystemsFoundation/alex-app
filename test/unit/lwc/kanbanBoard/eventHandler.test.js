@@ -1,10 +1,5 @@
 import EventHandler from '../../../../force-app/main/default/lwc/kanbanBoard/handlers/eventHandler';
 
-// Mock kanbanStore
-jest.mock('c/kanbanStore', () => ({
-    enrichCardData: jest.fn((card) => ({ ...card, enriched: true }))
-}));
-
 // Mock store
 const createMockStore = () => ({
     getState: jest.fn(() => ({
@@ -124,19 +119,27 @@ describe('EventHandler', () => {
             );
         });
 
-        it('should enrich card before updating', () => {
+        it('should pass card data to reducer without pre-enrichment', () => {
             const event = {
                 OpenSF__EventType__c: 'update',
                 OpenSF__Payload__c: JSON.stringify({
                     Id: 'card1',
-                    subject: 'Task'
+                    subject: 'Task',
+                    priority: 'High'
                 })
             };
 
             handler.handlePlatformEvent(event, mockStore);
 
             const dispatchCall = mockStore.dispatch.mock.calls[0][0];
-            expect(dispatchCall.payload.card.enriched).toBe(true);
+            expect(dispatchCall.payload.updates).toEqual(
+                expect.objectContaining({
+                    Id: 'card1',
+                    subject: 'Task',
+                    priority: 'High'
+                })
+            );
+            // Enrichment will happen in the reducer
         });
     });
 
@@ -178,20 +181,28 @@ describe('EventHandler', () => {
             expect(mockStore.dispatch).not.toHaveBeenCalled();
         });
 
-        it('should enrich card before adding', () => {
+        it('should pass card data to reducer without pre-enrichment', () => {
             const event = {
                 OpenSF__EventType__c: 'create',
                 OpenSF__Payload__c: JSON.stringify({
                     Id: 'card2',
                     subject: 'New Card',
-                    columnId: 'col1'
+                    columnId: 'col1',
+                    priority: 'Medium'
                 })
             };
 
             handler.handlePlatformEvent(event, mockStore);
 
             const dispatchCall = mockStore.dispatch.mock.calls[0][0];
-            expect(dispatchCall.payload.card.enriched).toBe(true);
+            expect(dispatchCall.payload.card).toEqual(
+                expect.objectContaining({
+                    Id: 'card2',
+                    subject: 'New Card',
+                    priority: 'Medium'
+                })
+            );
+            // Enrichment will happen in the reducer
         });
     });
 
@@ -208,7 +219,7 @@ describe('EventHandler', () => {
 
             expect(mockStore.dispatch).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    type: 'REMOVE_CARD',
+                    type: 'DELETE_CARD',
                     payload: { cardId: 'card1' }
                 })
             );
