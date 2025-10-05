@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>LastClientId__c</fullName>
-    <description>UUID of the browser window/tab that last modified this card. Used for multi-window coordination to filter platform events.</description>
+    <description
+    >UUID of the browser window/tab that last modified this card. Used for multi-window coordination to filter platform events.</description>
     <externalId>false</externalId>
     <label>Last Client ID</label>
     <length>36</length>

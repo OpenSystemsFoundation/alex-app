@@ -57,7 +57,8 @@ export default class EventHandler {
             }
 
             // Check if this event is from THIS window/tab
-            const isOwnWindow = eventClientId && eventClientId === this.clientId;
+            const isOwnWindow =
+                eventClientId && eventClientId === this.clientId;
 
             if (
                 clientRequestId &&

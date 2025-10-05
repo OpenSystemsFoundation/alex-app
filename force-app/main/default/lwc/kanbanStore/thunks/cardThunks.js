@@ -95,7 +95,12 @@ export const moveCardAsync = (
  * @param {string} clientId - Optional client window ID
  * @returns {Function} Thunk function
  */
-export const createCardAsync = (columnId, subject, requestId = null, clientId = null) => {
+export const createCardAsync = (
+    columnId,
+    subject,
+    requestId = null,
+    clientId = null
+) => {
     return async (dispatch, getState) => {
         const state = getState();
         const column = findColumn(state, columnId);

@@ -684,7 +684,13 @@ describe('EventHandler', () => {
                     columns: [
                         {
                             Id: 'col1',
-                            cards: [{ Id: 'card1', subject: 'Existing Card', sequenceNumber: 1 }]
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Existing Card',
+                                    sequenceNumber: 1
+                                }
+                            ]
                         }
                     ]
                 })),
@@ -758,7 +764,10 @@ describe('EventHandler', () => {
             };
 
             // Window A receives event from Window B
-            windowAHandler.handlePlatformEvent(eventFromWindowB, mockStoreWithBoard);
+            windowAHandler.handlePlatformEvent(
+                eventFromWindowB,
+                mockStoreWithBoard
+            );
 
             // Should NOT rollback (because clientId doesn't match)
             // Event should still be applied
@@ -809,7 +818,10 @@ describe('EventHandler', () => {
             // Window A has no pending operations
             mockRequestTracker.hasPendingOperations.mockReturnValue(false);
 
-            windowAHandler.handlePlatformEvent(externalEvent, mockStoreWithBoard);
+            windowAHandler.handlePlatformEvent(
+                externalEvent,
+                mockStoreWithBoard
+            );
 
             // Should apply normally
             expect(mockStoreWithBoard.dispatch).toHaveBeenCalled();
@@ -865,8 +877,14 @@ describe('EventHandler', () => {
             };
 
             // Both windows receive the event
-            windowAHandler.handlePlatformEvent(createEventFromA, mockStoreWithBoard);
-            windowBHandler.handlePlatformEvent(createEventFromA, mockStoreWithBoard);
+            windowAHandler.handlePlatformEvent(
+                createEventFromA,
+                mockStoreWithBoard
+            );
+            windowBHandler.handlePlatformEvent(
+                createEventFromA,
+                mockStoreWithBoard
+            );
 
             // Both should apply it
             expect(mockStoreWithBoard.dispatch).toHaveBeenCalledTimes(2);
