@@ -26,18 +26,6 @@
             </div>
         </div>
 
-        <!-- Loading State -->
-        <template lwc:if={isLoading}>
-            <div
-                class="slds-is-relative slds-align_absolute-center slds-var-m-top_medium"
-            >
-                <lightning-spinner
-                    alternative-text="Loading"
-                    size="large"
-                ></lightning-spinner>
-            </div>
-        </template>
-
         <!-- Error State -->
         <template lwc:if={error}>
             <div
