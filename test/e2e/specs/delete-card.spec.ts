@@ -20,16 +20,21 @@ import { test, expect } from '../fixtures/test-fixtures';
  */
 test.describe('Kanban Board - Delete Card', () => {
     test('should delete a card using the modal delete workflow', async ({
-        authenticatedPage
+        authenticatedPage,
+        testBoard,
+        sfCli
     }) => {
         await authenticatedPage.waitForBoardToLoad();
 
         // Get initial card count (should be 0 in new board)
         const initialCount = await authenticatedPage.getCardCountInColumn(0);
 
-        // Add one card to delete
-        await authenticatedPage.clickAddCard(0);
-        await authenticatedPage.page.waitForTimeout(3000);
+        // Create one card via Apex
+        const columnId = testBoard.columnIds[0];
+        await sfCli.createTestCards(columnId, 1);
+        await authenticatedPage.page.reload();
+        await authenticatedPage.waitForBoardToLoad();
+        await authenticatedPage.page.waitForTimeout(2000);
 
         // Verify card was added
         const countAfterAdd = await authenticatedPage.getCardCountInColumn(0);

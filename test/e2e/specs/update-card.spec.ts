@@ -14,16 +14,21 @@ import { test, expect } from '../fixtures/test-fixtures';
  */
 test.describe('Kanban Board - Update Card', () => {
     test('should update card subject and save through the modal', async ({
-        authenticatedPage
+        authenticatedPage,
+        testBoard,
+        sfCli
     }) => {
         await authenticatedPage.waitForBoardToLoad();
 
         // Get initial card count (should be 0 in new board)
         const initialCount = await authenticatedPage.getCardCountInColumn(0);
 
-        // Add one card to update
-        await authenticatedPage.clickAddCard(0);
-        await authenticatedPage.page.waitForTimeout(3000);
+        // Create one card via Apex
+        const columnId = testBoard.columnIds[0];
+        await sfCli.createTestCards(columnId, 1);
+        await authenticatedPage.page.reload();
+        await authenticatedPage.waitForBoardToLoad();
+        await authenticatedPage.page.waitForTimeout(2000);
 
         // Verify card was added
         const countAfterAdd = await authenticatedPage.getCardCountInColumn(0);

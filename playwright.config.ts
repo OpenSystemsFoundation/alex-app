@@ -23,7 +23,7 @@ export default defineConfig({
 
     // Reporter configuration
     reporter: [
-        ['html', { outputFolder: 'playwright-report' }],
+        ['html', { outputFolder: 'playwright-report', open: 'never' }],
         ['junit', { outputFile: 'playwright-results.xml' }],
         ['list']
     ],
