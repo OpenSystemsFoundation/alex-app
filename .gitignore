@@ -26,6 +26,7 @@ yarn-error.log*
 .vscode/
 .vscode/*
 !.vscode/extensions.json
+!.vscode/mcp.json
 
 # Local Environment Files
 .env
