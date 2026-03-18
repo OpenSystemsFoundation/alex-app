@@ -249,6 +249,10 @@ private class ConflictResolutionTest {
             null
         );
 
+        // Reset trigger execution counts to simulate separate request context
+        TriggerHandler.resetExecutionCount('CardTriggerHandler');
+        TriggerHandler.resetExecutionCount('ColumnTriggerHandler');
+
         // User B tries to move card (still thinks it's at sequence 1, but it's now 2)
         // This simulates User B's request arriving after User A's
         KanbanBoardController.CardMoveResult resultB = KanbanBoardController.moveCardWithConflictDetection(

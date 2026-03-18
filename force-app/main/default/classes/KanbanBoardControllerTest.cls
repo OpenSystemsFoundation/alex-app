@@ -573,8 +573,9 @@ private class KanbanBoardControllerTest {
         OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
         OpenSF__Card__c card = [SELECT Id FROM OpenSF__Card__c LIMIT 1];
 
-        // Set a baseline timestamp
-        DateTime baselineTime = DateTime.now().addMinutes(-5);
+        // Set a baseline timestamp AFTER test setup but before the update
+        // Use addSeconds(-1) to avoid same-millisecond timing issues
+        DateTime baselineTime = DateTime.now().addSeconds(-1);
 
         // Update the card to simulate a recent change
         card.OpenSF__Subject__c = 'Updated Card for Incremental Test';

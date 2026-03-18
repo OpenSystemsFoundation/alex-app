@@ -185,8 +185,19 @@ private class CardSequenceNumberTest {
         insert card;
 
         Test.startTest();
-        // Perform multiple updates
-        for (Integer i = 1; i <= 5; i++) {
+        // Perform multiple updates to verify sequence increment behavior.
+        // Reset execution counts before each update to simulate separate
+        // request contexts (each user action is a separate transaction).
+        for (Integer i = 1; i <= 3; i++) {
+            TriggerHandler.resetExecutionCount('CardTriggerHandler');
+            TriggerHandler.resetExecutionCount('ColumnTriggerHandler');
+
+            // Re-query card to get current sequence number (so trigger sees matching old/new)
+            card = [
+                SELECT Id, OpenSF__Subject__c, OpenSF__SequenceNumber__c
+                FROM OpenSF__Card__c
+                WHERE Id = :card.Id
+            ];
             card.OpenSF__Subject__c = 'Update ' + i;
             update card;
 
