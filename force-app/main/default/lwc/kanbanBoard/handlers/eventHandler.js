@@ -168,6 +168,7 @@ export default class EventHandler {
             return true;
         }
 
+        // Check if payload's column belongs to this board
         if (payload.columnId) {
             const columns = state.columns || [];
             const columnExists = columns.some(
@@ -176,6 +177,12 @@ export default class EventHandler {
             return columnExists;
         }
 
+        // Check if payload's boardId matches
+        if (payload.boardId) {
+            return payload.boardId === boardId;
+        }
+
+        // Check if the card already exists in this board's state
         if (payload.Id) {
             const columns = state.columns || [];
             for (const column of columns) {

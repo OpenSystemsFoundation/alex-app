@@ -31,6 +31,11 @@ jest.setTimeout(10000);
 global.window = global.window || {};
 global.navigator = global.navigator || {};
 
+// Polyfill structuredClone for jsdom test environment
+if (typeof global.structuredClone === 'undefined') {
+    global.structuredClone = (obj) => JSON.parse(JSON.stringify(obj));
+}
+
 // Mock IntersectionObserver (used by some LWC components)
 global.IntersectionObserver = class IntersectionObserver {
     constructor() {}

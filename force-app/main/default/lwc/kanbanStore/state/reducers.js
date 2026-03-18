@@ -70,7 +70,7 @@ export const columnsReducer = (state, action) => {
         case types.UPDATE_COLUMNS:
             return {
                 ...state,
-                columns: JSON.parse(JSON.stringify(action.payload))
+                columns: structuredClone(action.payload)
             };
 
         default:
@@ -142,7 +142,7 @@ export const dragReducer = (state, action, lastDragPosition) => {
                     ...state,
                     isDragging: true,
                     dragSource: action.payload.source,
-                    dragState: JSON.parse(JSON.stringify(state.columns))
+                    dragState: structuredClone(state.columns)
                 },
                 lastDragPosition
             };
@@ -170,7 +170,7 @@ export const dragReducer = (state, action, lastDragPosition) => {
             return {
                 state: {
                     ...state,
-                    columns: JSON.parse(JSON.stringify(state.dragState)),
+                    columns: structuredClone(state.dragState),
                     isDragging: false,
                     dragState: null,
                     dragSource: null

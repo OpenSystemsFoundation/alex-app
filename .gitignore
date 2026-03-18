@@ -33,6 +33,9 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Claude Code
+.claude/
+
 # Salesforce Specific Files
 .sfdx/
 .sf/

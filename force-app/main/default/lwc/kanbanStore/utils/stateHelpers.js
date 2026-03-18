@@ -81,7 +81,7 @@ export const moveCardInState = (
     targetColumnId,
     targetIndex
 ) => {
-    const newState = JSON.parse(JSON.stringify(columns));
+    const newState = structuredClone(columns);
 
     let sourceColumn = null;
     let cardIndex = -1;
@@ -126,7 +126,7 @@ export const moveCardInState = (
  * @returns {Array} New columns state
  */
 export const addCardToState = (columns, card, columnId) => {
-    const newState = JSON.parse(JSON.stringify(columns));
+    const newState = structuredClone(columns);
     const column = newState.find((col) => col.Id === columnId);
 
     if (column) {
@@ -157,7 +157,7 @@ export const addCardToState = (columns, card, columnId) => {
  * @returns {Array} New columns state
  */
 export const updateCardInState = (columns, cardId, updates) => {
-    const newState = JSON.parse(JSON.stringify(columns));
+    const newState = structuredClone(columns);
 
     let sourceColumn = null;
     let cardIndex = -1;
@@ -225,7 +225,7 @@ export const updateCardInState = (columns, cardId, updates) => {
  * @returns {Array} New columns state
  */
 export const deleteCardFromState = (columns, cardId) => {
-    const newState = JSON.parse(JSON.stringify(columns));
+    const newState = structuredClone(columns);
 
     for (const column of newState) {
         const cardIndex = column.cards.findIndex((c) => c.Id === cardId);
