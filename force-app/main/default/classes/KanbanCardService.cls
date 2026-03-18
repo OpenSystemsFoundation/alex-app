@@ -3,7 +3,6 @@
  * Extracted from KanbanBoardController to separate concerns
  */
 public with sharing class KanbanCardService {
-
     /**
      * Move card with conflict detection based on expected sequence number
      * Client sends the sequence number it expects the card to have
@@ -19,9 +18,7 @@ public with sharing class KanbanCardService {
         String clientId
     ) {
         // Query full card data for conflict detection
-        OpenSF__Card__c existingCard = KanbanBoardSelector.getCardById(
-            cardId
-        );
+        OpenSF__Card__c existingCard = KanbanBoardSelector.getCardById(cardId);
 
         // Detect conflicts
         Boolean hasConflict = false;
@@ -123,9 +120,7 @@ public with sharing class KanbanCardService {
         );
 
         // Get the column to apply its status
-        OpenSF__Column__c column = KanbanBoardSelector.getColumnById(
-            columnId
-        );
+        OpenSF__Column__c column = KanbanBoardSelector.getColumnById(columnId);
 
         // Create card with initial sequence number and clientId
         OpenSF__Card__c card = new OpenSF__Card__c(
@@ -145,9 +140,7 @@ public with sharing class KanbanCardService {
         // Event published by trigger
 
         // Return full card data as DTO
-        OpenSF__Card__c createdCard = KanbanBoardSelector.getCardById(
-            card.Id
-        );
+        OpenSF__Card__c createdCard = KanbanBoardSelector.getCardById(card.Id);
         return new KanbanBoardDTO.CardDTO(createdCard);
     }
 

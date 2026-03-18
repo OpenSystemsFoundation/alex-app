@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>OpenSF__StoryPointsAtAdd__c</fullName>
-    <description>Snapshot of story points when card was added to sprint.</description>
+    <description
+    >Snapshot of story points when card was added to sprint.</description>
     <externalId>false</externalId>
     <label>Story Points At Add</label>
     <precision>3</precision>

@@ -43,9 +43,15 @@ export default class KanbanSprintReports extends LightningElement {
         }
     }
 
-    get isBurndownTab() { return this.activeTab === 'burndown'; }
-    get isVelocityTab() { return this.activeTab === 'velocity'; }
-    get isSummaryTab() { return this.activeTab === 'summary'; }
+    get isBurndownTab() {
+        return this.activeTab === 'burndown';
+    }
+    get isVelocityTab() {
+        return this.activeTab === 'velocity';
+    }
+    get isSummaryTab() {
+        return this.activeTab === 'summary';
+    }
 
     get burndownTabClass() {
         return `slds-tabs_default__item${this.isBurndownTab ? ' slds-is-active' : ''}`;
@@ -57,12 +63,19 @@ export default class KanbanSprintReports extends LightningElement {
         return `slds-tabs_default__item${this.isSummaryTab ? ' slds-is-active' : ''}`;
     }
 
-    get hasBurndownData() { return this.burndownData.length > 0; }
-    get hasVelocityData() { return this.velocityData.length > 0; }
+    get hasBurndownData() {
+        return this.burndownData.length > 0;
+    }
+    get hasVelocityData() {
+        return this.velocityData.length > 0;
+    }
 
     get averageVelocity() {
         if (!this.velocityData.length) return 0;
-        const total = this.velocityData.reduce((sum, s) => sum + (s.velocity || 0), 0);
+        const total = this.velocityData.reduce(
+            (sum, s) => sum + (s.velocity || 0),
+            0
+        );
         return Math.round(total / this.velocityData.length);
     }
 
@@ -89,8 +102,8 @@ export default class KanbanSprintReports extends LightningElement {
         if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
-        const width = canvas.width = canvas.parentElement.clientWidth || 500;
-        const height = canvas.height = 300;
+        const width = (canvas.width = canvas.parentElement.clientWidth || 500);
+        const height = (canvas.height = 300);
         const padding = { top: 20, right: 20, bottom: 40, left: 50 };
         const chartW = width - padding.left - padding.right;
         const chartH = height - padding.top - padding.bottom;
@@ -100,7 +113,7 @@ export default class KanbanSprintReports extends LightningElement {
         const data = this.burndownData;
         if (!data.length) return;
 
-        const maxPoints = Math.max(...data.map(d => d.totalPoints || 0));
+        const maxPoints = Math.max(...data.map((d) => d.totalPoints || 0));
         if (maxPoints === 0) return;
 
         // Draw axes
@@ -127,7 +140,9 @@ export default class KanbanSprintReports extends LightningElement {
         ctx.beginPath();
         data.forEach((d, i) => {
             const x = padding.left + (i / (data.length - 1)) * chartW;
-            const y = padding.top + (1 - (d.remainingPoints || 0) / maxPoints) * chartH;
+            const y =
+                padding.top +
+                (1 - (d.remainingPoints || 0) / maxPoints) * chartH;
             if (i === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
         });
@@ -140,7 +155,9 @@ export default class KanbanSprintReports extends LightningElement {
         data.forEach((d, i) => {
             if (i % Math.ceil(data.length / 7) === 0 || i === data.length - 1) {
                 const x = padding.left + (i / (data.length - 1)) * chartW;
-                const label = d.snapshotDate ? d.snapshotDate.substring(5) : `D${i + 1}`;
+                const label = d.snapshotDate
+                    ? d.snapshotDate.substring(5)
+                    : `D${i + 1}`;
                 ctx.fillText(label, x, height - padding.bottom + 20);
             }
         });
@@ -151,8 +168,8 @@ export default class KanbanSprintReports extends LightningElement {
         if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
-        const width = canvas.width = canvas.parentElement.clientWidth || 500;
-        const height = canvas.height = 300;
+        const width = (canvas.width = canvas.parentElement.clientWidth || 500);
+        const height = (canvas.height = 300);
         const padding = { top: 20, right: 20, bottom: 40, left: 50 };
         const chartW = width - padding.left - padding.right;
         const chartH = height - padding.top - padding.bottom;
@@ -162,7 +179,7 @@ export default class KanbanSprintReports extends LightningElement {
         const data = this.velocityData;
         if (!data.length) return;
 
-        const maxVel = Math.max(...data.map(d => d.velocity || 0));
+        const maxVel = Math.max(...data.map((d) => d.velocity || 0));
         if (maxVel === 0) return;
 
         const barWidth = Math.min(40, chartW / data.length - 10);
@@ -170,7 +187,10 @@ export default class KanbanSprintReports extends LightningElement {
         // Bars
         data.forEach((d, i) => {
             const barH = ((d.velocity || 0) / maxVel) * chartH;
-            const x = padding.left + (i + 0.5) * (chartW / data.length) - barWidth / 2;
+            const x =
+                padding.left +
+                (i + 0.5) * (chartW / data.length) -
+                barWidth / 2;
             const y = padding.top + chartH - barH;
 
             ctx.fillStyle = '#0176d3';
@@ -180,12 +200,17 @@ export default class KanbanSprintReports extends LightningElement {
             ctx.fillStyle = '#666';
             ctx.font = '10px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(d.Name || `S${i + 1}`, x + barWidth / 2, height - padding.bottom + 15);
+            ctx.fillText(
+                d.Name || `S${i + 1}`,
+                x + barWidth / 2,
+                height - padding.bottom + 15
+            );
             ctx.fillText(String(d.velocity || 0), x + barWidth / 2, y - 5);
         });
 
         // Average line
-        const avgY = padding.top + chartH - (this.averageVelocity / maxVel) * chartH;
+        const avgY =
+            padding.top + chartH - (this.averageVelocity / maxVel) * chartH;
         ctx.strokeStyle = '#ea001e';
         ctx.setLineDash([5, 3]);
         ctx.beginPath();
@@ -197,6 +222,10 @@ export default class KanbanSprintReports extends LightningElement {
         ctx.fillStyle = '#ea001e';
         ctx.font = '11px sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(`Avg: ${this.averageVelocity}`, width - padding.right + 3, avgY + 4);
+        ctx.fillText(
+            `Avg: ${this.averageVelocity}`,
+            width - padding.right + 3,
+            avgY + 4
+        );
     }
 }

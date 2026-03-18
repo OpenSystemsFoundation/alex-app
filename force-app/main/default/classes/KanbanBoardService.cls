@@ -3,7 +3,6 @@
  * Extracts board-level operations from KanbanBoardController
  */
 public with sharing class KanbanBoardService {
-
     /**
      * Load full board data (board + columns + cards)
      */

@@ -214,7 +214,9 @@ public with sharing class KanbanBoardController {
         try {
             return SprintService.getSprintData(boardId);
         } catch (Exception e) {
-            throw new AuraHandledException('Error loading sprint data: ' + e.getMessage());
+            throw new AuraHandledException(
+                'Error loading sprint data: ' + e.getMessage()
+            );
         }
     }
 
@@ -222,11 +224,23 @@ public with sharing class KanbanBoardController {
      * Create a new sprint
      */
     @AuraEnabled
-    public static KanbanBoardDTO.SprintDTO createSprint(Id boardId, String goal, Date startDate, Date endDate) {
+    public static KanbanBoardDTO.SprintDTO createSprint(
+        Id boardId,
+        String goal,
+        Date startDate,
+        Date endDate
+    ) {
         try {
-            return SprintService.createSprint(boardId, goal, startDate, endDate);
+            return SprintService.createSprint(
+                boardId,
+                goal,
+                startDate,
+                endDate
+            );
         } catch (Exception e) {
-            throw new AuraHandledException('Error creating sprint: ' + e.getMessage());
+            throw new AuraHandledException(
+                'Error creating sprint: ' + e.getMessage()
+            );
         }
     }
 
@@ -238,7 +252,9 @@ public with sharing class KanbanBoardController {
         try {
             return SprintService.startSprint(sprintId);
         } catch (Exception e) {
-            throw new AuraHandledException('Error starting sprint: ' + e.getMessage());
+            throw new AuraHandledException(
+                'Error starting sprint: ' + e.getMessage()
+            );
         }
     }
 
@@ -246,11 +262,16 @@ public with sharing class KanbanBoardController {
      * Complete a sprint with card dispositions
      */
     @AuraEnabled
-    public static KanbanBoardDTO.SprintDTO completeSprint(Id sprintId, Map<Id, String> dispositions) {
+    public static KanbanBoardDTO.SprintDTO completeSprint(
+        Id sprintId,
+        Map<Id, String> dispositions
+    ) {
         try {
             return SprintService.completeSprint(sprintId, dispositions);
         } catch (Exception e) {
-            throw new AuraHandledException('Error completing sprint: ' + e.getMessage());
+            throw new AuraHandledException(
+                'Error completing sprint: ' + e.getMessage()
+            );
         }
     }
 
@@ -258,11 +279,16 @@ public with sharing class KanbanBoardController {
      * Add cards to a sprint
      */
     @AuraEnabled
-    public static List<KanbanBoardDTO.SprintCardDTO> addCardsToSprint(Id sprintId, List<Id> cardIds) {
+    public static List<KanbanBoardDTO.SprintCardDTO> addCardsToSprint(
+        Id sprintId,
+        List<Id> cardIds
+    ) {
         try {
             return SprintService.addCardsToSprint(sprintId, cardIds);
         } catch (Exception e) {
-            throw new AuraHandledException('Error adding cards to sprint: ' + e.getMessage());
+            throw new AuraHandledException(
+                'Error adding cards to sprint: ' + e.getMessage()
+            );
         }
     }
 
@@ -274,7 +300,9 @@ public with sharing class KanbanBoardController {
         try {
             SprintService.removeCardFromSprint(sprintId, cardId);
         } catch (Exception e) {
-            throw new AuraHandledException('Error removing card from sprint: ' + e.getMessage());
+            throw new AuraHandledException(
+                'Error removing card from sprint: ' + e.getMessage()
+            );
         }
     }
 
@@ -282,11 +310,15 @@ public with sharing class KanbanBoardController {
      * Get burndown data for a sprint
      */
     @AuraEnabled
-    public static List<KanbanBoardDTO.SprintSnapshotDTO> getBurndownData(Id sprintId) {
+    public static List<KanbanBoardDTO.SprintSnapshotDTO> getBurndownData(
+        Id sprintId
+    ) {
         try {
             return SprintService.getBurndownData(sprintId);
         } catch (Exception e) {
-            throw new AuraHandledException('Error loading burndown data: ' + e.getMessage());
+            throw new AuraHandledException(
+                'Error loading burndown data: ' + e.getMessage()
+            );
         }
     }
 
@@ -294,11 +326,16 @@ public with sharing class KanbanBoardController {
      * Get velocity data for a board
      */
     @AuraEnabled
-    public static List<KanbanBoardDTO.SprintDTO> getVelocityData(Id boardId, Integer count) {
+    public static List<KanbanBoardDTO.SprintDTO> getVelocityData(
+        Id boardId,
+        Integer count
+    ) {
         try {
             return SprintService.getVelocityData(boardId, count);
         } catch (Exception e) {
-            throw new AuraHandledException('Error loading velocity data: ' + e.getMessage());
+            throw new AuraHandledException(
+                'Error loading velocity data: ' + e.getMessage()
+            );
         }
     }
 
@@ -310,7 +347,9 @@ public with sharing class KanbanBoardController {
         try {
             SprintService.markCardCompleted(sprintId, cardId);
         } catch (Exception e) {
-            throw new AuraHandledException('Error marking card complete: ' + e.getMessage());
+            throw new AuraHandledException(
+                'Error marking card complete: ' + e.getMessage()
+            );
         }
     }
 

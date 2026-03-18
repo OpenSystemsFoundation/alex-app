@@ -11,7 +11,12 @@ public with sharing class SprintSnapshotScheduler implements Schedulable {
             try {
                 SprintService.createDailySnapshot(sprint.Id);
             } catch (Exception e) {
-                System.debug('Error creating snapshot for sprint ' + sprint.Id + ': ' + e.getMessage());
+                System.debug(
+                    'Error creating snapshot for sprint ' +
+                        sprint.Id +
+                        ': ' +
+                        e.getMessage()
+                );
             }
         }
     }

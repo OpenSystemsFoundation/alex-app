@@ -325,7 +325,10 @@ public class TestFactory {
     /**
      * Creates a test SprintCard junction
      */
-    public static OpenSF__SprintCard__c createSprintCard(Id sprintId, Id cardId) {
+    public static OpenSF__SprintCard__c createSprintCard(
+        Id sprintId,
+        Id cardId
+    ) {
         TriggerHandler.bypass('SprintCardTriggerHandler');
 
         OpenSF__SprintCard__c sc = new OpenSF__SprintCard__c(
@@ -344,7 +347,10 @@ public class TestFactory {
      * Creates a test SprintSnapshot
      */
     public static OpenSF__SprintSnapshot__c createSprintSnapshot(
-        Id sprintId, Date snapshotDate, Decimal totalPoints, Decimal remainingPoints
+        Id sprintId,
+        Date snapshotDate,
+        Decimal totalPoints,
+        Decimal remainingPoints
     ) {
         OpenSF__SprintSnapshot__c snapshot = new OpenSF__SprintSnapshot__c(
             OpenSF__Sprint__c = sprintId,

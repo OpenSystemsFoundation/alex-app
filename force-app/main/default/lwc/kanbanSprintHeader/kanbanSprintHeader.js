@@ -109,9 +109,11 @@ export default class KanbanSprintHeader extends LightningElement {
 
     // Event handlers
     handleCompleteSprint() {
-        this.dispatchEvent(new CustomEvent('completesprint', {
-            detail: { sprintId: this.sprint.Id }
-        }));
+        this.dispatchEvent(
+            new CustomEvent('completesprint', {
+                detail: { sprintId: this.sprint.Id }
+            })
+        );
     }
 
     handleCreateSprint() {
@@ -119,9 +121,11 @@ export default class KanbanSprintHeader extends LightningElement {
     }
 
     handleShowReports() {
-        this.dispatchEvent(new CustomEvent('showreports', {
-            detail: { sprintId: this.sprint?.Id }
-        }));
+        this.dispatchEvent(
+            new CustomEvent('showreports', {
+                detail: { sprintId: this.sprint?.Id }
+            })
+        );
     }
 
     handleToggleBacklog() {

@@ -9,7 +9,13 @@ import RequestTracker from '../../../../force-app/main/default/lwc/kanbanBoard/h
 
 // --- Helpers ---
 
-function createPlatformEvent(eventType, payload, clientRequestId = null, sequenceNumber = null, clientId = null) {
+function createPlatformEvent(
+    eventType,
+    payload,
+    clientRequestId = null,
+    sequenceNumber = null,
+    clientId = null
+) {
     return {
         OpenSF__EventType__c: eventType,
         OpenSF__Payload__c: JSON.stringify(payload),
@@ -29,15 +35,42 @@ const BOARD_ID = 'board1';
 
 const INITIAL_COLUMNS = [
     {
-        Id: 'col1', Name: 'To Do', cards: [
-            { Id: 'card1', subject: 'Task 1', columnId: 'col1', position: '0|a:', priority: 'High', OpenSF__SequenceNumber__c: 1 },
-            { Id: 'card2', subject: 'Task 2', columnId: 'col1', position: '0|b:', priority: 'Medium', OpenSF__SequenceNumber__c: 1 }
-        ], cardCount: 2
+        Id: 'col1',
+        Name: 'To Do',
+        cards: [
+            {
+                Id: 'card1',
+                subject: 'Task 1',
+                columnId: 'col1',
+                position: '0|a:',
+                priority: 'High',
+                OpenSF__SequenceNumber__c: 1
+            },
+            {
+                Id: 'card2',
+                subject: 'Task 2',
+                columnId: 'col1',
+                position: '0|b:',
+                priority: 'Medium',
+                OpenSF__SequenceNumber__c: 1
+            }
+        ],
+        cardCount: 2
     },
     {
-        Id: 'col2', Name: 'In Progress', cards: [
-            { Id: 'card3', subject: 'Task 3', columnId: 'col2', position: '0|a:', priority: 'Low', OpenSF__SequenceNumber__c: 1 }
-        ], cardCount: 1
+        Id: 'col2',
+        Name: 'In Progress',
+        cards: [
+            {
+                Id: 'card3',
+                subject: 'Task 3',
+                columnId: 'col2',
+                position: '0|a:',
+                priority: 'Low',
+                OpenSF__SequenceNumber__c: 1
+            }
+        ],
+        cardCount: 1
     },
     { Id: 'col3', Name: 'Done', cards: [], cardCount: 0 }
 ];
@@ -48,7 +81,10 @@ const INITIAL_COLUMNS = [
 function createWindow(clientId, boardId = BOARD_ID) {
     const store = createStore();
     store.dispatch({ type: 'SET_BOARD', payload: { Id: boardId } });
-    store.dispatch({ type: 'SET_COLUMNS', payload: JSON.parse(JSON.stringify(INITIAL_COLUMNS)) });
+    store.dispatch({
+        type: 'SET_COLUMNS',
+        payload: JSON.parse(JSON.stringify(INITIAL_COLUMNS))
+    });
 
     const requestTracker = new RequestTracker(clientId);
     const handler = new EventHandler(requestTracker, null, boardId, clientId);
@@ -59,7 +95,7 @@ function createWindow(clientId, boardId = BOARD_ID) {
 function findCardInStore(store, cardId) {
     const state = store.getState();
     for (const col of state.columns) {
-        const card = col.cards.find(c => c.Id === cardId);
+        const card = col.cards.find((c) => c.Id === cardId);
         if (card) return { card, columnId: col.Id };
     }
     return null;
@@ -67,13 +103,13 @@ function findCardInStore(store, cardId) {
 
 function getColumnCards(store, columnId) {
     const state = store.getState();
-    const col = state.columns.find(c => c.Id === columnId);
+    const col = state.columns.find((c) => c.Id === columnId);
     return col ? col.cards : [];
 }
 
 function getColumn(store, columnId) {
     const state = store.getState();
-    return state.columns.find(c => c.Id === columnId);
+    return state.columns.find((c) => c.Id === columnId);
 }
 
 // --- Tests ---
@@ -274,7 +310,12 @@ describe('Multi-User Realtime Sync', () => {
                 columnId: 'col2', // now in col2
                 OpenSF__SequenceNumber__c: 3
             };
-            const updateEvent = createPlatformEvent('update', updatePayload, null, 3);
+            const updateEvent = createPlatformEvent(
+                'update',
+                updatePayload,
+                null,
+                3
+            );
             broadcastEvent(updateEvent, allHandlers);
 
             // Card should be in col2 with updated description
@@ -302,7 +343,12 @@ describe('Multi-User Realtime Sync', () => {
             expect(findCardInStore(windowA.store, 'card-rapid')).not.toBeNull();
             expect(findCardInStore(windowB.store, 'card-rapid')).not.toBeNull();
 
-            const deleteEvent = createPlatformEvent('delete', { Id: 'card-rapid', columnId: 'col1' }, null, 2);
+            const deleteEvent = createPlatformEvent(
+                'delete',
+                { Id: 'card-rapid', columnId: 'col1' },
+                null,
+                2
+            );
             broadcastEvent(deleteEvent, allHandlers);
 
             expect(findCardInStore(windowA.store, 'card-rapid')).toBeNull();
@@ -331,7 +377,10 @@ describe('Multi-User Realtime Sync', () => {
             };
 
             // User A tracks a create request
-            const requestId = windowA.requestTracker.trackRequest('create', 'card-own');
+            const requestId = windowA.requestTracker.trackRequest(
+                'create',
+                'card-own'
+            );
 
             // User A adds card optimistically (no seq number)
             windowA.store.dispatch({
@@ -340,7 +389,13 @@ describe('Multi-User Realtime Sync', () => {
             });
 
             // Platform event returns with the same requestId and a sequence number
-            const event = createPlatformEvent('create', confirmedCard, requestId, 1, 'client-A');
+            const event = createPlatformEvent(
+                'create',
+                confirmedCard,
+                requestId,
+                1,
+                'client-A'
+            );
 
             // Only send to User A (the originator)
             windowA.handler.handlePlatformEvent(event, windowA.store);
@@ -352,7 +407,7 @@ describe('Multi-User Realtime Sync', () => {
 
             // Card should NOT be duplicated -- still just one instance
             const col1Cards = getColumnCards(windowA.store, 'col1');
-            const matchingCards = col1Cards.filter(c => c.Id === 'card-own');
+            const matchingCards = col1Cards.filter((c) => c.Id === 'card-own');
             expect(matchingCards).toHaveLength(1);
         });
 
@@ -361,12 +416,17 @@ describe('Multi-User Realtime Sync', () => {
             windowA.handler.trackChange('card1');
 
             // Platform event for card1 arrives (from another user, no requestId)
-            const event = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Should be ignored by A',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 2
-            }, null, 2);
+            const event = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Should be ignored by A',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 2
+                },
+                null,
+                2
+            );
 
             windowA.handler.handlePlatformEvent(event, windowA.store);
 
@@ -381,12 +441,17 @@ describe('Multi-User Realtime Sync', () => {
             // Advance past the 2s window
             jest.advanceTimersByTime(2100);
 
-            const event = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Updated after window',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 2
-            }, null, 2);
+            const event = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Updated after window',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 2
+                },
+                null,
+                2
+            );
 
             windowA.handler.handlePlatformEvent(event, windowA.store);
 
@@ -399,12 +464,17 @@ describe('Multi-User Realtime Sync', () => {
             windowA.handler.trackChange('card1');
 
             // Event for card2 arrives (different card)
-            const event = createPlatformEvent('update', {
-                Id: 'card2',
-                subject: 'Updated card2',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 2
-            }, null, 2);
+            const event = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card2',
+                    subject: 'Updated card2',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 2
+                },
+                null,
+                2
+            );
 
             windowA.handler.handlePlatformEvent(event, windowA.store);
 
@@ -422,7 +492,10 @@ describe('Multi-User Realtime Sync', () => {
                 OpenSF__SequenceNumber__c: 1
             };
 
-            const requestId = windowA.requestTracker.trackRequest('create', 'card-dup');
+            const requestId = windowA.requestTracker.trackRequest(
+                'create',
+                'card-dup'
+            );
 
             // Optimistic add
             windowA.store.dispatch({
@@ -431,7 +504,13 @@ describe('Multi-User Realtime Sync', () => {
             });
 
             // First event arrival (own request)
-            const event1 = createPlatformEvent('create', newCard, requestId, 1, 'client-A');
+            const event1 = createPlatformEvent(
+                'create',
+                newCard,
+                requestId,
+                1,
+                'client-A'
+            );
             windowA.handler.handlePlatformEvent(event1, windowA.store);
 
             // Second event arrival (e.g., redelivery) -- no requestId this time
@@ -439,7 +518,7 @@ describe('Multi-User Realtime Sync', () => {
             windowA.handler.handlePlatformEvent(event2, windowA.store);
 
             const col1Cards = getColumnCards(windowA.store, 'col1');
-            const matchingCards = col1Cards.filter(c => c.Id === 'card-dup');
+            const matchingCards = col1Cards.filter((c) => c.Id === 'card-dup');
             expect(matchingCards).toHaveLength(1);
         });
     });
@@ -450,21 +529,31 @@ describe('Multi-User Realtime Sync', () => {
     describe('Sequence Number Ordering', () => {
         test('Stale events are rejected (lower sequence number)', () => {
             // card1 starts at seq 1. First apply a seq 5 update.
-            const event5 = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Seq 5 Update',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 5
-            }, null, 5);
+            const event5 = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Seq 5 Update',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 5
+                },
+                null,
+                5
+            );
             windowA.handler.handlePlatformEvent(event5, windowA.store);
 
             // Now a stale event with seq 3 arrives
-            const event3 = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Stale Seq 3',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 3
-            }, null, 3);
+            const event3 = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Stale Seq 3',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 3
+                },
+                null,
+                3
+            );
             windowA.handler.handlePlatformEvent(event3, windowA.store);
 
             const result = findCardInStore(windowA.store, 'card1');
@@ -473,52 +562,83 @@ describe('Multi-User Realtime Sync', () => {
 
         test('Events applied in order: seq 3, seq 1, seq 5 -- seq 1 rejected', () => {
             // card1 starts at seq 1
-            const event3 = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Seq 3',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 3
-            }, null, 3);
+            const event3 = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Seq 3',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 3
+                },
+                null,
+                3
+            );
             windowA.handler.handlePlatformEvent(event3, windowA.store);
-            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe('Seq 3');
+            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe(
+                'Seq 3'
+            );
 
             // seq 1 arrives -- should be rejected (card is now at seq 3)
-            const event1 = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Seq 1 Late',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 1
-            }, null, 1);
+            const event1 = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Seq 1 Late',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 1
+                },
+                null,
+                1
+            );
             windowA.handler.handlePlatformEvent(event1, windowA.store);
-            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe('Seq 3'); // unchanged
+            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe(
+                'Seq 3'
+            ); // unchanged
 
             // seq 5 arrives -- should be applied
-            const event5 = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Seq 5',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 5
-            }, null, 5);
+            const event5 = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Seq 5',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 5
+                },
+                null,
+                5
+            );
             windowA.handler.handlePlatformEvent(event5, windowA.store);
-            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe('Seq 5');
+            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe(
+                'Seq 5'
+            );
         });
 
         test('Events without sequence numbers are always applied (backward compat)', () => {
             // First apply a high-seq update
-            const event10 = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Seq 10',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 10
-            }, null, 10);
+            const event10 = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Seq 10',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 10
+                },
+                null,
+                10
+            );
             windowA.handler.handlePlatformEvent(event10, windowA.store);
 
             // Now an event without sequence number
-            const eventNoSeq = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'No Seq Update',
-                columnId: 'col1'
-            }, null, null);
+            const eventNoSeq = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'No Seq Update',
+                    columnId: 'col1'
+                },
+                null,
+                null
+            );
             windowA.handler.handlePlatformEvent(eventNoSeq, windowA.store);
 
             const result = findCardInStore(windowA.store, 'card1');
@@ -526,25 +646,39 @@ describe('Multi-User Realtime Sync', () => {
         });
 
         test('Sequence numbers work correctly across both windows', () => {
-            const event2 = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Seq 2 Both',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 2
-            }, null, 2);
+            const event2 = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Seq 2 Both',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 2
+                },
+                null,
+                2
+            );
             broadcastEvent(event2, allHandlers);
 
             // Stale event broadcast
-            const eventStale = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Stale for Both',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 1
-            }, null, 1);
+            const eventStale = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Stale for Both',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 1
+                },
+                null,
+                1
+            );
             broadcastEvent(eventStale, allHandlers);
 
-            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe('Seq 2 Both');
-            expect(findCardInStore(windowB.store, 'card1').card.subject).toBe('Seq 2 Both');
+            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe(
+                'Seq 2 Both'
+            );
+            expect(findCardInStore(windowB.store, 'card1').card.subject).toBe(
+                'Seq 2 Both'
+            );
         });
     });
 
@@ -553,13 +687,18 @@ describe('Multi-User Realtime Sync', () => {
     // ================================================================
     describe('Board Isolation', () => {
         test('Events for columns not in this board are ignored', () => {
-            const event = createPlatformEvent('create', {
-                Id: 'card-other',
-                subject: 'Other Board Card',
-                columnId: 'other-col',
-                position: '0|a:',
-                OpenSF__SequenceNumber__c: 1
-            }, null, 1);
+            const event = createPlatformEvent(
+                'create',
+                {
+                    Id: 'card-other',
+                    subject: 'Other Board Card',
+                    columnId: 'other-col',
+                    position: '0|a:',
+                    OpenSF__SequenceNumber__c: 1
+                },
+                null,
+                1
+            );
 
             windowA.handler.handlePlatformEvent(event, windowA.store);
             windowB.handler.handlePlatformEvent(event, windowB.store);
@@ -569,48 +708,75 @@ describe('Multi-User Realtime Sync', () => {
         });
 
         test('Events with matching boardId are accepted', () => {
-            const event = createPlatformEvent('create', {
-                Id: 'card-board-match',
-                subject: 'Board Match',
-                columnId: 'col1',
-                boardId: BOARD_ID,
-                position: '0|d:',
-                OpenSF__SequenceNumber__c: 1
-            }, null, 1);
+            const event = createPlatformEvent(
+                'create',
+                {
+                    Id: 'card-board-match',
+                    subject: 'Board Match',
+                    columnId: 'col1',
+                    boardId: BOARD_ID,
+                    position: '0|d:',
+                    OpenSF__SequenceNumber__c: 1
+                },
+                null,
+                1
+            );
 
             broadcastEvent(event, allHandlers);
 
-            expect(findCardInStore(windowA.store, 'card-board-match')).not.toBeNull();
-            expect(findCardInStore(windowB.store, 'card-board-match')).not.toBeNull();
+            expect(
+                findCardInStore(windowA.store, 'card-board-match')
+            ).not.toBeNull();
+            expect(
+                findCardInStore(windowB.store, 'card-board-match')
+            ).not.toBeNull();
         });
 
         test('Events with non-matching boardId are ignored', () => {
-            const event = createPlatformEvent('create', {
-                Id: 'card-wrong-board',
-                subject: 'Wrong Board',
-                boardId: 'other-board-id',
-                position: '0|a:',
-                OpenSF__SequenceNumber__c: 1
-            }, null, 1);
+            const event = createPlatformEvent(
+                'create',
+                {
+                    Id: 'card-wrong-board',
+                    subject: 'Wrong Board',
+                    boardId: 'other-board-id',
+                    position: '0|a:',
+                    OpenSF__SequenceNumber__c: 1
+                },
+                null,
+                1
+            );
 
             broadcastEvent(event, allHandlers);
 
-            expect(findCardInStore(windowA.store, 'card-wrong-board')).toBeNull();
-            expect(findCardInStore(windowB.store, 'card-wrong-board')).toBeNull();
+            expect(
+                findCardInStore(windowA.store, 'card-wrong-board')
+            ).toBeNull();
+            expect(
+                findCardInStore(windowB.store, 'card-wrong-board')
+            ).toBeNull();
         });
 
         test('Update events for cards existing in this board are accepted without columnId', () => {
             // card1 already exists in both stores, update without specifying columnId
-            const event = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Updated Without ColumnId',
-                OpenSF__SequenceNumber__c: 2
-            }, null, 2);
+            const event = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Updated Without ColumnId',
+                    OpenSF__SequenceNumber__c: 2
+                },
+                null,
+                2
+            );
 
             broadcastEvent(event, allHandlers);
 
-            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe('Updated Without ColumnId');
-            expect(findCardInStore(windowB.store, 'card1').card.subject).toBe('Updated Without ColumnId');
+            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe(
+                'Updated Without ColumnId'
+            );
+            expect(findCardInStore(windowB.store, 'card1').card.subject).toBe(
+                'Updated Without ColumnId'
+            );
         });
     });
 
@@ -618,7 +784,7 @@ describe('Multi-User Realtime Sync', () => {
     // 6. Multi-Window Same User
     // ================================================================
     describe('Multi-Window Same User', () => {
-        test('Two windows of same user see each other\'s changes', () => {
+        test("Two windows of same user see each other's changes", () => {
             // Both windows belong to "user1" but have different clientIds
             const win1 = createWindow('user1-window1');
             const win2 = createWindow('user1-window2');
@@ -628,17 +794,27 @@ describe('Multi-User Realtime Sync', () => {
                 { handler: win2.handler, store: win2.store }
             ];
 
-            const event = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Changed in Window 1',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 2
-            }, null, 2, 'user1-window1');
+            const event = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Changed in Window 1',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 2
+                },
+                null,
+                2,
+                'user1-window1'
+            );
 
             broadcastEvent(event, bothHandlers);
 
-            expect(findCardInStore(win1.store, 'card1').card.subject).toBe('Changed in Window 1');
-            expect(findCardInStore(win2.store, 'card1').card.subject).toBe('Changed in Window 1');
+            expect(findCardInStore(win1.store, 'card1').card.subject).toBe(
+                'Changed in Window 1'
+            );
+            expect(findCardInStore(win2.store, 'card1').card.subject).toBe(
+                'Changed in Window 1'
+            );
 
             win1.requestTracker.destroy();
             win2.requestTracker.destroy();
@@ -649,17 +825,25 @@ describe('Multi-User Realtime Sync', () => {
             windowA.requestTracker.trackRequest('update', 'card1');
 
             // Event from same window (matching clientId) arrives
-            const event = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Deferred Update',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 2
-            }, null, 2, 'client-A');
+            const event = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Deferred Update',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 2
+                },
+                null,
+                2,
+                'client-A'
+            );
 
             windowA.handler.handlePlatformEvent(event, windowA.store);
 
             // Should NOT be applied immediately (deferred via setTimeout)
-            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe('Task 1');
+            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe(
+                'Task 1'
+            );
         });
 
         test('Events from other windows are applied immediately even with pending ops', () => {
@@ -667,34 +851,53 @@ describe('Multi-User Realtime Sync', () => {
             windowA.requestTracker.trackRequest('update', 'card1');
 
             // Event from a DIFFERENT window (client-B) for card1
-            const event = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'From Other Window',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 2
-            }, null, 2, 'client-B');
+            const event = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'From Other Window',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 2
+                },
+                null,
+                2,
+                'client-B'
+            );
 
             windowA.handler.handlePlatformEvent(event, windowA.store);
 
             // Should be applied immediately (different clientId)
-            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe('From Other Window');
+            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe(
+                'From Other Window'
+            );
         });
 
         test('Deferred event is applied after pending operation completes', () => {
-            const requestId = windowA.requestTracker.trackRequest('update', 'card1');
+            const requestId = windowA.requestTracker.trackRequest(
+                'update',
+                'card1'
+            );
 
             // Event from same window arrives while pending
-            const event = createPlatformEvent('update', {
-                Id: 'card1',
-                subject: 'Deferred Then Applied',
-                columnId: 'col1',
-                OpenSF__SequenceNumber__c: 3
-            }, null, 3, 'client-A');
+            const event = createPlatformEvent(
+                'update',
+                {
+                    Id: 'card1',
+                    subject: 'Deferred Then Applied',
+                    columnId: 'col1',
+                    OpenSF__SequenceNumber__c: 3
+                },
+                null,
+                3,
+                'client-A'
+            );
 
             windowA.handler.handlePlatformEvent(event, windowA.store);
 
             // Not applied yet
-            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe('Task 1');
+            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe(
+                'Task 1'
+            );
 
             // Complete the pending operation
             windowA.requestTracker.completeRequest(requestId);
@@ -703,7 +906,9 @@ describe('Multi-User Realtime Sync', () => {
             jest.advanceTimersByTime(600);
 
             // Now it should be applied
-            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe('Deferred Then Applied');
+            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe(
+                'Deferred Then Applied'
+            );
         });
     });
 
@@ -714,13 +919,18 @@ describe('Multi-User Realtime Sync', () => {
         test('Card counts stay accurate after creates', () => {
             const newCards = ['card-x1', 'card-x2', 'card-x3'];
             newCards.forEach((id, i) => {
-                const event = createPlatformEvent('create', {
-                    Id: id,
-                    subject: `Card ${id}`,
-                    columnId: 'col1',
-                    position: `0|${String.fromCharCode(100 + i)}:`,
-                    OpenSF__SequenceNumber__c: 1
-                }, null, 1);
+                const event = createPlatformEvent(
+                    'create',
+                    {
+                        Id: id,
+                        subject: `Card ${id}`,
+                        columnId: 'col1',
+                        position: `0|${String.fromCharCode(100 + i)}:`,
+                        OpenSF__SequenceNumber__c: 1
+                    },
+                    null,
+                    1
+                );
                 broadcastEvent(event, allHandlers);
             });
 
@@ -733,8 +943,13 @@ describe('Multi-User Realtime Sync', () => {
 
         test('Card counts stay accurate after deletes', () => {
             // Delete card1 and card2 from col1
-            ['card1', 'card2'].forEach(id => {
-                const event = createPlatformEvent('delete', { Id: id, columnId: 'col1' }, null, 2);
+            ['card1', 'card2'].forEach((id) => {
+                const event = createPlatformEvent(
+                    'delete',
+                    { Id: id, columnId: 'col1' },
+                    null,
+                    2
+                );
                 broadcastEvent(event, allHandlers);
             });
 
@@ -745,12 +960,17 @@ describe('Multi-User Realtime Sync', () => {
 
         test('Card counts stay accurate after moves', () => {
             // Move card1 from col1 to col3
-            const moveEvent = createPlatformEvent('move', {
-                Id: 'card1',
-                columnId: 'col3',
-                position: '0|a:',
-                OpenSF__SequenceNumber__c: 2
-            }, null, 2);
+            const moveEvent = createPlatformEvent(
+                'move',
+                {
+                    Id: 'card1',
+                    columnId: 'col3',
+                    position: '0|a:',
+                    OpenSF__SequenceNumber__c: 2
+                },
+                null,
+                2
+            );
             broadcastEvent(moveEvent, allHandlers);
 
             const col1 = getColumn(windowA.store, 'col1');
@@ -763,59 +983,168 @@ describe('Multi-User Realtime Sync', () => {
 
         test('Multiple rapid operations converge to consistent state', () => {
             // 1. Create card-r1 in col1
-            broadcastEvent(createPlatformEvent('create', {
-                Id: 'card-r1', subject: 'Rapid 1', columnId: 'col1', position: '0|d:', OpenSF__SequenceNumber__c: 1
-            }, null, 1), allHandlers);
+            broadcastEvent(
+                createPlatformEvent(
+                    'create',
+                    {
+                        Id: 'card-r1',
+                        subject: 'Rapid 1',
+                        columnId: 'col1',
+                        position: '0|d:',
+                        OpenSF__SequenceNumber__c: 1
+                    },
+                    null,
+                    1
+                ),
+                allHandlers
+            );
 
             // 2. Create card-r2 in col2
-            broadcastEvent(createPlatformEvent('create', {
-                Id: 'card-r2', subject: 'Rapid 2', columnId: 'col2', position: '0|b:', OpenSF__SequenceNumber__c: 1
-            }, null, 1), allHandlers);
+            broadcastEvent(
+                createPlatformEvent(
+                    'create',
+                    {
+                        Id: 'card-r2',
+                        subject: 'Rapid 2',
+                        columnId: 'col2',
+                        position: '0|b:',
+                        OpenSF__SequenceNumber__c: 1
+                    },
+                    null,
+                    1
+                ),
+                allHandlers
+            );
 
             // 3. Update card1 subject
-            broadcastEvent(createPlatformEvent('update', {
-                Id: 'card1', subject: 'Rapid Update', columnId: 'col1', OpenSF__SequenceNumber__c: 2
-            }, null, 2), allHandlers);
+            broadcastEvent(
+                createPlatformEvent(
+                    'update',
+                    {
+                        Id: 'card1',
+                        subject: 'Rapid Update',
+                        columnId: 'col1',
+                        OpenSF__SequenceNumber__c: 2
+                    },
+                    null,
+                    2
+                ),
+                allHandlers
+            );
 
             // 4. Move card2 to col2
-            broadcastEvent(createPlatformEvent('move', {
-                Id: 'card2', columnId: 'col2', position: '0|c:', OpenSF__SequenceNumber__c: 2
-            }, null, 2), allHandlers);
+            broadcastEvent(
+                createPlatformEvent(
+                    'move',
+                    {
+                        Id: 'card2',
+                        columnId: 'col2',
+                        position: '0|c:',
+                        OpenSF__SequenceNumber__c: 2
+                    },
+                    null,
+                    2
+                ),
+                allHandlers
+            );
 
             // 5. Delete card3
-            broadcastEvent(createPlatformEvent('delete', {
-                Id: 'card3', columnId: 'col2'
-            }, null, 2), allHandlers);
+            broadcastEvent(
+                createPlatformEvent(
+                    'delete',
+                    {
+                        Id: 'card3',
+                        columnId: 'col2'
+                    },
+                    null,
+                    2
+                ),
+                allHandlers
+            );
 
             // 6. Create card-r3 in col3
-            broadcastEvent(createPlatformEvent('create', {
-                Id: 'card-r3', subject: 'Rapid 3', columnId: 'col3', position: '0|a:', OpenSF__SequenceNumber__c: 1
-            }, null, 1), allHandlers);
+            broadcastEvent(
+                createPlatformEvent(
+                    'create',
+                    {
+                        Id: 'card-r3',
+                        subject: 'Rapid 3',
+                        columnId: 'col3',
+                        position: '0|a:',
+                        OpenSF__SequenceNumber__c: 1
+                    },
+                    null,
+                    1
+                ),
+                allHandlers
+            );
 
             // 7. Update card-r1 priority
-            broadcastEvent(createPlatformEvent('update', {
-                Id: 'card-r1', priority: 'Critical', columnId: 'col1', OpenSF__SequenceNumber__c: 2
-            }, null, 2), allHandlers);
+            broadcastEvent(
+                createPlatformEvent(
+                    'update',
+                    {
+                        Id: 'card-r1',
+                        priority: 'Critical',
+                        columnId: 'col1',
+                        OpenSF__SequenceNumber__c: 2
+                    },
+                    null,
+                    2
+                ),
+                allHandlers
+            );
 
             // 8. Move card-r2 to col3
-            broadcastEvent(createPlatformEvent('move', {
-                Id: 'card-r2', columnId: 'col3', position: '0|b:', OpenSF__SequenceNumber__c: 2
-            }, null, 2), allHandlers);
+            broadcastEvent(
+                createPlatformEvent(
+                    'move',
+                    {
+                        Id: 'card-r2',
+                        columnId: 'col3',
+                        position: '0|b:',
+                        OpenSF__SequenceNumber__c: 2
+                    },
+                    null,
+                    2
+                ),
+                allHandlers
+            );
 
             // 9. Update card-r3 subject
-            broadcastEvent(createPlatformEvent('update', {
-                Id: 'card-r3', subject: 'Rapid 3 Updated', columnId: 'col3', OpenSF__SequenceNumber__c: 2
-            }, null, 2), allHandlers);
+            broadcastEvent(
+                createPlatformEvent(
+                    'update',
+                    {
+                        Id: 'card-r3',
+                        subject: 'Rapid 3 Updated',
+                        columnId: 'col3',
+                        OpenSF__SequenceNumber__c: 2
+                    },
+                    null,
+                    2
+                ),
+                allHandlers
+            );
 
             // 10. Delete card-r1
-            broadcastEvent(createPlatformEvent('delete', {
-                Id: 'card-r1', columnId: 'col1'
-            }, null, 3), allHandlers);
+            broadcastEvent(
+                createPlatformEvent(
+                    'delete',
+                    {
+                        Id: 'card-r1',
+                        columnId: 'col1'
+                    },
+                    null,
+                    3
+                ),
+                allHandlers
+            );
 
             // Verify final state is consistent between both stores
             const verifyStore = (store, label) => {
                 const state = store.getState();
-                state.columns.forEach(col => {
+                state.columns.forEach((col) => {
                     expect(col.cardCount).toBe(col.cards.length);
                 });
 
@@ -833,7 +1162,7 @@ describe('Multi-User Realtime Sync', () => {
                 // col3: card-r2 (moved), card-r3 (created + updated)
                 const col3 = getColumn(store, 'col3');
                 expect(col3.cards).toHaveLength(2);
-                const cardR3 = col3.cards.find(c => c.Id === 'card-r3');
+                const cardR3 = col3.cards.find((c) => c.Id === 'card-r3');
                 expect(cardR3.subject).toBe('Rapid 3 Updated');
 
                 // Deleted cards should not exist
@@ -848,17 +1177,50 @@ describe('Multi-User Realtime Sync', () => {
         test('Total card count is consistent after mixed operations', () => {
             // Start: 3 cards total (card1, card2, card3)
             // Create 2
-            broadcastEvent(createPlatformEvent('create', {
-                Id: 'card-n1', subject: 'New 1', columnId: 'col1', position: '0|c:', OpenSF__SequenceNumber__c: 1
-            }, null, 1), allHandlers);
-            broadcastEvent(createPlatformEvent('create', {
-                Id: 'card-n2', subject: 'New 2', columnId: 'col2', position: '0|b:', OpenSF__SequenceNumber__c: 1
-            }, null, 1), allHandlers);
+            broadcastEvent(
+                createPlatformEvent(
+                    'create',
+                    {
+                        Id: 'card-n1',
+                        subject: 'New 1',
+                        columnId: 'col1',
+                        position: '0|c:',
+                        OpenSF__SequenceNumber__c: 1
+                    },
+                    null,
+                    1
+                ),
+                allHandlers
+            );
+            broadcastEvent(
+                createPlatformEvent(
+                    'create',
+                    {
+                        Id: 'card-n2',
+                        subject: 'New 2',
+                        columnId: 'col2',
+                        position: '0|b:',
+                        OpenSF__SequenceNumber__c: 1
+                    },
+                    null,
+                    1
+                ),
+                allHandlers
+            );
 
             // Delete 1
-            broadcastEvent(createPlatformEvent('delete', {
-                Id: 'card2', columnId: 'col1'
-            }, null, 2), allHandlers);
+            broadcastEvent(
+                createPlatformEvent(
+                    'delete',
+                    {
+                        Id: 'card2',
+                        columnId: 'col1'
+                    },
+                    null,
+                    2
+                ),
+                allHandlers
+            );
 
             // Final: 4 cards (card1, card3, card-n1, card-n2)
             const totalA = windowA.store.getTotalCardCount();
@@ -869,13 +1231,49 @@ describe('Multi-User Realtime Sync', () => {
 
         test('Both stores converge to identical state after same sequence of events', () => {
             const events = [
-                createPlatformEvent('update', { Id: 'card1', subject: 'Final 1', columnId: 'col1', OpenSF__SequenceNumber__c: 2 }, null, 2),
-                createPlatformEvent('move', { Id: 'card2', columnId: 'col3', position: '0|a:', OpenSF__SequenceNumber__c: 2 }, null, 2),
-                createPlatformEvent('create', { Id: 'card-conv', subject: 'Convergence', columnId: 'col2', position: '0|b:', OpenSF__SequenceNumber__c: 1 }, null, 1),
-                createPlatformEvent('delete', { Id: 'card3', columnId: 'col2' }, null, 2)
+                createPlatformEvent(
+                    'update',
+                    {
+                        Id: 'card1',
+                        subject: 'Final 1',
+                        columnId: 'col1',
+                        OpenSF__SequenceNumber__c: 2
+                    },
+                    null,
+                    2
+                ),
+                createPlatformEvent(
+                    'move',
+                    {
+                        Id: 'card2',
+                        columnId: 'col3',
+                        position: '0|a:',
+                        OpenSF__SequenceNumber__c: 2
+                    },
+                    null,
+                    2
+                ),
+                createPlatformEvent(
+                    'create',
+                    {
+                        Id: 'card-conv',
+                        subject: 'Convergence',
+                        columnId: 'col2',
+                        position: '0|b:',
+                        OpenSF__SequenceNumber__c: 1
+                    },
+                    null,
+                    1
+                ),
+                createPlatformEvent(
+                    'delete',
+                    { Id: 'card3', columnId: 'col2' },
+                    null,
+                    2
+                )
             ];
 
-            events.forEach(event => broadcastEvent(event, allHandlers));
+            events.forEach((event) => broadcastEvent(event, allHandlers));
 
             const stateA = windowA.store.getState();
             const stateB = windowB.store.getState();
@@ -900,15 +1298,23 @@ describe('Multi-User Realtime Sync', () => {
     describe('Edge Cases', () => {
         test('Activity callback is called for events from other users', () => {
             const activityMessages = [];
-            windowA.handler.setActivityCallback((msg) => activityMessages.push(msg));
+            windowA.handler.setActivityCallback((msg) =>
+                activityMessages.push(msg)
+            );
 
-            const event = createPlatformEvent('create', {
-                Id: 'card-activity',
-                OpenSF__Subject__c: 'Activity Card',
-                columnId: 'col1',
-                position: '0|d:',
-                OpenSF__SequenceNumber__c: 1
-            }, null, 1, 'client-B');
+            const event = createPlatformEvent(
+                'create',
+                {
+                    Id: 'card-activity',
+                    OpenSF__Subject__c: 'Activity Card',
+                    columnId: 'col1',
+                    position: '0|d:',
+                    OpenSF__SequenceNumber__c: 1
+                },
+                null,
+                1,
+                'client-B'
+            );
 
             windowA.handler.handlePlatformEvent(event, windowA.store);
 
@@ -925,7 +1331,9 @@ describe('Multi-User Realtime Sync', () => {
                 ClientId__c: null
             };
 
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleErrorSpy = jest
+                .spyOn(console, 'error')
+                .mockImplementation();
 
             // Should not throw
             expect(() => {
@@ -933,15 +1341,22 @@ describe('Multi-User Realtime Sync', () => {
             }).not.toThrow();
 
             // Store should be unchanged
-            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe('Task 1');
+            expect(findCardInStore(windowA.store, 'card1').card.subject).toBe(
+                'Task 1'
+            );
             consoleErrorSpy.mockRestore();
         });
 
         test('Delete of non-existent card is handled gracefully', () => {
-            const event = createPlatformEvent('delete', {
-                Id: 'card-nonexistent',
-                columnId: 'col1'
-            }, null, 1);
+            const event = createPlatformEvent(
+                'delete',
+                {
+                    Id: 'card-nonexistent',
+                    columnId: 'col1'
+                },
+                null,
+                1
+            );
 
             expect(() => {
                 broadcastEvent(event, allHandlers);
@@ -967,7 +1382,7 @@ describe('Multi-User Realtime Sync', () => {
             broadcastEvent(event, allHandlers); // Second broadcast
 
             const col1Cards = getColumnCards(windowA.store, 'col1');
-            const matches = col1Cards.filter(c => c.Id === 'card-once');
+            const matches = col1Cards.filter((c) => c.Id === 'card-once');
             expect(matches).toHaveLength(1);
         });
     });

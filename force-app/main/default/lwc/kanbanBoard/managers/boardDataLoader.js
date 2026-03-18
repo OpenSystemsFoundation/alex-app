@@ -36,9 +36,7 @@ export default class BoardDataLoader {
 
         try {
             // Dispatch thunk to load data (store handles all state updates)
-            await store.dispatch(
-                loadBoardDataThunk(this.component._recordId)
-            );
+            await store.dispatch(loadBoardDataThunk(this.component._recordId));
 
             // Update event handler with board ID
             if (this.component.eventHandler) {

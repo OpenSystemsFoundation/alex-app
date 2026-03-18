@@ -1,5 +1,7 @@
 trigger SprintCardTrigger on OpenSF__SprintCard__c(
-    after insert, after update, after delete
+    after insert,
+    after update,
+    after delete
 ) {
     SprintCardTriggerHandler handler = new SprintCardTriggerHandler();
     handler.setTriggerContext(

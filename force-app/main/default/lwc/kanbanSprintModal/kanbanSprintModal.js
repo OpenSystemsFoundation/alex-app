@@ -61,11 +61,18 @@ export default class KanbanSprintModal extends LightningElement {
 
         try {
             const result = await this.store.dispatch(
-                createSprintAsync(this.boardId, this.goal, this.startDate, this.endDate)
+                createSprintAsync(
+                    this.boardId,
+                    this.goal,
+                    this.startDate,
+                    this.endDate
+                )
             );
-            this.dispatchEvent(new CustomEvent('sprintcreated', {
-                detail: { sprint: result.sprint }
-            }));
+            this.dispatchEvent(
+                new CustomEvent('sprintcreated', {
+                    detail: { sprint: result.sprint }
+                })
+            );
             this.handleClose();
         } catch (error) {
             console.error('Error creating sprint:', error);

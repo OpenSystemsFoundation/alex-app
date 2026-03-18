@@ -5,13 +5,23 @@ public with sharing class SprintService {
     /**
      * Create a new sprint
      */
-    public static KanbanBoardDTO.SprintDTO createSprint(Id boardId, String goal, Date startDate, Date endDate) {
+    public static KanbanBoardDTO.SprintDTO createSprint(
+        Id boardId,
+        String goal,
+        Date startDate,
+        Date endDate
+    ) {
         // Calculate next sprint number
-        List<OpenSF__Sprint__c> existingSprints = SprintSelector.getSprintsByBoardId(boardId);
+        List<OpenSF__Sprint__c> existingSprints = SprintSelector.getSprintsByBoardId(
+            boardId
+        );
         Decimal nextNumber = 1;
         if (!existingSprints.isEmpty()) {
             for (OpenSF__Sprint__c s : existingSprints) {
-                if (s.OpenSF__SprintNumber__c != null && s.OpenSF__SprintNumber__c >= nextNumber) {
+                if (
+                    s.OpenSF__SprintNumber__c != null &&
+                    s.OpenSF__SprintNumber__c >= nextNumber
+                ) {
                     nextNumber = s.OpenSF__SprintNumber__c + 1;
                 }
             }
@@ -41,17 +51,25 @@ public with sharing class SprintService {
         OpenSF__Sprint__c sprint = SprintSelector.getSprintById(sprintId);
 
         if (sprint.OpenSF__Status__c != 'Planning') {
-            throw new AuraHandledException('Only sprints in Planning status can be started.');
+            throw new AuraHandledException(
+                'Only sprints in Planning status can be started.'
+            );
         }
 
         // Check no other active sprint on this board
-        OpenSF__Sprint__c activeSprint = SprintSelector.getActiveSprintByBoardId(sprint.OpenSF__Board__c);
+        OpenSF__Sprint__c activeSprint = SprintSelector.getActiveSprintByBoardId(
+            sprint.OpenSF__Board__c
+        );
         if (activeSprint != null) {
-            throw new AuraHandledException('Board already has an active sprint: ' + activeSprint.Name);
+            throw new AuraHandledException(
+                'Board already has an active sprint: ' + activeSprint.Name
+            );
         }
 
         // Calculate total story points from sprint cards
-        List<OpenSF__SprintCard__c> sprintCards = SprintSelector.getSprintCardsBySprintId(sprintId);
+        List<OpenSF__SprintCard__c> sprintCards = SprintSelector.getSprintCardsBySprintId(
+            sprintId
+        );
         Decimal totalPoints = 0;
         for (OpenSF__SprintCard__c sc : sprintCards) {
             if (sc.OpenSF__StoryPointsAtAdd__c != null) {
@@ -60,7 +78,9 @@ public with sharing class SprintService {
         }
 
         sprint.OpenSF__Status__c = 'Active';
-        sprint.OpenSF__StartDate__c = sprint.OpenSF__StartDate__c != null ? sprint.OpenSF__StartDate__c : Date.today();
+        sprint.OpenSF__StartDate__c = sprint.OpenSF__StartDate__c != null
+            ? sprint.OpenSF__StartDate__c
+            : Date.today();
         sprint.OpenSF__TotalStoryPoints__c = totalPoints;
         update sprint;
 
@@ -77,21 +97,30 @@ public with sharing class SprintService {
         // Publish event
         publishSprintEvent('sprint_started', sprint);
 
-        return new KanbanBoardDTO.SprintDTO(SprintSelector.getSprintById(sprintId));
+        return new KanbanBoardDTO.SprintDTO(
+            SprintSelector.getSprintById(sprintId)
+        );
     }
 
     /**
      * Complete a sprint with card dispositions
      * @param dispositions Map of cardId -> disposition ('backlog' or sprintId to move to)
      */
-    public static KanbanBoardDTO.SprintDTO completeSprint(Id sprintId, Map<Id, String> dispositions) {
+    public static KanbanBoardDTO.SprintDTO completeSprint(
+        Id sprintId,
+        Map<Id, String> dispositions
+    ) {
         OpenSF__Sprint__c sprint = SprintSelector.getSprintById(sprintId);
 
         if (sprint.OpenSF__Status__c != 'Active') {
-            throw new AuraHandledException('Only active sprints can be completed.');
+            throw new AuraHandledException(
+                'Only active sprints can be completed.'
+            );
         }
 
-        List<OpenSF__SprintCard__c> sprintCards = SprintSelector.getSprintCardsBySprintId(sprintId);
+        List<OpenSF__SprintCard__c> sprintCards = SprintSelector.getSprintCardsBySprintId(
+            sprintId
+        );
 
         // Calculate completed points
         Decimal completedPoints = 0;
@@ -111,18 +140,23 @@ public with sharing class SprintService {
             List<OpenSF__SprintCard__c> newJunctions = new List<OpenSF__SprintCard__c>();
 
             for (OpenSF__SprintCard__c sc : sprintCards) {
-                if (sc.OpenSF__CompletedInSprint__c != true && dispositions.containsKey(sc.OpenSF__Card__c)) {
+                if (
+                    sc.OpenSF__CompletedInSprint__c != true &&
+                    dispositions.containsKey(sc.OpenSF__Card__c)
+                ) {
                     String disposition = dispositions.get(sc.OpenSF__Card__c);
 
                     if (disposition != 'backlog' && disposition instanceof Id) {
                         // Move to another sprint - create new junction
-                        newJunctions.add(new OpenSF__SprintCard__c(
-                            OpenSF__Sprint__c = (Id) disposition,
-                            OpenSF__Card__c = sc.OpenSF__Card__c,
-                            OpenSF__AddedDate__c = DateTime.now(),
-                            OpenSF__StoryPointsAtAdd__c = sc.OpenSF__Card__r.OpenSF__StoryPoints__c,
-                            OpenSF__Position__c = sc.OpenSF__Position__c
-                        ));
+                        newJunctions.add(
+                            new OpenSF__SprintCard__c(
+                                OpenSF__Sprint__c = (Id) disposition,
+                                OpenSF__Card__c = sc.OpenSF__Card__c,
+                                OpenSF__AddedDate__c = DateTime.now(),
+                                OpenSF__StoryPointsAtAdd__c = sc.OpenSF__Card__r.OpenSF__StoryPoints__c,
+                                OpenSF__Position__c = sc.OpenSF__Position__c
+                            )
+                        );
                     }
                     // 'backlog' = card just stays unassigned, no new junction needed
                 }
@@ -137,7 +171,9 @@ public with sharing class SprintService {
         sprint.OpenSF__Status__c = 'Completed';
         sprint.OpenSF__CompletedStoryPoints__c = completedPoints;
         sprint.OpenSF__Velocity__c = completedPoints;
-        sprint.OpenSF__EndDate__c = sprint.OpenSF__EndDate__c != null ? sprint.OpenSF__EndDate__c : Date.today();
+        sprint.OpenSF__EndDate__c = sprint.OpenSF__EndDate__c != null
+            ? sprint.OpenSF__EndDate__c
+            : Date.today();
         update sprint;
 
         // Clear active sprint on board
@@ -153,35 +189,49 @@ public with sharing class SprintService {
         // Publish event
         publishSprintEvent('sprint_completed', sprint);
 
-        return new KanbanBoardDTO.SprintDTO(SprintSelector.getSprintById(sprintId));
+        return new KanbanBoardDTO.SprintDTO(
+            SprintSelector.getSprintById(sprintId)
+        );
     }
 
     /**
      * Add cards to a sprint
      */
-    public static List<KanbanBoardDTO.SprintCardDTO> addCardsToSprint(Id sprintId, List<Id> cardIds) {
+    public static List<KanbanBoardDTO.SprintCardDTO> addCardsToSprint(
+        Id sprintId,
+        List<Id> cardIds
+    ) {
         // Check which cards are already in the sprint
-        List<OpenSF__SprintCard__c> existing = SprintSelector.getActiveSprintCardsByCardIds(sprintId, cardIds);
+        List<OpenSF__SprintCard__c> existing = SprintSelector.getActiveSprintCardsByCardIds(
+            sprintId,
+            cardIds
+        );
         Set<Id> existingCardIds = new Set<Id>();
         for (OpenSF__SprintCard__c sc : existing) {
             existingCardIds.add(sc.OpenSF__Card__c);
         }
 
         // Get card details for story points
-        List<OpenSF__Card__c> cards = KanbanBoardSelector.getCardsByIds(cardIds);
+        List<OpenSF__Card__c> cards = KanbanBoardSelector.getCardsByIds(
+            cardIds
+        );
         Map<Id, OpenSF__Card__c> cardMap = new Map<Id, OpenSF__Card__c>(cards);
 
         List<OpenSF__SprintCard__c> newJunctions = new List<OpenSF__SprintCard__c>();
         for (Id cardId : cardIds) {
             if (!existingCardIds.contains(cardId)) {
                 OpenSF__Card__c card = cardMap.get(cardId);
-                newJunctions.add(new OpenSF__SprintCard__c(
-                    OpenSF__Sprint__c = sprintId,
-                    OpenSF__Card__c = cardId,
-                    OpenSF__AddedDate__c = DateTime.now(),
-                    OpenSF__StoryPointsAtAdd__c = card != null ? card.OpenSF__StoryPoints__c : null,
-                    OpenSF__Position__c = LexoRank.between(null, null)
-                ));
+                newJunctions.add(
+                    new OpenSF__SprintCard__c(
+                        OpenSF__Sprint__c = sprintId,
+                        OpenSF__Card__c = cardId,
+                        OpenSF__AddedDate__c = DateTime.now(),
+                        OpenSF__StoryPointsAtAdd__c = card != null
+                            ? card.OpenSF__StoryPoints__c
+                            : null,
+                        OpenSF__Position__c = LexoRank.between(null, null)
+                    )
+                );
             }
         }
 
@@ -197,7 +247,9 @@ public with sharing class SprintService {
         publishSprintEvent('cards_added', sprint);
 
         // Return the newly created junctions
-        List<OpenSF__SprintCard__c> allCards = SprintSelector.getSprintCardsBySprintId(sprintId);
+        List<OpenSF__SprintCard__c> allCards = SprintSelector.getSprintCardsBySprintId(
+            sprintId
+        );
         return KanbanBoardDTO.convertSprintCards(allCards);
     }
 
@@ -208,9 +260,10 @@ public with sharing class SprintService {
         List<OpenSF__SprintCard__c> junctions = [
             SELECT Id, OpenSF__RemovedDate__c
             FROM OpenSF__SprintCard__c
-            WHERE OpenSF__Sprint__c = :sprintId
-              AND OpenSF__Card__c = :cardId
-              AND OpenSF__RemovedDate__c = null
+            WHERE
+                OpenSF__Sprint__c = :sprintId
+                AND OpenSF__Card__c = :cardId
+                AND OpenSF__RemovedDate__c = NULL
             LIMIT 1
         ];
 
@@ -234,7 +287,9 @@ public with sharing class SprintService {
         SprintBoardData data = new SprintBoardData();
 
         // Get active sprint
-        OpenSF__Sprint__c activeSprint = SprintSelector.getActiveSprintByBoardId(boardId);
+        OpenSF__Sprint__c activeSprint = SprintSelector.getActiveSprintByBoardId(
+            boardId
+        );
         if (activeSprint != null) {
             data.activeSprint = new KanbanBoardDTO.SprintDTO(activeSprint);
             data.sprintCards = KanbanBoardDTO.convertSprintCards(
@@ -259,7 +314,9 @@ public with sharing class SprintService {
      * Create a daily snapshot for a sprint
      */
     public static void createDailySnapshot(Id sprintId) {
-        List<OpenSF__SprintCard__c> sprintCards = SprintSelector.getSprintCardsBySprintId(sprintId);
+        List<OpenSF__SprintCard__c> sprintCards = SprintSelector.getSprintCardsBySprintId(
+            sprintId
+        );
 
         Decimal totalPoints = 0;
         Decimal completedPoints = 0;
@@ -294,7 +351,9 @@ public with sharing class SprintService {
     /**
      * Get burndown data for a sprint
      */
-    public static List<KanbanBoardDTO.SprintSnapshotDTO> getBurndownData(Id sprintId) {
+    public static List<KanbanBoardDTO.SprintSnapshotDTO> getBurndownData(
+        Id sprintId
+    ) {
         return KanbanBoardDTO.convertSnapshots(
             SprintSelector.getSnapshotsBySprintId(sprintId)
         );
@@ -303,7 +362,10 @@ public with sharing class SprintService {
     /**
      * Get velocity data for a board
      */
-    public static List<KanbanBoardDTO.SprintDTO> getVelocityData(Id boardId, Integer count) {
+    public static List<KanbanBoardDTO.SprintDTO> getVelocityData(
+        Id boardId,
+        Integer count
+    ) {
         return KanbanBoardDTO.convertSprints(
             SprintSelector.getCompletedSprintsByBoardId(boardId, count)
         );
@@ -316,13 +378,16 @@ public with sharing class SprintService {
         List<OpenSF__SprintCard__c> junctions = [
             SELECT Id, OpenSF__CompletedInSprint__c, OpenSF__CompletedDate__c
             FROM OpenSF__SprintCard__c
-            WHERE OpenSF__Sprint__c = :sprintId
-              AND OpenSF__Card__c = :cardId
-              AND OpenSF__RemovedDate__c = null
+            WHERE
+                OpenSF__Sprint__c = :sprintId
+                AND OpenSF__Card__c = :cardId
+                AND OpenSF__RemovedDate__c = NULL
             LIMIT 1
         ];
 
-        if (!junctions.isEmpty() && !junctions[0].OpenSF__CompletedInSprint__c) {
+        if (
+            !junctions.isEmpty() && !junctions[0].OpenSF__CompletedInSprint__c
+        ) {
             junctions[0].OpenSF__CompletedInSprint__c = true;
             junctions[0].OpenSF__CompletedDate__c = DateTime.now();
             update junctions;
@@ -335,7 +400,9 @@ public with sharing class SprintService {
      * Recalculate sprint total and completed points
      */
     private static void recalculateSprintPoints(Id sprintId) {
-        List<OpenSF__SprintCard__c> sprintCards = SprintSelector.getSprintCardsBySprintId(sprintId);
+        List<OpenSF__SprintCard__c> sprintCards = SprintSelector.getSprintCardsBySprintId(
+            sprintId
+        );
 
         Decimal totalPoints = 0;
         Decimal completedPoints = 0;
@@ -361,10 +428,15 @@ public with sharing class SprintService {
     /**
      * Publish a sprint update event
      */
-    private static void publishSprintEvent(String eventType, OpenSF__Sprint__c sprint) {
+    private static void publishSprintEvent(
+        String eventType,
+        OpenSF__Sprint__c sprint
+    ) {
         OpenSF__SprintUpdateEvent__e event = new OpenSF__SprintUpdateEvent__e(
             OpenSF__EventType__c = eventType,
-            OpenSF__Payload__c = JSON.serialize(new KanbanBoardDTO.SprintDTO(sprint)),
+            OpenSF__Payload__c = JSON.serialize(
+                new KanbanBoardDTO.SprintDTO(sprint)
+            ),
             OpenSF__BoardId__c = String.valueOf(sprint.OpenSF__Board__c)
         );
         EventBus.publish(event);
@@ -374,9 +446,13 @@ public with sharing class SprintService {
      * Wrapper for sprint board data
      */
     public class SprintBoardData {
-        @AuraEnabled public KanbanBoardDTO.SprintDTO activeSprint;
-        @AuraEnabled public List<KanbanBoardDTO.SprintDTO> sprints;
-        @AuraEnabled public List<KanbanBoardDTO.SprintCardDTO> sprintCards;
-        @AuraEnabled public List<KanbanBoardDTO.CardDTO> backlogCards;
+        @AuraEnabled
+        public KanbanBoardDTO.SprintDTO activeSprint;
+        @AuraEnabled
+        public List<KanbanBoardDTO.SprintDTO> sprints;
+        @AuraEnabled
+        public List<KanbanBoardDTO.SprintCardDTO> sprintCards;
+        @AuraEnabled
+        public List<KanbanBoardDTO.CardDTO> backlogCards;
     }
 }

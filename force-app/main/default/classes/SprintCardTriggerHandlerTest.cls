@@ -5,7 +5,11 @@
 public class SprintCardTriggerHandlerTest {
     @TestSetup
     static void setup() {
-        Map<String, Object> hierarchy = TestFactory.createFullBoardHierarchy('Trigger Board', 2, 2);
+        Map<String, Object> hierarchy = TestFactory.createFullBoardHierarchy(
+            'Trigger Board',
+            2,
+            2
+        );
     }
 
     @isTest
@@ -34,7 +38,10 @@ public class SprintCardTriggerHandlerTest {
         OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
         OpenSF__Sprint__c sprint = TestFactory.createSprint(board.Id);
         OpenSF__Card__c card = [SELECT Id FROM OpenSF__Card__c LIMIT 1];
-        OpenSF__SprintCard__c sc = TestFactory.createSprintCard(sprint.Id, card.Id);
+        OpenSF__SprintCard__c sc = TestFactory.createSprintCard(
+            sprint.Id,
+            card.Id
+        );
 
         Test.startTest();
         TriggerHandler.clearBypass('SprintCardTriggerHandler');
@@ -43,8 +50,16 @@ public class SprintCardTriggerHandlerTest {
         update sc;
         Test.stopTest();
 
-        OpenSF__SprintCard__c updated = [SELECT OpenSF__CompletedInSprint__c FROM OpenSF__SprintCard__c WHERE Id = :sc.Id];
-        System.assertEquals(true, updated.OpenSF__CompletedInSprint__c, 'Should be marked complete');
+        OpenSF__SprintCard__c updated = [
+            SELECT OpenSF__CompletedInSprint__c
+            FROM OpenSF__SprintCard__c
+            WHERE Id = :sc.Id
+        ];
+        System.assertEquals(
+            true,
+            updated.OpenSF__CompletedInSprint__c,
+            'Should be marked complete'
+        );
     }
 
     @isTest
@@ -52,14 +67,21 @@ public class SprintCardTriggerHandlerTest {
         OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
         OpenSF__Sprint__c sprint = TestFactory.createSprint(board.Id);
         OpenSF__Card__c card = [SELECT Id FROM OpenSF__Card__c LIMIT 1];
-        OpenSF__SprintCard__c sc = TestFactory.createSprintCard(sprint.Id, card.Id);
+        OpenSF__SprintCard__c sc = TestFactory.createSprintCard(
+            sprint.Id,
+            card.Id
+        );
 
         Test.startTest();
         TriggerHandler.clearBypass('SprintCardTriggerHandler');
         delete sc;
         Test.stopTest();
 
-        Integer count = [SELECT COUNT() FROM OpenSF__SprintCard__c WHERE Id = :sc.Id];
+        Integer count = [
+            SELECT COUNT()
+            FROM OpenSF__SprintCard__c
+            WHERE Id = :sc.Id
+        ];
         System.assertEquals(0, count, 'Sprint card should be deleted');
     }
 
@@ -77,7 +99,11 @@ public class SprintCardTriggerHandlerTest {
         scheduler.execute(null);
         Test.stopTest();
 
-        List<OpenSF__SprintSnapshot__c> snapshots = [SELECT Id FROM OpenSF__SprintSnapshot__c WHERE OpenSF__Sprint__c = :sprint.Id];
+        List<OpenSF__SprintSnapshot__c> snapshots = [
+            SELECT Id
+            FROM OpenSF__SprintSnapshot__c
+            WHERE OpenSF__Sprint__c = :sprint.Id
+        ];
         System.assert(snapshots.size() >= 1, 'Should have at least 1 snapshot');
     }
 }

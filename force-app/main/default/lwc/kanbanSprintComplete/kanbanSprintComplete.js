@@ -66,14 +66,18 @@ export default class KanbanSprintComplete extends LightningElement {
         return this.sprint?.totalStoryPoints || 0;
     }
 
-    get isStep1() { return this.step === 1; }
-    get isStep2() { return this.step === 2; }
-    get isStep3() { return this.step === 3; }
+    get isStep1() {
+        return this.step === 1;
+    }
+    get isStep2() {
+        return this.step === 2;
+    }
+    get isStep3() {
+        return this.step === 3;
+    }
 
     get dispositionOptions() {
-        return [
-            { label: 'Move to Backlog', value: 'backlog' }
-        ];
+        return [{ label: 'Move to Backlog', value: 'backlog' }];
     }
 
     get incompleteCardsWithDisposition() {
