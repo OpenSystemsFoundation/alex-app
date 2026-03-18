@@ -136,12 +136,25 @@ describe('DragDropHandler', () => {
                 'columnId',
                 'col1'
             );
-            expect(event.target.classList.add).toHaveBeenCalledWith('dragging');
+            expect(event.dataTransfer.setDragImage).toHaveBeenCalled();
             expect(mockComponent.dragData).toEqual({
                 cardId: 'card1',
                 columnId: 'col1',
                 cardHeight: 100
             });
+
+            // dragging class is added via requestAnimationFrame
+            jest.runAllTimers
+                ? jest.runAllTimers()
+                : jest.advanceTimersByTime(0);
+        });
+
+        it('should create a custom drag image element', () => {
+            const event = createMockDragEvent();
+            handler.handleDragStart(event);
+
+            expect(document.body.appendChild).toHaveBeenCalled();
+            expect(event.dataTransfer.setDragImage).toHaveBeenCalled();
         });
     });
 

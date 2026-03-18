@@ -11,6 +11,20 @@
                 ></c-connection-status-indicator>
             </div>
 
+            <!-- Backlog Toggle (for non-sprint boards) -->
+            <template lwc:if={isSprintBoard}>
+            </template>
+            <template lwc:else>
+                <div class="slds-col">
+                    <lightning-button
+                        label="Backlog"
+                        icon-name="utility:list"
+                        onclick={handleToggleBacklog}
+                        variant="neutral"
+                    ></lightning-button>
+                </div>
+            </template>
+
             <!-- Refresh Button -->
             <div class="slds-col">
                 <lightning-button
@@ -32,8 +46,30 @@
             </div>
         </template>
 
+        <!-- Sprint Header (shown for sprint boards) -->
+        <template lwc:if={isSprintBoard}>
+            <c-kanban-sprint-header
+                store={store}
+                ontogglebacklog={handleToggleBacklog}
+                oncreatesprint={handleCreateSprint}
+                oncompletesprint={handleCompleteSprint}
+                onshowreports={handleShowReports}
+            ></c-kanban-sprint-header>
+        </template>
+
         <!-- Kanban Board Container -->
-        <div class="kanban-board-container">
+        <div class="kanban-board-container slds-grid">
+            <!-- Backlog Panel (left side) -->
+            <template lwc:if={showBacklog}>
+                <c-kanban-backlog-panel
+                    store={store}
+                    mode={backlogMode}
+                    oncardsadded={handleBacklogCardsAdded}
+                    oncardclick={handleBacklogCardClick}
+                    onclose={handleBacklogClose}
+                ></c-kanban-backlog-panel>
+            </template>
+
             <!-- Kanban Board -->
             <div
                 class="kanban-board slds-grid slds-scrollable_x slds-var-p-around_medium slds-var-p-around_small@mobile"
@@ -327,6 +363,41 @@
         ></c-kanban-card-detail>
     </template>
 
+    <!-- Sprint Modal -->
+    <template lwc:if={showSprintModal}>
+        <c-kanban-sprint-modal
+            store={store}
+            board-id={recordId}
+            sprint={editSprint}
+            is-open={showSprintModal}
+            onclose={handleSprintModalClose}
+            onsprintcreated={handleSprintCreated}
+            onsprintstarted={handleSprintStarted}
+        ></c-kanban-sprint-modal>
+    </template>
+
+    <!-- Sprint Complete Modal -->
+    <template lwc:if={showSprintComplete}>
+        <c-kanban-sprint-complete
+            store={store}
+            sprint-id={activeSprintId}
+            is-open={showSprintComplete}
+            onclose={handleSprintCompleteClose}
+            onsprintcompleted={handleSprintCompleted}
+        ></c-kanban-sprint-complete>
+    </template>
+
+    <!-- Sprint Reports Modal -->
+    <template lwc:if={showSprintReports}>
+        <c-kanban-sprint-reports
+            store={store}
+            sprint-id={activeSprintId}
+            board-id={recordId}
+            is-open={showSprintReports}
+            onclose={handleSprintReportsClose}
+        ></c-kanban-sprint-reports>
+    </template>
+
     <!-- Reusable Managers -->
     <c-subscription-manager
         channel-name={subscriptionChannelName}
@@ -337,6 +408,16 @@
         onstatuschange={handleSubscriptionStatusChange}
         onpollingrequired={handlePollingRequired}
     ></c-subscription-manager>
+
+    <!-- Sprint Event Subscription -->
+    <template lwc:if={isSprintBoard}>
+        <c-subscription-manager
+            channel-name={sprintSubscriptionChannelName}
+            auto-subscribe={shouldAutoSubscribe}
+            board-id={recordId}
+            onmessage={handleSprintSubscriptionMessage}
+        ></c-subscription-manager>
+    </template>
 
     <c-toast-manager></c-toast-manager>
 

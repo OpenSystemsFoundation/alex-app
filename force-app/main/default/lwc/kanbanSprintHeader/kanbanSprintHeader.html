@@ -1,0 +1,75 @@
+<template>
+    <div class="sprint-header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-var-p-horizontal_medium slds-var-p-vertical_x-small">
+        <!-- Left: Sprint Info -->
+        <div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate">
+            <template lwc:if={hasSprint}>
+                <div class="slds-var-m-right_small">
+                    <div class="slds-grid slds-grid_vertical-align-center">
+                        <lightning-icon icon-name="standard:sprint" size="small" class="slds-var-m-right_xx-small"></lightning-icon>
+                        <span class="slds-text-heading_small slds-truncate">{sprintName}</span>
+                    </div>
+                    <template lwc:if={sprintGoal}>
+                        <p class="slds-text-body_small slds-text-color_weak slds-truncate" title={sprintGoal}>{sprintGoal}</p>
+                    </template>
+                </div>
+            </template>
+            <template lwc:else>
+                <span class="slds-text-body_regular slds-text-color_weak">No active sprint</span>
+            </template>
+        </div>
+
+        <!-- Center: Progress -->
+        <template lwc:if={hasSprint}>
+            <div class="sprint-header__progress slds-grid slds-grid_vertical-align-center">
+                <template lwc:if={dateRange}>
+                    <span class="slds-text-body_small slds-var-m-right_small">{dateRange}</span>
+                </template>
+                <template lwc:if={daysRemainingLabel}>
+                    <span class={daysRemainingClass}>
+                        <strong class="slds-text-body_small">{daysRemainingLabel}</strong>
+                    </span>
+                </template>
+                <div class="progress-bar slds-var-m-horizontal_small" title={progressLabel}>
+                    <div class="progress-bar__fill" style={progressStyle}></div>
+                </div>
+                <span class="slds-text-body_small slds-var-m-left_xx-small">{progressLabel}</span>
+            </div>
+        </template>
+
+        <!-- Right: Actions -->
+        <div class="slds-grid slds-grid_vertical-align-center slds-gutters_xx-small">
+            <lightning-button
+                label="Backlog"
+                icon-name="utility:list"
+                onclick={handleToggleBacklog}
+                variant="neutral"
+                class="slds-var-m-right_xx-small"
+            ></lightning-button>
+
+            <template lwc:if={hasSprint}>
+                <lightning-button
+                    label="Reports"
+                    icon-name="utility:chart"
+                    onclick={handleShowReports}
+                    variant="neutral"
+                    class="slds-var-m-right_xx-small"
+                ></lightning-button>
+                <template lwc:if={canComplete}>
+                    <lightning-button
+                        label="Complete Sprint"
+                        onclick={handleCompleteSprint}
+                        variant="brand"
+                    ></lightning-button>
+                </template>
+            </template>
+            <template lwc:else>
+                <lightning-button
+                    label="New Sprint"
+                    icon-name="utility:add"
+                    onclick={handleCreateSprint}
+                    variant="brand"
+                ></lightning-button>
+            </template>
+        </div>
+    </div>
+</template>

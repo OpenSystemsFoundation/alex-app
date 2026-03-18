@@ -271,3 +271,97 @@ export const getSyncStatusMessage = (state) => {
             return '';
     }
 };
+
+// ===================================================================
+// Sprint Selectors
+// ===================================================================
+
+/**
+ * Get the active sprint
+ */
+export const getActiveSprint = (state) => {
+    return state.activeSprint || null;
+};
+
+/**
+ * Get all sprints
+ */
+export const getSprints = (state) => {
+    return state.sprints || [];
+};
+
+/**
+ * Get sprint cards
+ */
+export const getSprintCards = (state) => {
+    return state.sprintCards || [];
+};
+
+/**
+ * Check if this is a sprint board
+ */
+export const isSprintBoard = (state) => {
+    return state.board?.type === 'Sprint';
+};
+
+/**
+ * Get sprint progress (percentage)
+ */
+export const getSprintProgress = (state) => {
+    const sprint = state.activeSprint;
+    if (!sprint || !sprint.totalStoryPoints || sprint.totalStoryPoints === 0) {
+        return 0;
+    }
+    return Math.round(
+        ((sprint.completedStoryPoints || 0) / sprint.totalStoryPoints) * 100
+    );
+};
+
+/**
+ * Get days remaining in sprint
+ */
+export const getSprintDaysRemaining = (state) => {
+    const sprint = state.activeSprint;
+    if (!sprint?.endDate) return null;
+
+    const endDate = new Date(sprint.endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+
+    const diffTime = endDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+};
+
+// ===================================================================
+// Backlog Selectors
+// ===================================================================
+
+/**
+ * Get backlog cards
+ */
+export const getBacklogCards = (state) => {
+    return state.backlogCards || [];
+};
+
+/**
+ * Check if backlog panel is visible
+ */
+export const isBacklogVisible = (state) => {
+    return state.backlogVisible || false;
+};
+
+/**
+ * Get selected backlog card IDs
+ */
+export const getSelectedBacklogCards = (state) => {
+    return state.selectedBacklogCards || [];
+};
+
+/**
+ * Get backlog card count
+ */
+export const getBacklogCardCount = (state) => {
+    return (state.backlogCards || []).length;
+};

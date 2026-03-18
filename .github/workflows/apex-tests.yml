@@ -1,0 +1,126 @@
+name: Apex Tests
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+    apex-test:
+        name: Apex Tests (Scratch Org)
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Install Salesforce CLI
+              run: npm install -g @salesforce/cli
+
+            - name: Authenticate DevHub
+              run: |
+                  echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
+                  sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
+                  rm sfdx_auth.txt
+
+            - name: Create Scratch Org
+              run: sf org create scratch --definition-file config/project-scratch-def.json --alias ci-test --duration-days 1 --wait 10
+
+            - name: Deploy Source
+              run: sf project deploy start --target-org ci-test --ignore-conflicts
+
+            - name: Run Apex Tests
+              run: |
+                  mkdir -p apex-results
+                  sf apex run test --target-org ci-test --code-coverage --result-format json --wait 15 > apex-results/test-run.json 2>&1 || true
+                  node -e "
+                    const fs=require('fs');
+                    const raw=fs.readFileSync('apex-results/test-run.json','utf8');
+                    const jsonStart=raw.indexOf('{');
+                    if(jsonStart<0){console.error('No JSON found in output');console.log(raw);process.exit(1)}
+                    const j=JSON.parse(raw.substring(jsonStart));
+
+                    const r=j.result||j;
+                    const summary=r.summary||{};
+                    const tests=r.tests||[];
+                    const total=tests.length;
+                    const failed=tests.filter(t=>t.Outcome==='Fail');
+                    const passed=tests.filter(t=>t.Outcome==='Pass');
+
+                    console.log('');
+                    console.log('='.repeat(60));
+                    console.log('  APEX TEST RESULTS');
+                    console.log('='.repeat(60));
+                    console.log('');
+
+                    tests.forEach((t,i)=>{
+                      const num=String(i+1).padStart(String(total).length,' ');
+                      const cls=(t.ApexClass&&t.ApexClass.Name)||t.FullName||'Unknown';
+                      const method=t.MethodName||'unknown';
+                      const ms=t.RunTime!=null?t.RunTime+'ms':'--';
+                      const icon=t.Outcome==='Pass'?'PASS':'FAIL';
+                      console.log('  ('+num+'/'+total+') ['+icon+'] '+cls+'.'+method+' ('+ms+')');
+                    });
+
+                    console.log('');
+                    console.log('-'.repeat(60));
+                    console.log('  SUMMARY');
+                    console.log('-'.repeat(60));
+                    console.log('  Outcome:      '+(summary.outcome||'Unknown'));
+                    console.log('  Tests ran:    '+(summary.testsRan||total));
+                    console.log('  Passed:       '+passed.length);
+                    console.log('  Failed:       '+failed.length);
+                    console.log('  Pass rate:    '+(summary.passRate||(total?Math.round(passed.length/total*100)+'%':'N/A')));
+                    console.log('  Org coverage: '+(summary.orgWideCoverage||'N/A'));
+                    console.log('-'.repeat(60));
+
+                    if(failed.length>0){
+                      console.log('');
+                      console.log('!'.repeat(60));
+                      console.log('  FAILED TESTS');
+                      console.log('!'.repeat(60));
+                      failed.forEach((t,i)=>{
+                        console.log('');
+                        const cls=(t.ApexClass&&t.ApexClass.Name)||t.FullName||'Unknown';
+                        console.log('  '+(i+1)+') '+cls+'.'+t.MethodName);
+                        console.log('     Message: '+t.Message);
+                        if(t.StackTrace){
+                          t.StackTrace.split('\\n').forEach(line=>{
+                            console.log('     '+line);
+                          });
+                        }
+                      });
+                      console.log('');
+                      console.log('!'.repeat(60));
+                    }
+
+                    console.log('');
+                    if(failed.length>0||(summary.outcome&&summary.outcome!=='Passed')){process.exit(1)}
+                  "
+
+            - name: Check Coverage Threshold
+              run: |
+                  COVERAGE=$(cat apex-results/test-run.json | node -e "
+                    let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                      const j=JSON.parse(d);
+                      const cov=j.result?.summary?.orgWideCoverage||'0%';
+                      console.log(parseInt(cov));
+                    });
+                  ")
+                  echo "Org-wide Apex coverage: ${COVERAGE}%"
+                  if [ "$COVERAGE" -lt 75 ]; then
+                    echo "::error::Apex code coverage ${COVERAGE}% is below the 75% threshold"
+                    exit 1
+                  fi
+
+            - name: Delete Scratch Org
+              if: always()
+              run: sf org delete scratch --target-org ci-test --no-prompt || true
+
+            - name: Upload Apex Test Results
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: apex-test-results
+                  path: apex-results/
+                  retention-days: 14

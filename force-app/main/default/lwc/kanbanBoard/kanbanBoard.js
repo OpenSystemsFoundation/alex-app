@@ -1,5 +1,6 @@
 import { LightningElement, api, track } from 'lwc';
 import { createStore, selectors } from 'c/kanbanStore';
+import { setBacklogVisible } from 'c/kanbanStore';
 import EventHandler from './handlers/eventHandler';
 import RequestTracker from './helpers/requestTracker';
 import ReducerQueue from './helpers/reducerQueue';
@@ -31,6 +32,12 @@ export default class KanbanBoard extends LightningElement {
     @track _eventCount = 0; // Needs @track for indicator reactivity
     @track _lastSyncTime = null; // Needs @track for indicator reactivity
 
+    // Sprint UI state
+    @track showSprintModal = false;
+    @track showSprintComplete = false;
+    @track showSprintReports = false;
+    @track editSprint = null;
+
     // Drag state
     dragData = null;
     dragPlaceholder = null;
@@ -47,6 +54,7 @@ export default class KanbanBoard extends LightningElement {
     operationQueue = null;
     windowFocusListener = null;
     subscriptionChannelName = '/event/OpenSF__CardUpdateEvent__e';
+    sprintSubscriptionChannelName = '/event/OpenSF__SprintUpdateEvent__e';
 
     // Lazy-loaded helper instances
     _lifecycleManager = null;
@@ -354,6 +362,18 @@ export default class KanbanBoard extends LightningElement {
     }
 
     // =============================================================================
+    // Sprint Subscription Handler
+    // =============================================================================
+
+    handleSprintSubscriptionMessage(event) {
+        // Reload sprint data when sprint events are received
+        const { payload } = event.detail;
+        if (payload) {
+            this.loadBoardData();
+        }
+    }
+
+    // =============================================================================
     // UI Event Handlers
     // =============================================================================
 
@@ -442,5 +462,106 @@ export default class KanbanBoard extends LightningElement {
                 ? this._storeState.pollingUpdateDetected
                 : null
         };
+    }
+
+    // =============================================================================
+    // Sprint Getters
+    // =============================================================================
+
+    get isSprintBoard() {
+        return this._storeState
+            ? selectors.isSprintBoard(this._storeState)
+            : false;
+    }
+
+    get showBacklog() {
+        return this._storeState
+            ? selectors.isBacklogVisible(this._storeState)
+            : false;
+    }
+
+    get activeSprint() {
+        return this._storeState
+            ? selectors.getActiveSprint(this._storeState)
+            : null;
+    }
+
+    get activeSprintId() {
+        return this.activeSprint?.Id || null;
+    }
+
+    get backlogMode() {
+        return this.isSprintBoard ? 'panel' : 'sidebar';
+    }
+
+    // =============================================================================
+    // Sprint Event Handlers
+    // =============================================================================
+
+    handleToggleBacklog() {
+        if (this.store) {
+            const current = this._storeState
+                ? selectors.isBacklogVisible(this._storeState)
+                : false;
+            this.store.dispatch(setBacklogVisible(!current));
+        }
+    }
+
+    handleCreateSprint() {
+        this.editSprint = null;
+        this.showSprintModal = true;
+    }
+
+    handleCompleteSprint(event) {
+        this.showSprintComplete = true;
+    }
+
+    handleShowReports() {
+        this.showSprintReports = true;
+    }
+
+    handleSprintModalClose() {
+        this.showSprintModal = false;
+        this.editSprint = null;
+    }
+
+    handleSprintCreated() {
+        this.showSprintModal = false;
+        this.loadBoardData();
+    }
+
+    handleSprintStarted() {
+        this.showSprintModal = false;
+        this.loadBoardData();
+    }
+
+    handleSprintCompleteClose() {
+        this.showSprintComplete = false;
+    }
+
+    handleSprintCompleted() {
+        this.showSprintComplete = false;
+        this.loadBoardData();
+    }
+
+    handleSprintReportsClose() {
+        this.showSprintReports = false;
+    }
+
+    handleBacklogCardsAdded() {
+        this.loadBoardData();
+    }
+
+    handleBacklogCardClick(event) {
+        const cardId = event.detail?.cardId;
+        if (cardId) {
+            this.cardOperations.handleCardClick(cardId);
+        }
+    }
+
+    handleBacklogClose() {
+        if (this.store) {
+            this.store.dispatch(setBacklogVisible(false));
+        }
     }
 }

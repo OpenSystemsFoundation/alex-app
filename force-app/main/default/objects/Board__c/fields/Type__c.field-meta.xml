@@ -27,6 +27,11 @@
                 <default>false</default>
                 <label>Team</label>
             </value>
+            <value>
+                <fullName>Sprint</fullName>
+                <default>false</default>
+                <label>Sprint</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

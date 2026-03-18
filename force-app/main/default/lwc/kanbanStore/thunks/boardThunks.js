@@ -10,6 +10,7 @@
 import getBoardData from '@salesforce/apex/KanbanBoardController.getBoardData';
 import { setBoard, setColumns } from '../state/actions';
 import { processColumnsData, processCardsData } from '../utils/dataProcessors';
+import { loadSprintDataAsync } from './sprintThunks';
 
 /**
  * Load board data from server
@@ -36,6 +37,15 @@ export const loadBoardData = (boardId) => {
             );
 
             dispatch(setColumns(processedColumns));
+
+            // If this is a sprint board, also load sprint data
+            if (data.board && data.board.type === 'Sprint') {
+                try {
+                    await dispatch(loadSprintDataAsync(boardId));
+                } catch (sprintError) {
+                    console.error('Error loading sprint data:', sprintError);
+                }
+            }
 
             return {
                 success: true,

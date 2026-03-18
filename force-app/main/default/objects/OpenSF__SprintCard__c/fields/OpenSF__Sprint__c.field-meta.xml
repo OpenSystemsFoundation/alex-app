@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>OpenSF__Sprint__c</fullName>
+    <description>Parent sprint for this junction record.</description>
+    <externalId>false</externalId>
+    <label>Sprint</label>
+    <referenceTo>OpenSF__Sprint__c</referenceTo>
+    <relationshipLabel>Sprint Cards</relationshipLabel>
+    <relationshipName>SprintCards</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

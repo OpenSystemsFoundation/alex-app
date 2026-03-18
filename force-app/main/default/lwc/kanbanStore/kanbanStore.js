@@ -40,6 +40,16 @@ export {
     updateCardAsync,
     deleteCardAsync
 } from './thunks/cardThunks';
+export {
+    loadSprintDataAsync,
+    createSprintAsync,
+    startSprintAsync,
+    completeSprintAsync,
+    addCardsToSprintAsync,
+    removeCardFromSprintAsync,
+    loadBurndownDataAsync,
+    loadVelocityDataAsync
+} from './thunks/sprintThunks';
 
 // Re-export modules for consumers who want organized imports
 import * as actions from './state/actions';
@@ -47,5 +57,6 @@ import * as types from './core/actionTypes';
 import * as selectors from './state/selectors';
 import * as thunks from './thunks/boardThunks';
 import * as cardThunks from './thunks/cardThunks';
+import * as sprintThunks from './thunks/sprintThunks';
 
-export { actions, types, selectors, thunks, cardThunks };
+export { actions, types, selectors, thunks, cardThunks, sprintThunks };

@@ -246,3 +246,79 @@ export const failOperation = (id, error) => ({
     type: types.FAIL_OPERATION,
     payload: { id, error }
 });
+
+// ===================================================================
+// Sprint Action Creators
+// ===================================================================
+
+export const setSprint = (sprint) => ({
+    type: types.SET_SPRINT,
+    payload: sprint
+});
+
+export const setSprints = (sprints) => ({
+    type: types.SET_SPRINTS,
+    payload: sprints
+});
+
+export const updateSprint = (sprintId, updates) => ({
+    type: types.UPDATE_SPRINT,
+    payload: { sprintId, updates }
+});
+
+// ===================================================================
+// Backlog Action Creators
+// ===================================================================
+
+export const setBacklogCards = (cards) => ({
+    type: types.SET_BACKLOG_CARDS,
+    payload: cards
+});
+
+export const addBacklogCard = (card) => ({
+    type: types.ADD_BACKLOG_CARD,
+    payload: card
+});
+
+export const removeBacklogCard = (cardId) => ({
+    type: types.REMOVE_BACKLOG_CARD,
+    payload: { cardId }
+});
+
+// ===================================================================
+// Sprint Card Action Creators
+// ===================================================================
+
+export const setSprintCards = (sprintCards) => ({
+    type: types.SET_SPRINT_CARDS,
+    payload: sprintCards
+});
+
+export const moveCardToSprint = (cardId, sprintId) => ({
+    type: types.MOVE_CARD_TO_SPRINT,
+    payload: { cardId, sprintId }
+});
+
+export const moveCardToBacklog = (cardId) => ({
+    type: types.MOVE_CARD_TO_BACKLOG,
+    payload: { cardId }
+});
+
+// ===================================================================
+// Backlog UI Action Creators
+// ===================================================================
+
+export const setBacklogVisible = (visible) => ({
+    type: types.SET_BACKLOG_VISIBLE,
+    payload: visible
+});
+
+export const setSelectedBacklogCards = (cardIds) => ({
+    type: types.SET_SELECTED_BACKLOG_CARDS,
+    payload: cardIds
+});
+
+export const toggleBacklogCardSelection = (cardId) => ({
+    type: types.TOGGLE_BACKLOG_CARD_SELECTION,
+    payload: { cardId }
+});

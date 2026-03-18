@@ -1,0 +1,93 @@
+.backlog-panel {
+    display: flex;
+    flex-direction: column;
+    background-color: rgb(255, 255, 255);
+    border: 1px solid rgb(221, 219, 218);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    height: 100%;
+}
+
+.backlog-panel--sidebar {
+    width: 300px;
+    min-width: 300px;
+    flex: 0 0 300px;
+}
+
+.backlog-panel--panel {
+    width: 350px;
+    min-width: 350px;
+    flex: 0 0 350px;
+}
+
+.backlog-panel__header {
+    background: rgb(243, 243, 243);
+    border-bottom: 1px solid rgb(221, 219, 218);
+    flex-shrink: 0;
+}
+
+.backlog-panel__toolbar {
+    border-bottom: 1px solid rgb(238, 238, 238);
+    flex-shrink: 0;
+}
+
+.backlog-panel__actions {
+    background: rgb(248, 248, 248);
+    border-bottom: 1px solid rgb(238, 238, 238);
+    flex-shrink: 0;
+}
+
+.backlog-panel__cards {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.5rem 0;
+    scrollbar-width: thin;
+}
+
+.backlog-card {
+    background: rgb(255, 255, 255);
+    border: 1px solid rgb(221, 219, 218);
+    border-radius: 0.25rem;
+    cursor: grab;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.backlog-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.backlog-card.dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+}
+
+.backlog-search {
+    --slds-c-input-sizing-min-height: 1.75rem;
+}
+
+.backlog-sort {
+    --slds-c-input-sizing-min-height: 1.75rem;
+}
+
+.backlog-panel__cards::-webkit-scrollbar {
+    width: 4px;
+}
+
+.backlog-panel__cards::-webkit-scrollbar-track {
+    background: rgb(243, 243, 243);
+}
+
+.backlog-panel__cards::-webkit-scrollbar-thumb {
+    background: rgb(200, 200, 200);
+    border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+    .backlog-panel--sidebar {
+        width: 100%;
+        min-width: 100%;
+        max-height: 50vh;
+    }
+}

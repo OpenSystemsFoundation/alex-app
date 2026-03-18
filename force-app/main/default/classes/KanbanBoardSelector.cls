@@ -16,7 +16,8 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Type__c,
                 OpenSF__Active__c,
                 OpenSF__EmailNotifications__c,
-                OpenSF__SalesforceNotifications__c
+                OpenSF__SalesforceNotifications__c,
+                OpenSF__ActiveSprint__c
             FROM OpenSF__Board__c
             WHERE Id = :boardId
             LIMIT 1

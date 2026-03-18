@@ -1,4 +1,4 @@
-import { moveCardAsync } from 'c/kanbanStore';
+import { moveCardAsync, addCardsToSprintAsync, selectors } from 'c/kanbanStore';
 
 /**
  * Handles all drag-and-drop operations for kanban cards
@@ -14,16 +14,45 @@ export default class DragDropHandler {
     handleDragStart(event) {
         const cardId = event.target.dataset.cardId;
         const columnId = event.target.dataset.columnId;
-        const cardHeight = event.target.offsetHeight;
+        const cardElement = event.target;
+        const cardHeight = cardElement.offsetHeight;
+        const cardWidth = cardElement.offsetWidth;
 
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', cardId);
         event.dataTransfer.setData('columnId', columnId);
 
-        // Don't set custom drag image - let browser use default
-        // This works better in SLDS2 than custom implementations
+        // Create a clean drag image clone to avoid Chrome's
+        // ugly default ghost (double-opacity, captured shadows, etc.)
+        const dragImage = cardElement.cloneNode(true);
+        dragImage.style.width = `${cardWidth}px`;
+        dragImage.style.position = 'absolute';
+        dragImage.style.top = '-9999px';
+        dragImage.style.left = '-9999px';
+        dragImage.style.opacity = '0.85';
+        dragImage.style.transform = 'rotate(2deg) scale(1.02)';
+        dragImage.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.18)';
+        dragImage.style.borderRadius = '0.3rem';
+        dragImage.style.border = '2px solid rgb(1, 118, 211)';
+        dragImage.style.backgroundColor = 'rgb(255, 255, 255)';
+        dragImage.style.pointerEvents = 'none';
+        dragImage.classList.remove('dragging');
 
-        event.target.classList.add('dragging');
+        document.body.appendChild(dragImage);
+        this._dragImageElement = dragImage;
+
+        // Offset so the cursor sits near where the user grabbed
+        const rect = cardElement.getBoundingClientRect();
+        const offsetX = event.clientX - rect.left;
+        const offsetY = event.clientY - rect.top;
+        event.dataTransfer.setDragImage(dragImage, offsetX, offsetY);
+
+        // Use requestAnimationFrame so the browser captures the clone
+        // before we style the original as "dragging"
+        requestAnimationFrame(() => {
+            cardElement.classList.add('dragging');
+        });
+
         this.component.dragData = { cardId, columnId, cardHeight };
     }
 
@@ -32,6 +61,14 @@ export default class DragDropHandler {
      */
     handleDragEnd(event) {
         event.target.classList.remove('dragging');
+
+        // Clean up the offscreen drag image clone
+        if (this._dragImageElement && this._dragImageElement.parentNode) {
+            this._dragImageElement.parentNode.removeChild(
+                this._dragImageElement
+            );
+        }
+        this._dragImageElement = null;
 
         if (
             this.component.dragPlaceholder &&
@@ -100,19 +137,30 @@ export default class DragDropHandler {
     }
 
     /**
-     * Handle drop event
+     * Handle drop event - supports both board-to-board and backlog-to-board drops
      */
     async handleDrop(event) {
         event.preventDefault();
         event.stopPropagation();
+
+        const cardsContainer = event.currentTarget;
+        const targetColumnId = cardsContainer.dataset.columnId;
+
+        // Check if this is a backlog-to-board drop
+        const source = event.dataTransfer.getData('source');
+        if (source === 'backlog') {
+            const cardId = event.dataTransfer.getData('text/plain');
+            if (cardId) {
+                await this.handleBacklogDrop(cardId, targetColumnId);
+            }
+            return;
+        }
 
         if (!this.component.dragData) {
             return;
         }
 
         const { cardId, columnId: sourceColumnId } = this.component.dragData;
-        const cardsContainer = event.currentTarget;
-        const targetColumnId = cardsContainer.dataset.columnId;
         const visualPosition = this.calculateDropPosition(
             event,
             cardsContainer
@@ -140,6 +188,40 @@ export default class DragDropHandler {
             targetColumnId,
             targetIndex
         );
+    }
+
+    /**
+     * Handle dropping a card from backlog onto the board
+     */
+    async handleBacklogDrop(cardId, targetColumnId) {
+        const state = this.component.store.getState();
+        const activeSprint = selectors.getActiveSprint(state);
+
+        if (!activeSprint) {
+            return;
+        }
+
+        try {
+            // Add card to sprint
+            await this.component.store.dispatch(
+                addCardsToSprintAsync(activeSprint.Id, [cardId])
+            );
+
+            // Move card to the target column
+            await this.component.store.dispatch(
+                moveCardAsync(cardId, targetColumnId, 0)
+            );
+
+            await this.component.loadBoardData();
+        } catch (error) {
+            console.error('Error handling backlog drop:', error);
+            if (this.component.toastManager) {
+                this.component.toastManager.showError(
+                    'Error adding card to sprint',
+                    error
+                );
+            }
+        }
     }
 
     /**
