@@ -159,6 +159,48 @@ export const reset = () => ({
 });
 
 // ===================================================================
+// Loading & Error Action Creators
+// ===================================================================
+
+/**
+ * Set loading state
+ * @param {boolean} isLoading - Whether the board is loading
+ * @returns {Object} Action object
+ */
+export const setLoading = (isLoading) => ({
+    type: types.SET_LOADING,
+    payload: isLoading
+});
+
+/**
+ * Set error state
+ * @param {Object|string|null} error - Error object or message
+ * @returns {Object} Action object
+ */
+export const setError = (error) => ({
+    type: types.SET_ERROR,
+    payload: error
+});
+
+/**
+ * Clear error state
+ * @returns {Object} Action object
+ */
+export const clearError = () => ({
+    type: types.CLEAR_ERROR
+});
+
+/**
+ * Set subscription status
+ * @param {string} status - 'connected' | 'connecting' | 'polling' | 'error' | 'disconnected'
+ * @returns {Object} Action object
+ */
+export const setSubscriptionStatus = (status) => ({
+    type: types.SET_SUBSCRIPTION_STATUS,
+    payload: status
+});
+
+// ===================================================================
 // Sync State Action Creators
 // ===================================================================
 

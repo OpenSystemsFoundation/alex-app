@@ -30,6 +30,14 @@ export const CANCEL_DRAG = 'CANCEL_DRAG';
 // Store Actions
 export const RESET = 'RESET';
 
+// Loading & Error Actions
+export const SET_LOADING = 'SET_LOADING';
+export const SET_ERROR = 'SET_ERROR';
+export const CLEAR_ERROR = 'CLEAR_ERROR';
+
+// Subscription Status Actions
+export const SET_SUBSCRIPTION_STATUS = 'SET_SUBSCRIPTION_STATUS';
+
 // Sync State Actions
 export const SET_SYNC_STATE = 'SET_SYNC_STATE';
 export const START_OPERATION = 'START_OPERATION';

@@ -28,9 +28,6 @@ export default class KanbanBoard extends LightningElement {
     // UI State - these don't need @track as they're reassigned directly
     selectedCard = null;
     showCardDetail = false;
-    isLoading = true;
-    error = null;
-    @track _subscriptionStatus = 'disconnected'; // Needs @track for indicator reactivity
     @track _eventCount = 0; // Needs @track for indicator reactivity
     @track _lastSyncTime = null; // Needs @track for indicator reactivity
 
@@ -99,6 +96,22 @@ export default class KanbanBoard extends LightningElement {
         return this._storeState
             ? selectors.getLastSyncError(this._storeState)
             : null;
+    }
+
+    get isLoading() {
+        return this._storeState
+            ? selectors.getIsLoading(this._storeState)
+            : true;
+    }
+
+    get error() {
+        return this._storeState ? selectors.getError(this._storeState) : null;
+    }
+
+    get _subscriptionStatus() {
+        return this._storeState
+            ? selectors.getSubscriptionStatus(this._storeState)
+            : 'disconnected';
     }
 
     get shouldAutoSubscribe() {

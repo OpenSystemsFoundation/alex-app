@@ -64,14 +64,36 @@ jest.mock('c/kanbanStore', () => {
             getColumns: jest.fn(() => []),
             getState: jest.fn(() => ({
                 columns: [],
-                board: null
+                board: null,
+                isLoading: false,
+                error: null,
+                subscriptionStatus: 'disconnected'
             }))
         })),
         loadBoardData: mockLoadBoardData,
+        setLoading: jest.fn((isLoading) => ({
+            type: 'SET_LOADING',
+            payload: isLoading
+        })),
+        setError: jest.fn((error) => ({
+            type: 'SET_ERROR',
+            payload: error
+        })),
+        clearError: jest.fn(() => ({ type: 'CLEAR_ERROR' })),
+        setSubscriptionStatus: jest.fn((status) => ({
+            type: 'SET_SUBSCRIPTION_STATUS',
+            payload: status
+        })),
         selectors: {
             getEnrichedColumns: jest.fn(() => []),
             getCardsByColumnMap: jest.fn(() => ({})),
-            getBoard: jest.fn(() => null)
+            getBoard: jest.fn(() => null),
+            getIsLoading: jest.fn(() => false),
+            getError: jest.fn(() => null),
+            getSubscriptionStatus: jest.fn(() => 'disconnected'),
+            getSyncState: jest.fn(() => 'idle'),
+            getPendingOperations: jest.fn(() => []),
+            getLastSyncError: jest.fn(() => null)
         }
     };
 });

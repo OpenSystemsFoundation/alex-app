@@ -150,6 +150,37 @@ export const getEnrichedColumns = (state) => {
 };
 
 // ===================================================================
+// Loading & Error Selectors
+// ===================================================================
+
+/**
+ * Get loading state
+ * @param {Object} state - Store state
+ * @returns {boolean} True if loading
+ */
+export const getIsLoading = (state) => {
+    return state.isLoading || false;
+};
+
+/**
+ * Get error state
+ * @param {Object} state - Store state
+ * @returns {Object|string|null} Error or null
+ */
+export const getError = (state) => {
+    return state.error || null;
+};
+
+/**
+ * Get subscription status
+ * @param {Object} state - Store state
+ * @returns {string} 'connected' | 'connecting' | 'polling' | 'error' | 'disconnected'
+ */
+export const getSubscriptionStatus = (state) => {
+    return state.subscriptionStatus || 'disconnected';
+};
+
+// ===================================================================
 // Sync State Selectors
 // ===================================================================
 

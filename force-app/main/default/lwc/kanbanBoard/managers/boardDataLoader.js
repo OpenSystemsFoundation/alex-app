@@ -1,4 +1,9 @@
-import { loadBoardData as loadBoardDataThunk } from 'c/kanbanStore';
+import {
+    loadBoardData as loadBoardDataThunk,
+    setLoading,
+    setError,
+    clearError
+} from 'c/kanbanStore';
 import getIncrementalUpdates from '@salesforce/apex/KanbanBoardController.getIncrementalUpdates';
 
 const POLLING_FREQUENCY = 15000; // 15 seconds
@@ -25,12 +30,13 @@ export default class BoardDataLoader {
             return;
         }
 
-        this.component.isLoading = true;
-        this.component.error = null;
+        const store = this.component.store;
+        store.dispatch(setLoading(true));
+        store.dispatch(clearError());
 
         try {
             // Dispatch thunk to load data (store handles all state updates)
-            await this.component.store.dispatch(
+            await store.dispatch(
                 loadBoardDataThunk(this.component._recordId)
             );
 
@@ -46,7 +52,7 @@ export default class BoardDataLoader {
 
             // Note: Subscription will auto-connect via shouldAutoSubscribe property
         } catch (error) {
-            this.component.error = error;
+            store.dispatch(setError(error));
             if (this.component.toastManager) {
                 this.component.toastManager.showError(
                     'Error loading board',
@@ -54,7 +60,7 @@ export default class BoardDataLoader {
                 );
             }
         } finally {
-            this.component.isLoading = false;
+            store.dispatch(setLoading(false));
         }
     }
 

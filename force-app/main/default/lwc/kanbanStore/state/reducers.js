@@ -26,6 +26,10 @@ export const initialState = {
     dragState: null,
     isDragging: false,
     dragSource: null,
+    // Loading & error state
+    isLoading: false,
+    error: null,
+    subscriptionStatus: 'disconnected',
     // Sync state tracking
     syncState: 'idle', // 'idle' | 'syncing' | 'failed'
     pendingOperations: [],
@@ -191,6 +195,41 @@ export const dragReducer = (state, action, lastDragPosition) => {
 };
 
 /**
+ * App state reducer - handles loading, error, and subscription status
+ */
+export const appStateReducer = (state, action) => {
+    switch (action.type) {
+        case types.SET_LOADING:
+            return {
+                ...state,
+                isLoading: action.payload
+            };
+
+        case types.SET_ERROR:
+            return {
+                ...state,
+                error: action.payload,
+                isLoading: false
+            };
+
+        case types.CLEAR_ERROR:
+            return {
+                ...state,
+                error: null
+            };
+
+        case types.SET_SUBSCRIPTION_STATUS:
+            return {
+                ...state,
+                subscriptionStatus: action.payload
+            };
+
+        default:
+            return state;
+    }
+};
+
+/**
  * Sync state reducer - handles operation tracking and sync state
  */
 export const syncReducer = (state, action) => {
@@ -268,6 +307,9 @@ export const rootReducer = (state, action, lastDragPosition) => {
 
     // Card actions
     newState = cardsReducer(newState, action);
+
+    // App state actions (loading, error, subscription)
+    newState = appStateReducer(newState, action);
 
     // Sync state actions
     newState = syncReducer(newState, action);

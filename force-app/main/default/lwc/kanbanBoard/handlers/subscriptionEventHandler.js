@@ -1,3 +1,5 @@
+import { setSubscriptionStatus } from 'c/kanbanStore';
+
 /**
  * Handles subscription-related events and messaging
  */
@@ -64,7 +66,7 @@ export default class SubscriptionEventHandler {
      * Handle subscription status change
      */
     handleSubscriptionStatusChange(status) {
-        this.component._subscriptionStatus = status;
+        this.component.store.dispatch(setSubscriptionStatus(status));
 
         // Stop polling when reconnected
         if (status === 'connected' && this.component.boardDataLoader) {

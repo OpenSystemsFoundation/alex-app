@@ -73,16 +73,33 @@ export default class LifecycleManager {
 
     /**
      * Handle window focus event
-     * Attempt to reconnect to platform events if in polling mode
+     * Check data staleness and attempt reconnection if needed
      */
     handleWindowFocus() {
+        const STALE_THRESHOLD = 30000; // 30 seconds
+
+        // Check if data is stale
+        if (this.component._lastSyncTime) {
+            const timeSinceSync =
+                Date.now() - new Date(this.component._lastSyncTime).getTime();
+
+            if (
+                timeSinceSync > STALE_THRESHOLD &&
+                this.component.boardDataLoader
+            ) {
+                this.component.boardDataLoader.loadIncrementalUpdates();
+            }
+        }
+
         // If we're in polling mode, try to reconnect to platform events
+        const status = this.component._subscriptionStatus;
         if (
             this.component.subscriptionManager &&
-            this.component._subscriptionStatus === 'polling'
+            (status === 'polling' || status === 'error' || status === 'disconnected')
         ) {
-            // Stop polling and attempt to reconnect
-            this.component.subscriptionManager.stopPolling();
+            if (this.component.boardDataLoader) {
+                this.component.boardDataLoader.stopPolling();
+            }
             this.component.subscriptionManager.subscribe();
         }
     }

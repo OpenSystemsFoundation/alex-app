@@ -1,4 +1,6 @@
 export default class RequestTracker {
+    static REQUEST_TIMEOUT = 30000; // 30 seconds
+
     constructor(clientId) {
         this.clientId = clientId; // Store clientId for scoping operations
         this.pendingRequests = new Map();
@@ -99,12 +101,34 @@ export default class RequestTracker {
         }, this.CLEANUP_INTERVAL);
     }
 
+    getActiveRequestCount() {
+        let count = 0;
+        for (const request of this.pendingRequests.values()) {
+            if (request.status === 'pending') {
+                count++;
+            }
+        }
+        return count;
+    }
+
     cleanup() {
         const now = Date.now();
         const toDelete = [];
 
         for (const [requestId, request] of this.pendingRequests.entries()) {
             if (request.status === 'pending') {
+                // Auto-fail stuck requests
+                if (
+                    now - request.timestamp >
+                    RequestTracker.REQUEST_TIMEOUT
+                ) {
+                    console.error(
+                        `Request ${requestId} timed out after ${RequestTracker.REQUEST_TIMEOUT}ms`
+                    );
+                    request.status = 'failed';
+                    request.failedAt = now;
+                    request.error = 'Request timed out';
+                }
                 continue;
             }
 
