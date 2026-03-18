@@ -13,6 +13,7 @@ type TestFixtures = {
     authenticatedPage: KanbanBoardPage;
     testBoard: {
         boardId: string;
+        columnIds: string[];
         cleanup: () => Promise<void>;
     };
     orgInfo: {
@@ -20,6 +21,7 @@ type TestFixtures = {
         accessToken: string;
         orgAlias: string;
     };
+    sfCli: SalesforceCLI;
 };
 
 /**
@@ -43,22 +45,26 @@ export const test = base.extend<TestFixtures>({
     },
 
     /**
+     * SalesforceCLI fixture - provides CLI helper
+     */
+    sfCli: async ({ orgInfo }, use) => {
+        const sfCli = new SalesforceCLI(orgInfo.orgAlias);
+        await use(sfCli);
+    },
+
+    /**
      * Test board fixture - creates a unique board for each test
      * All boards are cleaned up at the end of the test suite (global teardown)
      */
-    testBoard: async ({ orgInfo }, use, testInfo) => {
-        const sfCli = new SalesforceCLI(orgInfo.orgAlias);
-
-        console.log(`  📋 Creating test board for: ${testInfo.title}`);
-        const boardId = await sfCli.createTestBoard();
+    testBoard: async ({ sfCli }, use, testInfo) => {
+        const { boardId, columnIds } = await sfCli.createTestBoard();
 
         const cleanup = async () => {
-            console.log(`  🧹 Cleaning up board: ${boardId}`);
             await sfCli.deleteBoard(boardId);
         };
 
-        // Provide board ID and cleanup function to the test (cleanup function available if needed manually)
-        await use({ boardId, cleanup });
+        // Provide board ID, column IDs, and cleanup function to the test
+        await use({ boardId, columnIds, cleanup });
 
         // No automatic cleanup - all boards will be deleted together in global teardown
     },

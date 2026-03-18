@@ -12,29 +12,6 @@ export class SalesforceCLI {
     private orgAlias: string;
     private configFile: string;
 
-    // Apex script templates
-    private readonly CREATE_BOARD_TEMPLATE = `// Create a test board with columns
-OpenSF__Board__c board = new OpenSF__Board__c(
-    Name = '{{BOARD_NAME}}'
-);
-insert board;
-
-List<OpenSF__Column__c> columns = new List<OpenSF__Column__c>();
-{{COLUMNS}}
-insert columns;
-
-System.debug('BOARD_ID:' + board.Id);`;
-
-    private readonly DELETE_BOARD_TEMPLATE = `// Delete a specific board by ID
-OpenSF__Board__c board = [
-    SELECT Id
-    FROM OpenSF__Board__c
-    WHERE Id = '{{BOARD_ID}}'
-    LIMIT 1
-];
-delete board;
-System.debug('Board deleted: {{BOARD_ID}}');`;
-
     constructor(
         orgAlias: string = 'playwright-test',
         configFile: string = 'config/project-scratch-def.json'
@@ -98,10 +75,6 @@ System.debug('Board deleted: {{BOARD_ID}}');`;
      * Deploy metadata to scratch org
      */
     async deployMetadata(ignoreConflicts: boolean = false): Promise<void> {
-        console.log(
-            `Deploying metadata to scratch org${ignoreConflicts ? ' (ignoring conflicts)' : ''}...`
-        );
-
         const conflictFlag = ignoreConflicts ? '--ignore-conflicts' : '';
         const command =
             `sf project deploy start --target-org ${this.orgAlias} ${conflictFlag} --json`.trim();
@@ -243,34 +216,42 @@ System.debug('Board deleted: {{BOARD_ID}}');`;
     }
 
     /**
-     * Create test board and return its ID
+     * Create test board and return its ID along with column IDs
      */
-    async createTestBoard(): Promise<string> {
-        console.log('Creating test board...');
+    async createTestBoard(): Promise<{ boardId: string; columnIds: string[] }> {
+        // Create inline Apex script without namespace
+        const apexScript = `// Create a test board with 3 columns for E2E testing
+Board__c board = new Board__c(
+    Name = 'E2E Test Board'
+);
+insert board;
 
-        // Build column creation code
-        const columnScript = `
-columns.add(new OpenSF__Column__c(
-    OpenSF__ColumnHeader__c = 'To Do',
-    OpenSF__Board__c = board.Id,
-    OpenSF__LexoRankPosition__c = '0|h00000:'
-));
-columns.add(new OpenSF__Column__c(
-    OpenSF__ColumnHeader__c = 'In Progress',
-    OpenSF__Board__c = board.Id,
-    OpenSF__LexoRankPosition__c = '0|h55555:'
-));
-columns.add(new OpenSF__Column__c(
-    OpenSF__ColumnHeader__c = 'Done',
-    OpenSF__Board__c = board.Id,
-    OpenSF__LexoRankPosition__c = '0|hzzzzz:'
-));`;
+List<Column__c> columns = new List<Column__c>();
 
-        // Use inline template and update it with new values
-        const apexScript = this.CREATE_BOARD_TEMPLATE.replace(
-            '{{BOARD_NAME}}',
-            'E2E Test Board'
-        ).replace('{{COLUMNS}}', columnScript);
+columns.add(new Column__c(
+    ColumnHeader__c = 'To Do',
+    Board__c = board.Id,
+    LexoRankPosition__c = '0|h00000:'
+));
+
+columns.add(new Column__c(
+    ColumnHeader__c = 'In Progress',
+    Board__c = board.Id,
+    LexoRankPosition__c = '0|h55555:'
+));
+
+columns.add(new Column__c(
+    ColumnHeader__c = 'Done',
+    Board__c = board.Id,
+    LexoRankPosition__c = '0|hzzzzz:'
+));
+
+insert columns;
+
+System.debug('BOARD_ID:' + board.Id);
+for (Column__c col : columns) {
+    System.debug('COLUMN_ID:' + col.Id);
+}`;
 
         // Write to a temp file for this execution
         const tempDir = path.join(process.cwd(), '.temp');
@@ -284,19 +265,111 @@ columns.add(new OpenSF__Column__c(
             const command = `sf apex run --file ${tempFile} --target-org ${this.orgAlias}`;
             const { stdout, stderr } = await execAsync(command);
 
-            // Extract board ID from debug output
-            const match = (stdout + stderr).match(
-                /BOARD_ID:([a-zA-Z0-9]{15,18})/
-            );
+            const output = stdout + stderr;
 
-            if (match && match[1]) {
-                console.log(`✅ Test board created with ID: ${match[1]}`);
-                return match[1];
-            } else {
+            // Extract board ID from debug output
+            const boardMatch = output.match(/BOARD_ID:([a-zA-Z0-9]{15,18})/);
+
+            // Extract all column IDs from debug output
+            const columnMatches = output.matchAll(
+                /COLUMN_ID:([a-zA-Z0-9]{15,18})/g
+            );
+            const columnIds: string[] = [];
+
+            for (const match of columnMatches) {
+                if (match[1]) {
+                    columnIds.push(match[1]);
+                }
+            }
+
+            if (!boardMatch || !boardMatch[1]) {
                 throw new Error('Could not extract board ID from Apex output');
             }
+
+            if (columnIds.length === 0) {
+                throw new Error(
+                    'Could not extract column IDs from Apex output'
+                );
+            }
+
+            return {
+                boardId: boardMatch[1],
+                columnIds
+            };
         } catch (error: any) {
             throw new Error(`Error creating test board: ${error.message}`);
+        } finally {
+            // Clean up temp file
+            try {
+                if (fs.existsSync(tempFile)) {
+                    fs.unlinkSync(tempFile);
+                }
+            } catch (err) {
+                // Ignore cleanup errors
+            }
+        }
+    }
+
+    /**
+     * Create test cards via Apex
+     * @param columnId - Column ID to add cards to
+     * @param count - Number of cards to create
+     * @returns Array of card IDs created
+     */
+    async createTestCards(
+        columnId: string,
+        count: number = 1
+    ): Promise<string[]> {
+        // Create inline Apex script to create cards
+        const apexScript = `// Create ${count} test card(s) for E2E testing
+List<Card__c> cards = new List<Card__c>();
+
+for (Integer i = 0; i < ${count}; i++) {
+    Decimal positionValue = i * 10000;
+    String lexoRank = '0|i' + String.valueOf(positionValue).leftPad(5, '0') + ':';
+    
+    cards.add(new Card__c(
+        Column__c = '${columnId}',
+        LexoRankPosition__c = lexoRank
+    ));
+}
+
+insert cards;
+
+for (Card__c card : cards) {
+    System.debug('CARD_ID:' + card.Id);
+}`;
+
+        // Write to a temp file for this execution
+        const tempDir = path.join(process.cwd(), '.temp');
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+        }
+        const tempFile = path.join(tempDir, `create-cards-${Date.now()}.apex`);
+        fs.writeFileSync(tempFile, apexScript);
+
+        try {
+            const command = `sf apex run --file ${tempFile} --target-org ${this.orgAlias}`;
+            const { stdout, stderr } = await execAsync(command);
+
+            // Extract all card IDs from debug output
+            const output = stdout + stderr;
+            const matches = output.matchAll(/CARD_ID:([a-zA-Z0-9]{15,18})/g);
+            const cardIds: string[] = [];
+
+            for (const match of matches) {
+                if (match[1]) {
+                    cardIds.push(match[1]);
+                }
+            }
+
+            if (cardIds.length === 0) {
+                throw new Error('Could not extract card IDs from Apex output');
+            }
+
+            return cardIds;
+        } catch (error: any) {
+            throw new Error(`Error creating test cards: ${error.message}`);
         } finally {
             // Clean up temp file
             try {
@@ -352,7 +425,7 @@ columns.add(new OpenSF__Column__c(
         const orgInfo = await this.getOrgInfo();
 
         // Create test board
-        const boardId = await this.createTestBoard();
+        const { boardId } = await this.createTestBoard();
 
         console.log('\n✅ Setup complete!');
         console.log(`Instance URL: ${orgInfo.instanceUrl}`);
@@ -421,11 +494,16 @@ columns.add(new OpenSF__Column__c(
     async deleteBoard(boardId: string): Promise<void> {
         console.log(`Deleting test board: ${boardId}...`);
 
-        // Use inline template and update with board ID
-        const apexScript = this.DELETE_BOARD_TEMPLATE.replace(
-            /{{BOARD_ID}}/g,
-            boardId
-        );
+        // Create inline Apex script for deletion without namespace
+        const apexScript = `// Delete a specific board by ID
+Board__c board = [
+    SELECT Id
+    FROM Board__c
+    WHERE Id = '${boardId}'
+    LIMIT 1
+];
+delete board;
+System.debug('Board deleted: ${boardId}');`;
 
         // Write to a temp file for this execution
         const tempDir = path.join(process.cwd(), '.temp');

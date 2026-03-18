@@ -1,16 +1,20 @@
 import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import deleteCard from '@salesforce/apex/KanbanBoardController.deleteCard';
+import { updateCard, deleteCardAsync } from 'c/kanbanStore';
 import getModalSettings from '@salesforce/apex/KanbanBoardController.getModalSettings';
 
 export default class KanbanCardDetail extends LightningElement {
     @api card;
+    @api store;
     @api isOpen = false;
 
     @track modalSettings = null;
     @track formFields = [];
     @track deleteConfirmState = false;
     deleteTimeout = null;
+
+    // Store original card state before optimistic update for rollback
+    originalCardState = null;
 
     // Field metadata for layout and sizing
     fieldMetadata = {
@@ -69,19 +73,52 @@ export default class KanbanCardDetail extends LightningElement {
         });
     }
 
+    renderedCallback() {
+        // Focus the modal when it opens to enable keyboard events
+        if (this.isOpen) {
+            const modal = this.template.querySelector('section[role="dialog"]');
+            if (modal && document.activeElement !== modal) {
+                modal.focus();
+            }
+        }
+    }
+
     handleClose() {
         this.dispatchEvent(new CustomEvent('close'));
     }
 
     handleSave() {
-        // Trigger the form submit
         const form = this.template.querySelector('lightning-record-edit-form');
-        if (form) {
-            form.submit();
+        if (!form) {
+            return;
         }
+
+        // Get all field values for optimistic update
+        const fields = this.template.querySelectorAll('lightning-input-field');
+        const updates = {};
+
+        fields.forEach((field) => {
+            if (field.value !== undefined && field.value !== null) {
+                updates[field.fieldName] = field.value;
+            }
+        });
+
+        // Store original state for potential rollback
+        if (this.store && Object.keys(updates).length > 0) {
+            this.originalCardState = { ...this.card };
+
+            // Optimistically update store immediately
+            this.store.dispatch(updateCard(this.card.Id, updates));
+        }
+
+        // Let the form handle the server sync
+        form.submit();
     }
 
     handleSuccess() {
+        // Clear the original state since save succeeded
+        this.originalCardState = null;
+
         this.showSuccess('Card updated successfully');
 
         // Notify parent to refresh
@@ -97,6 +134,21 @@ export default class KanbanCardDetail extends LightningElement {
 
     handleError(event) {
         const message = event.detail?.message || 'Error updating card';
+
+        // Rollback the optimistic update if we have original state
+        if (this.store && this.originalCardState) {
+            // Extract only the fields that were updated
+            const rollbackUpdates = {};
+            Object.keys(this.originalCardState).forEach((key) => {
+                if (key.endsWith('__c') || key === 'Name') {
+                    rollbackUpdates[key] = this.originalCardState[key];
+                }
+            });
+
+            this.store.dispatch(updateCard(this.card.Id, rollbackUpdates));
+            this.originalCardState = null;
+        }
+
         this.showError('Error', message);
     }
 
@@ -125,8 +177,13 @@ export default class KanbanCardDetail extends LightningElement {
     }
 
     async performDelete() {
+        if (!this.store) {
+            this.showError('Error', 'Store not available');
+            return;
+        }
+
         try {
-            await deleteCard({ cardId: this.card.Id });
+            await this.store.dispatch(deleteCardAsync(this.card.Id));
             this.showSuccess('Card deleted successfully');
             this.handleClose();
 
@@ -141,11 +198,6 @@ export default class KanbanCardDetail extends LightningElement {
                 error.body?.message || error.message
             );
         }
-    }
-
-    handleBackdropDoubleClick() {
-        // Close on double-click of backdrop
-        this.handleClose();
     }
 
     handleKeyDown(event) {

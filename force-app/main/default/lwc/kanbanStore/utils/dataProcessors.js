@@ -21,7 +21,7 @@ export const processColumnsData = (columns) => {
         ...col,
         cardCount: 0,
         cards: [],
-        columnStyle: col.color ? `border-top: 8px solid ${col.color}` : '',
+        columnStyle: col.color ? `border-top: 4px solid ${col.color}` : '',
         columnUrl: `/lightning/r/OpenSF__Column__c/${col.Id}/view`
     }));
 };

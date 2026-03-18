@@ -1,3 +1,9 @@
+import {
+    startOperation,
+    completeOperation,
+    failOperation
+} from 'c/kanbanStore';
+
 export default class ReducerQueue {
     constructor(store) {
         this.store = store;
@@ -163,6 +169,11 @@ export default class ReducerQueue {
             operation.status = 'processing';
             operation.startedAt = Date.now();
 
+            // Dispatch start operation action to store
+            this.store.dispatch(
+                startOperation(operation.id, operation.type, operation.cardId)
+            );
+
             if (this.onOperationStart) {
                 this.onOperationStart(operation);
             }
@@ -172,6 +183,9 @@ export default class ReducerQueue {
             operation.status = 'completed';
             operation.completedAt = Date.now();
             operation.result = result;
+
+            // Dispatch complete operation action to store
+            this.store.dispatch(completeOperation(operation.id));
 
             if (this.onOperationComplete) {
                 this.onOperationComplete(operation, result);
@@ -195,6 +209,9 @@ export default class ReducerQueue {
             operation.status = 'failed';
             operation.failedAt = Date.now();
             operation.error = error;
+
+            // Dispatch fail operation action to store
+            this.store.dispatch(failOperation(operation.id, error.message));
 
             if (this.onOperationFailed) {
                 this.onOperationFailed(operation, error);

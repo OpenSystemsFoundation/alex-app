@@ -559,6 +559,92 @@ private class KanbanBoardControllerTest {
     }
 
     @isTest
+    static void testGetIncrementalUpdates() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Card__c card = [SELECT Id FROM OpenSF__Card__c LIMIT 1];
+
+        // Set a baseline timestamp
+        DateTime baselineTime = DateTime.now().addMinutes(-5);
+
+        // Update the card to simulate a recent change
+        card.OpenSF__Subject__c = 'Updated Card for Incremental Test';
+        update card;
+
+        Test.startTest();
+        KanbanBoardController.IncrementalUpdateData updates = KanbanBoardController.getIncrementalUpdates(
+            board.Id,
+            baselineTime
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(
+            null,
+            updates,
+            'Incremental update data should not be null'
+        );
+        System.assertNotEquals(
+            null,
+            updates.syncTimestamp,
+            'Sync timestamp should not be null'
+        );
+        System.assertEquals(true, updates.hasChanges, 'Should detect changes');
+        System.assertNotEquals(
+            null,
+            updates.cards,
+            'Cards list should not be null'
+        );
+        System.assertEquals(
+            1,
+            updates.cards.size(),
+            'Should return the updated card'
+        );
+
+        // Verify the card DTO includes the Name field
+        KanbanBoardDTO.CardDTO cardDTO = updates.cards[0];
+        System.assertNotEquals(
+            null,
+            cardDTO.Name,
+            'Card Name field should be populated'
+        );
+        System.assertEquals(
+            'Updated Card for Incremental Test',
+            cardDTO.subject,
+            'Card subject should match'
+        );
+    }
+
+    @isTest
+    static void testGetIncrementalUpdatesNoChanges() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+
+        // Use a timestamp in the future so no changes are detected
+        DateTime futureTime = DateTime.now().addMinutes(5);
+
+        Test.startTest();
+        KanbanBoardController.IncrementalUpdateData updates = KanbanBoardController.getIncrementalUpdates(
+            board.Id,
+            futureTime
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(
+            null,
+            updates,
+            'Incremental update data should not be null'
+        );
+        System.assertEquals(
+            false,
+            updates.hasChanges,
+            'Should not detect changes'
+        );
+        System.assertEquals(
+            null,
+            updates.cards,
+            'Cards list should be null when no changes'
+        );
+    }
+
+    @isTest
     static void testMoveColumnError() {
         Id fakeColumnId = '001000000000000AAA';
 

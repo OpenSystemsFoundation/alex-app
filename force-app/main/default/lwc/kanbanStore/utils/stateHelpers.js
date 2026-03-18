@@ -7,6 +7,8 @@
  * @module stateHelpers
  */
 
+import { enrichCardData } from './dataProcessors';
+
 /**
  * Calculate new drag state based on target position
  * @param {Object} state - Current state
@@ -117,6 +119,7 @@ export const moveCardInState = (
 
 /**
  * Add card to state (maintains lexorank sort order)
+ * Automatically enriches the card with derived properties
  * @param {Array} columns - Current columns
  * @param {Object} card - Card to add
  * @param {string} columnId - Target column ID
@@ -127,7 +130,9 @@ export const addCardToState = (columns, card, columnId) => {
     const column = newState.find((col) => col.Id === columnId);
 
     if (column) {
-        column.cards.push(card);
+        // Enrich card before adding to state
+        const enrichedCard = enrichCardData(card);
+        column.cards.push(enrichedCard);
 
         column.cards.sort((a, b) => {
             if (!a.position && !b.position) return 0;
@@ -145,6 +150,7 @@ export const addCardToState = (columns, card, columnId) => {
 /**
  * Update card in state (supports partial or full updates)
  * Handles position changes by re-sorting the column
+ * Automatically enriches updated properties
  * @param {Array} columns - Current columns
  * @param {string} cardId - Card ID to update
  * @param {Object} updates - Card updates
@@ -170,7 +176,9 @@ export const updateCardInState = (columns, cardId, updates) => {
         return newState;
     }
 
-    const updatedCard = { ...existingCard, ...updates };
+    // Merge updates with existing card, then enrich
+    const mergedCard = { ...existingCard, ...updates };
+    const updatedCard = enrichCardData(mergedCard);
 
     const columnChanged =
         updates.columnId && updates.columnId !== sourceColumn.Id;

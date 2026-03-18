@@ -1,5 +1,6 @@
 export default class RequestTracker {
-    constructor() {
+    constructor(clientId) {
+        this.clientId = clientId; // Store clientId for scoping operations
         this.pendingRequests = new Map();
         this.RETENTION_WINDOW = 5000;
         this.CLEANUP_INTERVAL = 10000;
@@ -17,13 +18,23 @@ export default class RequestTracker {
         );
     }
 
+    /**
+     * Generate a scoped key for this window's operations
+     * Format: clientId:cardId
+     */
+    getScopedKey(cardId) {
+        return `${this.clientId}:${cardId}`;
+    }
+
     trackRequest(operation, cardId, additionalData = {}) {
         const requestId = this.generateUUID();
+        const scopedKey = this.getScopedKey(cardId); // Use scoped key
 
         this.pendingRequests.set(requestId, {
             requestId,
             operation,
             cardId,
+            scopedKey, // Store for easy lookup
             status: 'pending',
             timestamp: Date.now(),
             ...additionalData

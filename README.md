@@ -49,7 +49,7 @@ Alex is built using modern Salesforce development practices:
 ### Prerequisites
 
 - Salesforce CLI (`sf` CLI) installed
-- Node.js (v18 or higher)
+- Node.js (v18 or higher) - **Recommended**: Use [mise](https://mise.jdx.dev/) for version management
 - npm (v9 or higher)
 - Git
 - A Salesforce org (Developer Edition, Sandbox, or Production)
@@ -63,31 +63,46 @@ Alex is built using modern Salesforce development practices:
     cd alex-app
     ```
 
-2. **Install dependencies**
+2. **Set up Node.js (recommended: use mise)**
+
+    ```bash
+    # Install mise if you haven't already
+    curl https://mise.run | sh
+
+    # Install Node.js (uses .mise.toml configuration)
+    mise install
+
+    # Verify Node version
+    node --version  # Should show v22.x or higher
+    ```
+
+    Alternatively, you can install Node.js directly from [nodejs.org](https://nodejs.org/).
+
+3. **Install dependencies**
 
     ```bash
     npm install
     ```
 
-3. **Authorize your Salesforce org**
+4. **Authorize your Salesforce org**
 
     ```bash
     sf org login web --alias my-org
     ```
 
-4. **Deploy to your org**
+5. **Deploy to your org**
 
     ```bash
     npm run deploy
     ```
 
-5. **Assign permission sets**
+6. **Assign permission sets**
 
     ```bash
     sf org assign permset --name Alex_Admin
     ```
 
-6. **Open your org and navigate to Alex**
+7. **Open your org and navigate to Alex**
     ```bash
     sf org open
     ```

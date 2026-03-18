@@ -4,6 +4,7 @@
         role="dialog"
         aria-labelledby="modal-heading"
         aria-modal="true"
+        tabindex="-1"
         onkeydown={handleKeyDown}
     >
         <div class="slds-modal__container">
@@ -130,8 +131,5 @@
         </div>
     </section>
 
-    <div
-        class={backdropClass}
-        ondblclick={handleBackdropDoubleClick}
-    ></div>
+    <div class={backdropClass}></div>
 </template>

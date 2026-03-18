@@ -37,8 +37,15 @@ describe('c-connection-status-indicator', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
-        element.status = 'connected';
-        element.eventCount = 5;
+        element.config = {
+            status: 'connected',
+            eventCount: 5,
+            lastSyncTime: null,
+            syncState: 'idle',
+            pendingOperationsCount: 0,
+            lastSyncError: null,
+            pollingUpdateDetected: null
+        };
 
         document.body.appendChild(element);
 
@@ -56,7 +63,15 @@ describe('c-connection-status-indicator', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
-        element.status = 'connecting';
+        element.config = {
+            status: 'connecting',
+            eventCount: 0,
+            lastSyncTime: null,
+            syncState: 'idle',
+            pendingOperationsCount: 0,
+            lastSyncError: null,
+            pollingUpdateDetected: null
+        };
 
         document.body.appendChild(element);
 
@@ -76,7 +91,15 @@ describe('c-connection-status-indicator', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
-        element.status = 'polling';
+        element.config = {
+            status: 'polling',
+            eventCount: 0,
+            lastSyncTime: null,
+            syncState: 'idle',
+            pendingOperationsCount: 0,
+            lastSyncError: null,
+            pollingUpdateDetected: null
+        };
 
         document.body.appendChild(element);
 
@@ -89,14 +112,22 @@ describe('c-connection-status-indicator', () => {
             true
         );
         expect(icon.iconName).toBe('utility:refresh');
-        expect(statusText.textContent).toBe('Polling');
+        expect(statusText.textContent).toBe('Auto-refresh');
     });
 
     it('should display error status correctly', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
-        element.status = 'error';
+        element.config = {
+            status: 'error',
+            eventCount: 0,
+            lastSyncTime: null,
+            syncState: 'idle',
+            pendingOperationsCount: 0,
+            lastSyncError: null,
+            pollingUpdateDetected: null
+        };
 
         document.body.appendChild(element);
 
@@ -112,75 +143,28 @@ describe('c-connection-status-indicator', () => {
         );
     });
 
-    it('should display disconnected status with last sync time', () => {
+    it('should display disconnected status', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
-        const now = new Date();
-        const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-
-        element.status = 'disconnected';
-        element.lastSyncTime = fiveMinutesAgo.toISOString();
+        element.config = {
+            status: 'disconnected',
+            eventCount: 0,
+            lastSyncTime: null,
+            syncState: 'idle',
+            pendingOperationsCount: 0,
+            lastSyncError: null,
+            pollingUpdateDetected: null
+        };
 
         document.body.appendChild(element);
 
         const statusText = element.shadowRoot.querySelector('.status-text');
 
-        expect(statusText.textContent).toBe('5m ago');
+        expect(statusText.textContent).toBe('Offline');
     });
 
-    it('should format time ago as "Just now" for recent timestamps', () => {
-        const element = createElement('c-connection-status-indicator', {
-            is: ConnectionStatusIndicator
-        });
-        const now = new Date();
-        const thirtySecondsAgo = new Date(now.getTime() - 30 * 1000);
-
-        element.status = 'disconnected';
-        element.lastSyncTime = thirtySecondsAgo.toISOString();
-
-        document.body.appendChild(element);
-
-        const statusText = element.shadowRoot.querySelector('.status-text');
-
-        expect(statusText.textContent).toBe('Just now');
-    });
-
-    it('should format time ago in hours', () => {
-        const element = createElement('c-connection-status-indicator', {
-            is: ConnectionStatusIndicator
-        });
-        const now = new Date();
-        const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
-
-        element.status = 'disconnected';
-        element.lastSyncTime = twoHoursAgo.toISOString();
-
-        document.body.appendChild(element);
-
-        const statusText = element.shadowRoot.querySelector('.status-text');
-
-        expect(statusText.textContent).toBe('2h ago');
-    });
-
-    it('should format time ago in days', () => {
-        const element = createElement('c-connection-status-indicator', {
-            is: ConnectionStatusIndicator
-        });
-        const now = new Date();
-        const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-
-        element.status = 'disconnected';
-        element.lastSyncTime = threeDaysAgo.toISOString();
-
-        document.body.appendChild(element);
-
-        const statusText = element.shadowRoot.querySelector('.status-text');
-
-        expect(statusText.textContent).toBe('3d ago');
-    });
-
-    it('should update time display every minute for disconnected status', () => {
+    it('should not update time display for disconnected status (time-ago removed)', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
@@ -220,26 +204,19 @@ describe('c-connection-status-indicator', () => {
         expect(statusText).toBeTruthy();
     });
 
-    it('should clear interval on disconnect', () => {
-        const element = createElement('c-connection-status-indicator', {
-            is: ConnectionStatusIndicator
-        });
-
-        document.body.appendChild(element);
-
-        const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
-
-        document.body.removeChild(element);
-
-        expect(clearIntervalSpy).toHaveBeenCalled();
-    });
-
     it('should return correct detailed status for connected state with events', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
-        element.status = 'connected';
-        element.eventCount = 10;
+        element.config = {
+            status: 'connected',
+            eventCount: 10,
+            lastSyncTime: null,
+            syncState: 'idle',
+            pendingOperationsCount: 0,
+            lastSyncError: null,
+            pollingUpdateDetected: null
+        };
 
         document.body.appendChild(element);
 
@@ -253,8 +230,15 @@ describe('c-connection-status-indicator', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
-        element.status = 'connected';
-        element.eventCount = 0;
+        element.config = {
+            status: 'connected',
+            eventCount: 0,
+            lastSyncTime: null,
+            syncState: 'idle',
+            pendingOperationsCount: 0,
+            lastSyncError: null,
+            pollingUpdateDetected: null
+        };
 
         document.body.appendChild(element);
 
@@ -268,7 +252,15 @@ describe('c-connection-status-indicator', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
-        element.status = 'polling';
+        element.config = {
+            status: 'polling',
+            eventCount: 0,
+            lastSyncTime: null,
+            syncState: 'idle',
+            pendingOperationsCount: 0,
+            lastSyncError: null,
+            pollingUpdateDetected: null
+        };
 
         document.body.appendChild(element);
 
@@ -276,33 +268,23 @@ describe('c-connection-status-indicator', () => {
             element.shadowRoot.querySelector('.status-indicator');
 
         expect(statusIndicator.title).toBe(
-            'Using fallback mode - updates every 5 seconds'
+            'Checking for updates every 15 seconds'
         );
-    });
-
-    it('should return correct detailed status for disconnected state with last sync', () => {
-        const element = createElement('c-connection-status-indicator', {
-            is: ConnectionStatusIndicator
-        });
-        const now = new Date();
-        const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
-
-        element.status = 'disconnected';
-        element.lastSyncTime = tenMinutesAgo.toISOString();
-
-        document.body.appendChild(element);
-
-        const statusIndicator =
-            element.shadowRoot.querySelector('.status-indicator');
-
-        expect(statusIndicator.title).toBe('Last refreshed 10m ago');
     });
 
     it('should return correct detailed status for disconnected state without last sync', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
-        element.status = 'disconnected';
+        element.config = {
+            status: 'disconnected',
+            eventCount: 0,
+            lastSyncTime: null,
+            syncState: 'idle',
+            pendingOperationsCount: 0,
+            lastSyncError: null,
+            pollingUpdateDetected: null
+        };
 
         document.body.appendChild(element);
 
@@ -316,7 +298,15 @@ describe('c-connection-status-indicator', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
-        element.status = 'unknown-status';
+        element.config = {
+            status: 'unknown-status',
+            eventCount: 0,
+            lastSyncTime: null,
+            syncState: 'idle',
+            pendingOperationsCount: 0,
+            lastSyncError: null,
+            pollingUpdateDetected: null
+        };
 
         document.body.appendChild(element);
 
@@ -334,7 +324,15 @@ describe('c-connection-status-indicator', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
-        element.status = 'error';
+        element.config = {
+            status: 'error',
+            eventCount: 0,
+            lastSyncTime: null,
+            syncState: 'idle',
+            pendingOperationsCount: 0,
+            lastSyncError: null,
+            pollingUpdateDetected: null
+        };
 
         document.body.appendChild(element);
 
@@ -348,7 +346,15 @@ describe('c-connection-status-indicator', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
-        element.status = 'connected';
+        element.config = {
+            status: 'connected',
+            eventCount: 0,
+            lastSyncTime: null,
+            syncState: 'idle',
+            pendingOperationsCount: 0,
+            lastSyncError: null,
+            pollingUpdateDetected: null
+        };
 
         document.body.appendChild(element);
 
@@ -364,13 +370,190 @@ describe('c-connection-status-indicator', () => {
         const element = createElement('c-connection-status-indicator', {
             is: ConnectionStatusIndicator
         });
-        element.status = 'disconnected';
-        element.lastSyncTime = null;
+        element.config = {
+            status: 'disconnected',
+            eventCount: 0,
+            lastSyncTime: null,
+            syncState: 'idle',
+            pendingOperationsCount: 0,
+            lastSyncError: null,
+            pollingUpdateDetected: null
+        };
 
         document.body.appendChild(element);
 
         const statusText = element.shadowRoot.querySelector('.status-text');
 
         expect(statusText.textContent).toBe('Offline');
+    });
+
+    describe('Sync State', () => {
+        it('should display syncing status with pending operations', () => {
+            const element = createElement('c-connection-status-indicator', {
+                is: ConnectionStatusIndicator
+            });
+            element.config = {
+                status: 'connected',
+                eventCount: 0,
+                lastSyncTime: Date.now(),
+                syncState: 'syncing',
+                pendingOperationsCount: 3,
+                lastSyncError: null,
+                pollingUpdateDetected: null
+            };
+
+            document.body.appendChild(element);
+
+            return Promise.resolve().then(() => {
+                const syncStatus =
+                    element.shadowRoot.querySelector('.sync-status');
+                const syncText =
+                    element.shadowRoot.querySelector('.sync-status-text');
+
+                expect(syncStatus).toBeTruthy();
+                expect(syncText.textContent).toBe('Saving 3...');
+                expect(syncStatus.classList.contains('sync-syncing')).toBe(
+                    true
+                );
+                expect(syncStatus.classList.contains('pulse-animation')).toBe(
+                    true
+                );
+            });
+        });
+
+        it('should display syncing status with single operation', () => {
+            const element = createElement('c-connection-status-indicator', {
+                is: ConnectionStatusIndicator
+            });
+            element.config = {
+                status: 'connected',
+                eventCount: 0,
+                lastSyncTime: Date.now(),
+                syncState: 'syncing',
+                pendingOperationsCount: 1,
+                lastSyncError: null,
+                pollingUpdateDetected: null
+            };
+
+            document.body.appendChild(element);
+
+            return Promise.resolve().then(() => {
+                const syncText =
+                    element.shadowRoot.querySelector('.sync-status-text');
+                expect(syncText.textContent).toBe('Saving...');
+            });
+        });
+
+        it('should display saved status', () => {
+            const element = createElement('c-connection-status-indicator', {
+                is: ConnectionStatusIndicator
+            });
+
+            // First set syncing state
+            element.config = {
+                status: 'connected',
+                eventCount: 0,
+                lastSyncTime: null,
+                syncState: 'syncing',
+                pendingOperationsCount: 1,
+                lastSyncError: null,
+                pollingUpdateDetected: null
+            };
+
+            document.body.appendChild(element);
+
+            // Then transition to idle (saved) state
+            element.config = {
+                status: 'connected',
+                eventCount: 0,
+                lastSyncTime: new Date().toISOString(),
+                syncState: 'idle',
+                pendingOperationsCount: 0,
+                lastSyncError: null,
+                pollingUpdateDetected: null
+            };
+
+            return Promise.resolve()
+                .then(() => Promise.resolve())
+                .then(() => {
+                    const syncStatus =
+                        element.shadowRoot.querySelector('.sync-status');
+                    const syncText =
+                        element.shadowRoot.querySelector('.sync-status-text');
+
+                    expect(syncStatus).toBeTruthy();
+                    expect(syncText.textContent).toBe('Saved');
+                    expect(syncStatus.classList.contains('sync-idle')).toBe(
+                        true
+                    );
+                });
+        });
+
+        it('should display failed status', () => {
+            const element = createElement('c-connection-status-indicator', {
+                is: ConnectionStatusIndicator
+            });
+            element.config = {
+                status: 'connected',
+                eventCount: 0,
+                lastSyncTime: Date.now(),
+                syncState: 'failed',
+                pendingOperationsCount: 0,
+                lastSyncError: null,
+                pollingUpdateDetected: null
+            };
+
+            document.body.appendChild(element);
+
+            return Promise.resolve().then(() => {
+                const syncStatus =
+                    element.shadowRoot.querySelector('.sync-status');
+                const syncText =
+                    element.shadowRoot.querySelector('.sync-status-text');
+
+                expect(syncStatus).toBeTruthy();
+                expect(syncText.textContent).toBe('Save failed');
+                expect(syncStatus.classList.contains('sync-failed')).toBe(true);
+            });
+        });
+
+        it('should not show sync status when idle with no recent sync', () => {
+            const element = createElement('c-connection-status-indicator', {
+                is: ConnectionStatusIndicator
+            });
+            element.config = {
+                status: 'connected',
+                eventCount: 0,
+                lastSyncTime: null,
+                syncState: 'idle',
+                pendingOperationsCount: 0,
+                lastSyncError: null,
+                pollingUpdateDetected: null
+            };
+
+            document.body.appendChild(element);
+
+            const syncStatus = element.shadowRoot.querySelector('.sync-status');
+            expect(syncStatus).toBeFalsy();
+        });
+
+        it('should include sync message in detailed status', () => {
+            const element = createElement('c-connection-status-indicator', {
+                is: ConnectionStatusIndicator
+            });
+            element.config = {
+                status: 'connected',
+                eventCount: 0,
+                lastSyncTime: null,
+                syncState: 'syncing',
+                pendingOperationsCount: 2,
+                lastSyncError: null,
+                pollingUpdateDetected: null
+            };
+
+            document.body.appendChild(element);
+
+            expect(element.detailedStatus).toContain('Saving 2 changes');
+        });
     });
 });

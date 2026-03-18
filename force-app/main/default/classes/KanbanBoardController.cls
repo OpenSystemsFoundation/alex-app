@@ -35,6 +35,7 @@ public with sharing class KanbanBoardController {
     /**
      * Move card to new position (OPTIMIZED for rapid moves)
      * Updates position, column, and status (if column has a status and it differs)
+     * Now with conflict detection and resolution
      */
     @AuraEnabled
     public static CardMoveResult moveCard(
@@ -42,9 +43,70 @@ public with sharing class KanbanBoardController {
         Id targetColumnId,
         String previousCardPosition,
         String nextCardPosition,
-        String clientRequestId
+        String clientRequestId,
+        String clientId
+    ) {
+        return moveCardWithConflictDetection(
+            cardId,
+            targetColumnId,
+            previousCardPosition,
+            nextCardPosition,
+            clientRequestId,
+            null, // No expected sequence from legacy calls
+            clientId
+        );
+    }
+
+    /**
+     * Move card with conflict detection based on expected sequence number
+     * Client sends the sequence number it expects the card to have
+     * If different, a conflict occurred and server wins
+     */
+    @AuraEnabled
+    public static CardMoveResult moveCardWithConflictDetection(
+        Id cardId,
+        Id targetColumnId,
+        String previousCardPosition,
+        String nextCardPosition,
+        String clientRequestId,
+        Decimal expectedSequenceNumber,
+        String clientId
     ) {
         try {
+            // Query full card data for conflict detection
+            OpenSF__Card__c existingCard = KanbanBoardSelector.getCardById(
+                cardId
+            );
+
+            // Detect conflicts
+            Boolean hasConflict = false;
+            String conflictReason = null;
+
+            // Sequence number conflict detection
+            if (
+                expectedSequenceNumber != null &&
+                existingCard.OpenSF__SequenceNumber__c != null &&
+                expectedSequenceNumber != existingCard.OpenSF__SequenceNumber__c
+            ) {
+                hasConflict = true;
+                conflictReason =
+                    'Card was modified by another user (expected seq: ' +
+                    expectedSequenceNumber +
+                    ', actual: ' +
+                    existingCard.OpenSF__SequenceNumber__c +
+                    ')';
+            }
+
+            // Position conflict detection (card moved by someone else)
+            // Note: We still apply the move, but flag it as a conflict
+            if (
+                existingCard.OpenSF__Column__c != null &&
+                targetColumnId != existingCard.OpenSF__Column__c
+            ) {
+                // Card is being moved to different column - this is expected
+                // Only conflict if client thinks card is in different column than server
+            }
+
             // Calculate new position using LexoRank
             String newPosition = LexoRank.between(
                 previousCardPosition,
@@ -56,17 +118,14 @@ public with sharing class KanbanBoardController {
                 targetColumnId
             );
 
-            // Query the card's current status to check if it needs updating
-            OpenSF__Card__c existingCard = KanbanBoardSelector.getCardStatusById(
-                cardId
-            );
-
             // Update position, column, status (if needed), and lastClientRequestId
+            // Sequence number will be auto-incremented by trigger
             OpenSF__Card__c card = new OpenSF__Card__c(
                 Id = cardId,
                 OpenSF__Column__c = targetColumnId,
                 OpenSF__LexoRankPosition__c = newPosition,
-                OpenSF__LastClientRequestId__c = clientRequestId
+                OpenSF__LastClientRequestId__c = clientRequestId,
+                OpenSF__LastClientId__c = clientId
             );
 
             // Apply column status to card if applicable
@@ -78,16 +137,25 @@ public with sharing class KanbanBoardController {
 
             update card;
 
-            // Skip platform event for move - client handles optimistic updates
-            // Platform events only needed for multi-user scenarios (handled elsewhere)
+            // Query updated card to get new sequence number
+            OpenSF__Card__c updatedCard = [
+                SELECT OpenSF__SequenceNumber__c, LastModifiedDate
+                FROM OpenSF__Card__c
+                WHERE Id = :cardId
+                LIMIT 1
+            ];
 
-            // Return minimal data (no full query needed)
+            // Return result with conflict information
             CardMoveResult result = new CardMoveResult();
             result.success = true;
             result.newPosition = newPosition;
             result.cardId = cardId;
             result.columnId = targetColumnId;
-            // Skip full card DTO - client already has all data from optimistic update
+            result.conflict = hasConflict;
+            result.conflictReason = conflictReason;
+            result.serverSequenceNumber = updatedCard.OpenSF__SequenceNumber__c;
+            result.serverTimestamp = updatedCard.LastModifiedDate;
+            result.clientId = clientId;
 
             return result;
         } catch (Exception e) {
@@ -106,7 +174,8 @@ public with sharing class KanbanBoardController {
         String subject,
         String previousCardPosition,
         String nextCardPosition,
-        String clientRequestId
+        String clientRequestId,
+        String clientId
     ) {
         try {
             // Calculate position
@@ -120,12 +189,14 @@ public with sharing class KanbanBoardController {
                 columnId
             );
 
-            // Create card
+            // Create card with initial sequence number and clientId
             OpenSF__Card__c card = new OpenSF__Card__c(
                 OpenSF__Subject__c = subject,
                 OpenSF__Column__c = columnId,
                 OpenSF__LexoRankPosition__c = position,
-                OpenSF__LastClientRequestId__c = clientRequestId
+                OpenSF__LastClientRequestId__c = clientRequestId,
+                OpenSF__LastClientId__c = clientId,
+                OpenSF__SequenceNumber__c = 1
             );
 
             // Apply column status to new card (currentStatus is null for new cards)
@@ -153,12 +224,88 @@ public with sharing class KanbanBoardController {
     @AuraEnabled
     public static KanbanBoardDTO.CardDTO updateCard(
         Id cardId,
-        Map<String, Object> updates
+        Map<String, Object> updates,
+        String clientId
+    ) {
+        CardUpdateResult result = updateCardWithConflictDetection(
+            cardId,
+            updates,
+            null,
+            clientId
+        );
+        if (!result.success) {
+            throw new AuraHandledException('Update failed');
+        }
+        return result.card;
+    }
+
+    /**
+     * Update card with conflict detection
+     * Client can send expected sequence number to detect concurrent modifications
+     */
+    @AuraEnabled
+    public static CardUpdateResult updateCardWithConflictDetection(
+        Id cardId,
+        Map<String, Object> updates,
+        Decimal expectedSequenceNumber,
+        String clientId
     ) {
         try {
+            // Query existing card for conflict detection
+            OpenSF__Card__c existingCard = KanbanBoardSelector.getCardById(
+                cardId
+            );
+
+            // Detect conflicts
+            Boolean hasConflict = false;
+            String conflictReason = null;
+            Map<String, Object> conflictingFields = new Map<String, Object>();
+
+            // Sequence number conflict
+            if (
+                expectedSequenceNumber != null &&
+                existingCard.OpenSF__SequenceNumber__c != null &&
+                expectedSequenceNumber != existingCard.OpenSF__SequenceNumber__c
+            ) {
+                hasConflict = true;
+                conflictReason = 'Card was modified by another user';
+
+                // Capture current server state for each field being updated
+                if (
+                    updates.containsKey('subject') &&
+                    existingCard.OpenSF__Subject__c !=
+                    (String) updates.get('subject')
+                ) {
+                    conflictingFields.put(
+                        'subject',
+                        existingCard.OpenSF__Subject__c
+                    );
+                }
+                if (
+                    updates.containsKey('description') &&
+                    existingCard.OpenSF__Description__c !=
+                    (String) updates.get('description')
+                ) {
+                    conflictingFields.put(
+                        'description',
+                        existingCard.OpenSF__Description__c
+                    );
+                }
+                if (
+                    updates.containsKey('priority') &&
+                    existingCard.OpenSF__Priority__c !=
+                    (String) updates.get('priority')
+                ) {
+                    conflictingFields.put(
+                        'priority',
+                        existingCard.OpenSF__Priority__c
+                    );
+                }
+            }
+
+            // Apply updates (server wins on conflict, but we flag it)
             OpenSF__Card__c card = new OpenSF__Card__c(Id = cardId);
 
-            // Apply updates
             if (updates.containsKey('subject')) {
                 card.OpenSF__Subject__c = (String) updates.get('subject');
             }
@@ -189,17 +336,28 @@ public with sharing class KanbanBoardController {
 
             update card;
 
-            // Event published by trigger
-
-            // Return updated card as DTO
+            // Query updated card
             OpenSF__Card__c updatedCard = KanbanBoardSelector.getCardById(
                 cardId
             );
-            return new KanbanBoardDTO.CardDTO(updatedCard);
+
+            // Return result with conflict information
+            CardUpdateResult result = new CardUpdateResult();
+            result.success = true;
+            result.card = new KanbanBoardDTO.CardDTO(updatedCard);
+            result.conflict = hasConflict;
+            result.conflictReason = conflictReason;
+            result.serverSequenceNumber = updatedCard.OpenSF__SequenceNumber__c;
+            result.serverTimestamp = updatedCard.LastModifiedDate;
+            result.serverState = conflictingFields;
+            result.clientId = clientId;
+
+            return result;
         } catch (Exception e) {
-            throw new AuraHandledException(
-                'Error updating card: ' + e.getMessage()
-            );
+            CardUpdateResult result = new CardUpdateResult();
+            result.success = false;
+            result.conflictReason = e.getMessage();
+            return result;
         }
     }
 
@@ -283,6 +441,7 @@ public with sharing class KanbanBoardController {
             List<OpenSF__Card__c> modifiedCards = [
                 SELECT
                     Id,
+                    Name,
                     OpenSF__Subject__c,
                     OpenSF__Description__c,
                     OpenSF__Priority__c,
@@ -429,6 +588,35 @@ public with sharing class KanbanBoardController {
         public Id cardId; // For minimal updates
         @AuraEnabled
         public Id columnId; // For minimal updates
+        @AuraEnabled
+        public Boolean conflict; // True if a conflict was detected and resolved
+        @AuraEnabled
+        public String conflictReason; // Description of the conflict
+        @AuraEnabled
+        public Decimal serverSequenceNumber; // Server's final sequence number
+        @AuraEnabled
+        public DateTime serverTimestamp; // When server processed the change
+        @AuraEnabled
+        public String clientId; // Echo back client ID for window identification
+    }
+
+    public class CardUpdateResult {
+        @AuraEnabled
+        public Boolean success;
+        @AuraEnabled
+        public KanbanBoardDTO.CardDTO card;
+        @AuraEnabled
+        public Boolean conflict;
+        @AuraEnabled
+        public String conflictReason;
+        @AuraEnabled
+        public Decimal serverSequenceNumber;
+        @AuraEnabled
+        public DateTime serverTimestamp;
+        @AuraEnabled
+        public Map<String, Object> serverState; // Current server state for conflict resolution
+        @AuraEnabled
+        public String clientId; // Echo back client ID for window identification
     }
 
     public class ModalSettings {

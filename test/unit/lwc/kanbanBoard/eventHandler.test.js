@@ -1,10 +1,5 @@
 import EventHandler from '../../../../force-app/main/default/lwc/kanbanBoard/handlers/eventHandler';
 
-// Mock kanbanStore
-jest.mock('c/kanbanStore', () => ({
-    enrichCardData: jest.fn((card) => ({ ...card, enriched: true }))
-}));
-
 // Mock store
 const createMockStore = () => ({
     getState: jest.fn(() => ({
@@ -124,19 +119,27 @@ describe('EventHandler', () => {
             );
         });
 
-        it('should enrich card before updating', () => {
+        it('should pass card data to reducer without pre-enrichment', () => {
             const event = {
                 OpenSF__EventType__c: 'update',
                 OpenSF__Payload__c: JSON.stringify({
                     Id: 'card1',
-                    subject: 'Task'
+                    subject: 'Task',
+                    priority: 'High'
                 })
             };
 
             handler.handlePlatformEvent(event, mockStore);
 
             const dispatchCall = mockStore.dispatch.mock.calls[0][0];
-            expect(dispatchCall.payload.card.enriched).toBe(true);
+            expect(dispatchCall.payload.updates).toEqual(
+                expect.objectContaining({
+                    Id: 'card1',
+                    subject: 'Task',
+                    priority: 'High'
+                })
+            );
+            // Enrichment will happen in the reducer
         });
     });
 
@@ -178,20 +181,28 @@ describe('EventHandler', () => {
             expect(mockStore.dispatch).not.toHaveBeenCalled();
         });
 
-        it('should enrich card before adding', () => {
+        it('should pass card data to reducer without pre-enrichment', () => {
             const event = {
                 OpenSF__EventType__c: 'create',
                 OpenSF__Payload__c: JSON.stringify({
                     Id: 'card2',
                     subject: 'New Card',
-                    columnId: 'col1'
+                    columnId: 'col1',
+                    priority: 'Medium'
                 })
             };
 
             handler.handlePlatformEvent(event, mockStore);
 
             const dispatchCall = mockStore.dispatch.mock.calls[0][0];
-            expect(dispatchCall.payload.card.enriched).toBe(true);
+            expect(dispatchCall.payload.card).toEqual(
+                expect.objectContaining({
+                    Id: 'card2',
+                    subject: 'New Card',
+                    priority: 'Medium'
+                })
+            );
+            // Enrichment will happen in the reducer
         });
     });
 
@@ -208,7 +219,7 @@ describe('EventHandler', () => {
 
             expect(mockStore.dispatch).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    type: 'REMOVE_CARD',
+                    type: 'DELETE_CARD',
                     payload: { cardId: 'card1' }
                 })
             );
@@ -385,6 +396,585 @@ describe('EventHandler', () => {
             // Second should be gone
             jest.advanceTimersByTime(1000);
             expect(handler.recentChanges.has('card2')).toBe(false);
+        });
+    });
+
+    describe('Sequence Number Validation', () => {
+        it('should apply event with higher sequence number', () => {
+            const mockStoreWithSeq = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Old Card',
+                                    OpenSF__SequenceNumber__c: 5
+                                }
+                            ]
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            const event = {
+                OpenSF__EventType__c: 'update',
+                OpenSF__SequenceNumber__c: 6,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Newer Update',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(event, mockStoreWithSeq);
+
+            expect(mockStoreWithSeq.dispatch).toHaveBeenCalled();
+        });
+
+        it('should ignore event with lower sequence number', () => {
+            const consoleLogSpy = jest
+                .spyOn(console, 'log')
+                .mockImplementation();
+
+            const mockStoreWithSeq = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Current Card',
+                                    OpenSF__SequenceNumber__c: 10
+                                }
+                            ]
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            const event = {
+                OpenSF__EventType__c: 'update',
+                OpenSF__SequenceNumber__c: 8,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Stale Update',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(event, mockStoreWithSeq);
+
+            expect(mockStoreWithSeq.dispatch).not.toHaveBeenCalled();
+            expect(consoleLogSpy).toHaveBeenCalledWith(
+                expect.stringContaining('Ignoring stale event')
+            );
+
+            consoleLogSpy.mockRestore();
+        });
+
+        it('should ignore event with equal sequence number', () => {
+            const consoleLogSpy = jest
+                .spyOn(console, 'log')
+                .mockImplementation();
+
+            const mockStoreWithSeq = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Current Card',
+                                    OpenSF__SequenceNumber__c: 7
+                                }
+                            ]
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            const event = {
+                OpenSF__EventType__c: 'update',
+                OpenSF__SequenceNumber__c: 7,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Same Sequence',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(event, mockStoreWithSeq);
+
+            expect(mockStoreWithSeq.dispatch).not.toHaveBeenCalled();
+
+            consoleLogSpy.mockRestore();
+        });
+
+        it('should apply event when card has no sequence number', () => {
+            const mockStoreWithoutSeq = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Old Card'
+                                    // No OpenSF__SequenceNumber__c
+                                }
+                            ]
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            const event = {
+                OpenSF__EventType__c: 'update',
+                OpenSF__SequenceNumber__c: 5,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Update',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(event, mockStoreWithoutSeq);
+
+            expect(mockStoreWithoutSeq.dispatch).toHaveBeenCalled();
+        });
+
+        it('should apply event when event has no sequence number (backward compatibility)', () => {
+            const mockStore = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Card',
+                                    sequenceNumber: 5
+                                }
+                            ]
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            const event = {
+                OpenSF__EventType__c: 'update',
+                // No OpenSF__SequenceNumber__c
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Update',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(event, mockStore);
+
+            expect(mockStore.dispatch).toHaveBeenCalled();
+        });
+
+        it('should apply event for new card (not in state)', () => {
+            const mockStore = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: []
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            const event = {
+                OpenSF__EventType__c: 'create',
+                OpenSF__SequenceNumber__c: 1,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card2',
+                    subject: 'New Card',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(event, mockStore);
+
+            expect(mockStore.dispatch).toHaveBeenCalled();
+        });
+
+        it('should handle out-of-order events correctly', () => {
+            const mockStore = {
+                getState: jest.fn(() => ({
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Version 2',
+                                    OpenSF__SequenceNumber__c: 2
+                                }
+                            ]
+                        }
+                    ],
+                    boardId: 'board1'
+                })),
+                dispatch: jest.fn()
+            };
+
+            // Event arrives out of order (seq 1, but state is already at seq 2)
+            const staleEvent = {
+                OpenSF__EventType__c: 'update',
+                OpenSF__SequenceNumber__c: 1,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Version 1',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(staleEvent, mockStore);
+
+            // Should be ignored
+            expect(mockStore.dispatch).not.toHaveBeenCalled();
+
+            // Now event with seq 3 arrives
+            const newerEvent = {
+                OpenSF__EventType__c: 'update',
+                OpenSF__SequenceNumber__c: 3,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Version 3',
+                    columnId: 'col1'
+                })
+            };
+
+            handler.handlePlatformEvent(newerEvent, mockStore);
+
+            // Should be applied
+            expect(mockStore.dispatch).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('Multi-Window Coordination with ClientId', () => {
+        let mockRequestTracker;
+        let windowAHandler;
+        let windowBHandler;
+        let mockStoreWithBoard;
+
+        beforeEach(() => {
+            mockRequestTracker = {
+                hasPendingOperations: jest.fn(() => false),
+                isOwnRequest: jest.fn(() => false),
+                getRequest: jest.fn(() => null),
+                isPending: jest.fn(() => false),
+                completeRequest: jest.fn()
+            };
+
+            // Create mock store with board for multi-window tests
+            mockStoreWithBoard = {
+                getState: jest.fn(() => ({
+                    board: { Id: 'board1' },
+                    columns: [
+                        {
+                            Id: 'col1',
+                            cards: [
+                                {
+                                    Id: 'card1',
+                                    subject: 'Existing Card',
+                                    sequenceNumber: 1
+                                }
+                            ]
+                        }
+                    ]
+                })),
+                dispatch: jest.fn()
+            };
+
+            // Simulate two different browser windows
+            windowAHandler = new EventHandler(
+                mockRequestTracker,
+                null,
+                'board1',
+                'client-window-A'
+            );
+            windowBHandler = new EventHandler(
+                mockRequestTracker,
+                null,
+                'board1',
+                'client-window-B'
+            );
+        });
+
+        it('should apply events from other windows without rollback', () => {
+            // Window A has no pending operations
+            mockRequestTracker.hasPendingOperations.mockReturnValue(false);
+
+            const eventFromWindowB = {
+                OpenSF__EventType__c: 'update',
+                ClientId__c: 'client-window-B',
+                OpenSF__ClientRequestId__c: 'req-123',
+                OpenSF__SequenceNumber__c: 2,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Updated by Window B',
+                    columnId: 'col1' // Must match mock store column
+                })
+            };
+
+            // Window A receives event from Window B
+            const result = windowAHandler.handlePlatformEvent(
+                eventFromWindowB,
+                mockStoreWithBoard
+            );
+
+            // Should apply the event normally
+            expect(mockStoreWithBoard.dispatch).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'UPDATE_CARD',
+                    payload: expect.objectContaining({
+                        cardId: 'card1'
+                    })
+                })
+            );
+            // Return value should be false (successfully processed)
+            expect(result).toBe(false);
+        });
+
+        it('should NOT rollback optimistic updates when event is from different window', () => {
+            // Window A has pending operation on card1
+            mockRequestTracker.hasPendingOperations.mockReturnValue(true);
+
+            const eventFromWindowB = {
+                OpenSF__EventType__c: 'update',
+                ClientId__c: 'client-window-B', // Different window
+                OpenSF__ClientRequestId__c: 'req-456',
+                OpenSF__SequenceNumber__c: 2,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Updated by Window B',
+                    columnId: 'col1'
+                })
+            };
+
+            // Window A receives event from Window B
+            windowAHandler.handlePlatformEvent(
+                eventFromWindowB,
+                mockStoreWithBoard
+            );
+
+            // Should NOT rollback (because clientId doesn't match)
+            // Event should still be applied
+            expect(mockStoreWithBoard.dispatch).toHaveBeenCalled();
+        });
+
+        it('should rollback optimistic updates ONLY when event is from same window', () => {
+            // Window A has pending operation on card1
+            mockRequestTracker.hasPendingOperations.mockReturnValue(true);
+
+            const eventFromWindowA = {
+                OpenSF__EventType__c: 'update',
+                ClientId__c: 'client-window-A', // Same window
+                OpenSF__ClientRequestId__c: 'req-789',
+                OpenSF__SequenceNumber__c: 2,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Updated by Window A (server confirmed)',
+                    columnId: 'col1'
+                })
+            };
+
+            // Window A receives its own event back (but not tracked as own request)
+            const result = windowAHandler.handlePlatformEvent(
+                eventFromWindowA,
+                mockStoreWithBoard
+            );
+
+            // Should trigger rollback logic and apply event
+            // Return false means it was processed successfully
+            expect(result).toBe(false);
+        });
+
+        it('should handle events with null clientId as external changes', () => {
+            // Simulate event from record-edit-form or external source (no clientId)
+            const externalEvent = {
+                OpenSF__EventType__c: 'update',
+                ClientId__c: null,
+                OpenSF__ClientRequestId__c: null,
+                OpenSF__SequenceNumber__c: 2,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Updated externally',
+                    columnId: 'col1'
+                })
+            };
+
+            // Window A has no pending operations
+            mockRequestTracker.hasPendingOperations.mockReturnValue(false);
+
+            windowAHandler.handlePlatformEvent(
+                externalEvent,
+                mockStoreWithBoard
+            );
+
+            // Should apply normally
+            expect(mockStoreWithBoard.dispatch).toHaveBeenCalled();
+        });
+
+        it('should complete own requests regardless of clientId match', () => {
+            const requestId = 'req-own-123';
+            mockRequestTracker.isOwnRequest.mockReturnValue(true);
+            mockRequestTracker.isPending.mockReturnValue(true);
+            mockRequestTracker.getRequest.mockReturnValue({
+                requestId,
+                cardId: 'card1'
+            });
+
+            const ownEvent = {
+                OpenSF__EventType__c: 'update',
+                ClientId__c: 'client-window-A',
+                OpenSF__ClientRequestId__c: requestId,
+                OpenSF__SequenceNumber__c: 2,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Own update confirmed',
+                    columnId: 'col1'
+                })
+            };
+
+            windowAHandler.handlePlatformEvent(ownEvent, mockStoreWithBoard);
+
+            // Should complete the request
+            expect(mockRequestTracker.completeRequest).toHaveBeenCalledWith(
+                requestId,
+                expect.objectContaining({
+                    Id: 'card1'
+                })
+            );
+        });
+
+        it('should not apply own create events to prevent duplicates', () => {
+            const requestId = 'req-create-123';
+            mockRequestTracker.isOwnRequest.mockReturnValue(true);
+            mockRequestTracker.isPending.mockReturnValue(true);
+            mockRequestTracker.getRequest.mockReturnValue({
+                requestId,
+                cardId: null // Card being created
+            });
+
+            const createEvent = {
+                OpenSF__EventType__c: 'create',
+                ClientId__c: 'client-window-A',
+                OpenSF__ClientRequestId__c: requestId,
+                OpenSF__SequenceNumber__c: 1,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card-new-123',
+                    subject: 'New Card',
+                    columnId: 'col1'
+                })
+            };
+
+            mockStoreWithBoard.dispatch.mockClear();
+            windowAHandler.handlePlatformEvent(createEvent, mockStoreWithBoard);
+
+            // Should complete the request
+            expect(mockRequestTracker.completeRequest).toHaveBeenCalledWith(
+                requestId,
+                expect.objectContaining({
+                    Id: 'card-new-123'
+                })
+            );
+
+            // Should NOT dispatch ADD_CARD since it was already added optimistically
+            expect(mockStoreWithBoard.dispatch).not.toHaveBeenCalled();
+        });
+
+        it('should apply own update events even with clientRequestId', () => {
+            const requestId = 'req-update-456';
+            mockRequestTracker.isOwnRequest.mockReturnValue(true);
+            mockRequestTracker.isPending.mockReturnValue(true);
+            mockRequestTracker.getRequest.mockReturnValue({
+                requestId,
+                cardId: 'card1'
+            });
+
+            const updateEvent = {
+                OpenSF__EventType__c: 'update',
+                ClientId__c: 'client-window-A',
+                OpenSF__ClientRequestId__c: requestId,
+                OpenSF__SequenceNumber__c: 2,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card1',
+                    subject: 'Updated Card',
+                    columnId: 'col1'
+                })
+            };
+
+            mockStoreWithBoard.dispatch.mockClear();
+            windowAHandler.handlePlatformEvent(updateEvent, mockStoreWithBoard);
+
+            // Should complete the request
+            expect(mockRequestTracker.completeRequest).toHaveBeenCalledWith(
+                requestId,
+                expect.objectContaining({
+                    Id: 'card1'
+                })
+            );
+
+            // Should dispatch UPDATE_CARD
+            expect(mockStoreWithBoard.dispatch).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'UPDATE_CARD'
+                })
+            );
+        });
+
+        it('should allow multiple windows to operate independently', () => {
+            // Window A creates card
+            mockRequestTracker.isOwnRequest.mockReturnValue(false);
+            mockRequestTracker.hasPendingOperations.mockReturnValue(false);
+
+            const createEventFromA = {
+                OpenSF__EventType__c: 'create',
+                ClientId__c: 'client-window-A',
+                OpenSF__ClientRequestId__c: 'create-A',
+                OpenSF__SequenceNumber__c: 1,
+                OpenSF__Payload__c: JSON.stringify({
+                    Id: 'card-new-A',
+                    subject: 'Created by Window A',
+                    columnId: 'col1'
+                })
+            };
+
+            // Both windows receive the event
+            windowAHandler.handlePlatformEvent(
+                createEventFromA,
+                mockStoreWithBoard
+            );
+            windowBHandler.handlePlatformEvent(
+                createEventFromA,
+                mockStoreWithBoard
+            );
+
+            // Both should apply it
+            expect(mockStoreWithBoard.dispatch).toHaveBeenCalledTimes(2);
         });
     });
 });

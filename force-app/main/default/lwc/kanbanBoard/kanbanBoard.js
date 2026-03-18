@@ -8,6 +8,7 @@ import BoardDataLoader from './managers/boardDataLoader';
 import DragDropHandler from './handlers/dragDropHandler';
 import CardOperations from './handlers/cardOperations';
 import SubscriptionEventHandler from './handlers/subscriptionEventHandler';
+import { generateClientId } from './helpers/clientIdGenerator';
 
 export default class KanbanBoard extends LightningElement {
     @api height; // Optional fixed height, if not set uses dynamic calculation
@@ -19,6 +20,7 @@ export default class KanbanBoard extends LightningElement {
     _resizeObserver = null;
     _boardElement = null;
     _windowResizeHandler = null;
+    _clientId = null; // Unique ID for this browser window/tab
 
     // Reactive state - only track what needs reactivity
     @track _storeState = null;
@@ -30,7 +32,7 @@ export default class KanbanBoard extends LightningElement {
     error = null;
     @track _subscriptionStatus = 'disconnected'; // Needs @track for indicator reactivity
     @track _eventCount = 0; // Needs @track for indicator reactivity
-    _lastSyncTime = null;
+    @track _lastSyncTime = null; // Needs @track for indicator reactivity
 
     // Drag state
     dragData = null;
@@ -79,6 +81,24 @@ export default class KanbanBoard extends LightningElement {
 
     get board() {
         return this._storeState ? selectors.getBoard(this._storeState) : null;
+    }
+
+    get syncState() {
+        return this._storeState
+            ? selectors.getSyncState(this._storeState)
+            : 'idle';
+    }
+
+    get pendingOperationsCount() {
+        return this._storeState
+            ? selectors.getPendingOperations(this._storeState).length
+            : 0;
+    }
+
+    get lastSyncError() {
+        return this._storeState
+            ? selectors.getLastSyncError(this._storeState)
+            : null;
     }
 
     get shouldAutoSubscribe() {
@@ -138,14 +158,18 @@ export default class KanbanBoard extends LightningElement {
     }
 
     connectedCallback() {
+        // Generate unique client ID for this window/tab
+        this._clientId = generateClientId();
+
         // Initialize core services
-        this.requestTracker = new RequestTracker();
+        this.requestTracker = new RequestTracker(this._clientId);
         this.operationQueue = new ReducerQueue(this.store);
         this.eventHandler = new EventHandler(
             this.requestTracker,
             (message) =>
                 this.subscriptionEventHandler.handleEventActivity(message),
-            this._recordId
+            this._recordId,
+            this._clientId
         );
 
         // Subscribe to store updates
@@ -393,48 +417,17 @@ export default class KanbanBoard extends LightningElement {
         return this.board?.Name || 'Kanban Board';
     }
 
-    get showEmptyState() {
-        return !this.isLoading && !this.hasColumns;
-    }
-
-    get connectionStatusIcon() {
-        const statusMap = {
-            connected: 'utility:check',
-            connecting: 'utility:sync',
-            disconnected: 'utility:offline',
-            error: 'utility:error',
-            polling: 'utility:refresh'
+    get connectionStatusConfig() {
+        return {
+            status: this._subscriptionStatus,
+            eventCount: this._eventCount,
+            lastSyncTime: this._lastSyncTime,
+            syncState: this.syncState,
+            pendingOperationsCount: this.pendingOperationsCount,
+            lastSyncError: this.lastSyncError,
+            pollingUpdateDetected: this._storeState
+                ? this._storeState.pollingUpdateDetected
+                : null
         };
-        return statusMap[this._subscriptionStatus] || 'utility:question';
-    }
-
-    get connectionStatusText() {
-        const textMap = {
-            connected: 'Real-time updates active',
-            connecting: 'Connecting...',
-            disconnected: 'Disconnected',
-            error: 'Connection error',
-            polling: 'Polling mode (fallback)'
-        };
-        return textMap[this._subscriptionStatus] || 'Unknown';
-    }
-
-    get connectionStatusClass() {
-        const classMap = {
-            connected: 'status-connected',
-            connecting: 'status-connecting',
-            disconnected: 'status-disconnected',
-            error: 'status-error',
-            polling: 'status-polling'
-        };
-        return classMap[this._subscriptionStatus] || 'status-unknown';
-    }
-
-    get connectionStatus() {
-        return this._subscriptionStatus;
-    }
-
-    get eventCount() {
-        return this._eventCount;
     }
 }

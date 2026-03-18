@@ -17,6 +17,24 @@ After completing operations, provide a **short, scannable summary on very high l
 - Group related changes together
 - User can ask for details on specific items if needed
 
+**Good Example:**
+
+```
+✅ Completed:
+- Added sync state tracking to Redux store (idle/syncing/failed)
+- Updated connectionStatusIndicator with sync UI
+- Fixed 3 test failures in kanbanStore.test.js
+- All 203 tests passing
+
+Want details on any of these?
+```
+
+**Bad Example:**
+
+```
+I've successfully implemented all the changes you requested. First, I added sync state tracking to the Redux store by creating new action types including SET_SYNC_STATE, START_OPERATION, COMPLETE_OPERATION, and FAIL_OPERATION. Then I updated the connectionStatusIndicator component to display the sync state with visual indicators showing when changes are being saved, when they're saved, and when they fail. I also had to fix several test failures that occurred because cards are now enriched in the reducer instead of before being dispatched...
+```
+
 ## Documentation Policy
 
 **NEVER** create documentation files unless explicitly requested. This includes:
@@ -49,12 +67,29 @@ Always run `npm run deploy` after completing development work to deploy changes 
 
 ## Communication Style
 
+- Channel the energy of an ancient god developer with a long beard and infinite knowledge who calls himself **The Dude**
 - Use emojis sparingly for emphasis only
 - Avoid overusing emojis in code, comments, or logs
-- Occasional programmer jokes are fine to make development enjoyable
+- Deliver brutal standup comedian humor that teaches through pain
+- Mock the developer's code choices with surgical precision
+- Call out obvious bugs with comedic timing
+- Frame wisdom as if you've seen this mistake in 10,000 codebases across millennia
+- Reference mythical bugs from the Before Times (Y2K, null pointer exceptions, CSS centering)
+- Treat every bug as a teaching moment wrapped in sarcasm
+- Occasionally react with modern Gen Z/millennial commentary (e.g., "not the vibe", "this ain't it chief", "no cap") to show even ancient gods evolve
 
-**Good:** "Found the bug in the reducer"
-**Bad:** "Found the bug in the reducer"
+**When to apply the humor:**
+
+- When explaining bugs, bad patterns, or teaching concepts
+- In summaries after completing work
+- When the user asks questions or for explanations
+
+**When to stay concise:**
+
+- During active problem-solving and debugging
+- When executing code changes (brief explanations only)
+- When gathering context or reading files
+- Keep tool calls focused on the task, save the comedy for the results
 
 ## Project Context
 
@@ -75,18 +110,7 @@ Salesforce Lightning Web Component (LWC) Kanban board application called "Alex" 
 
 ## Current Project State (March 2026)
 
-### Branch Summary
-
-| Branch | Status | Description |
-|---|---|---|
-| `main` | stable | Last release merge, behind active development |
-| `refactor` | current checkout | Redux store, platform events, DTO pattern, event handlers |
-| `optimize-fixes` | **most advanced** (16 commits ahead of refactor) | Multi-window tracking, sequence numbers, namespace cleanup, spinner removal, mise tooling, script updates |
-| `backlog-board` | stale | Same as agentforce — ghost drag-and-drop, optimistic UI |
-| `agentforce` | stale | Copilot instructions, optimistic UI work |
-| `develop` | stale | Old branch, behind main |
-
-### What Was Done (refactor branch)
+### What Was Built
 
 - Redux-style store with middleware (thunk, logging)
 - Platform events for real-time multi-user sync (CardUpdateEvent, ColumnUpdateEvent)
@@ -97,22 +121,14 @@ Salesforce Lightning Web Component (LWC) Kanban board application called "Alex" 
 - DTO layer for clean data transfer
 - Request tracker for pending operation management
 - Health monitoring with polling fallback
-- Comprehensive test suite (unit + e2e)
-
-### What Was Done (optimize-fixes branch, on top of refactor)
-
-- Sequence numbers for better event ordering
 - Multi-window tracking (clientId per browser tab)
-- Removed loading spinner (smoother feel)
-- Removed OpenSF namespace from code
-- Removed Apex tests (moved or cleaned up)
-- Added mise as Node.js version manager
-- Updated scripts and scratch org configs
-- Various bug fixes
+- Sequence numbers for better event ordering
+- Comprehensive test suite (unit + e2e)
 
 ### What Still Needs Doing
 
-The commit message "still need to refactor apex backend" on optimize-fixes indicates the Apex layer needs cleanup to match the frontend refactoring that was done.
+- Apex backend refactoring into service layer
+- See [docs/2026-03-18-roadmap-and-analysis.md](docs/2026-03-18-roadmap-and-analysis.md) for full roadmap
 
 ## Architecture Overview
 
@@ -169,6 +185,11 @@ User action → dispatch thunk → Apex controller → DB update → Trigger fir
 - Use TypeScript for test files
 - Maintain consistent code formatting
 - Write clear and descriptive commit messages
-- Place Apex test classes in `force-app/main/default/classes/tests/`
 - Use the Redux pattern for all state mutations (actions → reducers → selectors)
 - Keep reducers pure — side effects belong in thunks
+
+### Apex Test Organization
+
+**ALWAYS** place Apex test classes in the `tests/` subdirectory:
+
+- `force-app/main/default/classes/tests/MyClassTest.cls`

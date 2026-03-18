@@ -157,3 +157,50 @@ export const cancelDrag = () => ({
 export const reset = () => ({
     type: types.RESET
 });
+
+// ===================================================================
+// Sync State Action Creators
+// ===================================================================
+
+/**
+ * Set overall sync state
+ * @param {string} state - 'idle' | 'syncing' | 'failed'
+ * @returns {Object} Action object
+ */
+export const setSyncState = (state) => ({
+    type: types.SET_SYNC_STATE,
+    payload: state
+});
+
+/**
+ * Track start of an operation
+ * @param {string} id - Operation ID
+ * @param {string} type - Operation type (create/update/move/delete)
+ * @param {string} cardId - Card ID being operated on
+ * @returns {Object} Action object
+ */
+export const startOperation = (id, type, cardId) => ({
+    type: types.START_OPERATION,
+    payload: { id, type, cardId }
+});
+
+/**
+ * Mark operation as completed
+ * @param {string} id - Operation ID
+ * @returns {Object} Action object
+ */
+export const completeOperation = (id) => ({
+    type: types.COMPLETE_OPERATION,
+    payload: { id }
+});
+
+/**
+ * Mark operation as failed
+ * @param {string} id - Operation ID
+ * @param {Error} error - Error that occurred
+ * @returns {Object} Action object
+ */
+export const failOperation = (id, error) => ({
+    type: types.FAIL_OPERATION,
+    payload: { id, error }
+});

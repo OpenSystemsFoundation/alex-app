@@ -53,14 +53,10 @@ export default class SubscriptionEventHandler {
 
     /**
      * Handle polling required event
-     * This is the only place we need to call a method on the subscription manager
-     * because we need to pass a callback function
      */
     handlePollingRequired() {
-        if (this.component.subscriptionManager) {
-            this.component.subscriptionManager.startPolling(() =>
-                this.component.boardDataLoader.loadIncrementalUpdates()
-            );
+        if (this.component.boardDataLoader) {
+            this.component.boardDataLoader.startPolling();
         }
     }
 
@@ -69,5 +65,10 @@ export default class SubscriptionEventHandler {
      */
     handleSubscriptionStatusChange(status) {
         this.component._subscriptionStatus = status;
+
+        // Stop polling when reconnected
+        if (status === 'connected' && this.component.boardDataLoader) {
+            this.component.boardDataLoader.stopPolling();
+        }
     }
 }

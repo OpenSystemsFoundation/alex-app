@@ -34,7 +34,7 @@ describe('dataProcessors', () => {
             expect(result[0].columnUrl).toBe(
                 '/lightning/r/OpenSF__Column__c/col1/view'
             );
-            expect(result[0].columnStyle).toBe('border-top: 8px solid #FF0000');
+            expect(result[0].columnStyle).toBe('border-top: 4px solid #FF0000');
         });
 
         it('should handle columns without color', () => {

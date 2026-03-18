@@ -17,7 +17,7 @@ import { SalesforceCLI } from './helpers/salesforce-cli';
  * 2. Always deploys latest metadata changes with --ignore-conflicts flag
  */
 async function globalSetup(config: FullConfig) {
-    console.log('🎭 Playwright Global Setup - Single Org Optimized Mode\n');
+    console.log('🎭 Playwright Global Setup\n');
 
     const orgAlias = process.env.SF_ORG_ALIAS || 'playwright-test';
     const reuseOrg = process.env.PLAYWRIGHT_DEBUG_MODE === 'true';
@@ -128,11 +128,7 @@ async function globalSetup(config: FullConfig) {
             await context.storageState({ path: authFile });
 
             console.log(`✅ Setup complete!`);
-            console.log(`   Instance: ${instanceUrl}`);
-            console.log(`   Org: ${orgAlias}`);
-            console.log(
-                `\n💡 Note: Each test will create its own board for isolation\n`
-            );
+            console.log(`   URL: ${instanceUrl}`);
         } finally {
             await browser.close();
         }

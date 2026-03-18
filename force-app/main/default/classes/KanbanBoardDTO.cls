@@ -115,6 +115,8 @@ public with sharing class KanbanBoardDTO {
         public DateTime lastModifiedDate;
         @AuraEnabled
         public Id lastModifiedById;
+        @AuraEnabled
+        public Decimal sequenceNumber;
 
         public CardDTO(OpenSF__Card__c card) {
             this.Id = card.Id;
@@ -135,6 +137,7 @@ public with sharing class KanbanBoardDTO {
             this.locked = card.OpenSF__Locked__c;
             this.lastModifiedDate = card.LastModifiedDate;
             this.lastModifiedById = card.LastModifiedById;
+            this.sequenceNumber = card.OpenSF__SequenceNumber__c;
 
             // Map nested relationships
             if (card.OpenSF__Assignee__r != null) {

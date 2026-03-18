@@ -34,7 +34,12 @@ export { enrichCardData } from './utils/dataProcessors';
 
 // Direct exports for convenience
 export { loadBoardData } from './thunks/boardThunks';
-export { moveCardAsync, createCardAsync } from './thunks/cardThunks';
+export {
+    moveCardAsync,
+    createCardAsync,
+    updateCardAsync,
+    deleteCardAsync
+} from './thunks/cardThunks';
 
 // Re-export modules for consumers who want organized imports
 import * as actions from './state/actions';

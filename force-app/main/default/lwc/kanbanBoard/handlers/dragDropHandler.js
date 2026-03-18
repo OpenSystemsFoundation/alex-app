@@ -20,6 +20,9 @@ export default class DragDropHandler {
         event.dataTransfer.setData('text/plain', cardId);
         event.dataTransfer.setData('columnId', columnId);
 
+        // Don't set custom drag image - let browser use default
+        // This works better in SLDS2 than custom implementations
+
         event.target.classList.add('dragging');
         this.component.dragData = { cardId, columnId, cardHeight };
     }
@@ -169,7 +172,8 @@ export default class DragDropHandler {
                                 cardId,
                                 targetColumnId,
                                 targetIndex,
-                                requestId
+                                requestId,
+                                this.component._clientId
                             )
                         );
 

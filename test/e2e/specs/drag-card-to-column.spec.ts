@@ -9,7 +9,9 @@ import { test, expect } from '../fixtures/test-fixtures';
  */
 test.describe('Kanban Board - Drag Card to Another Column', () => {
     test('should drag a card from column 0 to column 1', async ({
-        authenticatedPage
+        authenticatedPage,
+        testBoard,
+        sfCli
     }) => {
         await authenticatedPage.waitForBoardToLoad();
 
@@ -19,9 +21,12 @@ test.describe('Kanban Board - Drag Card to Another Column', () => {
         const initialCountCol1 =
             await authenticatedPage.getCardCountInColumn(1);
 
-        // Add one card to column 0
-        await authenticatedPage.clickAddCard(0);
-        await authenticatedPage.page.waitForTimeout(3000);
+        // Create one card via Apex in column 0
+        const columnId = testBoard.columnIds[0];
+        await sfCli.createTestCards(columnId, 1);
+        await authenticatedPage.page.reload();
+        await authenticatedPage.waitForBoardToLoad();
+        await authenticatedPage.page.waitForTimeout(2000);
 
         // Verify card was added to column 0
         const countAfterAdd = await authenticatedPage.getCardCountInColumn(0);

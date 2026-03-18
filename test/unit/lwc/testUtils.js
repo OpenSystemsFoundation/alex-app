@@ -108,7 +108,7 @@ export const createMockStore = (initialState = {}) => {
                     if (column) column.cards.push(action.payload.card);
                     break;
                 }
-                case 'REMOVE_CARD':
+                case 'DELETE_CARD':
                     state.columns.forEach((col) => {
                         col.cards = col.cards.filter(
                             (c) => c.Id !== action.payload.cardId

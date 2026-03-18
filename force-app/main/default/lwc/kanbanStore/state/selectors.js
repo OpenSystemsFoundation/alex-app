@@ -148,3 +148,95 @@ export const getCardsByColumnMap = (state) => {
 export const getEnrichedColumns = (state) => {
     return getColumns(state);
 };
+
+// ===================================================================
+// Sync State Selectors
+// ===================================================================
+
+/**
+ * Get current sync state
+ * @param {Object} state - Store state
+ * @returns {string} 'idle' | 'syncing' | 'failed'
+ */
+export const getSyncState = (state) => {
+    return state.syncState || 'idle';
+};
+
+/**
+ * Get pending operations
+ * @param {Object} state - Store state
+ * @returns {Array} Array of pending operations
+ */
+export const getPendingOperations = (state) => {
+    return state.pendingOperations || [];
+};
+
+/**
+ * Get pending operations for a specific card
+ * @param {Object} state - Store state
+ * @param {string} cardId - Card ID
+ * @returns {Array} Array of pending operations for the card
+ */
+export const getPendingOperationsForCard = (state, cardId) => {
+    return (state.pendingOperations || []).filter((op) => op.cardId === cardId);
+};
+
+/**
+ * Check if there are any pending operations
+ * @param {Object} state - Store state
+ * @returns {boolean} True if operations are pending
+ */
+export const hasPendingOperations = (state) => {
+    return (state.pendingOperations || []).length > 0;
+};
+
+/**
+ * Check if a specific card has pending operations
+ * @param {Object} state - Store state
+ * @param {string} cardId - Card ID
+ * @returns {boolean} True if card has pending operations
+ */
+export const cardHasPendingOperations = (state, cardId) => {
+    return (state.pendingOperations || []).some((op) => op.cardId === cardId);
+};
+
+/**
+ * Get last sync time
+ * @param {Object} state - Store state
+ * @returns {number|null} Timestamp of last successful sync or null
+ */
+export const getLastSyncTime = (state) => {
+    return state.lastSyncTime || null;
+};
+
+/**
+ * Get last sync error
+ * @param {Object} state - Store state
+ * @returns {Object|null} Error object or null
+ */
+export const getLastSyncError = (state) => {
+    return state.lastSyncError || null;
+};
+
+/**
+ * Get sync status message for UI display
+ * @param {Object} state - Store state
+ * @returns {string} Human-readable status message
+ */
+export const getSyncStatusMessage = (state) => {
+    const syncState = getSyncState(state);
+    const pendingCount = (state.pendingOperations || []).length;
+
+    switch (syncState) {
+        case 'syncing':
+            return pendingCount > 1
+                ? `Saving ${pendingCount} changes...`
+                : 'Saving changes...';
+        case 'failed':
+            return 'Failed to save changes';
+        case 'idle':
+            return state.lastSyncTime ? 'All changes saved' : '';
+        default:
+            return '';
+    }
+};

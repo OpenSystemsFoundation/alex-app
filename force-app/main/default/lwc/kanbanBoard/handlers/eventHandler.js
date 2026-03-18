@@ -1,17 +1,17 @@
-import { enrichCardData } from 'c/kanbanStore';
-
 const CHANGE_TRACKING_WINDOW = 2000;
 
 export default class EventHandler {
     constructor(
         requestTracker = null,
         activityCallback = null,
-        boardId = null
+        boardId = null,
+        clientId = null
     ) {
         this.recentChanges = new Map();
         this.requestTracker = requestTracker;
         this.activityCallback = activityCallback;
         this.boardId = boardId;
+        this.clientId = clientId; // Store client ID for filtering
     }
 
     setRequestTracker(requestTracker) {
@@ -26,15 +26,37 @@ export default class EventHandler {
         this.boardId = boardId;
     }
 
+    setClientId(clientId) {
+        this.clientId = clientId;
+    }
+
     handlePlatformEvent(event, store) {
         try {
             const payload = JSON.parse(event.OpenSF__Payload__c);
             const eventType = event.OpenSF__EventType__c;
             const clientRequestId = event.OpenSF__ClientRequestId__c;
+            const sequenceNumber = event.OpenSF__SequenceNumber__c;
+            const eventClientId = event.ClientId__c; // Get clientId from event
 
             if (!this._isEventForThisBoard(payload, store)) {
                 return false;
             }
+
+            // Check sequence number - ignore stale events
+            if (
+                sequenceNumber != null &&
+                payload.Id &&
+                !this._shouldApplyEvent(payload.Id, sequenceNumber, store)
+            ) {
+                console.log(
+                    `Ignoring stale event for card ${payload.Id}: seq ${sequenceNumber}`
+                );
+                return false;
+            }
+
+            // Check if this event is from THIS window/tab
+            const isOwnWindow =
+                eventClientId && eventClientId === this.clientId;
 
             if (
                 clientRequestId &&
@@ -57,14 +79,21 @@ export default class EventHandler {
                     );
                 }
 
-                this._applyEvent(eventType, payload, store);
+                // Don't apply create events for our own requests - already added optimistically
+                if (eventType !== 'create') {
+                    this._applyEvent(eventType, payload, store);
+                }
                 return false;
             }
 
+            // Only rollback optimistic updates if event is from THIS window
+            // Events from other windows should be applied immediately
             if (
+                isOwnWindow &&
                 payload.Id &&
                 this.requestTracker?.hasPendingOperations(payload.Id)
             ) {
+                // This window has pending operations - defer applying until they complete
                 setTimeout(() => {
                     if (!this.requestTracker.hasPendingOperations(payload.Id)) {
                         this._applyEvent(eventType, payload, store);
@@ -74,6 +103,9 @@ export default class EventHandler {
                 }, 500);
                 return false;
             }
+
+            // Events from other windows are applied immediately even if we have pending operations
+            // This allows both windows to see each other's changes in real-time
 
             if (this._isRecentChange(payload.Id)) {
                 return false;
@@ -92,6 +124,40 @@ export default class EventHandler {
         }
 
         return false;
+    }
+
+    /**
+     * Check if event should be applied based on sequence number
+     * Returns true if event is newer than current card state
+     * @private
+     */
+    _shouldApplyEvent(cardId, eventSequence, store) {
+        if (eventSequence == null) {
+            // No sequence number - apply event (backward compatibility)
+            return true;
+        }
+
+        const state = store.getState();
+        const columns = state.columns || [];
+
+        // Find the card in current state
+        for (const column of columns) {
+            const card = column.cards?.find((c) => c.Id === cardId);
+            if (card) {
+                const currentSequence = card.OpenSF__SequenceNumber__c;
+
+                if (currentSequence == null) {
+                    // Card has no sequence - apply event
+                    return true;
+                }
+
+                // Only apply if event sequence is greater than current
+                return eventSequence > currentSequence;
+            }
+        }
+
+        // Card not found in state - apply event (it might be new)
+        return true;
     }
 
     _isEventForThisBoard(payload, store) {
@@ -185,20 +251,18 @@ export default class EventHandler {
     }
 
     _updateCard(cardDTO, store) {
-        const enrichedCard = enrichCardData(cardDTO);
-
+        // Card will be enriched automatically in the reducer
         store.dispatch({
             type: 'UPDATE_CARD',
             payload: {
                 cardId: cardDTO.Id,
-                card: enrichedCard
+                updates: cardDTO
             }
         });
     }
 
     _addCard(cardDTO, store) {
-        const enrichedCard = enrichCardData(cardDTO);
-
+        // Card will be enriched automatically in the reducer
         const columns = store.getState().columns;
         const cardExists = columns.some((col) =>
             col.cards.some((c) => c.Id === cardDTO.Id)
@@ -211,7 +275,7 @@ export default class EventHandler {
         store.dispatch({
             type: 'ADD_CARD',
             payload: {
-                card: enrichedCard,
+                card: cardDTO,
                 columnId: cardDTO.columnId
             }
         });
@@ -219,7 +283,7 @@ export default class EventHandler {
 
     _removeCard(cardId, store) {
         store.dispatch({
-            type: 'REMOVE_CARD',
+            type: 'DELETE_CARD',
             payload: { cardId }
         });
     }
