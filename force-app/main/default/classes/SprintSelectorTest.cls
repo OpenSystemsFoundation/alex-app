@@ -2,7 +2,7 @@
  * @description Tests for SprintSelector
  */
 @isTest
-public class SprintSelectorTest {
+private class SprintSelectorTest {
     @TestSetup
     static void setup() {
         Map<String, Object> hierarchy = TestFactory.createFullBoardHierarchy(

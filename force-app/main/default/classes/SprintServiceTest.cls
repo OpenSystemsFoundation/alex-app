@@ -2,7 +2,7 @@
  * @description Tests for SprintService
  */
 @isTest
-public class SprintServiceTest {
+private class SprintServiceTest {
     @TestSetup
     static void setup() {
         Map<String, Object> hierarchy = TestFactory.createFullBoardHierarchy(

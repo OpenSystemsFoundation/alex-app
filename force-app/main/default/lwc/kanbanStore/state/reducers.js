@@ -311,11 +311,11 @@ export const sprintReducer = (state, action) => {
             };
 
         case types.UPDATE_SPRINT: {
-            const updatedSprints = state.sprints.map((s) =>
-                s.Id === action.payload.sprintId
+            const updatedSprints = state.sprints.map((s) => {
+                return s.Id === action.payload.sprintId
                     ? { ...s, ...action.payload.updates }
-                    : s
-            );
+                    : s;
+            });
             const updatedActiveSprint =
                 state.activeSprint?.Id === action.payload.sprintId
                     ? { ...state.activeSprint, ...action.payload.updates }

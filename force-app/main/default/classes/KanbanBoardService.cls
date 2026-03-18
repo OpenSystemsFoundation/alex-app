@@ -50,7 +50,11 @@ public with sharing class KanbanBoardService {
                 OpenSF__LexoRankPosition__c = newPosition
             );
 
-            update column;
+            update Security.stripInaccessible(
+                    AccessType.UPDATABLE,
+                    new List<OpenSF__Column__c>{ column }
+                )
+                .getRecords();
 
             // Return updated column as DTO
             OpenSF__Column__c updatedColumn = KanbanBoardSelector.getColumnById(
@@ -107,6 +111,7 @@ public with sharing class KanbanBoardService {
                 WHERE
                     OpenSF__Column__r.OpenSF__Board__c = :boardId
                     AND LastModifiedDate > :lastSyncTime
+                WITH USER_MODE
                 ORDER BY LastModifiedDate ASC
             ];
 
@@ -170,6 +175,7 @@ public with sharing class KanbanBoardService {
                 SELECT FieldNames__c
                 FROM KanbanBoardSettings__mdt
                 WHERE DeveloperName = 'Modal_Settings'
+                WITH USER_MODE
                 LIMIT 1
             ];
 

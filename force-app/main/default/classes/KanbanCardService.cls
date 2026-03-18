@@ -77,13 +77,18 @@ public with sharing class KanbanCardService {
             existingCard.OpenSF__Status__c
         );
 
-        update card;
+        update Security.stripInaccessible(
+                AccessType.UPDATABLE,
+                new List<OpenSF__Card__c>{ card }
+            )
+            .getRecords();
 
         // Query updated card to get new sequence number
         OpenSF__Card__c updatedCard = [
             SELECT OpenSF__SequenceNumber__c, LastModifiedDate
             FROM OpenSF__Card__c
             WHERE Id = :cardId
+            WITH USER_MODE
             LIMIT 1
         ];
 
@@ -135,7 +140,13 @@ public with sharing class KanbanCardService {
         // Apply column status to new card (currentStatus is null for new cards)
         applyColumnStatusToCard(card, column, null);
 
-        insert card;
+        List<OpenSF__Card__c> strippedCards = (List<OpenSF__Card__c>) Security.stripInaccessible(
+                AccessType.CREATABLE,
+                new List<OpenSF__Card__c>{ card }
+            )
+            .getRecords();
+        insert strippedCards;
+        card.Id = strippedCards[0].Id;
 
         // Event published by trigger
 
@@ -238,7 +249,11 @@ public with sharing class KanbanCardService {
                 card.OpenSF__Assignee__c = (Id) updates.get('assigneeId');
             }
 
-            update card;
+            update Security.stripInaccessible(
+                    AccessType.UPDATABLE,
+                    new List<OpenSF__Card__c>{ card }
+                )
+                .getRecords();
 
             // Query updated card
             OpenSF__Card__c updatedCard = KanbanBoardSelector.getCardById(
@@ -269,6 +284,11 @@ public with sharing class KanbanCardService {
      * Delete card
      */
     public static void deleteCard(Id cardId) {
+        if (!Schema.sObjectType.OpenSF__Card__c.isDeletable()) {
+            throw new AuraHandledException(
+                'Insufficient access to delete cards.'
+            );
+        }
         delete new OpenSF__Card__c(Id = cardId);
         // Event published by trigger
     }

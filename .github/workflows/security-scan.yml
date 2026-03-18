@@ -1,0 +1,57 @@
+name: Security Scan
+
+on:
+    pull_request:
+        branches: [main]
+
+jobs:
+    code-analyzer:
+        name: Salesforce Code Analyzer
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Install Salesforce CLI
+              run: npm install -g @salesforce/cli
+
+            - name: Install Code Analyzer plugin
+              run: sf plugins install @salesforce/sfdx-scanner
+
+            - name: Run Code Analyzer (Apex + LWC)
+              run: |
+                  sf scanner run \
+                    --target "force-app" \
+                    --format html \
+                    --outfile scan-results/code-analyzer-report.html \
+                    --severity-threshold 2
+
+            - name: Upload Code Analyzer Report
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: code-analyzer-report
+                  path: scan-results/
+                  retention-days: 30
+
+    js-vulnerability-scan:
+        name: JS Vulnerability Scan
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Scan JS libraries for known CVEs
+              run: npx retire --js --path force-app/main/default/staticresources --exitwith 13 || true
+
+            - name: Audit npm dependencies
+              run: npm audit --omit=dev || true

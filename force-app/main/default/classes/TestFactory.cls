@@ -3,7 +3,7 @@
  * Centralizes test data creation to ensure consistency across all test classes
  */
 @isTest
-public class TestFactory {
+private class TestFactory {
     /**
      * Creates a test Board with default or custom values
      * @param boardName The name of the board
@@ -146,19 +146,31 @@ public class TestFactory {
         Id boardId,
         Integer count
     ) {
+        // Valid CardStatus picklist values for Column.Status__c
+        List<String> validStatuses = new List<String>{
+            'Backlog',
+            'To Do',
+            'In Progress',
+            'Testing',
+            'Review',
+            'Release',
+            'Done'
+        };
+
         List<OpenSF__Column__c> columns = new List<OpenSF__Column__c>();
         String previousPosition = null;
 
         for (Integer i = 0; i < count; i++) {
             String position = LexoRank.between(previousPosition, null);
             String columnHeader = 'Column ' + i;
+            String status = validStatuses[Math.mod(i, validStatuses.size())];
             columns.add(
                 new OpenSF__Column__c(
                     OpenSF__Board__c = boardId,
                     OpenSF__ColumnHeader__c = columnHeader,
                     OpenSF__LexoRankPosition__c = position,
                     OpenSF__Color__c = '#1B96FF',
-                    OpenSF__Status__c = columnHeader
+                    OpenSF__Status__c = status
                 )
             );
             previousPosition = position;

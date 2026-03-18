@@ -18,7 +18,7 @@ import { loadSprintDataAsync } from './sprintThunks';
  * @returns {Function} Thunk function
  */
 export const loadBoardData = (boardId) => {
-    return async (dispatch, getState) => {
+    return async (dispatch) => {
         if (!boardId) {
             throw new Error('Board ID is required');
         }

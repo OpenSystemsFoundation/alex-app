@@ -37,10 +37,15 @@ public with sharing class SprintService {
             OpenSF__TotalStoryPoints__c = 0,
             OpenSF__CompletedStoryPoints__c = 0
         );
-        insert sprint;
+        List<OpenSF__Sprint__c> strippedSprints = (List<OpenSF__Sprint__c>) Security.stripInaccessible(
+                AccessType.CREATABLE,
+                new List<OpenSF__Sprint__c>{ sprint }
+            )
+            .getRecords();
+        insert strippedSprints;
 
         // Re-query to get auto-number name
-        sprint = SprintSelector.getSprintById(sprint.Id);
+        sprint = SprintSelector.getSprintById(strippedSprints[0].Id);
         return new KanbanBoardDTO.SprintDTO(sprint);
     }
 
@@ -82,14 +87,22 @@ public with sharing class SprintService {
             ? sprint.OpenSF__StartDate__c
             : Date.today();
         sprint.OpenSF__TotalStoryPoints__c = totalPoints;
-        update sprint;
+        update Security.stripInaccessible(
+                AccessType.UPDATABLE,
+                new List<OpenSF__Sprint__c>{ sprint }
+            )
+            .getRecords();
 
         // Set as active sprint on the board
         OpenSF__Board__c board = new OpenSF__Board__c(
             Id = sprint.OpenSF__Board__c,
             OpenSF__ActiveSprint__c = sprint.Id
         );
-        update board;
+        update Security.stripInaccessible(
+                AccessType.UPDATABLE,
+                new List<OpenSF__Board__c>{ board }
+            )
+            .getRecords();
 
         // Create initial snapshot
         createDailySnapshot(sprintId);
@@ -163,7 +176,11 @@ public with sharing class SprintService {
             }
 
             if (!newJunctions.isEmpty()) {
-                insert newJunctions;
+                insert Security.stripInaccessible(
+                        AccessType.CREATABLE,
+                        newJunctions
+                    )
+                    .getRecords();
             }
         }
 
@@ -174,14 +191,22 @@ public with sharing class SprintService {
         sprint.OpenSF__EndDate__c = sprint.OpenSF__EndDate__c != null
             ? sprint.OpenSF__EndDate__c
             : Date.today();
-        update sprint;
+        update Security.stripInaccessible(
+                AccessType.UPDATABLE,
+                new List<OpenSF__Sprint__c>{ sprint }
+            )
+            .getRecords();
 
         // Clear active sprint on board
         OpenSF__Board__c board = new OpenSF__Board__c(
             Id = sprint.OpenSF__Board__c,
             OpenSF__ActiveSprint__c = null
         );
-        update board;
+        update Security.stripInaccessible(
+                AccessType.UPDATABLE,
+                new List<OpenSF__Board__c>{ board }
+            )
+            .getRecords();
 
         // Create final snapshot
         createDailySnapshot(sprintId);
@@ -236,7 +261,11 @@ public with sharing class SprintService {
         }
 
         if (!newJunctions.isEmpty()) {
-            insert newJunctions;
+            insert Security.stripInaccessible(
+                    AccessType.CREATABLE,
+                    newJunctions
+                )
+                .getRecords();
         }
 
         // Update sprint total points
@@ -264,12 +293,14 @@ public with sharing class SprintService {
                 OpenSF__Sprint__c = :sprintId
                 AND OpenSF__Card__c = :cardId
                 AND OpenSF__RemovedDate__c = NULL
+            WITH USER_MODE
             LIMIT 1
         ];
 
         if (!junctions.isEmpty()) {
             junctions[0].OpenSF__RemovedDate__c = DateTime.now();
-            update junctions;
+            update Security.stripInaccessible(AccessType.UPDATABLE, junctions)
+                .getRecords();
         }
 
         // Recalculate sprint points
@@ -345,7 +376,11 @@ public with sharing class SprintService {
             OpenSF__CardCount__c = cardCount,
             OpenSF__CompletedCardCount__c = completedCardCount
         );
-        insert snapshot;
+        insert Security.stripInaccessible(
+                AccessType.CREATABLE,
+                new List<OpenSF__SprintSnapshot__c>{ snapshot }
+            )
+            .getRecords();
     }
 
     /**
@@ -382,6 +417,7 @@ public with sharing class SprintService {
                 OpenSF__Sprint__c = :sprintId
                 AND OpenSF__Card__c = :cardId
                 AND OpenSF__RemovedDate__c = NULL
+            WITH USER_MODE
             LIMIT 1
         ];
 
@@ -390,7 +426,8 @@ public with sharing class SprintService {
         ) {
             junctions[0].OpenSF__CompletedInSprint__c = true;
             junctions[0].OpenSF__CompletedDate__c = DateTime.now();
-            update junctions;
+            update Security.stripInaccessible(AccessType.UPDATABLE, junctions)
+                .getRecords();
 
             recalculateSprintPoints(sprintId);
         }
@@ -422,7 +459,11 @@ public with sharing class SprintService {
             OpenSF__TotalStoryPoints__c = totalPoints,
             OpenSF__CompletedStoryPoints__c = completedPoints
         );
-        update sprint;
+        update Security.stripInaccessible(
+                AccessType.UPDATABLE,
+                new List<OpenSF__Sprint__c>{ sprint }
+            )
+            .getRecords();
     }
 
     /**

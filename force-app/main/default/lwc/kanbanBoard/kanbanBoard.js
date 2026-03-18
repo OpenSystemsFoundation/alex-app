@@ -512,7 +512,7 @@ export default class KanbanBoard extends LightningElement {
         this.showSprintModal = true;
     }
 
-    handleCompleteSprint(event) {
+    handleCompleteSprint() {
         this.showSprintComplete = true;
     }
 

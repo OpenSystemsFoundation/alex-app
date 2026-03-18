@@ -2,7 +2,7 @@
  * TriggerContext - Stores context information for triggers
  * Used to pass clientRequestId from Apex methods to trigger handlers
  */
-public class TriggerContext {
+public without sharing class TriggerContext {
     // Thread-local storage for client request IDs
     // Map of record ID -> client request ID
     private static Map<Id, String> clientRequestIds = new Map<Id, String>();

@@ -20,6 +20,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__ActiveSprint__c
             FROM OpenSF__Board__c
             WHERE Id = :boardId
+            WITH USER_MODE
             LIMIT 1
         ];
     }
@@ -41,6 +42,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Board__c
             FROM OpenSF__Column__c
             WHERE OpenSF__Board__c = :boardId
+            WITH USER_MODE
             ORDER BY OpenSF__LexoRankPosition__c ASC NULLS LAST
         ];
     }
@@ -77,6 +79,7 @@ public with sharing class KanbanBoardSelector {
                 LastModifiedById
             FROM OpenSF__Card__c
             WHERE OpenSF__Column__r.OpenSF__Board__c = :boardId
+            WITH USER_MODE
             ORDER BY OpenSF__LexoRankPosition__c ASC NULLS LAST
         ];
     }
@@ -112,6 +115,7 @@ public with sharing class KanbanBoardSelector {
                 LastModifiedById
             FROM OpenSF__Card__c
             WHERE Id = :cardId
+            WITH USER_MODE
             LIMIT 1
         ];
     }
@@ -142,6 +146,7 @@ public with sharing class KanbanBoardSelector {
                 LastModifiedById
             FROM OpenSF__Card__c
             WHERE OpenSF__Column__c = :columnId
+            WITH USER_MODE
             ORDER BY OpenSF__LexoRankPosition__c ASC NULLS LAST
         ];
     }
@@ -162,6 +167,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Board__c
             FROM OpenSF__Column__c
             WHERE Id = :columnId
+            WITH USER_MODE
             LIMIT 1
         ];
     }
@@ -174,6 +180,7 @@ public with sharing class KanbanBoardSelector {
             SELECT Id, OpenSF__Status__c, OpenSF__SequenceNumber__c
             FROM OpenSF__Card__c
             WHERE Id = :cardId
+            WITH USER_MODE
             LIMIT 1
         ];
     }
@@ -209,6 +216,7 @@ public with sharing class KanbanBoardSelector {
                 LastModifiedById
             FROM OpenSF__Card__c
             WHERE Id IN :cardIds
+            WITH USER_MODE
         ];
     }
 
@@ -224,6 +232,7 @@ public with sharing class KanbanBoardSelector {
                 IsActive = TRUE
                 AND (Name LIKE :searchPattern
                 OR Email LIKE :searchPattern)
+            WITH USER_MODE
             ORDER BY Name
             LIMIT 10
         ];

@@ -2,7 +2,7 @@
  * @description Tests for SprintCardTriggerHandler
  */
 @isTest
-public class SprintCardTriggerHandlerTest {
+private class SprintCardTriggerHandlerTest {
     @TestSetup
     static void setup() {
         Map<String, Object> hierarchy = TestFactory.createFullBoardHierarchy(
