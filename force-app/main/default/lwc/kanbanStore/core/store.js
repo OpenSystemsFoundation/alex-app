@@ -55,7 +55,7 @@ class KanbanStore {
             try {
                 callback(state);
             } catch (error) {
-                // Silently handle subscriber errors
+                console.error('Store subscriber error:', error);
             }
         });
     }

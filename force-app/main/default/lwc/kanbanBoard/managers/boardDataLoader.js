@@ -77,19 +77,16 @@ export default class BoardDataLoader {
                 // Apply incremental updates to store
                 updates.cards.forEach((card) => {
                     this.component.store.dispatch({
-                        type: 'card/updated',
-                        payload: card
+                        type: 'UPDATE_CARD',
+                        payload: {
+                            cardId: card.Id,
+                            updates: card
+                        }
                     });
                 });
 
                 // Update sync time
                 this.component._lastSyncTime = updates.syncTimestamp;
-
-                // Dispatch a special action to show "Updated" message
-                this.component.store.dispatch({
-                    type: 'POLLING_UPDATE_DETECTED',
-                    payload: { timestamp: updates.syncTimestamp }
-                });
             }
 
             return updates;
