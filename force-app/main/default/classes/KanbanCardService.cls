@@ -88,7 +88,6 @@ public with sharing class KanbanCardService {
             SELECT OpenSF__SequenceNumber__c, LastModifiedDate
             FROM OpenSF__Card__c
             WHERE Id = :cardId
-            WITH USER_MODE
             LIMIT 1
         ];
 

@@ -293,7 +293,6 @@ public with sharing class SprintService {
                 OpenSF__Sprint__c = :sprintId
                 AND OpenSF__Card__c = :cardId
                 AND OpenSF__RemovedDate__c = NULL
-            WITH USER_MODE
             LIMIT 1
         ];
 
@@ -417,7 +416,6 @@ public with sharing class SprintService {
                 OpenSF__Sprint__c = :sprintId
                 AND OpenSF__Card__c = :cardId
                 AND OpenSF__RemovedDate__c = NULL
-            WITH USER_MODE
             LIMIT 1
         ];
 

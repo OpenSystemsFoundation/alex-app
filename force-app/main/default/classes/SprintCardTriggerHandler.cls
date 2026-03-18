@@ -46,7 +46,6 @@ public with sharing class SprintCardTriggerHandler extends TriggerHandler {
                 SELECT Id, OpenSF__Board__c
                 FROM OpenSF__Sprint__c
                 WHERE Id IN :sprintIds
-                WITH USER_MODE
             ]
         );
 

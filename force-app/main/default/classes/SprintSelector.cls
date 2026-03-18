@@ -21,7 +21,6 @@ public with sharing class SprintSelector {
                 OpenSF__Velocity__c
             FROM OpenSF__Sprint__c
             WHERE Id = :sprintId
-            WITH USER_MODE
             LIMIT 1
         ];
     }
@@ -45,7 +44,6 @@ public with sharing class SprintSelector {
                 OpenSF__Velocity__c
             FROM OpenSF__Sprint__c
             WHERE OpenSF__Board__c = :boardId
-            WITH USER_MODE
             ORDER BY OpenSF__SprintNumber__c DESC
         ];
     }
@@ -69,7 +67,6 @@ public with sharing class SprintSelector {
                 OpenSF__Velocity__c
             FROM OpenSF__Sprint__c
             WHERE OpenSF__Board__c = :boardId AND OpenSF__Status__c = 'Active'
-            WITH USER_MODE
             LIMIT 1
         ];
         return sprints.isEmpty() ? null : sprints[0];
@@ -120,7 +117,6 @@ public with sharing class SprintSelector {
             WHERE
                 OpenSF__Sprint__c = :sprintId
                 AND OpenSF__RemovedDate__c = NULL
-            WITH USER_MODE
             ORDER BY OpenSF__Position__c ASC NULLS LAST
         ];
     }
@@ -138,7 +134,6 @@ public with sharing class SprintSelector {
                 OpenSF__Sprint__r.OpenSF__Board__c = :boardId
                 AND OpenSF__Sprint__r.OpenSF__Status__c = 'Active'
                 AND OpenSF__RemovedDate__c = NULL
-            WITH USER_MODE
         ]) {
             cardsInActiveSprints.add(sc.OpenSF__Card__c);
         }
@@ -172,7 +167,6 @@ public with sharing class SprintSelector {
             WHERE
                 OpenSF__Column__r.OpenSF__Board__c = :boardId
                 AND Id NOT IN :cardsInActiveSprints
-            WITH USER_MODE
             ORDER BY OpenSF__LexoRankPosition__c ASC NULLS LAST
         ];
     }
@@ -195,7 +189,6 @@ public with sharing class SprintSelector {
                 OpenSF__CompletedCardCount__c
             FROM OpenSF__SprintSnapshot__c
             WHERE OpenSF__Sprint__c = :sprintId
-            WITH USER_MODE
             ORDER BY OpenSF__SnapshotDate__c ASC
         ];
     }
@@ -224,7 +217,6 @@ public with sharing class SprintSelector {
             WHERE
                 OpenSF__Board__c = :boardId
                 AND OpenSF__Status__c = 'Completed'
-            WITH USER_MODE
             ORDER BY OpenSF__EndDate__c DESC
             LIMIT :limitCount
         ];
@@ -249,7 +241,6 @@ public with sharing class SprintSelector {
                 OpenSF__Velocity__c
             FROM OpenSF__Sprint__c
             WHERE OpenSF__Status__c = 'Active'
-            WITH USER_MODE
         ];
     }
 
@@ -267,7 +258,6 @@ public with sharing class SprintSelector {
                 OpenSF__Sprint__c = :sprintId
                 AND OpenSF__Card__c IN :cardIds
                 AND OpenSF__RemovedDate__c = NULL
-            WITH USER_MODE
         ];
     }
 }

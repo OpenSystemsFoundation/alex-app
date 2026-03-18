@@ -239,7 +239,6 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
                 SELECT OpenSF__Column__c, COUNT(Id) cardCount
                 FROM OpenSF__Card__c
                 WHERE OpenSF__Column__c IN :affectedColumnIds
-                WITH USER_MODE
                 GROUP BY OpenSF__Column__c
             ]) {
                 Id columnId = (Id) ar.get('OpenSF__Column__c');

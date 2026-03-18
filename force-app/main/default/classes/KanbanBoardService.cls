@@ -111,7 +111,6 @@ public with sharing class KanbanBoardService {
                 WHERE
                     OpenSF__Column__r.OpenSF__Board__c = :boardId
                     AND LastModifiedDate > :lastSyncTime
-                WITH USER_MODE
                 ORDER BY LastModifiedDate ASC
             ];
 
@@ -175,7 +174,6 @@ public with sharing class KanbanBoardService {
                 SELECT FieldNames__c
                 FROM KanbanBoardSettings__mdt
                 WHERE DeveloperName = 'Modal_Settings'
-                WITH USER_MODE
                 LIMIT 1
             ];
 
