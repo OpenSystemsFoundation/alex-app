@@ -49,7 +49,8 @@ private class ConflictResolutionTest {
             null,
             null,
             'req-123',
-            1 // Expected sequence matches current
+            1, // Expected sequence matches current
+            null
         );
         Test.stopTest();
 
@@ -95,7 +96,8 @@ private class ConflictResolutionTest {
             null,
             null,
             'req-456',
-            3 // Client thinks it's at 3, but server is at 5
+            3, // Client thinks it's at 3, but server is at 5
+            null
         );
         Test.stopTest();
 
@@ -146,7 +148,8 @@ private class ConflictResolutionTest {
         KanbanBoardController.CardUpdateResult result = KanbanBoardController.updateCardWithConflictDetection(
             card.Id,
             updates,
-            1 // Expected sequence matches
+            1, // Expected sequence matches
+            null
         );
         Test.stopTest();
 
@@ -193,7 +196,8 @@ private class ConflictResolutionTest {
         KanbanBoardController.CardUpdateResult result = KanbanBoardController.updateCardWithConflictDetection(
             card.Id,
             updates,
-            2 // Client thinks it's at 2, but server is at 5 (conflict!)
+            2, // Client thinks it's at 2, but server is at 5 (conflict!)
+            null
         );
         Test.stopTest();
 
@@ -241,7 +245,8 @@ private class ConflictResolutionTest {
             null,
             null,
             'userA-req',
-            1
+            1,
+            null
         );
 
         // User B tries to move card (still thinks it's at sequence 1, but it's now 2)
@@ -252,7 +257,8 @@ private class ConflictResolutionTest {
             null,
             null,
             'userB-req',
-            1 // Stale sequence number
+            1, // Stale sequence number
+            null
         );
 
         Test.stopTest();
@@ -321,7 +327,8 @@ private class ConflictResolutionTest {
             column2.Id,
             null,
             null,
-            'legacy-req'
+            'legacy-req',
+            null
         );
         Test.stopTest();
 
@@ -364,7 +371,8 @@ private class ConflictResolutionTest {
         KanbanBoardController.CardUpdateResult result = KanbanBoardController.updateCardWithConflictDetection(
             card.Id,
             updates,
-            5 // Very stale (server is at 10)
+            5, // Very stale (server is at 10)
+            null
         );
         Test.stopTest();
 

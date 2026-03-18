@@ -77,7 +77,7 @@ public with sharing class KanbanBoardService {
             result.syncTimestamp = DateTime.now();
             result.hasChanges = false;
 
-            // Query for cards modified since lastSyncTime
+            // Query for cards modified since lastSyncTime (all fields needed by CardDTO)
             List<OpenSF__Card__c> modifiedCards = [
                 SELECT
                     Id,
@@ -94,7 +94,16 @@ public with sharing class KanbanBoardService {
                     OpenSF__LexoRankPosition__c,
                     OpenSF__Assignee__c,
                     OpenSF__Assignee__r.Name,
-                    LastModifiedDate
+                    OpenSF__Assignee__r.SmallPhotoUrl,
+                    OpenSF__PeerReviewer__c,
+                    OpenSF__PeerReviewer__r.Name,
+                    OpenSF__PeerReviewer__r.SmallPhotoUrl,
+                    OpenSF__Epic__c,
+                    OpenSF__Epic__r.OpenSF__Subject__c,
+                    OpenSF__Locked__c,
+                    OpenSF__SequenceNumber__c,
+                    LastModifiedDate,
+                    LastModifiedById
                 FROM OpenSF__Card__c
                 WHERE
                     OpenSF__Column__r.OpenSF__Board__c = :boardId

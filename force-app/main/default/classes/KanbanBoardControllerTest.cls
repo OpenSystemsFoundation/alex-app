@@ -79,6 +79,7 @@ private class KanbanBoardControllerTest {
             targetColumn.Id,
             null,
             null,
+            null,
             null
         );
         Test.stopTest();
@@ -118,6 +119,7 @@ private class KanbanBoardControllerTest {
         KanbanBoardController.CardMoveResult result = KanbanBoardController.moveCard(
             card.Id,
             targetColumn.Id,
+            null,
             null,
             null,
             null
@@ -185,6 +187,7 @@ private class KanbanBoardControllerTest {
             targetColumn.Id,
             null,
             null,
+            null,
             null
         );
         Test.stopTest();
@@ -225,6 +228,7 @@ private class KanbanBoardControllerTest {
             'New Test Card',
             null,
             null,
+            null,
             null
         );
         Test.stopTest();
@@ -252,6 +256,7 @@ private class KanbanBoardControllerTest {
         KanbanBoardDTO.CardDTO newCard = KanbanBoardController.createCard(
             column.Id,
             'New Card with Status',
+            null,
             null,
             null,
             null
@@ -284,7 +289,8 @@ private class KanbanBoardControllerTest {
         Test.startTest();
         KanbanBoardDTO.CardDTO updatedCard = KanbanBoardController.updateCard(
             card.Id,
-            updates
+            updates,
+            null
         );
         Test.stopTest();
 
@@ -459,6 +465,7 @@ private class KanbanBoardControllerTest {
             targetColumn.Id,
             null,
             null,
+            null,
             null
         );
         Test.stopTest();
@@ -498,6 +505,7 @@ private class KanbanBoardControllerTest {
                 column.Id,
                 null,
                 null,
+                null,
                 null
             );
             System.assert(false, 'Should have thrown exception');
@@ -518,6 +526,7 @@ private class KanbanBoardControllerTest {
                 'Test',
                 null,
                 null,
+                null,
                 null
             );
             System.assert(false, 'Should have thrown exception');
@@ -535,7 +544,8 @@ private class KanbanBoardControllerTest {
         try {
             KanbanBoardController.updateCard(
                 fakeCardId,
-                new Map<String, Object>()
+                new Map<String, Object>(),
+                null
             );
             System.assert(false, 'Should have thrown exception');
         } catch (Exception e) {
