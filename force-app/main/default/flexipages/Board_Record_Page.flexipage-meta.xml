@@ -1,12 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <FlexiPage xmlns="http://soap.sforce.com/2006/04/metadata">
     <flexiPageRegions>
         <itemInstances>
             <componentInstance>
-                <componentInstanceProperties>
-                    <name>maxHeight</name>
-                    <value>70vh</value>
-                </componentInstanceProperties>
                 <componentName>kanbanBoard</componentName>
                 <identifier>c_kanbanBoard</identifier>
             </componentInstance>
@@ -51,7 +47,7 @@
                             <value>ColumnHeader__c</value>
                         </valueListItems>
                         <valueListItems>
-                            <value>Position__c</value>
+                            <value>LexoRankPosition__c</value>
                         </valueListItems>
                         <valueListItems>
                             <value>Status__c</value>
@@ -123,7 +119,8 @@
                     <name>showLegacyActivityComposer</name>
                     <value>false</value>
                 </componentInstanceProperties>
-                <componentName>runtime_sales_activities:activityPanel</componentName>
+                <componentName
+                >runtime_sales_activities:activityPanel</componentName>
                 <identifier>runtime_sales_activities_activityPanel</identifier>
             </componentInstance>
         </itemInstances>

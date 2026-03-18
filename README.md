@@ -1,116 +1,265 @@
-# Alex - A Kanban App
+# Alex - Kanban Board for Salesforce
 
-Welcome to **Alex**, an open-source Lightning Web Component application for managing workflows visually using a kanban board. This app provides real-time updates, a Redux-like global state management, and leverages Salesforce platform events for seamless synchronisation across users.
+<div align="center">
+  <img src="assets/images/logo_large.png" alt="Alex Logo" width="200"/>
+  
+  **A modern, real-time collaborative Kanban board built with Lightning Web Components**
+  
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+  [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-v64.0-blue.svg)](https://developer.salesforce.com)
+</div>
 
-## Features
+## 📋 Overview
 
-- **Dynamic Kanban Board**: Columns and cards are generated dynamically, adapting to your configuration in real-time.
-- **Real-Time Synchronization**: Uses platform events and a subscriber LWC to enable real-time updates across all users viewing the board.
-- **Global State Management**: Inspired by Redux, the state of the app is managed globally by a `store` component, dispatching actions through a `service` component to interact with backend controllers.
-- **Drag-and-Drop Functionality**: Cards can be easily moved across columns using native HTML5 drag-and-drop events.
-- **SLDS Styling**: Designed with Salesforce Lightning Design System (SLDS) to seamlessly fit into Salesforce.
-- **Lightning Components Integration**: Leverages standard Lightning components.
-- **GraphQL Adapter**: Implements the new GraphQL wire adapter to dynamically retrieve configured fields from custom metadata for the edit modal.
-- **Backend with FFLib-Inspired Layering**: A robust backend structure following the FFLib Domain Driven Design pattern
+Alex is a powerful Kanban board application for Salesforce that enables teams to visualize and manage their work with drag-and-drop simplicity. Built with Lightning Web Components (LWC), Alex provides real-time collaboration through platform events, allowing multiple users to work together seamlessly.
 
-## Components Overview
+### Key Features
 
-### Frontend Components (LWC)
+- **🎯 Intuitive Drag & Drop** - Move cards between columns effortlessly
+- **⚡ Real-time Collaboration** - See changes instantly as team members update cards
+- **🎨 Customizable Boards** - Create boards tailored to your workflow
+- **📊 Multiple Views** - Organize work across different boards
+- **🔒 Salesforce Native** - Built on Salesforce platform with enterprise security
+- **📱 Responsive Design** - Works seamlessly on desktop and mobile devices
+- **🚀 Lightning Fast** - Optimized performance with efficient state management
 
-- **Board Component** (`kanbanBoard`): Handles the rendering of columns and cards. This is where all event handling occurs, including drag-and-drop interactions.
-- **Subscriber Component** (`kanbanSubscriber`): Listens for platform events and updates the board in real time.
-- **Store Component** (`kanbanStore`): Manages the global state, dispatching actions to keep the board updated.
-- **Service Component** (`kanbanService`): Handles communication between the `kanbanStore` and backend `controller` to synchronize changes.
-- **Edit Modal**: Uses a Lightning card edit modal, integrated with the new GraphQL wire adapter for dynamic field configuration based on custom metadata.
+## 🏗️ Architecture
 
-### Backend Architecture (FFLib-Inspired)
+Alex is built using modern Salesforce development practices:
 
-- **Selector**: Handles queries to fetch relevant kanban data.
-- **Repository**: Manages all DML operations (e.g., insert, update, delete) for kanban objects.
-- **Domain**: Contains the business logic, including firing platform events for real-time updates.
-- **Trigger Handler**: Ensures triggers run efficiently and according to business requirements.
-- **Service Layer**: Bridges the interaction between selectors and repositories, ensuring clean separation of concerns.
-- **Controller**: Interfaces directly with the LWC components, providing methods to execute necessary backend logic.
+- **Lightning Web Components (LWC)** - Modern web standards-based UI framework
+- **Platform Events** - Real-time event-driven architecture for collaboration
+- **Redux-style State Management** - Predictable state updates with centralized store
+- **Apex Backend** - Secure server-side logic and data access
+- **Custom Objects** - Board, Column, and Card data models
 
-## Getting Started
+## 🛠️ Technology Stack
+
+- **Frontend**: Lightning Web Components (LWC)
+- **Backend**: Apex
+- **Testing**:
+    - Jest (Unit Tests)
+    - Playwright (E2E Tests)
+    - TypeScript for test development
+- **Build Tools**: Salesforce CLI, npm
+- **Version Control**: Git
+
+## 📦 Installation
 
 ### Prerequisites
 
-- **Salesforce CLI**: Make sure you have the latest version of the Salesforce CLI installed. Use the `sf` commands for interacting with your Salesforce org.
-- **Scratch Org**: We recommend setting up a scratch org for development purposes.
+- Salesforce CLI (`sf` CLI) installed
+- Node.js (v18 or higher) - **Recommended**: Use [mise](https://mise.jdx.dev/) for version management
+- npm (v9 or higher)
+- Git
+- A Salesforce org (Developer Edition, Sandbox, or Production)
 
-### Installation
+### Quick Install
 
-1. **Clone the Repository**:
+1. **Clone the repository**
 
-    ```sh
-    git clone https://github.com/OpenSystemsFoundation/alex.git
-    cd alex
+    ```bash
+    git clone https://github.com/OpenSystemsFoundation/alex-app.git
+    cd alex-app
     ```
 
-2. **Deploy to Salesforce**:
+2. **Set up Node.js (recommended: use mise)**
 
-    ```sh
-    sf project deploy start --target-org <username/alias>
+    ```bash
+    # Install mise if you haven't already
+    curl https://mise.run | sh
+
+    # Install Node.js (uses .mise.toml configuration)
+    mise install
+
+    # Verify Node version
+    node --version  # Should show v22.x or higher
     ```
 
-3. **Assign the Permission Set**:
-    ```sh
-    sf org assign-permset --name AlexAdmin --target-org <username/alias>
+    Alternatively, you can install Node.js directly from [nodejs.org](https://nodejs.org/).
+
+3. **Install dependencies**
+
+    ```bash
+    npm install
     ```
 
-### Usage
+4. **Authorize your Salesforce org**
 
-1. Open your Salesforce org and navigate to the Alex Console or Alex App.
-2. Create a Board record, from there you can create columns and cards according to your needs.
-3. Drag and drop cards to different columns.
-4. Enjoy!
+    ```bash
+    sf org login web --alias my-org
+    ```
 
-## Installation
+5. **Deploy to your org**
 
-1. Install Node.js LTS
-2. Install Python 3.12
-3. Install Yarn
+    ```bash
+    npm run deploy
+    ```
 
-```sh
-npm install -g yarn
+6. **Assign permission sets**
+
+    ```bash
+    sf org assign permset --name Alex_Admin
+    ```
+
+7. **Open your org and navigate to Alex**
+    ```bash
+    sf org open
+    ```
+    Then find "Alex Kanban Board" in the App Launcher.
+
+## 🚀 Quick Start
+
+### Creating Your First Board
+
+1. Open the Alex application from the App Launcher
+2. Click "New Board" to create your first board
+3. Add columns (e.g., "To Do", "In Progress", "Done")
+4. Start creating cards and drag them between columns
+5. Invite team members and collaborate in real-time!
+
+### Creating Sample Data
+
+To quickly populate your board with sample data:
+
+```bash
+npm run create:sample
 ```
 
-4. Install Pip
+## 🧪 Testing
 
-```sh
-python -m ensurepip --upgrade
+Alex includes comprehensive test coverage:
+
+### Unit Tests (Jest)
+
+```bash
+# Run all unit tests
+npm run test:unit
+
+# Watch mode for development
+npm run test:unit:watch
+
+# Generate coverage report
+npm run test:unit:coverage
 ```
 
-5. Install Virtual Environment
+### End-to-End Tests (Playwright)
 
-```sh
-pip install pipenv
-pipenv install
-python -m venv venv
-pip install -r requirements.txt
+```bash
+# Run all E2E tests
+npm run test:e2e
+
+# Run with UI mode
+npm run test:e2e:ui
+
+# Run in headed mode (see browser)
+npm run test:e2e:headed
+
+# Debug mode
+npm run test:e2e:debug
 ```
 
-6. Install Node.js Dependencies
+### Apex Tests
 
-```sh
-yarn install
+```bash
+npm run test:apex
 ```
 
-## Testing
+### Run All Tests
 
-1. **Apex Tests**: The app if fully covered with Apex Tests.
-2. **Jest Tests**: A minimal implementation of LWC Jest Tests.
-3. **Selenium Tests with Pytest-BDD**: In-Development is a Selenium Pytest-BDD test suite for end-to-end testing.
+```bash
+npm run test:all
+```
 
-## Contributing
+## 📚 Documentation
 
-We welcome contributions! If you'd like to enhance the Alex App, please fork the repository, make your changes, and submit a pull request.
+- [Architecture Documentation](docs/ARCHITECTURE.md)
+- [Quick Start Guide](docs/QUICKSTART.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
+- [Agent Instructions](AGENTS.md)
 
-## License
+## 🔧 Development
+
+### Project Structure
+
+```
+alex-app/
+├── force-app/main/default/
+│   ├── lwc/              # Lightning Web Components
+│   ├── classes/          # Apex classes
+│   ├── objects/          # Custom objects (Board, Column, Card)
+│   ├── tabs/             # Custom tabs
+│   └── permissionsets/   # Permission sets
+├── test/
+│   ├── unit/lwc/         # Jest unit tests
+│   └── e2e/              # Playwright E2E tests
+├── scripts/              # Utility scripts
+└── config/               # Scratch org definitions
+```
+
+### Available Scripts
+
+- `npm run deploy` - Deploy to Salesforce org
+- `npm run validate` - Validate deployment without committing
+- `npm run lint` - Run ESLint
+- `npm run prettier` - Format code
+- `npm test` - Run unit tests
+- `npm run test:all` - Run all tests (unit + E2E + Apex)
+
+### Scratch Org Development
+
+```bash
+# Create a scratch org
+sf org create scratch --definition-file config/project-scratch-def.json --alias alex-scratch --set-default
+
+# Push source to scratch org
+sf project deploy start
+
+# Assign permission set
+sf org assign permset --name Alex_Admin
+
+# Open scratch org
+sf org open
+
+# Run E2E tests against scratch org
+npm run test:e2e:scratch
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on:
+
+- Code of Conduct
+- Development workflow
+- Pull request process
+- Coding standards
+
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Contact
+## 🙏 Acknowledgments
 
-This app is offered through the Open Systems Foundation. For inquiries or support, please reach out to us at [support@opensf.foundation](mailto:support@opensf.foundation).
+- Built by [Open Systems Foundation](https://github.com/OpenSystemsFoundation)
+- Inspired by modern Kanban methodology
+- Powered by Salesforce Platform
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/OpenSystemsFoundation/alex-app/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/OpenSystemsFoundation/alex-app/discussions)
+
+## 🗺️ Roadmap
+
+- [ ] Enhanced filtering and search capabilities
+- [ ] Card templates and automation
+- [ ] Advanced analytics and reporting
+- [ ] Mobile app companion
+- [ ] Integration with Salesforce Flows
+- [ ] Custom field support for cards
+
+---
+
+<div align="center">
+  Made with ❤️ by the Open Systems Foundation team
+</div>

@@ -1,0 +1,43 @@
+<template>
+    <div
+        class="slds-grid slds-grid_vertical-align-center slds-gutters_xxx-small"
+    >
+        <!-- Sync Status (if active) -->
+        <template lwc:if={showSyncStatus}>
+            <div class="slds-col">
+                <div
+                    class={syncStatusClass}
+                    title={syncStatusText}
+                >
+                    <lightning-icon
+                        icon-name={syncStatusIcon}
+                        alternative-text={syncStatusText}
+                        size="x-small"
+                        class="slds-m-right_x-small"
+                    ></lightning-icon>
+                    <span class="sync-status-text"
+                        >{syncStatusText}</span
+                    >
+                </div>
+            </div>
+        </template>
+
+        <!-- Connection Status -->
+        <div class="slds-col">
+            <div
+                class={statusClass}
+                title={detailedStatus}
+            >
+                <lightning-icon
+                    icon-name={statusIcon}
+                    alternative-text={statusText}
+                    size="x-small"
+                    class="slds-m-right_x-small"
+                ></lightning-icon>
+                <span class="status-text"
+                    >{statusText}</span
+                >
+            </div>
+        </div>
+    </div>
+</template>

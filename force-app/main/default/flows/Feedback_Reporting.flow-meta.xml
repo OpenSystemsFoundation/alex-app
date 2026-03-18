@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionCalls>
         <name>Send_Bug_Email</name>
         <label>Send Bug Email</label>
-        <locationX>50</locationX>
-        <locationY>458</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <actionName>emailSimple</actionName>
         <actionType>emailSimple</actionType>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
@@ -40,13 +40,12 @@
         </inputParameters>
         <nameSegment>emailSimple</nameSegment>
         <offset>0</offset>
-        <versionSegment>1</versionSegment>
     </actionCalls>
     <actionCalls>
         <name>Send_Feedback_Email</name>
         <label>Send Feedback Email</label>
-        <locationX>578</locationX>
-        <locationY>458</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <actionName>emailSimple</actionName>
         <actionType>emailSimple</actionType>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
@@ -82,13 +81,12 @@
         </inputParameters>
         <nameSegment>emailSimple</nameSegment>
         <offset>0</offset>
-        <versionSegment>1</versionSegment>
     </actionCalls>
     <actionCalls>
         <name>Send_Idea_Email</name>
         <label>Send Idea Email</label>
-        <locationX>314</locationX>
-        <locationY>458</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <actionName>emailSimple</actionName>
         <actionType>emailSimple</actionType>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
@@ -124,14 +122,14 @@
         </inputParameters>
         <nameSegment>emailSimple</nameSegment>
         <offset>0</offset>
-        <versionSegment>1</versionSegment>
     </actionCalls>
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>64.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
     <assignments>
         <name>Set_Recipient_to_Open_Systems_Foundation</name>
         <label>Set Recipient to Open Systems Foundation</label>
-        <locationX>446</locationX>
-        <locationY>242</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <assignmentItems>
             <assignToReference>RecipientEmails</assignToReference>
             <operator>Add</operator>
@@ -177,8 +175,8 @@
     <decisions>
         <name>Feedback_Type_Choice</name>
         <label>Feedback Type</label>
-        <locationX>446</locationX>
-        <locationY>350</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
             <name>BugChoice</name>
@@ -226,7 +224,8 @@
             <label>Feedback</label>
         </rules>
     </decisions>
-    <description>A flow for sending feedback, ideas and bugs to the developer through email.</description>
+    <description
+    >A flow for sending feedback, ideas and bugs to the developer through email.</description>
     <environments>Default</environments>
     <interviewLabel>Feedback Reporting {!$Flow.CurrentDateTime}</interviewLabel>
     <label>Feedback Reporting</label>
@@ -252,13 +251,14 @@
     <screens>
         <name>Feedback_Screen</name>
         <label>Feedback Screen</label>
-        <locationX>446</locationX>
-        <locationY>134</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <allowBack>true</allowBack>
         <allowFinish>true</allowFinish>
         <allowPause>true</allowPause>
         <connector>
-            <targetReference>Set_Recipient_to_Open_Systems_Foundation</targetReference>
+            <targetReference
+            >Set_Recipient_to_Open_Systems_Foundation</targetReference>
         </connector>
         <fields>
             <name>Feedback_Screen_Section1</name>
@@ -268,8 +268,17 @@
                 <fieldType>Region</fieldType>
                 <fields>
                     <name>FeedbackTitle</name>
-                    <fieldText>&lt;p&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;💡 &lt;/span&gt;&lt;strong style=&quot;font-size: 16px;&quot;&gt;Share Your Thoughts!&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;We’re here to listen&lt;/p&gt;</fieldText>
+                    <fieldText
+                    >&lt;p&gt;&lt;span style=&quot;font-size: 16px;&quot;&gt;💡 &lt;/span&gt;&lt;strong style=&quot;font-size: 16px;&quot;&gt;Share Your Thoughts!&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;We’re here to listen&lt;/p&gt;</fieldText>
                     <fieldType>DisplayText</fieldType>
+                    <styleProperties>
+                        <verticalAlignment>
+                            <stringValue>top</stringValue>
+                        </verticalAlignment>
+                        <width>
+                            <stringValue>12</stringValue>
+                        </width>
+                    </styleProperties>
                 </fields>
                 <inputParameters>
                     <name>width</name>
@@ -284,8 +293,17 @@
                 <fieldType>Region</fieldType>
                 <fields>
                     <name>Button</name>
-                    <fieldText>&lt;p style=&quot;text-align: right;&quot;&gt;{!LinkButton}&lt;/p&gt;</fieldText>
+                    <fieldText
+                    >&lt;p style=&quot;text-align: right;&quot;&gt;{!LinkButton}&lt;/p&gt;</fieldText>
                     <fieldType>DisplayText</fieldType>
+                    <styleProperties>
+                        <verticalAlignment>
+                            <stringValue>top</stringValue>
+                        </verticalAlignment>
+                        <width>
+                            <stringValue>12</stringValue>
+                        </width>
+                    </styleProperties>
                 </fields>
                 <inputParameters>
                     <name>width</name>
@@ -297,11 +315,28 @@
             </fields>
             <isRequired>false</isRequired>
             <regionContainerType>SectionWithoutHeader</regionContainerType>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
         </fields>
         <fields>
             <name>FeedbackHeader</name>
-            <fieldText>&lt;ul&gt;&lt;li&gt;🛠️ &lt;strong&gt;Report a Bug&lt;/strong&gt;: Help us squash those pesky issues&lt;/li&gt;&lt;li&gt;💡 &lt;strong&gt;Suggest an Idea&lt;/strong&gt;: Share your brilliant insights&lt;/li&gt;&lt;li&gt;✨ &lt;strong&gt;Provide Feedback&lt;/strong&gt;: Let us know what’s working (or not)&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;We will get back to you as soon as possible. Your input makes all the difference! 🏆&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;You can always reach out to us at &lt;strong&gt;support@opensf.foundation&lt;/strong&gt;&lt;/p&gt;</fieldText>
+            <fieldText
+            >&lt;ul&gt;&lt;li&gt;🛠️ &lt;strong&gt;Report a Bug&lt;/strong&gt;: Help us squash those pesky issues&lt;/li&gt;&lt;li&gt;💡 &lt;strong&gt;Suggest an Idea&lt;/strong&gt;: Share your brilliant insights&lt;/li&gt;&lt;li&gt;✨ &lt;strong&gt;Provide Feedback&lt;/strong&gt;: Let us know what’s working (or not)&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;We will get back to you as soon as possible. Your input makes all the difference! 🏆&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;You can always reach out to us at &lt;strong&gt;support@opensf.foundation&lt;/strong&gt;&lt;/p&gt;</fieldText>
             <fieldType>DisplayText</fieldType>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
         </fields>
         <fields>
             <name>Feedback_Type</name>
@@ -311,13 +346,30 @@
             <dataType>String</dataType>
             <fieldText>Feedback Type</fieldText>
             <fieldType>DropdownBox</fieldType>
-            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <inputsOnNextNavToAssocScrn
+            >UseStoredValues</inputsOnNextNavToAssocScrn>
             <isRequired>true</isRequired>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
         </fields>
         <fields>
             <name>BugTemplate</name>
             <fieldText>&lt;p&gt;{!BugReportTemplate}&lt;/p&gt;</fieldText>
             <fieldType>DisplayText</fieldType>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
             <visibilityRule>
                 <conditionLogic>and</conditionLogic>
                 <conditions>
@@ -333,8 +385,17 @@
             <name>Bug_Report</name>
             <fieldText>Bug Report</fieldText>
             <fieldType>LargeTextArea</fieldType>
-            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <inputsOnNextNavToAssocScrn
+            >UseStoredValues</inputsOnNextNavToAssocScrn>
             <isRequired>true</isRequired>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
             <visibilityRule>
                 <conditionLogic>and</conditionLogic>
                 <conditions>
@@ -350,6 +411,14 @@
             <name>IdeaTemplate</name>
             <fieldText>&lt;p&gt;{!IdeaReportTemplate}&lt;/p&gt;</fieldText>
             <fieldType>DisplayText</fieldType>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
             <visibilityRule>
                 <conditionLogic>and</conditionLogic>
                 <conditions>
@@ -365,8 +434,17 @@
             <name>Idea_Report</name>
             <fieldText>Idea Report</fieldText>
             <fieldType>LargeTextArea</fieldType>
-            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <inputsOnNextNavToAssocScrn
+            >UseStoredValues</inputsOnNextNavToAssocScrn>
             <isRequired>true</isRequired>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
             <visibilityRule>
                 <conditionLogic>and</conditionLogic>
                 <conditions>
@@ -382,6 +460,14 @@
             <name>FeedbackTemplate</name>
             <fieldText>&lt;p&gt;{!FeedbackReportTemplate}&lt;/p&gt;</fieldText>
             <fieldType>DisplayText</fieldType>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
             <visibilityRule>
                 <conditionLogic>and</conditionLogic>
                 <conditions>
@@ -397,8 +483,17 @@
             <name>Feedback_Report</name>
             <fieldText>Feedback Report</fieldText>
             <fieldType>LargeTextArea</fieldType>
-            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <inputsOnNextNavToAssocScrn
+            >UseStoredValues</inputsOnNextNavToAssocScrn>
             <isRequired>true</isRequired>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
             <visibilityRule>
                 <conditionLogic>and</conditionLogic>
                 <conditions>
@@ -415,7 +510,7 @@
         <showHeader>false</showHeader>
     </screens>
     <start>
-        <locationX>320</locationX>
+        <locationX>0</locationX>
         <locationY>0</locationY>
         <connector>
             <targetReference>Feedback_Screen</targetReference>
@@ -425,37 +520,44 @@
     <textTemplates>
         <name>BugReportSubject</name>
         <isViewedAsPlainText>true</isViewedAsPlainText>
-        <text>{!$User.FirstName} {!$User.LastName} created a Bug Report | {!$User.Email}</text>
+        <text
+        >{!$User.FirstName} {!$User.LastName} created a Bug Report | {!$User.Email}</text>
     </textTemplates>
     <textTemplates>
         <name>BugReportTemplate</name>
         <isViewedAsPlainText>false</isViewedAsPlainText>
-        <text>&lt;h3&gt;🐞 &lt;strong&gt;Bug Report Template&lt;/strong&gt;&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;What’s the issue? &lt;/strong&gt;&lt;em&gt;(Briefly describe the bug you encountered)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Steps to reproduce: &lt;/strong&gt;&lt;em&gt;(List the actions that led to the issue)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;What did you expect to happen? &lt;/strong&gt;&lt;em&gt;(Describe the expected behavior)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;What actually happened? &lt;/strong&gt;&lt;em&gt;(Explain what occurred instead)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;</text>
+        <text
+        >&lt;h3&gt;🐞 &lt;strong&gt;Bug Report Template&lt;/strong&gt;&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;What’s the issue? &lt;/strong&gt;&lt;em&gt;(Briefly describe the bug you encountered)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Steps to reproduce: &lt;/strong&gt;&lt;em&gt;(List the actions that led to the issue)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;What did you expect to happen? &lt;/strong&gt;&lt;em&gt;(Describe the expected behavior)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;What actually happened? &lt;/strong&gt;&lt;em&gt;(Explain what occurred instead)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;</text>
     </textTemplates>
     <textTemplates>
         <name>FeedbackReportSubject</name>
         <isViewedAsPlainText>true</isViewedAsPlainText>
-        <text>{!$User.FirstName} {!$User.LastName} provided some Feedback! | {!$User.Email}</text>
+        <text
+        >{!$User.FirstName} {!$User.LastName} provided some Feedback! | {!$User.Email}</text>
     </textTemplates>
     <textTemplates>
         <name>FeedbackReportTemplate</name>
         <isViewedAsPlainText>false</isViewedAsPlainText>
-        <text>&lt;h3&gt;💬 &lt;strong&gt;Feedback Template&lt;/strong&gt;&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;What’s your feedback about? &lt;/strong&gt;&lt;em&gt;(Briefly describe the feature, experience, or issue)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;What did you like or dislike? &lt;/strong&gt;&lt;em&gt;(Highlight what worked well or what needs improvement)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;</text>
+        <text
+        >&lt;h3&gt;💬 &lt;strong&gt;Feedback Template&lt;/strong&gt;&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;What’s your feedback about? &lt;/strong&gt;&lt;em&gt;(Briefly describe the feature, experience, or issue)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;What did you like or dislike? &lt;/strong&gt;&lt;em&gt;(Highlight what worked well or what needs improvement)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;</text>
     </textTemplates>
     <textTemplates>
         <name>IdeaReportSubject</name>
         <isViewedAsPlainText>true</isViewedAsPlainText>
-        <text>{!$User.FirstName} {!$User.LastName} sent a new Idea |  {!$User.Email}</text>
+        <text
+        >{!$User.FirstName} {!$User.LastName} sent a new Idea |  {!$User.Email}</text>
     </textTemplates>
     <textTemplates>
         <name>IdeaReportTemplate</name>
         <isViewedAsPlainText>false</isViewedAsPlainText>
-        <text>&lt;h3&gt;💡 &lt;strong&gt;Idea Suggestion Template&lt;/strong&gt;&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;Title:&lt;/strong&gt; &lt;em&gt;(Give your idea a short, descriptive title)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;What’s the idea? &lt;/strong&gt;&lt;em&gt;(Briefly describe your idea in 1-2 sentences)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Why is it valuable? &lt;/strong&gt;&lt;em&gt;(Explain the benefit or problem it solves)&lt;/em&gt;&lt;/p&gt;</text>
+        <text
+        >&lt;h3&gt;💡 &lt;strong&gt;Idea Suggestion Template&lt;/strong&gt;&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;Title:&lt;/strong&gt; &lt;em&gt;(Give your idea a short, descriptive title)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;What’s the idea? &lt;/strong&gt;&lt;em&gt;(Briefly describe your idea in 1-2 sentences)&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Why is it valuable? &lt;/strong&gt;&lt;em&gt;(Explain the benefit or problem it solves)&lt;/em&gt;&lt;/p&gt;</text>
     </textTemplates>
     <textTemplates>
         <name>LinkButton</name>
         <isViewedAsPlainText>true</isViewedAsPlainText>
-        <text>&lt;a class=&quot;slds-button slds-button_brand&quot; href=&quot;{!ButtonLinkURL}&quot; target=&quot;_blank&quot;&gt;Buy Us A Coffee&lt;/a&gt;</text>
+        <text
+        >&lt;a class=&quot;slds-button slds-button_brand&quot; href=&quot;{!ButtonLinkURL}&quot; target=&quot;_blank&quot;&gt;Buy Us A Coffee&lt;/a&gt;</text>
     </textTemplates>
     <variables>
         <name>RecipientEmails</name>

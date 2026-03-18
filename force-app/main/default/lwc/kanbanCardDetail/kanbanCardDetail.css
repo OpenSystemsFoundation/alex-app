@@ -1,0 +1,27 @@
+/* SLDS Modal Styling - Minimal overrides */
+
+/* Modal size control */
+.slds-modal__container {
+    max-width: 50rem;
+}
+
+/* Modal header title - bolder font */
+.slds-modal__title {
+    font-weight: 700;
+}
+
+/* Rich Text Editor sizing */
+lightning-input-field {
+    --slds-c-textarea-sizing-min-height: 6rem;
+}
+
+/* Responsive Design */
+@media (max-width: 48em) {
+    .slds-modal__container {
+        max-width: 95% !important;
+    }
+
+    .slds-col.slds-size_1-of-2 {
+        width: 100% !important;
+    }
+}

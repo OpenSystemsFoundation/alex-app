@@ -1,315 +1,433 @@
-import { api, LightningElement, track, wire } from 'lwc';
-import {
-    MessageContext,
-    subscribe,
-    unsubscribe
-} from 'lightning/messageService';
-import {
-    getFocusedTabInfo,
-    IsConsoleNavigation
-} from 'lightning/platformWorkspaceApi';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import tabFocusedChannel from '@salesforce/messageChannel/lightning__tabFocused';
-import boardHelper from './kanbanBoardHelper';
-import boardStore from 'c/kanbanBoardStore';
+import { LightningElement, api, track } from 'lwc';
+import { createStore, selectors } from 'c/kanbanStore';
+import EventHandler from './handlers/eventHandler';
+import RequestTracker from './helpers/requestTracker';
+import ReducerQueue from './helpers/reducerQueue';
+import LifecycleManager from './managers/lifecycleManager';
+import BoardDataLoader from './managers/boardDataLoader';
+import DragDropHandler from './handlers/dragDropHandler';
+import CardOperations from './handlers/cardOperations';
+import SubscriptionEventHandler from './handlers/subscriptionEventHandler';
+import { generateClientId } from './helpers/clientIdGenerator';
 
 export default class KanbanBoard extends LightningElement {
-    @wire(MessageContext)
-    messageContext;
-    @wire(IsConsoleNavigation)
-    isConsoleNavigation;
+    @api height; // Optional fixed height, if not set uses dynamic calculation
 
-    @api recordId;
-    @api maxHeight = '70vh';
-    @track board;
-    @track columns;
-    @track cards;
-    boardId;
-    error;
-    isLoading = false;
-    initializeBoard = false;
+    // Private properties
+    _recordId;
+    _store = null;
+    _storeUnsubscribe = null;
+    _resizeObserver = null;
+    _boardElement = null;
+    _windowResizeHandler = null;
+    _clientId = null; // Unique ID for this browser window/tab
 
-    openModal = false;
-    modalRecordId;
-    modalRecordName;
+    // Reactive state - only track what needs reactivity
+    @track _storeState = null;
 
-    subscriptionCallback;
-    tabFocusedSubscription = null;
-    tabInfo;
+    // UI State - these don't need @track as they're reassigned directly
+    selectedCard = null;
+    showCardDetail = false;
+    isLoading = true;
+    error = null;
+    @track _subscriptionStatus = 'disconnected'; // Needs @track for indicator reactivity
+    @track _eventCount = 0; // Needs @track for indicator reactivity
+    @track _lastSyncTime = null; // Needs @track for indicator reactivity
 
-    connectedCallback() {
-        this.subscriptionCallback = this.handleStateChange.bind(this);
-        boardStore.subscribe(this.subscriptionCallback);
-        try {
-            this.boardId = this.recordId;
-            this.initializeBoardData();
-        } catch (error) {
-            this.handleError('Failed to initialize board.', error);
+    // Drag state
+    dragData = null;
+    dragPlaceholder = null;
+    lastPlaceholderPosition = null;
+
+    // Child component references (set in renderedCallback)
+    subscriptionManager = null; // Only needed for polling callback
+    toastManager = null;
+    navigationUtil = null;
+
+    // Internal services
+    eventHandler = null;
+    requestTracker = null;
+    operationQueue = null;
+    windowFocusListener = null;
+    subscriptionChannelName = '/event/OpenSF__CardUpdateEvent__e';
+
+    // Lazy-loaded helper instances
+    _lifecycleManager = null;
+    _boardDataLoader = null;
+    _dragDropHandler = null;
+    _cardOperations = null;
+    _subscriptionEventHandler = null;
+
+    // Store accessor
+    get store() {
+        if (!this._store) {
+            this._store = createStore();
         }
-
-        this.subscribeToTabFocused();
+        return this._store;
     }
 
+    // Computed properties from store
+    get columns() {
+        return this._storeState
+            ? selectors.getEnrichedColumns(this._storeState)
+            : [];
+    }
+
+    get cardsByColumn() {
+        return this._storeState
+            ? selectors.getCardsByColumnMap(this._storeState)
+            : {};
+    }
+
+    get board() {
+        return this._storeState ? selectors.getBoard(this._storeState) : null;
+    }
+
+    get syncState() {
+        return this._storeState
+            ? selectors.getSyncState(this._storeState)
+            : 'idle';
+    }
+
+    get pendingOperationsCount() {
+        return this._storeState
+            ? selectors.getPendingOperations(this._storeState).length
+            : 0;
+    }
+
+    get lastSyncError() {
+        return this._storeState
+            ? selectors.getLastSyncError(this._storeState)
+            : null;
+    }
+
+    get shouldAutoSubscribe() {
+        // Auto-subscribe when board is loaded and not already loading
+        return !!this.board && !this.isLoading;
+    }
+
+    // Lazy getters for helper instances
+    get lifecycleManager() {
+        if (!this._lifecycleManager) {
+            this._lifecycleManager = new LifecycleManager(this);
+        }
+        return this._lifecycleManager;
+    }
+
+    get boardDataLoader() {
+        if (!this._boardDataLoader) {
+            this._boardDataLoader = new BoardDataLoader(this);
+        }
+        return this._boardDataLoader;
+    }
+
+    get dragDropHandler() {
+        if (!this._dragDropHandler) {
+            this._dragDropHandler = new DragDropHandler(this);
+        }
+        return this._dragDropHandler;
+    }
+
+    get cardOperations() {
+        if (!this._cardOperations) {
+            this._cardOperations = new CardOperations(this);
+        }
+        return this._cardOperations;
+    }
+
+    get subscriptionEventHandler() {
+        if (!this._subscriptionEventHandler) {
+            this._subscriptionEventHandler = new SubscriptionEventHandler(this);
+        }
+        return this._subscriptionEventHandler;
+    }
+
+    @api
+    get recordId() {
+        return this._recordId;
+    }
+
+    set recordId(value) {
+        const hasChanged = this._recordId !== value;
+        this._recordId = value;
+
+        // Only load if value exists and component is connected
+        if (value && hasChanged && this._storeUnsubscribe) {
+            this.loadBoardData();
+        }
+    }
+
+    connectedCallback() {
+        // Generate unique client ID for this window/tab
+        this._clientId = generateClientId();
+
+        // Initialize core services
+        this.requestTracker = new RequestTracker(this._clientId);
+        this.operationQueue = new ReducerQueue(this.store);
+        this.eventHandler = new EventHandler(
+            this.requestTracker,
+            (message) =>
+                this.subscriptionEventHandler.handleEventActivity(message),
+            this._recordId,
+            this._clientId
+        );
+
+        // Subscribe to store updates
+        this._storeUnsubscribe = this.store.subscribe((state) => {
+            this._storeState = state;
+        });
+
+        // Initialize lifecycle (lazy getters handle instance creation)
+        this.lifecycleManager.initialize();
+    }
     renderedCallback() {
-        boardHelper.applyMaxHeight(this.template, this.maxHeight);
-        boardHelper.applyCardEdge(this.template, this.cards);
-        boardHelper.applyColumnBorder(this.template, this.columns);
+        if (this.lifecycleManager) {
+            this.lifecycleManager.initializeChildComponents(this.template);
+        }
+
+        // Initialize dynamic height calculation
+        if (!this._resizeObserver) {
+            this.initializeDynamicHeight();
+        }
     }
 
     disconnectedCallback() {
-        if (this.subscriptionCallback) {
-            boardStore.unsubscribe(this.subscriptionCallback);
+        // Only cleanup if lifecycle manager was instantiated
+        if (this._lifecycleManager) {
+            this._lifecycleManager.cleanup();
         }
 
-        this.unsubscribeFromTabFocused();
-        this.boardId = null;
-    }
-
-    async initializeBoardData() {
-        this.initializeBoard = true;
-        try {
-            await boardStore.initialize(this.boardId);
-        } catch (error) {
-            this.handleError('Error initializing Kanban Board', error);
-        } finally {
-            this.initializeBoard = false;
+        // Cleanup resize observer
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+            this._resizeObserver = null;
         }
-    }
 
-    subscribeToTabFocused() {
-        if (!this.tabFocusedSubscription) {
-            this.tabFocusedSubscription = subscribe(
-                this.messageContext,
-                tabFocusedChannel,
-                (message) => this.handleTabFocused(message)
-            );
+        // Cleanup window resize listener
+        if (this._windowResizeHandler) {
+            window.removeEventListener('resize', this._windowResizeHandler);
+            this._windowResizeHandler = null;
         }
     }
 
-    async handleTabFocused() {
-        try {
-            const tabInfo = await getFocusedTabInfo();
-            if (tabInfo && tabInfo.recordId) {
-                if (tabInfo.recordId !== this.boardId) {
-                    this.boardId = tabInfo.recordId;
-                    await this.initializeBoardData();
-                }
-            }
-        } catch (error) {
-            this.showToast(
-                'Error',
-                'Unable to fetch focused tab info.',
-                'error'
-            );
-        }
-    }
+    // =============================================================================
+    // Data Loading
+    // =============================================================================
 
-    unsubscribeFromTabFocused() {
-        if (this.tabFocusedSubscription) {
-            unsubscribe(this.tabFocusedSubscription);
-            this.tabFocusedSubscription = null;
-        }
-    }
-
-    handleStateChange(state) {
-        const { boards, error } = state;
-        if (error || !boards) {
-            this.error = error;
+    async loadBoardData() {
+        if (!this._recordId) {
             return;
         }
 
-        const boardState = boards[this.boardId];
-        if (!boardState) {
-            this.error = 'Board data not found.';
-            return;
-        }
-
-        this.updateBoardState(boardState);
-        this.isLoading = boardState.isLoading;
-    }
-
-    updateBoardState({ board, columns, cards, isLoading }) {
-        this.board = board;
-        this.columns = columns;
-        this.cards = cards;
-        this.error = null;
-        this.isLoading = isLoading;
-    }
-
-    get columnsWithCards() {
-        if (!this.columns || !this.cards) {
-            return [];
-        }
-
-        const sortedColumns = [...this.columns].sort(
-            (colA, colB) => colA.columnPosition - colB.columnPosition
-        );
-
-        return sortedColumns.map((column) => {
-            const columnCards = this.cards
-                .filter((card) => card.columnId === column.columnId)
-                .sort(
-                    (cardA, cardB) => cardA.cardPosition - cardB.cardPosition
-                );
-
-            return {
-                ...column,
-                cards: columnCards
-            };
-        });
-    }
+        // Use lazy getter to ensure boardDataLoader is instantiated
+        await this.boardDataLoader.loadBoardData();
+    } // =============================================================================
+    // Drag & Drop Event Handlers
+    // =============================================================================
 
     handleDragStart(event) {
-        if (!event.target.classList.contains('kanban-card')) {
-            event.preventDefault();
-            return;
-        }
-        event.target.classList.add('start');
-        const dragData = boardHelper.getDragData(event);
-        event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/plain', JSON.stringify(dragData));
-    }
-
-    handleDragEnter(event) {
-        event.preventDefault();
-        const targetElement = event.currentTarget;
-        if (targetElement) {
-            const target = targetElement.closest('article');
-            if (target) {
-                target.classList.add('over');
-            }
-        }
-    }
-
-    handleDragLeave(event) {
-        const targetElement = event.currentTarget;
-        if (targetElement) {
-            const target = targetElement.closest('article');
-            if (target) {
-                target.classList.remove('over');
-            }
-        }
-    }
-
-    handleDragOver(event) {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'move';
-        const targetElement = event.currentTarget;
-        if (targetElement) {
-            const target = targetElement.closest('article');
-            if (target && !target.classList.contains('over')) {
-                target.classList.add('over');
-            }
-        }
+        this.dragDropHandler.handleDragStart(event);
     }
 
     handleDragEnd(event) {
-        event.preventDefault();
-        event.target.classList.remove('start');
+        this.dragDropHandler.handleDragEnd(event);
     }
 
-    handleDrop(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        const boardCards = this.template.querySelectorAll('.kanban-card');
-        boardCards.forEach((card) => card.classList.remove('over'));
-
-        try {
-            const dragData = JSON.parse(
-                event.dataTransfer.getData('text/plain')
-            );
-
-            const currentTarget = event.currentTarget;
-            if (!currentTarget) {
-                return;
-            }
-
-            const dropTargetData = boardHelper.getDropTargetData(event);
-
-            const dropData = {
-                ...dragData,
-                ...dropTargetData
-            };
-
-            if (!boardHelper.isValidDrop(dropData)) {
-                return;
-            }
-
-            boardStore.moveCard(this.boardId, dropData);
-        } catch (error) {
-            this.handleError('Error moving card', error);
-        }
+    handleDragOver(event) {
+        this.dragDropHandler.handleDragOver(event);
     }
+
+    async handleDrop(event) {
+        await this.dragDropHandler.handleDrop(event);
+    }
+
+    // =============================================================================
+    // Card Event Handlers
+    // =============================================================================
 
     handleCardClick(event) {
-        const cardElement = event.target.closest('.kanban-card');
-        if (!cardElement) {
-            throw new Error('Card element not found');
-        }
-        this.modalRecordId = cardElement.dataset.cardId;
-        this.modalRecordName = cardElement.dataset.cardName;
-        this.openModal = true;
+        const cardId = event.currentTarget.dataset.cardId;
+        this.cardOperations.handleCardClick(cardId);
     }
 
-    handleModalClose() {
-        this.openModal = false;
-        this.modalRecordId = null;
-        this.modalRecordName = null;
-    }
-
-    handleCreateCard(event) {
-        try {
-            const { columnId, columnStatus } = boardHelper.getColumnData(event);
-            boardStore.createCard(this.boardId, columnId, columnStatus);
-            this.showToast('Success', 'Card created successfully', 'success');
-        } catch (error) {
-            this.handleError('Error creating card', error);
-        }
-    }
-
-    openColumn(event) {
-        if (!this.isConsoleNavigation) {
-            return;
-        }
+    async handleCardNameClick(event) {
         event.preventDefault();
-        boardHelper.openItem({
-            dataAttribute: 'columnId',
-            event,
-            isConsoleNavigation: this.isConsoleNavigation,
-            selector: '.kanban-column'
-        });
-    }
-
-    openCard(event) {
         event.stopPropagation();
-        if (!this.isConsoleNavigation) {
+
+        const cardId = event.currentTarget.dataset.cardId;
+
+        if (!cardId || !this.navigationUtil) {
             return;
         }
+
+        await this.navigationUtil.navigateToRecord(cardId, 'OpenSF__Card__c');
+    }
+
+    handleCardDetailClose() {
+        this.cardOperations.handleCardDetailClose();
+    }
+
+    handleCardUpdated() {
+        this.cardOperations.handleCardUpdated();
+    }
+
+    handleCardDeleted(event) {
+        const cardId = event?.detail?.cardId;
+        if (cardId) {
+            this.cardOperations.handleCardDeleted(cardId);
+        }
+    }
+
+    async handleAddCard(event) {
+        const button = event.currentTarget;
+        const columnId = button.dataset.columnId;
+        await this.cardOperations.createCard(columnId, button);
+    }
+
+    // =============================================================================
+    // Column Event Handlers
+    // =============================================================================
+
+    async handleColumnClick(event) {
         event.preventDefault();
+        event.stopPropagation();
 
-        boardHelper.openItem({
-            dataAttribute: 'cardId',
-            event,
-            isConsoleNavigation: this.isConsoleNavigation,
-            selector: '.kanban-card'
-        });
+        const columnId = event.currentTarget.dataset.columnId;
+
+        if (!columnId || !this.navigationUtil) {
+            return;
+        }
+
+        await this.navigationUtil.navigateToRecord(
+            columnId,
+            'OpenSF__Column__c'
+        );
     }
 
-    handleError(customMessage, error) {
-        const errorMessage =
-            error && error.message
-                ? `Error: ${error.message}`
-                : 'An unexpected error occurred';
-        this.error = customMessage || errorMessage;
-        this.showToast('Error', this.error, 'error');
+    // =============================================================================
+    // Subscription Event Handlers
+    // =============================================================================
+
+    handlePlatformEvent(event) {
+        this.subscriptionEventHandler.handlePlatformEvent(event);
     }
 
-    showToast(title, message, variant) {
-        const event = new ShowToastEvent({
+    handleEventActivity(message) {
+        this.subscriptionEventHandler.handleEventActivity(message);
+    }
+
+    handleSubscriptionMessage(event) {
+        const { payload } = event.detail;
+        this._eventCount++;
+        this.subscriptionEventHandler.handleSubscriptionMessage(payload);
+    }
+
+    handleSubscriptionStatusMessage(event) {
+        const { variant, title, message } = event.detail;
+        this.subscriptionEventHandler.handleSubscriptionStatusMessage(
+            variant,
             title,
-            message,
-            variant
+            message
+        );
+    }
+
+    handlePollingRequired() {
+        this.subscriptionEventHandler.handlePollingRequired();
+    }
+
+    handleSubscriptionStatusChange(event) {
+        const { status } = event.detail;
+        this.subscriptionEventHandler.handleSubscriptionStatusChange(status);
+    }
+
+    // =============================================================================
+    // UI Event Handlers
+    // =============================================================================
+
+    handleRefresh() {
+        this.loadBoardData();
+    }
+
+    handleWindowFocus() {
+        this.lifecycleManager.handleWindowFocus();
+    }
+
+    // =============================================================================
+    // Dynamic Height Management
+    // =============================================================================
+
+    initializeDynamicHeight() {
+        this._boardElement = this.template.querySelector('.kanban-board');
+
+        if (!this._boardElement) {
+            return;
+        }
+
+        // If height is manually set, use it and skip dynamic calculation
+        if (this.height) {
+            this._boardElement.style.setProperty('--board-height', this.height);
+            return;
+        }
+
+        // Initial height calculation
+        this.updateBoardHeight();
+
+        // Create ResizeObserver to handle viewport changes, zoom, etc.
+        this._resizeObserver = new ResizeObserver(() => {
+            this.updateBoardHeight();
         });
-        this.dispatchEvent(event);
+
+        // Observe the board element itself
+        this._resizeObserver.observe(this._boardElement);
+
+        // Also observe viewport changes via window resize
+        this._windowResizeHandler = this.updateBoardHeight.bind(this);
+        window.addEventListener('resize', this._windowResizeHandler);
+    }
+
+    updateBoardHeight() {
+        if (!this._boardElement || this.height) {
+            return; // Skip dynamic calculation if height is manually set
+        }
+
+        // Get the board element's position relative to viewport
+        const rect = this._boardElement.getBoundingClientRect();
+
+        // Calculate available height:
+        // viewport height - distance from top - padding/margin buffer
+        const buffer = 80; // Space for bottom padding and any floating elements
+        const availableHeight = window.innerHeight - rect.top - buffer;
+
+        // Set minimum height to prevent collapse
+        const minHeight = 400;
+        const calculatedHeight = Math.max(minHeight, availableHeight);
+
+        // Update CSS custom property
+        this._boardElement.style.setProperty(
+            '--board-height',
+            `${calculatedHeight}px`
+        );
+    }
+
+    get hasColumns() {
+        return this.columns && this.columns.length > 0;
+    }
+
+    get boardName() {
+        return this.board?.Name || 'Kanban Board';
+    }
+
+    get connectionStatusConfig() {
+        return {
+            status: this._subscriptionStatus,
+            eventCount: this._eventCount,
+            lastSyncTime: this._lastSyncTime,
+            syncState: this.syncState,
+            pendingOperationsCount: this.pendingOperationsCount,
+            lastSyncError: this.lastSyncError,
+            pollingUpdateDetected: this._storeState
+                ? this._storeState.pollingUpdateDetected
+                : null
+        };
     }
 }

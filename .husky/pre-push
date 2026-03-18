@@ -1,0 +1,2 @@
+npm run prepush
+npm run test:unit

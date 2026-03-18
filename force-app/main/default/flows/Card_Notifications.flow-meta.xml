@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionCalls>
         <name>Send_Create_Notification</name>
         <label>Send Create Notification</label>
-        <locationX>50</locationX>
-        <locationY>755</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <actionName>customNotificationAction</actionName>
         <actionType>customNotificationAction</actionType>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
@@ -46,13 +46,12 @@
         </inputParameters>
         <nameSegment>customNotificationAction</nameSegment>
         <offset>0</offset>
-        <versionSegment>1</versionSegment>
     </actionCalls>
     <actionCalls>
         <name>Send_Update_Notification</name>
         <label>Send Update Notification</label>
-        <locationX>314</locationX>
-        <locationY>755</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <actionName>customNotificationAction</actionName>
         <actionType>customNotificationAction</actionType>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
@@ -88,14 +87,14 @@
         </inputParameters>
         <nameSegment>customNotificationAction</nameSegment>
         <offset>0</offset>
-        <versionSegment>1</versionSegment>
     </actionCalls>
-    <apiVersion>62.0</apiVersion>
+    <apiVersion>64.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
     <assignments>
         <name>Assign_Update_Recipients</name>
         <label>Assign Update Recipients</label>
-        <locationX>314</locationX>
-        <locationY>431</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <assignmentItems>
             <assignToReference>recipientIds</assignToReference>
             <operator>Add</operator>
@@ -126,14 +125,17 @@
         <name>FilteredRecipients</name>
         <elementSubtype>FilterCollectionProcessor</elementSubtype>
         <label>Filtered Recipients</label>
-        <locationX>314</locationX>
-        <locationY>539</locationY>
-        <assignNextValueToReference>currentItem_FilteredRecipients</assignNextValueToReference>
-        <collectionProcessorType>FilterCollectionProcessor</collectionProcessorType>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNextValueToReference
+        >currentItem_FilteredRecipients</assignNextValueToReference>
+        <collectionProcessorType
+        >FilterCollectionProcessor</collectionProcessorType>
         <collectionReference>recipientIds</collectionReference>
         <conditionLogic>and</conditionLogic>
         <conditions>
-            <leftValueReference>currentItem_FilteredRecipients</leftValueReference>
+            <leftValueReference
+            >currentItem_FilteredRecipients</leftValueReference>
             <operator>IsBlank</operator>
             <rightValue>
                 <booleanValue>false</booleanValue>
@@ -146,8 +148,8 @@
     <decisions>
         <name>Event_Type</name>
         <label>Event Type</label>
-        <locationX>314</locationX>
-        <locationY>647</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
             <name>CardCreate</name>
@@ -175,7 +177,8 @@
                 </rightValue>
             </conditions>
             <conditions>
-                <leftValueReference>$Record.OpenSF__Position__c</leftValueReference>
+                <leftValueReference
+                >$Record.OpenSF__LexoRankPosition__c</leftValueReference>
                 <operator>IsChanged</operator>
                 <rightValue>
                     <booleanValue>false</booleanValue>
@@ -187,7 +190,8 @@
             <label>Card Update</label>
         </rules>
     </decisions>
-    <description>Record Triggered After flow for all Card create/update events to send Salesforce Notifications. Notifications are managed per Board through Salesforce Notifications checkbox.</description>
+    <description
+    >Record Triggered After flow for all Card create/update events to send Salesforce Notifications. Notifications are managed per Board through Salesforce Notifications checkbox.</description>
     <environments>Default</environments>
     <formulas>
         <name>ISNEW</name>
@@ -195,6 +199,7 @@
         <expression>ISNEW()</expression>
     </formulas>
     <interviewLabel>Card Notifications {!$Flow.CurrentDateTime}</interviewLabel>
+    <isTemplate>true</isTemplate>
     <label>Card Notifications</label>
     <processMetadataValues>
         <name>BuilderType</name>
@@ -218,9 +223,10 @@
     <recordLookups>
         <name>Get_Notification</name>
         <label>Get Notification</label>
-        <locationX>314</locationX>
-        <locationY>323</locationY>
-        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNullValuesIfNoRecordsFound
+        >false</assignNullValuesIfNoRecordsFound>
         <connector>
             <targetReference>Assign_Update_Recipients</targetReference>
         </connector>
@@ -237,12 +243,13 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <start>
-        <locationX>188</locationX>
+        <locationX>0</locationX>
         <locationY>0</locationY>
         <connector>
             <targetReference>Get_Notification</targetReference>
         </connector>
-        <filterFormula>{!$Record.Column__r.Board__r.SalesforceNotifications__c} = true</filterFormula>
+        <filterFormula
+        >{!$Record.Column__r.Board__r.SalesforceNotifications__c} = true</filterFormula>
         <object>Card__c</object>
         <recordTriggerType>CreateAndUpdate</recordTriggerType>
         <triggerType>RecordAfterSave</triggerType>

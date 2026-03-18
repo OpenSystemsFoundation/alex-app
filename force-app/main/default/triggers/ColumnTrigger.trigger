@@ -7,7 +7,8 @@ trigger ColumnTrigger on OpenSF__Column__c(
     after delete,
     after undelete
 ) {
-    ColumnTriggerHandler.handleTrigger(
+    ColumnTriggerHandler handler = new ColumnTriggerHandler();
+    handler.setTriggerContext(
         Trigger.isBefore,
         Trigger.isAfter,
         Trigger.isInsert,
@@ -19,4 +20,5 @@ trigger ColumnTrigger on OpenSF__Column__c(
         Trigger.newMap,
         Trigger.oldMap
     );
+    handler.execute();
 }

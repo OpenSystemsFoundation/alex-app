@@ -26,6 +26,7 @@ yarn-error.log*
 .vscode/
 .vscode/*
 !.vscode/extensions.json
+!.vscode/mcp.json
 
 # Local Environment Files
 .env
@@ -50,6 +51,7 @@ __pycache__/
 
 # Temporary and Cache Files
 tmp/
+.temp/
 cache/
 .eslintcache
 logs
@@ -63,6 +65,19 @@ jsconfig.json
 # Python venv
 venv/
 .venv/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
+
+# Playwright Test Results
+.auth/
+test-results/
+playwright-report/
+playwright-results.xml
+blob-report/
+playwright/.cache/
+
+# Playwright Videos and Screenshots
+*.webm
+*.png
+!*.spec.ts
+
+# Playwright Traces
+trace.zip

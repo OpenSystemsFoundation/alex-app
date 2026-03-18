@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ReportType xmlns="http://soap.sforce.com/2006/04/metadata">
     <baseObject>Board__c</baseObject>
     <category>other</category>
@@ -154,7 +154,7 @@
         </columns>
         <columns>
             <checkedByDefault>false</checkedByDefault>
-            <field>Position__c</field>
+            <field>LexoRankPosition__c</field>
             <table>Board__c.Columns__r</table>
         </columns>
         <masterLabel>Columns</masterLabel>
@@ -257,7 +257,7 @@
         </columns>
         <columns>
             <checkedByDefault>false</checkedByDefault>
-            <field>Position__c</field>
+            <field>LexoRankPosition__c</field>
             <table>Board__c.Columns__r.Cards__r</table>
         </columns>
         <columns>

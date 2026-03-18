@@ -1,0 +1,6 @@
+[tools]
+node = "lts"  # Latest LTS version (currently 22.x)
+
+[settings]
+# Auto-install tools when entering directory
+auto_install = true
