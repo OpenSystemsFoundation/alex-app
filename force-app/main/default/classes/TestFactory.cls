@@ -3,7 +3,7 @@
  * Centralizes test data creation to ensure consistency across all test classes
  */
 @isTest
-private class TestFactory {
+public class TestFactory {
     /**
      * Creates a test Board with default or custom values
      * @param boardName The name of the board

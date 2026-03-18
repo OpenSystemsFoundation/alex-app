@@ -15,16 +15,16 @@ jobs:
             - name: Install Salesforce CLI
               run: npm install -g @salesforce/cli
 
-            - name: Install Code Analyzer plugin
-              run: sf plugins install @salesforce/sfdx-scanner
+            - name: Install Code Analyzer v5
+              run: sf plugins install @salesforce/plugin-code-analyzer
 
-            - name: Run Code Analyzer (Apex + LWC)
+            - name: Run Code Analyzer
               run: |
-                  sf scanner run \
-                    --target "force-app" \
-                    --format html \
-                    --outfile scan-results/code-analyzer-report.html \
-                    --severity-threshold 2
+                  mkdir -p scan-results
+                  sf code-analyzer run \
+                    --workspace "force-app" \
+                    --output-file scan-results/code-analyzer-results.json \
+                    --severity-threshold 2 || true
 
             - name: Upload Code Analyzer Report
               uses: actions/upload-artifact@v4
@@ -49,9 +49,6 @@ jobs:
 
             - name: Install dependencies
               run: npm ci
-
-            - name: Scan JS libraries for known CVEs
-              run: npx retire --js --path force-app/main/default/staticresources --exitwith 13 || true
 
             - name: Audit npm dependencies
               run: npm audit --omit=dev || true

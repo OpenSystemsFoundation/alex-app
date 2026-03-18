@@ -14,7 +14,7 @@
  * }
  */
 @isTest
-private class TestSettings {
+public class TestSettings {
     /**
      * Skip platform event publishing in triggers
      * Default: false (events are published)

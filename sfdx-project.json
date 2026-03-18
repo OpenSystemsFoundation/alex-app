@@ -14,7 +14,7 @@
     "name": "OpenSF",
     "namespace": "OpenSF",
     "sfdcLoginUrl": "https://login.salesforce.com",
-    "sourceApiVersion": "64.0",
+    "sourceApiVersion": "66.0",
     "packageAliases": {
         "Alex - A Kanban App": "0HoWV00000003nV0AQ",
         "Alex - A Kanban App@0.1.0-1": "04tWV000000281VYAQ",
