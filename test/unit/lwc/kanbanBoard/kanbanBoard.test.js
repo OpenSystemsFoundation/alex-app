@@ -16,7 +16,8 @@ jest.mock(
     '@salesforce/apex/KanbanBoardController.getKanbanConfig',
     () => {
         const { createApexTestWireAdapter } =
-            require('@salesforce/sfdx-lwc-jest').default || require('@salesforce/sfdx-lwc-jest');
+            require('@salesforce/sfdx-lwc-jest').default ||
+            require('@salesforce/sfdx-lwc-jest');
         return {
             default: createApexTestWireAdapter(jest.fn())
         };

@@ -7,6 +7,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for technical architecture and 
 **This project uses a Salesforce scratch org with namespace `OpenSF`. The namespace prefix is added AUTOMATICALLY during deployment.**
 
 ### NEVER add `OpenSF__` prefix to:
+
 - Object directory names (use `Sprint__c/` not `OpenSF__Sprint__c/`)
 - Field file names (use `Status__c.field-meta.xml` not `OpenSF__Status__c.field-meta.xml`)
 - `<fullName>` values in XML metadata
@@ -15,11 +16,13 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for technical architecture and 
 - Flow field references, flexipage references, permission set object/field references, custom metadata values
 
 ### DO use `OpenSF__` prefix in:
+
 - Apex code (.cls, .trigger) — SObject names and field API names at runtime
 - LWC JavaScript — field API names in wire adapters and imperatively called methods
 - SOQL queries inside Apex code
 
 ### Examples
+
 ```
 CORRECT metadata:  objects/Sprint__c/fields/Board__c.field-meta.xml
                    <fullName>Board__c</fullName>

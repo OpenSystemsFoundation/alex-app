@@ -5,8 +5,8 @@
 **CRITICAL: This is a namespaced scratch org (namespace: `OpenSF`). The namespace prefix is added AUTOMATICALLY during deployment.**
 
 - **Metadata source files** (object XMLs, field XMLs, flows, flexipages, custom metadata, permission sets) must NEVER have the `OpenSF__` prefix in directory names, file names, `<fullName>`, `<referenceTo>`, or `<relationshipName>` values.
-  - Correct: `objects/Sprint__c/fields/Status__c.field-meta.xml` with `<fullName>Status__c</fullName>`
-  - Wrong: `objects/OpenSF__Sprint__c/fields/OpenSF__Status__c.field-meta.xml`
+    - Correct: `objects/Sprint__c/fields/Status__c.field-meta.xml` with `<fullName>Status__c</fullName>`
+    - Wrong: `objects/OpenSF__Sprint__c/fields/OpenSF__Status__c.field-meta.xml`
 
 - **Apex code** (.cls, .trigger) DOES use the `OpenSF__` prefix when referencing SObjects and fields at runtime. This is correct — Apex uses the full namespaced API name.
 

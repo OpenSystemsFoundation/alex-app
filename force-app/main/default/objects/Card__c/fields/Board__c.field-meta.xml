@@ -2,7 +2,8 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Board__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
-    <description>Direct board reference. Required for backlog cards that have no column assignment.</description>
+    <description
+    >Direct board reference. Required for backlog cards that have no column assignment.</description>
     <label>Board</label>
     <referenceTo>Board__c</referenceTo>
     <relationshipLabel>Cards</relationshipLabel>

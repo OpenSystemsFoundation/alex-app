@@ -2,7 +2,8 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>NeedsRefinement__c</fullName>
     <defaultValue>false</defaultValue>
-    <description>Marks a card as needing refinement. Used in backlog management to filter cards for refinement sessions and future story point poker.</description>
+    <description
+    >Marks a card as needing refinement. Used in backlog management to filter cards for refinement sessions and future story point poker.</description>
     <inlineHelpText>Toggle to mark this card for refinement</inlineHelpText>
     <label>Needs Refinement</label>
     <trackFeedHistory>false</trackFeedHistory>

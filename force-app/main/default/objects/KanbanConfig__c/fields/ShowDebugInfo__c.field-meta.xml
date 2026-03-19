@@ -2,8 +2,10 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ShowDebugInfo__c</fullName>
     <defaultValue>false</defaultValue>
-    <description>When enabled, shows LexoRank position values on board cards and backlog rows for debugging purposes.</description>
-    <inlineHelpText>Toggle to show LexoRank debug overlay on cards</inlineHelpText>
+    <description
+    >When enabled, shows LexoRank position values on board cards and backlog rows for debugging purposes.</description>
+    <inlineHelpText
+    >Toggle to show LexoRank debug overlay on cards</inlineHelpText>
     <label>Show Debug Info</label>
     <trackTrending>false</trackTrending>
     <type>Checkbox</type>
