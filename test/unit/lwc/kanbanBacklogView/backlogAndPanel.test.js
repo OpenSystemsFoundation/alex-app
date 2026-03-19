@@ -48,18 +48,6 @@ jest.mock(
     { virtual: true }
 );
 
-// ─── Mock: c/kanbanContextMenu (stub) ───────────────────────────────
-jest.mock(
-    'c/kanbanContextMenu',
-    () => {
-        const { LightningElement } = require('lwc');
-        return {
-            default: class extends LightningElement {}
-        };
-    },
-    { virtual: true }
-);
-
 // ─── Imports under test ─────────────────────────────────────────────
 import KanbanBacklogView from 'c/kanbanBacklogView';
 import KanbanCardPanel from 'c/kanbanCardPanel';
@@ -1647,22 +1635,23 @@ describe('c-kanban-card-panel', () => {
     });
 
     describe('processFields', () => {
+        // Test processFields via the prototype (avoids illegal constructor)
+        const processFields =
+            KanbanCardPanel.prototype.processFields;
+
         it('maps unqualified field names to qualified names', () => {
-            const panel = new KanbanCardPanel();
-            const result = panel.processFields(['Subject__c', 'Status__c']);
+            const result = processFields(['Subject__c', 'Status__c']);
             expect(result[0].fieldName).toBe('OpenSF__Subject__c');
             expect(result[1].fieldName).toBe('OpenSF__Status__c');
         });
 
         it('keeps already-qualified names as-is', () => {
-            const panel = new KanbanCardPanel();
-            const result = panel.processFields(['OpenSF__Subject__c']);
+            const result = processFields(['OpenSF__Subject__c']);
             expect(result[0].fieldName).toBe('OpenSF__Subject__c');
         });
 
         it('applies correct metadata for known fields', () => {
-            const panel = new KanbanCardPanel();
-            const result = panel.processFields(['Description__c']);
+            const result = processFields(['Description__c']);
             expect(result[0].fullWidth).toBe(true);
             expect(result[0].isTextarea).toBe(true);
             expect(result[0].columnClass).toBe(
@@ -1671,8 +1660,7 @@ describe('c-kanban-card-panel', () => {
         });
 
         it('applies default metadata for unknown fields', () => {
-            const panel = new KanbanCardPanel();
-            const result = panel.processFields(['CustomField__c']);
+            const result = processFields(['CustomField__c']);
             expect(result[0].fullWidth).toBe(false);
             expect(result[0].isTextarea).toBe(false);
             expect(result[0].columnClass).toBe(
@@ -1681,8 +1669,7 @@ describe('c-kanban-card-panel', () => {
         });
 
         it('sets key equal to fieldName', () => {
-            const panel = new KanbanCardPanel();
-            const result = panel.processFields(['Subject__c']);
+            const result = processFields(['Subject__c']);
             expect(result[0].key).toBe('OpenSF__Subject__c');
         });
     });
@@ -1709,82 +1696,120 @@ describe('c-kanban-card-panel', () => {
         });
 
         it('cardRecordUrl without card returns #', () => {
-            const panel = new KanbanCardPanel();
-            // card is undefined
-            expect(panel.cardRecordUrl).toBe('#');
+            // Test via prototype getter with a mock context
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'cardRecordUrl'
+            ).get;
+            expect(getter.call({ card: null })).toBe('#');
+            expect(getter.call({ card: undefined })).toBe('#');
         });
 
         it('hasFields returns false when formFields is empty', () => {
-            const panel = new KanbanCardPanel();
-            panel.formFields = [];
-            expect(panel.hasFields).toBe(false);
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'hasFields'
+            ).get;
+            expect(getter.call({ formFields: [] })).toBe(false);
+            expect(getter.call({ formFields: null })).toBe(false);
         });
 
         it('hasFields returns true when formFields has items', () => {
-            const panel = new KanbanCardPanel();
-            panel.formFields = [
-                {
-                    fieldName: 'OpenSF__Subject__c',
-                    key: 'OpenSF__Subject__c'
-                }
-            ];
-            expect(panel.hasFields).toBe(true);
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'hasFields'
+            ).get;
+            expect(
+                getter.call({
+                    formFields: [
+                        {
+                            fieldName: 'OpenSF__Subject__c',
+                            key: 'OpenSF__Subject__c'
+                        }
+                    ]
+                })
+            ).toBe(true);
         });
 
         it('descriptionField returns the description field', () => {
-            const panel = new KanbanCardPanel();
-            panel.formFields = [
-                {
-                    fieldName: 'OpenSF__Subject__c',
-                    key: 'OpenSF__Subject__c'
-                },
-                {
-                    fieldName: 'OpenSF__Description__c',
-                    key: 'OpenSF__Description__c'
-                }
-            ];
-            expect(panel.descriptionField.fieldName).toBe(
-                'OpenSF__Description__c'
-            );
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'descriptionField'
+            ).get;
+            const result = getter.call({
+                formFields: [
+                    {
+                        fieldName: 'OpenSF__Subject__c',
+                        key: 'OpenSF__Subject__c'
+                    },
+                    {
+                        fieldName: 'OpenSF__Description__c',
+                        key: 'OpenSF__Description__c'
+                    }
+                ]
+            });
+            expect(result.fieldName).toBe('OpenSF__Description__c');
         });
 
         it('regularFields excludes description', () => {
-            const panel = new KanbanCardPanel();
-            panel.formFields = [
-                {
-                    fieldName: 'OpenSF__Subject__c',
-                    key: 'OpenSF__Subject__c'
-                },
-                {
-                    fieldName: 'OpenSF__Description__c',
-                    key: 'OpenSF__Description__c'
-                }
-            ];
-            const regular = panel.regularFields;
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'regularFields'
+            ).get;
+            const regular = getter.call({
+                formFields: [
+                    {
+                        fieldName: 'OpenSF__Subject__c',
+                        key: 'OpenSF__Subject__c'
+                    },
+                    {
+                        fieldName: 'OpenSF__Description__c',
+                        key: 'OpenSF__Description__c'
+                    }
+                ]
+            });
             expect(regular).toHaveLength(1);
             expect(regular[0].fieldName).toBe('OpenSF__Subject__c');
         });
 
         it('deleteButtonLabel returns Delete by default', () => {
-            const panel = new KanbanCardPanel();
-            expect(panel.deleteButtonLabel).toBe('Delete');
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'deleteButtonLabel'
+            ).get;
+            expect(getter.call({ deleteConfirmState: false })).toBe(
+                'Delete'
+            );
         });
 
         it('deleteButtonLabel returns Confirm Delete when in confirm state', () => {
-            const panel = new KanbanCardPanel();
-            panel.deleteConfirmState = true;
-            expect(panel.deleteButtonLabel).toBe('Confirm Delete');
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'deleteButtonLabel'
+            ).get;
+            expect(getter.call({ deleteConfirmState: true })).toBe(
+                'Confirm Delete'
+            );
         });
 
         it('deleteButtonVariant returns neutral by default', () => {
-            const panel = new KanbanCardPanel();
-            expect(panel.deleteButtonVariant).toBe('neutral');
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'deleteButtonVariant'
+            ).get;
+            expect(getter.call({ deleteConfirmState: false })).toBe(
+                'neutral'
+            );
         });
 
         it('deleteButtonVariant returns destructive when in confirm state', () => {
-            const panel = new KanbanCardPanel();
-            panel.deleteConfirmState = true;
-            expect(panel.deleteButtonVariant).toBe('destructive');
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'deleteButtonVariant'
+            ).get;
+            expect(getter.call({ deleteConfirmState: true })).toBe(
+                'destructive'
+            );
         });
     });
 
@@ -1937,42 +1962,55 @@ describe('c-kanban-card-panel', () => {
 
     describe('resize handling', () => {
         it('handleResize clamps to min/max bounds', () => {
-            const panel = new KanbanCardPanel();
-            panel._resizing = true;
-            panel._resizeStartX = 500;
-            panel._resizeStartWidth = 400;
+            const handleResize =
+                KanbanCardPanel.prototype.handleResize;
+            const ctx = {
+                _resizing: true,
+                _resizeStartX: 500,
+                _resizeStartWidth: 400,
+                panelWidth: 400
+            };
 
             // Drag far left (trying to make very wide)
-            panel.handleResize({ clientX: 0 });
-            expect(panel.panelWidth).toBe(800); // MAX
+            handleResize.call(ctx, { clientX: 0 });
+            expect(ctx.panelWidth).toBe(800); // MAX
 
             // Drag far right (trying to make very narrow)
-            panel.handleResize({ clientX: 1000 });
-            expect(panel.panelWidth).toBe(300); // MIN
+            handleResize.call(ctx, { clientX: 1000 });
+            expect(ctx.panelWidth).toBe(300); // MIN
         });
 
         it('handleResize does nothing when not resizing', () => {
-            const panel = new KanbanCardPanel();
-            panel._resizing = false;
-            panel.panelWidth = 400;
-            panel.handleResize({ clientX: 100 });
-            expect(panel.panelWidth).toBe(400);
+            const handleResize =
+                KanbanCardPanel.prototype.handleResize;
+            const ctx = {
+                _resizing: false,
+                panelWidth: 400
+            };
+            handleResize.call(ctx, { clientX: 100 });
+            expect(ctx.panelWidth).toBe(400);
         });
 
         it('handleResizeEnd cleans up listeners', () => {
-            const panel = new KanbanCardPanel();
-            const mockRemove = jest.spyOn(window, 'removeEventListener');
+            const handleResizeEnd =
+                KanbanCardPanel.prototype.handleResizeEnd;
+            const mockRemove = jest.spyOn(
+                window,
+                'removeEventListener'
+            );
 
-            panel._boundHandleResize = () => {};
-            panel._boundHandleResizeEnd = () => {};
-            panel._resizing = true;
+            const ctx = {
+                _resizing: true,
+                _boundHandleResize: () => {},
+                _boundHandleResizeEnd: () => {}
+            };
 
-            panel.handleResizeEnd();
+            handleResizeEnd.call(ctx);
 
-            expect(panel._resizing).toBe(false);
+            expect(ctx._resizing).toBe(false);
             expect(mockRemove).toHaveBeenCalledTimes(2);
-            expect(panel._boundHandleResize).toBeNull();
-            expect(panel._boundHandleResizeEnd).toBeNull();
+            expect(ctx._boundHandleResize).toBeNull();
+            expect(ctx._boundHandleResizeEnd).toBeNull();
 
             mockRemove.mockRestore();
         });
@@ -1981,35 +2019,53 @@ describe('c-kanban-card-panel', () => {
     describe('disconnectedCallback', () => {
         it('clears delete timer', () => {
             jest.useFakeTimers();
-            const panel = new KanbanCardPanel();
-            panel._deleteTimer = setTimeout(() => {}, 3000);
+            const disconnectedCallback =
+                KanbanCardPanel.prototype.disconnectedCallback;
+            const timer = setTimeout(() => {}, 3000);
+            const ctx = {
+                _deleteTimer: timer,
+                _boundHandleResize: null,
+                _boundHandleResizeEnd: null
+            };
             const spy = jest.spyOn(global, 'clearTimeout');
 
-            panel.disconnectedCallback();
+            disconnectedCallback.call(ctx);
             expect(spy).toHaveBeenCalled();
             spy.mockRestore();
             jest.useRealTimers();
         });
 
         it('removes resize listeners if active', () => {
-            const mockRemove = jest.spyOn(window, 'removeEventListener');
-            const panel = new KanbanCardPanel();
-            panel._boundHandleResize = () => {};
-            panel._boundHandleResizeEnd = () => {};
+            const disconnectedCallback =
+                KanbanCardPanel.prototype.disconnectedCallback;
+            const mockRemove = jest.spyOn(
+                window,
+                'removeEventListener'
+            );
+            const ctx = {
+                _deleteTimer: null,
+                _boundHandleResize: () => {},
+                _boundHandleResizeEnd: () => {}
+            };
 
-            panel.disconnectedCallback();
+            disconnectedCallback.call(ctx);
 
             expect(mockRemove).toHaveBeenCalledTimes(2);
             mockRemove.mockRestore();
         });
 
         it('handles no active timers or listeners gracefully', () => {
-            const panel = new KanbanCardPanel();
-            panel._deleteTimer = null;
-            panel._boundHandleResize = null;
-            panel._boundHandleResizeEnd = null;
+            const disconnectedCallback =
+                KanbanCardPanel.prototype.disconnectedCallback;
+            const ctx = {
+                _deleteTimer: null,
+                _boundHandleResize: null,
+                _boundHandleResizeEnd: null
+            };
 
-            expect(() => panel.disconnectedCallback()).not.toThrow();
+            expect(() =>
+                disconnectedCallback.call(ctx)
+            ).not.toThrow();
         });
     });
 });

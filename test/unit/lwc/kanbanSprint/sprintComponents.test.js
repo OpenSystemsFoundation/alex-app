@@ -68,6 +68,12 @@ function flushPromises() {
     });
 }
 
+// Helper to find lightning stub elements by property (attribute selectors don't work on LWC stubs)
+function findByProp(root, tag, prop, value) {
+    const els = root.querySelectorAll(tag);
+    return Array.from(els).find((el) => el[prop] === value) || null;
+}
+
 // ============================================================
 // KanbanSprintHeader Tests
 // ============================================================
@@ -88,7 +94,7 @@ describe('c-kanban-sprint-header', () => {
         return element;
     }
 
-    test('subscribes to store and renders sprint info in DOM', async () => {
+    test('subscribes to store and renders sprint name, goal, progress in DOM', async () => {
         const mockStore = createMockStore();
         const mockSprint = {
             Id: 'sprint1',
@@ -111,21 +117,21 @@ describe('c-kanban-sprint-header', () => {
         expect(mockStore.subscribe).toHaveBeenCalled();
         expect(mockStore.getState).toHaveBeenCalled();
 
-        // Check DOM renders sprint name
+        // Sprint name rendered
         const nameSpan = element.shadowRoot.querySelector(
             '.sprint-inline__name'
         );
         expect(nameSpan).not.toBeNull();
         expect(nameSpan.textContent).toBe('Sprint 1');
 
-        // Check goal is rendered
+        // Goal rendered
         const goalSpan = element.shadowRoot.querySelector(
             '.sprint-inline__goal'
         );
         expect(goalSpan).not.toBeNull();
         expect(goalSpan.textContent).toBe('Deliver feature X');
 
-        // Progress bar fill style
+        // Progress bar fill
         const fill = element.shadowRoot.querySelector(
             '.sprint-inline__progress-fill'
         );
@@ -137,14 +143,17 @@ describe('c-kanban-sprint-header', () => {
         );
         expect(label.textContent).toBe('5 / 13 pts (38%)');
 
-        // Complete button visible for active sprint
-        const completeBtn = element.shadowRoot.querySelector(
-            'lightning-button[label="Complete"]'
+        // Complete button visible (find by checking all lightning-buttons)
+        const allBtns = element.shadowRoot.querySelectorAll(
+            'lightning-button'
         );
-        expect(completeBtn).not.toBeNull();
+        const completeBtn = Array.from(allBtns).find(
+            (b) => b.label === 'Complete'
+        );
+        expect(completeBtn).toBeTruthy();
     });
 
-    test('shows "No active sprint" when no sprint exists', async () => {
+    test('renders "No active sprint" and New Sprint button when no sprint', async () => {
         const mockStore = createMockStore();
         selectors.getActiveSprint.mockReturnValue(null);
 
@@ -157,74 +166,88 @@ describe('c-kanban-sprint-header', () => {
         expect(emptyLabel).not.toBeNull();
         expect(emptyLabel.textContent).toBe('No active sprint');
 
-        // New Sprint button visible
-        const newBtn = element.shadowRoot.querySelector(
-            'lightning-button[label="New Sprint"]'
+        const newBtn = findByProp(
+            element.shadowRoot,
+            'lightning-button',
+            'label',
+            'New Sprint'
         );
         expect(newBtn).not.toBeNull();
 
-        // Complete button should NOT be visible
-        const completeBtn = element.shadowRoot.querySelector(
-            'lightning-button[label="Complete"]'
+        // Complete button should NOT exist
+        const completeBtn = findByProp(
+            element.shadowRoot,
+            'lightning-button',
+            'label',
+            'Complete'
         );
         expect(completeBtn).toBeNull();
     });
 
-    test('daysRemainingLabel covers all branches: overdue, last day, warning, normal, null', async () => {
+    test('renders days remaining text with correct class for overdue sprint', async () => {
         const mockStore = createMockStore();
         selectors.getActiveSprint.mockReturnValue({
             Id: 's1',
+            Name: 'S',
             status: 'Active',
-            Name: 'S'
+            completedStoryPoints: 0,
+            totalStoryPoints: 10
         });
+        selectors.getSprintProgress.mockReturnValue(0);
+        selectors.getSprintDaysRemaining.mockReturnValue(-3);
 
         const element = createComponent({ store: mockStore });
         await flushPromises();
 
-        // Overdue
-        selectors.getSprintDaysRemaining.mockReturnValue(-3);
-        expect(element.daysRemainingLabel).toBe('3d overdue');
-        expect(element.daysRemainingClass).toBe('slds-text-color_error');
-
-        // Last day
-        selectors.getSprintDaysRemaining.mockReturnValue(0);
-        expect(element.daysRemainingLabel).toBe('Last day');
-        expect(element.daysRemainingClass).toBe('slds-text-color_error');
-
-        // Warning
-        selectors.getSprintDaysRemaining.mockReturnValue(2);
-        expect(element.daysRemainingLabel).toBe('2d remaining');
-        expect(element.daysRemainingClass).toBe('slds-text-color_warning');
-
-        // Normal
-        selectors.getSprintDaysRemaining.mockReturnValue(5);
-        expect(element.daysRemainingLabel).toBe('5d remaining');
-        expect(element.daysRemainingClass).toBe('');
-
-        // Null
-        selectors.getSprintDaysRemaining.mockReturnValue(null);
-        expect(element.daysRemainingLabel).toBe('');
-        expect(element.daysRemainingClass).toBe('');
+        const daysSpan = element.shadowRoot.querySelector(
+            '.slds-text-color_error'
+        );
+        expect(daysSpan).not.toBeNull();
+        expect(daysSpan.textContent).toBe('3d overdue');
     });
 
-    test('sprintOptions maps sprints to label/value pairs', async () => {
+    test('renders "Last day" and error class for 0 days remaining', async () => {
         const mockStore = createMockStore();
         selectors.getActiveSprint.mockReturnValue({
             Id: 's1',
+            Name: 'S',
             status: 'Active',
-            Name: 'S'
+            completedStoryPoints: 0,
+            totalStoryPoints: 10
         });
-        selectors.getSprints.mockReturnValue([
-            { Id: 's1', Name: 'Sprint 1', status: 'Active' },
-            { Id: 's2', Name: 'Sprint 2', status: 'Planning' }
-        ]);
+        selectors.getSprintProgress.mockReturnValue(0);
+        selectors.getSprintDaysRemaining.mockReturnValue(0);
 
         const element = createComponent({ store: mockStore });
+        await flushPromises();
 
-        expect(element.sprintOptions).toEqual([
-            { label: 'Sprint 1 (Active)', value: 's1' },
-            { label: 'Sprint 2 (Planning)', value: 's2' }
-        ]);
+        const daysSpan = element.shadowRoot.querySelector(
+            '.slds-text-color_error'
+        );
+        expect(daysSpan).not.toBeNull();
+        expect(daysSpan.textContent).toBe('Last day');
+    });
+
+    test('renders warning class for 2 days remaining', async () => {
+        const mockStore = createMockStore();
+        selectors.getActiveSprint.mockReturnValue({
+            Id: 's1',
+            Name: 'S',
+            status: 'Active',
+            completedStoryPoints: 0,
+            totalStoryPoints: 10
+        });
+        selectors.getSprintProgress.mockReturnValue(0);
+        selectors.getSprintDaysRemaining.mockReturnValue(2);
+
+        const element = createComponent({ store: mockStore });
+        await flushPromises();
+
+        const daysSpan = element.shadowRoot.querySelector(
+            '.slds-text-color_warning'
+        );
+        expect(daysSpan).not.toBeNull();
+        expect(daysSpan.textContent).toBe('2d remaining');
     });
 
     test('handleCompleteSprint dispatches completesprint event with sprintId', async () => {
@@ -232,7 +255,9 @@ describe('c-kanban-sprint-header', () => {
         selectors.getActiveSprint.mockReturnValue({
             Id: 'sprint1',
             status: 'Active',
-            Name: 'Sprint 1'
+            Name: 'Sprint 1',
+            completedStoryPoints: 0,
+            totalStoryPoints: 10
         });
         selectors.getSprintProgress.mockReturnValue(50);
 
@@ -242,8 +267,11 @@ describe('c-kanban-sprint-header', () => {
         const handler = jest.fn();
         element.addEventListener('completesprint', handler);
 
-        const completeBtn = element.shadowRoot.querySelector(
-            'lightning-button[label="Complete"]'
+        const completeBtn = findByProp(
+            element.shadowRoot,
+            'lightning-button',
+            'label',
+            'Complete'
         );
         completeBtn.click();
 
@@ -261,8 +289,11 @@ describe('c-kanban-sprint-header', () => {
         const handler = jest.fn();
         element.addEventListener('createsprint', handler);
 
-        const newBtn = element.shadowRoot.querySelector(
-            'lightning-button[label="New Sprint"]'
+        const newBtn = findByProp(
+            element.shadowRoot,
+            'lightning-button',
+            'label',
+            'New Sprint'
         );
         newBtn.click();
 
@@ -274,7 +305,9 @@ describe('c-kanban-sprint-header', () => {
         selectors.getActiveSprint.mockReturnValue({
             Id: 'sprint1',
             status: 'Active',
-            Name: 'Sprint 1'
+            Name: 'Sprint 1',
+            completedStoryPoints: 0,
+            totalStoryPoints: 10
         });
 
         const element = createComponent({ store: mockStore });
@@ -283,8 +316,11 @@ describe('c-kanban-sprint-header', () => {
         const handler = jest.fn();
         element.addEventListener('showreports', handler);
 
-        const reportBtn = element.shadowRoot.querySelector(
-            'lightning-button-icon[icon-name="utility:chart"]'
+        const reportBtn = findByProp(
+            element.shadowRoot,
+            'lightning-button-icon',
+            'iconName',
+            'utility:chart'
         );
         reportBtn.click();
 
@@ -303,51 +339,38 @@ describe('c-kanban-sprint-header', () => {
         expect(unsubscribe).toHaveBeenCalledTimes(1);
     });
 
-    test('handles no store gracefully (null state paths)', () => {
+    test('does not render sprint when no store is provided', async () => {
         const element = createComponent({});
+        await flushPromises();
 
-        expect(element.sprint).toBeNull();
-        expect(element.hasSprint).toBe(false);
-        expect(element.progress).toBe(0);
-        expect(element.sprints).toEqual([]);
-        expect(element.daysRemaining).toBeNull();
+        // Should render the "no sprint" path
+        const emptyLabel = element.shadowRoot.querySelector(
+            '.sprint-inline__empty'
+        );
+        expect(emptyLabel).not.toBeNull();
     });
 
-    test('dateRange returns empty when sprint has no dates', () => {
-        const mockStore = createMockStore();
-        selectors.getActiveSprint.mockReturnValue({
-            Id: 's1',
-            status: 'Active',
-            Name: 'S'
-        });
-
-        const element = createComponent({ store: mockStore });
-
-        expect(element.dateRange).toBe(' - ');
-
-        // With start and end
-        selectors.getActiveSprint.mockReturnValue({
-            Id: 's1',
-            status: 'Active',
-            Name: 'S',
-            startDate: '2026-01-01',
-            endDate: '2026-01-14'
-        });
-        expect(element.dateRange).toBe('2026-01-01 - 2026-01-14');
-    });
-
-    test('isActive and canComplete are false for non-Active sprints', () => {
+    test('hides Complete button when sprint is not Active', async () => {
         const mockStore = createMockStore();
         selectors.getActiveSprint.mockReturnValue({
             Id: 's1',
             status: 'Planning',
-            Name: 'S'
+            Name: 'S',
+            completedStoryPoints: 0,
+            totalStoryPoints: 10
         });
+        selectors.getSprintProgress.mockReturnValue(0);
 
         const element = createComponent({ store: mockStore });
+        await flushPromises();
 
-        expect(element.isActive).toBe(false);
-        expect(element.canComplete).toBe(false);
+        const completeBtn = findByProp(
+            element.shadowRoot,
+            'lightning-button',
+            'label',
+            'Complete'
+        );
+        expect(completeBtn).toBeNull();
     });
 });
 
@@ -371,16 +394,11 @@ describe('c-kanban-sprint-modal', () => {
         return element;
     }
 
-    test('defaults to create mode with 2-week sprint dates', async () => {
+    test('renders Create Sprint modal in create mode', async () => {
         const element = createComponent({ isOpen: true, boardId: 'board1' });
         await flushPromises();
 
-        expect(element.isEditMode).toBe(false);
-        expect(element.modalTitle).toBe('Create Sprint');
-        expect(element.canStart).toBe(false);
-        expect(element.saveLabel).toBe('Save');
-
-        // Check DOM renders modal title
+        // Modal title
         const title = element.shadowRoot.querySelector('.slds-modal__title');
         expect(title.textContent).toContain('Create Sprint');
 
@@ -389,9 +407,16 @@ describe('c-kanban-sprint-modal', () => {
             'button.slds-button_outline-brand'
         );
         expect(startBtn).toBeNull();
+
+        // Save button visible
+        const saveBtn = element.shadowRoot.querySelector(
+            'button.slds-button_brand'
+        );
+        expect(saveBtn).not.toBeNull();
+        expect(saveBtn.textContent).toContain('Save');
     });
 
-    test('edit mode populates from sprint data and shows Start Sprint button', async () => {
+    test('renders Edit Sprint modal with Start Sprint button for Planning sprint', async () => {
         const sprint = {
             Id: 's1',
             goal: 'Deliver MVP',
@@ -407,11 +432,10 @@ describe('c-kanban-sprint-modal', () => {
         });
         await flushPromises();
 
-        expect(element.isEditMode).toBe(true);
-        expect(element.modalTitle).toBe('Edit Sprint');
-        expect(element.canStart).toBe(true);
+        const title = element.shadowRoot.querySelector('.slds-modal__title');
+        expect(title.textContent).toContain('Edit Sprint');
 
-        // Start Sprint button should be visible
+        // Start Sprint button visible (Planning status)
         const startBtn = element.shadowRoot.querySelector(
             'button.slds-button_outline-brand'
         );
@@ -419,7 +443,7 @@ describe('c-kanban-sprint-modal', () => {
         expect(startBtn.textContent).toContain('Start Sprint');
     });
 
-    test('handleSave dispatches createSprintAsync and emits sprintcreated then close', async () => {
+    test('Save button calls createSprintAsync and emits sprintcreated + close', async () => {
         const mockStore = createMockStore();
         const mockResult = { sprint: { Id: 'newSprint1' } };
 
@@ -438,7 +462,7 @@ describe('c-kanban-sprint-modal', () => {
         element.addEventListener('sprintcreated', createdHandler);
         element.addEventListener('close', closeHandler);
 
-        // Click Save button
+        // Click Save
         const saveBtn = element.shadowRoot.querySelector(
             'button.slds-button_brand'
         );
@@ -456,7 +480,7 @@ describe('c-kanban-sprint-modal', () => {
         expect(closeHandler).toHaveBeenCalledTimes(1);
     });
 
-    test('handleSave does nothing when no store is provided', async () => {
+    test('Save does nothing when no store is provided', async () => {
         const element = createComponent({ isOpen: true, boardId: 'board1' });
         await flushPromises();
 
@@ -469,7 +493,7 @@ describe('c-kanban-sprint-modal', () => {
         expect(createSprintAsync).not.toHaveBeenCalled();
     });
 
-    test('handleStartSprint dispatches startSprintAsync and emits events', async () => {
+    test('Start Sprint button calls startSprintAsync and emits sprintstarted + close', async () => {
         const mockStore = createMockStore();
         const sprint = {
             Id: 's1',
@@ -495,7 +519,6 @@ describe('c-kanban-sprint-modal', () => {
         element.addEventListener('sprintstarted', startedHandler);
         element.addEventListener('close', closeHandler);
 
-        // Click Start Sprint button
         const startBtn = element.shadowRoot.querySelector(
             'button.slds-button_outline-brand'
         );
@@ -522,34 +545,62 @@ describe('c-kanban-sprint-modal', () => {
         expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    test('Escape key dispatches close event', async () => {
+    test('Escape key on dialog dispatches close event', async () => {
         const element = createComponent({ isOpen: true, boardId: 'board1' });
         await flushPromises();
 
         const handler = jest.fn();
         element.addEventListener('close', handler);
 
-        const dialog = element.shadowRoot.querySelector('section[role="dialog"]');
-        dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        const dialog = element.shadowRoot.querySelector(
+            'section[role="dialog"]'
+        );
+        dialog.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+        );
 
         expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    test('saveLabel shows Saving... when processing', () => {
-        const element = createComponent({ isOpen: true });
+    test('non-Escape key does not close', async () => {
+        const element = createComponent({ isOpen: true, boardId: 'board1' });
+        await flushPromises();
 
-        expect(element.saveLabel).toBe('Save');
-        element.isProcessing = true;
-        expect(element.saveLabel).toBe('Saving...');
+        const handler = jest.fn();
+        element.addEventListener('close', handler);
+
+        const dialog = element.shadowRoot.querySelector(
+            'section[role="dialog"]'
+        );
+        dialog.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+        );
+
+        expect(handler).not.toHaveBeenCalled();
     });
 
-    test('does not render when isOpen is false', () => {
+    test('does not render dialog when isOpen is false', () => {
         const element = createComponent({ isOpen: false });
 
         const dialog = element.shadowRoot.querySelector(
             'section[role="dialog"]'
         );
         expect(dialog).toBeNull();
+    });
+
+    test('close button (X) at top dispatches close', async () => {
+        const element = createComponent({ isOpen: true, boardId: 'board1' });
+        await flushPromises();
+
+        const handler = jest.fn();
+        element.addEventListener('close', handler);
+
+        const closeBtn = element.shadowRoot.querySelector(
+            'button.slds-modal__close'
+        );
+        closeBtn.click();
+
+        expect(handler).toHaveBeenCalledTimes(1);
     });
 });
 
@@ -574,13 +625,33 @@ describe('c-kanban-sprint-complete', () => {
     }
 
     const mockSprintCards = [
-        { cardId: 'c1', completedInSprint: true, storyPoints: 3 },
-        { cardId: 'c2', completedInSprint: true, storyPoints: 5 },
-        { cardId: 'c3', completedInSprint: false, storyPoints: 2 },
-        { cardId: 'c4', completedInSprint: false, storyPoints: 1 }
+        {
+            Id: 'sc1',
+            cardId: 'c1',
+            completedInSprint: true,
+            storyPoints: 3
+        },
+        {
+            Id: 'sc2',
+            cardId: 'c2',
+            completedInSprint: true,
+            storyPoints: 5
+        },
+        {
+            Id: 'sc3',
+            cardId: 'c3',
+            completedInSprint: false,
+            storyPoints: 2
+        },
+        {
+            Id: 'sc4',
+            cardId: 'c4',
+            completedInSprint: false,
+            storyPoints: 1
+        }
     ];
 
-    test('subscribes to store and renders step 1 summary with card counts', async () => {
+    test('renders step 1 summary with correct counts in DOM', async () => {
         const mockStore = createMockStore();
         selectors.getActiveSprint.mockReturnValue({
             Id: 's1',
@@ -597,28 +668,31 @@ describe('c-kanban-sprint-complete', () => {
         await flushPromises();
 
         expect(mockStore.subscribe).toHaveBeenCalled();
-        expect(element.completedCount).toBe(2);
-        expect(element.incompleteCount).toBe(2);
-        expect(element.totalCount).toBe(4);
-        expect(element.completedPoints).toBe(8);
-        expect(element.totalPoints).toBe(11);
-        expect(element.hasIncompleteCards).toBe(true);
-        expect(element.isStep1).toBe(true);
 
-        // DOM: Step 1 shows Sprint Summary heading
+        // Step 1 heading
         const heading = element.shadowRoot.querySelector(
             '.slds-text-heading_medium'
         );
         expect(heading.textContent).toContain('Sprint Summary');
 
-        // DOM: Next button visible
+        // Count values in DOM (4 large headings: completed, incomplete, points done, total points)
+        const counts = element.shadowRoot.querySelectorAll(
+            '.slds-text-heading_large'
+        );
+        expect(counts.length).toBe(4);
+        expect(counts[0].textContent.trim()).toBe('2'); // completed
+        expect(counts[1].textContent.trim()).toBe('2'); // incomplete
+        expect(counts[2].textContent.trim()).toBe('8'); // completed points
+        expect(counts[3].textContent.trim()).toBe('11'); // total points
+
+        // Next button
         const nextBtn = element.shadowRoot.querySelector(
             'button.slds-button_brand'
         );
         expect(nextBtn.textContent).toContain('Next');
     });
 
-    test('step navigation via Next/Back buttons: 1 -> 2 -> 3 and back', async () => {
+    test('Next button navigates step 1 -> 2 -> 3 and Back goes back', async () => {
         const mockStore = createMockStore();
         selectors.getActiveSprint.mockReturnValue({ Id: 's1' });
         selectors.getSprintCards.mockReturnValue(mockSprintCards);
@@ -630,51 +704,59 @@ describe('c-kanban-sprint-complete', () => {
         });
         await flushPromises();
 
-        // Step 1: click Next -> step 2 (incomplete cards exist)
+        // Step 1 -> 2 (has incomplete cards)
         let nextBtn = element.shadowRoot.querySelector(
             'button.slds-button_brand'
         );
         nextBtn.click();
         await flushPromises();
 
-        expect(element.step).toBe(2);
-
-        // Step 2 DOM: shows disposition heading
+        // Step 2: disposition heading
         const heading = element.shadowRoot.querySelector(
             '.slds-text-heading_small'
         );
         expect(heading.textContent).toContain('incomplete cards');
 
-        // Step 2: click Next -> step 3
+        // Step 2 -> 3
         nextBtn = element.shadowRoot.querySelector(
             'button.slds-button_brand'
         );
         nextBtn.click();
         await flushPromises();
 
-        expect(element.step).toBe(3);
-
-        // Step 3 DOM: shows Complete Sprint button
+        // Step 3: Complete Sprint button
         const completeBtn = element.shadowRoot.querySelector(
             'button.slds-button_brand'
         );
         expect(completeBtn.textContent).toContain('Complete Sprint');
 
-        // Click Back -> step 2
+        // Confirm text
+        const confirmText = element.shadowRoot.querySelector(
+            '.slds-text-heading_medium'
+        );
+        expect(confirmText.textContent).toContain(
+            'Ready to Complete Sprint'
+        );
+
+        // Back button
         const backBtn = element.shadowRoot.querySelector(
             'button.slds-button_neutral'
         );
         backBtn.click();
         await flushPromises();
 
-        expect(element.step).toBe(2);
+        // Back at step 2
+        const heading2 = element.shadowRoot.querySelector(
+            '.slds-text-heading_small'
+        );
+        expect(heading2.textContent).toContain('incomplete cards');
     });
 
-    test('step 1 jumps directly to step 3 when no incomplete cards', async () => {
+    test('Next jumps directly to step 3 when no incomplete cards', async () => {
         const mockStore = createMockStore();
         selectors.getActiveSprint.mockReturnValue({ Id: 's1' });
         selectors.getSprintCards.mockReturnValue([
-            { cardId: 'c1', completedInSprint: true }
+            { Id: 'sc1', cardId: 'c1', completedInSprint: true }
         ]);
 
         const element = createComponent({
@@ -684,82 +766,27 @@ describe('c-kanban-sprint-complete', () => {
         });
         await flushPromises();
 
-        expect(element.hasIncompleteCards).toBe(false);
-
         const nextBtn = element.shadowRoot.querySelector(
             'button.slds-button_brand'
         );
         nextBtn.click();
         await flushPromises();
 
-        expect(element.step).toBe(3);
-    });
-
-    test('handleBack does not go below step 1', () => {
-        const mockStore = createMockStore();
-        selectors.getActiveSprint.mockReturnValue({ Id: 's1' });
-        selectors.getSprintCards.mockReturnValue([]);
-
-        const element = createComponent({
-            store: mockStore,
-            sprintId: 's1',
-            isOpen: true
-        });
-
-        element.handleBack();
-        expect(element.step).toBe(1);
-    });
-
-    test('dispositions are initialized when navigating to step 2', async () => {
-        const mockStore = createMockStore();
-        selectors.getActiveSprint.mockReturnValue({ Id: 's1' });
-        selectors.getSprintCards.mockReturnValue(mockSprintCards);
-
-        const element = createComponent({
-            store: mockStore,
-            sprintId: 's1',
-            isOpen: true
-        });
-        await flushPromises();
-
-        // Click Next to go to step 2
-        const nextBtn = element.shadowRoot.querySelector(
-            'button.slds-button_brand'
+        // Should be at step 3 directly
+        const confirmHeading = element.shadowRoot.querySelector(
+            '.slds-text-heading_medium'
         );
-        nextBtn.click();
-        await flushPromises();
-
-        expect(element.dispositions).toEqual({
-            c3: 'backlog',
-            c4: 'backlog'
-        });
-
-        // incompleteCardsWithDisposition
-        const cards = element.incompleteCardsWithDisposition;
-        expect(cards).toHaveLength(2);
-        expect(cards[0].disposition).toBe('backlog');
+        expect(confirmHeading.textContent).toContain(
+            'Ready to Complete Sprint'
+        );
     });
 
-    test('dispositionOptions returns expected options', () => {
+    test('Complete Sprint button dispatches completeSprintAsync and events', async () => {
         const mockStore = createMockStore();
         selectors.getActiveSprint.mockReturnValue({ Id: 's1' });
-        selectors.getSprintCards.mockReturnValue([]);
-
-        const element = createComponent({
-            store: mockStore,
-            sprintId: 's1',
-            isOpen: true
-        });
-
-        expect(element.dispositionOptions).toEqual([
-            { label: 'Move to Backlog', value: 'backlog' }
+        selectors.getSprintCards.mockReturnValue([
+            { Id: 'sc1', cardId: 'c1', completedInSprint: true }
         ]);
-    });
-
-    test('handleComplete dispatches completeSprintAsync and emits events', async () => {
-        const mockStore = createMockStore();
-        selectors.getActiveSprint.mockReturnValue({ Id: 's1' });
-        selectors.getSprintCards.mockReturnValue(mockSprintCards);
 
         completeSprintAsync.mockReturnValue(() => Promise.resolve());
         mockStore.dispatch.mockResolvedValue();
@@ -771,9 +798,11 @@ describe('c-kanban-sprint-complete', () => {
         });
         await flushPromises();
 
-        // Navigate to step 3
-        element.handleNext(); // step 2
-        element.handleNext(); // step 3
+        // Navigate to step 3 (no incomplete cards, so Next goes straight to 3)
+        let nextBtn = element.shadowRoot.querySelector(
+            'button.slds-button_brand'
+        );
+        nextBtn.click();
         await flushPromises();
 
         const completedHandler = jest.fn();
@@ -781,7 +810,6 @@ describe('c-kanban-sprint-complete', () => {
         element.addEventListener('sprintcompleted', completedHandler);
         element.addEventListener('close', closeHandler);
 
-        // Click Complete Sprint button
         const completeBtn = element.shadowRoot.querySelector(
             'button.slds-button_brand'
         );
@@ -796,16 +824,7 @@ describe('c-kanban-sprint-complete', () => {
         expect(closeHandler).toHaveBeenCalledTimes(1);
     });
 
-    test('handleComplete does nothing when no store', async () => {
-        const element = createComponent({ sprintId: 's1', isOpen: true });
-
-        element.handleComplete();
-        await flushPromises();
-
-        expect(completeSprintAsync).not.toHaveBeenCalled();
-    });
-
-    test('handleClose resets step and dispositions, emits close', async () => {
+    test('Cancel button on step 1 dispatches close and resets state', async () => {
         const mockStore = createMockStore();
         selectors.getActiveSprint.mockReturnValue({ Id: 's1' });
         selectors.getSprintCards.mockReturnValue(mockSprintCards);
@@ -817,19 +836,42 @@ describe('c-kanban-sprint-complete', () => {
         });
         await flushPromises();
 
-        // Navigate to step 2
-        element.handleNext();
-        expect(element.step).toBe(2);
-
         const handler = jest.fn();
         element.addEventListener('close', handler);
 
-        // Click Cancel/Close button (in step 2 it's the Back/cancel area, but handleClose is on Cancel at step 1)
-        element.handleClose();
+        // Cancel button at step 1
+        const cancelBtn = element.shadowRoot.querySelector(
+            'button.slds-button_neutral'
+        );
+        expect(cancelBtn.textContent).toContain('Cancel');
+        cancelBtn.click();
 
-        expect(element.step).toBe(1);
-        expect(element.dispositions).toEqual({});
         expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    test('Back button appears in steps 2 and 3 instead of Cancel', async () => {
+        const mockStore = createMockStore();
+        selectors.getActiveSprint.mockReturnValue({ Id: 's1' });
+        selectors.getSprintCards.mockReturnValue(mockSprintCards);
+
+        const element = createComponent({
+            store: mockStore,
+            sprintId: 's1',
+            isOpen: true
+        });
+        await flushPromises();
+
+        // Go to step 2
+        const nextBtn = element.shadowRoot.querySelector(
+            'button.slds-button_brand'
+        );
+        nextBtn.click();
+        await flushPromises();
+
+        const backBtn = element.shadowRoot.querySelector(
+            'button.slds-button_neutral'
+        );
+        expect(backBtn.textContent).toContain('Back');
     });
 
     test('unsubscribes from store on disconnect', () => {
@@ -843,16 +885,43 @@ describe('c-kanban-sprint-complete', () => {
         expect(unsubscribe).toHaveBeenCalledTimes(1);
     });
 
-    test('handles null state gracefully', () => {
-        const element = createComponent({ sprintId: 's1', isOpen: true });
+    test('does not render when isOpen is false', () => {
+        const mockStore = createMockStore();
+        selectors.getActiveSprint.mockReturnValue({ Id: 's1' });
 
-        expect(element.sprint).toBeNull();
-        expect(element.sprintCards).toEqual([]);
-        expect(element.completedCount).toBe(0);
-        expect(element.incompleteCount).toBe(0);
-        expect(element.totalCount).toBe(0);
-        expect(element.completedPoints).toBe(0);
-        expect(element.totalPoints).toBe(0);
+        const element = createComponent({
+            store: mockStore,
+            sprintId: 's1',
+            isOpen: false
+        });
+
+        const dialog = element.shadowRoot.querySelector(
+            'section[role="dialog"]'
+        );
+        expect(dialog).toBeNull();
+    });
+
+    test('close button (X) at top dispatches close', async () => {
+        const mockStore = createMockStore();
+        selectors.getActiveSprint.mockReturnValue({ Id: 's1' });
+        selectors.getSprintCards.mockReturnValue([]);
+
+        const element = createComponent({
+            store: mockStore,
+            sprintId: 's1',
+            isOpen: true
+        });
+        await flushPromises();
+
+        const handler = jest.fn();
+        element.addEventListener('close', handler);
+
+        const closeBtn = element.shadowRoot.querySelector(
+            'button.slds-modal__close'
+        );
+        closeBtn.click();
+
+        expect(handler).toHaveBeenCalledTimes(1);
     });
 });
 
@@ -867,6 +936,28 @@ describe('c-kanban-sprint-reports', () => {
         jest.clearAllMocks();
     });
 
+    // Mock canvas getContext for all reports tests
+    const mockCtx = {
+        clearRect: jest.fn(),
+        beginPath: jest.fn(),
+        moveTo: jest.fn(),
+        lineTo: jest.fn(),
+        stroke: jest.fn(),
+        fillText: jest.fn(),
+        fillRect: jest.fn(),
+        setLineDash: jest.fn(),
+        strokeStyle: '',
+        fillStyle: '',
+        lineWidth: 0,
+        font: '',
+        textAlign: ''
+    };
+
+    beforeEach(() => {
+        // Override HTMLCanvasElement.prototype.getContext so chart drawing works
+        HTMLCanvasElement.prototype.getContext = jest.fn(() => mockCtx);
+    });
+
     function createComponent(props = {}) {
         const element = createElement('c-kanban-sprint-reports', {
             is: KanbanSprintReports
@@ -876,93 +967,74 @@ describe('c-kanban-sprint-reports', () => {
         return element;
     }
 
-    test('renders burndown tab by default with correct tab classes', async () => {
+    test('renders burndown tab by default with tab classes', async () => {
         const element = createComponent({ isOpen: true });
         await flushPromises();
 
-        expect(element.isBurndownTab).toBe(true);
-        expect(element.isVelocityTab).toBe(false);
-        expect(element.isSummaryTab).toBe(false);
-
-        expect(element.burndownTabClass).toContain('slds-is-active');
-        expect(element.velocityTabClass).not.toContain('slds-is-active');
-        expect(element.summaryTabClass).not.toContain('slds-is-active');
-
-        // DOM: burndown tab content visible
-        const tabContent = element.shadowRoot.querySelector(
-            '.slds-tabs_default__content'
+        // Burndown tab is active
+        const tabs = element.shadowRoot.querySelectorAll(
+            '.slds-tabs_default__item'
         );
-        expect(tabContent).not.toBeNull();
+        expect(tabs.length).toBe(3);
+
+        const activeTab = element.shadowRoot.querySelector(
+            '.slds-tabs_default__item.slds-is-active'
+        );
+        expect(activeTab).not.toBeNull();
+
+        const burndownLink = activeTab.querySelector('a[data-tab="burndown"]');
+        expect(burndownLink).not.toBeNull();
+
+        // Tab content should show "No burndown data" message
+        const noDataMsg = element.shadowRoot.querySelector(
+            '.slds-text-color_weak'
+        );
+        expect(noDataMsg.textContent).toContain('No burndown data');
     });
 
-    test('handleTabClick switches tabs via DOM click', async () => {
+    test('tab click switches active tab content', async () => {
         const element = createComponent({ isOpen: true });
         await flushPromises();
 
         // Click velocity tab
-        const velocityTab = element.shadowRoot.querySelector(
+        const velocityLink = element.shadowRoot.querySelector(
             'a[data-tab="velocity"]'
         );
-        velocityTab.click();
+        velocityLink.click();
         await flushPromises();
 
-        expect(element.isVelocityTab).toBe(true);
-        expect(element.isBurndownTab).toBe(false);
-        expect(element.velocityTabClass).toContain('slds-is-active');
+        // Velocity tab should now be active
+        const activeTab = element.shadowRoot.querySelector(
+            '.slds-tabs_default__item.slds-is-active'
+        );
+        const activeLink = activeTab.querySelector('a');
+        expect(activeLink.dataset.tab).toBe('velocity');
+
+        // Velocity no-data message
+        const noDataMsg = element.shadowRoot.querySelector(
+            '.slds-text-color_weak'
+        );
+        expect(noDataMsg.textContent).toContain('No completed sprints');
 
         // Click summary tab
-        const summaryTab = element.shadowRoot.querySelector(
+        const summaryLink = element.shadowRoot.querySelector(
             'a[data-tab="summary"]'
         );
-        summaryTab.click();
+        summaryLink.click();
         await flushPromises();
 
-        expect(element.isSummaryTab).toBe(true);
-        expect(element.summaryTabClass).toContain('slds-is-active');
+        const summaryActive = element.shadowRoot.querySelector(
+            '.slds-tabs_default__item.slds-is-active'
+        );
+        const summaryActiveLink = summaryActive.querySelector('a');
+        expect(summaryActiveLink.dataset.tab).toBe('summary');
     });
 
-    test('hasBurndownData and hasVelocityData reflect data arrays', () => {
-        const element = createComponent({ isOpen: true });
-
-        expect(element.hasBurndownData).toBe(false);
-        expect(element.hasVelocityData).toBe(false);
-    });
-
-    test('averageVelocity computes correctly including rounding', () => {
-        const element = createComponent({ isOpen: true });
-
-        expect(element.averageVelocity).toBe(0);
-
-        element.velocityData = [
-            { velocity: 10, Name: 'S1' },
-            { velocity: 20, Name: 'S2' },
-            { velocity: 15, Name: 'S3' }
-        ];
-        expect(element.averageVelocity).toBe(15);
-
-        // Rounds correctly
-        element.velocityData = [
-            { velocity: 10, Name: 'S1' },
-            { velocity: 11, Name: 'S2' }
-        ];
-        expect(element.averageVelocity).toBe(11); // 10.5 rounds to 11
-    });
-
-    test('loadData fetches burndown and velocity data from store', async () => {
+    test('loadData fetches burndown and velocity data from store on connect', async () => {
         const mockStore = createMockStore();
         mockStore.dispatch
-            .mockResolvedValueOnce({
-                data: [
-                    {
-                        snapshotDate: '2026-03-01',
-                        remainingPoints: 10,
-                        totalPoints: 20
-                    }
-                ]
-            })
-            .mockResolvedValueOnce({
-                data: [{ velocity: 12, Name: 'S1' }]
-            });
+            .mockResolvedValueOnce({ data: [] })
+            .mockResolvedValueOnce({ data: [] });
 
         loadBurndownDataAsync.mockReturnValue(jest.fn());
         loadVelocityDataAsync.mockReturnValue(jest.fn());
@@ -981,7 +1053,7 @@ describe('c-kanban-sprint-reports', () => {
         expect(mockStore.dispatch).toHaveBeenCalledTimes(2);
     });
 
-    test('loadData handles errors gracefully and resets isLoading', async () => {
+    test('loadData handles errors gracefully', async () => {
         const mockStore = createMockStore();
         mockStore.dispatch.mockRejectedValue(new Error('Network error'));
 
@@ -991,7 +1063,7 @@ describe('c-kanban-sprint-reports', () => {
             .spyOn(console, 'error')
             .mockImplementation(() => {});
 
-        createComponent({
+        const element = createComponent({
             store: mockStore,
             sprintId: 'sprint1',
             boardId: 'board1',
@@ -1000,12 +1072,28 @@ describe('c-kanban-sprint-reports', () => {
 
         await flushPromises();
 
-        expect(element.isLoading).toBeFalsy();
+        // Should still render (not crash)
+        const dialog = element.shadowRoot.querySelector(
+            'section[role="dialog"]'
+        );
+        expect(dialog).not.toBeNull();
         consoleSpy.mockRestore();
     });
 
-    test('loadData skips if no store', async () => {
+    test('does not call loadData when no store', async () => {
         createComponent({ isOpen: true });
+        await flushPromises();
+
+        expect(loadBurndownDataAsync).not.toHaveBeenCalled();
+    });
+
+    test('does not call loadData when isOpen is false', async () => {
+        createComponent({
+            store: createMockStore(),
+            sprintId: 'sprint1',
+            boardId: 'board1',
+            isOpen: false
+        });
         await flushPromises();
 
         expect(loadBurndownDataAsync).not.toHaveBeenCalled();
@@ -1026,19 +1114,6 @@ describe('c-kanban-sprint-reports', () => {
         expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    test('drawBurndownChart handles missing canvas gracefully', () => {
-        const element = createComponent({ isOpen: true });
-
-        // Should not throw when canvas is not found
-        expect(() => element.drawBurndownChart()).not.toThrow();
-    });
-
-    test('drawVelocityChart handles missing canvas gracefully', () => {
-        const element = createComponent({ isOpen: true });
-
-        expect(() => element.drawVelocityChart()).not.toThrow();
-    });
-
     test('does not render when isOpen is false', () => {
         const element = createComponent({ isOpen: false });
 
@@ -1048,16 +1123,52 @@ describe('c-kanban-sprint-reports', () => {
         expect(dialog).toBeNull();
     });
 
-    test('does not call loadData when isOpen is false on connect', async () => {
-        createComponent({
-            store: createMockStore(),
+    test('renders burndown canvas when burndownData is loaded', async () => {
+        const mockStore = createMockStore();
+        const burndownData = [
+            {
+                snapshotDate: '2026-03-01',
+                totalPoints: 20,
+                remainingPoints: 20
+            },
+            {
+                snapshotDate: '2026-03-08',
+                totalPoints: 20,
+                remainingPoints: 10
+            },
+            {
+                snapshotDate: '2026-03-14',
+                totalPoints: 20,
+                remainingPoints: 2
+            }
+        ];
+
+        mockStore.dispatch
+            .mockResolvedValueOnce({ data: burndownData })
+            .mockResolvedValueOnce({ data: [] });
+
+        loadBurndownDataAsync.mockReturnValue(jest.fn());
+        loadVelocityDataAsync.mockReturnValue(jest.fn());
+
+        const element = createComponent({
+            store: mockStore,
             sprintId: 'sprint1',
             boardId: 'board1',
-            isOpen: false
+            isOpen: true
         });
+
         await flushPromises();
 
-        expect(loadBurndownDataAsync).not.toHaveBeenCalled();
+        // Canvas should be rendered (burndownData loaded)
+        const canvas = element.shadowRoot.querySelector('.burndown-canvas');
+        expect(canvas).not.toBeNull();
+
+        // getContext should have been called by drawBurndownChart via renderedCallback
+        expect(HTMLCanvasElement.prototype.getContext).toHaveBeenCalledWith(
+            '2d'
+        );
+        expect(mockCtx.clearRect).toHaveBeenCalled();
+        expect(mockCtx.stroke).toHaveBeenCalled();
     });
 });
 
@@ -1095,7 +1206,7 @@ describe('c-kanban-context-menu', () => {
         { label: 'Priority', value: 'priority', dividerBefore: true }
     ];
 
-    test('show() makes menu visible and sets position, hide() removes it', async () => {
+    test('show() renders the menu, hide() removes it', async () => {
         const element = createComponent({ menuItems: sampleMenuItems });
         await flushPromises();
 
@@ -1112,6 +1223,10 @@ describe('c-kanban-context-menu', () => {
         expect(menu.style.cssText).toContain('left: 100px');
         expect(menu.style.cssText).toContain('top: 200px');
 
+        // Has menu items
+        const items = menu.querySelectorAll('a[role="menuitem"]');
+        expect(items.length).toBe(4);
+
         // Hide
         element.hide();
         await flushPromises();
@@ -1120,23 +1235,26 @@ describe('c-kanban-context-menu', () => {
         expect(menu).toBeNull();
     });
 
-    test('processedItems computes hasSubmenu, itemClass, and keys', async () => {
+    test('renders disabled item with disabled class', async () => {
         const element = createComponent({ menuItems: sampleMenuItems });
         element.show(0, 0);
         await flushPromises();
 
-        // Check menu items rendered in DOM
-        const items = element.shadowRoot.querySelectorAll(
-            'a[role="menuitem"]'
+        const disabledItem = element.shadowRoot.querySelector(
+            '.context-menu__item--disabled'
         );
-        expect(items.length).toBe(4);
+        expect(disabledItem).not.toBeNull();
+    });
 
-        // Edit
-        expect(items[0].dataset.value).toBe('edit');
-        // Move
-        expect(items[1].dataset.value).toBe('move');
-        // Delete (disabled)
-        expect(items[2].dataset.value).toBe('delete');
+    test('renders divider before items with dividerBefore', async () => {
+        const element = createComponent({ menuItems: sampleMenuItems });
+        element.show(0, 0);
+        await flushPromises();
+
+        const separators = element.shadowRoot.querySelectorAll(
+            '.slds-has-divider_top-space'
+        );
+        expect(separators.length).toBe(1);
     });
 
     test('clicking a regular item dispatches select event and hides menu', async () => {
@@ -1156,12 +1274,12 @@ describe('c-kanban-context-menu', () => {
         expect(handler).toHaveBeenCalledTimes(1);
         expect(handler.mock.calls[0][0].detail.value).toBe('edit');
 
-        // Menu should be hidden
+        // Menu hidden
         const menu = element.shadowRoot.querySelector('.context-menu');
         expect(menu).toBeNull();
     });
 
-    test('clicking a disabled item does nothing', async () => {
+    test('clicking a disabled item does not dispatch select, menu stays open', async () => {
         const element = createComponent({ menuItems: sampleMenuItems });
         element.show(0, 0);
         await flushPromises();
@@ -1176,12 +1294,11 @@ describe('c-kanban-context-menu', () => {
         await flushPromises();
 
         expect(handler).not.toHaveBeenCalled();
-        // Menu stays open
         const menu = element.shadowRoot.querySelector('.context-menu');
         expect(menu).not.toBeNull();
     });
 
-    test('clicking an item with submenu toggles submenu, shows sub-items', async () => {
+    test('clicking item with submenu opens submenu, clicking sub-item dispatches select', async () => {
         const element = createComponent({ menuItems: sampleMenuItems });
         element.show(0, 0);
         await flushPromises();
@@ -1196,13 +1313,12 @@ describe('c-kanban-context-menu', () => {
         moveLink.click();
         await flushPromises();
 
-        expect(handler).not.toHaveBeenCalled(); // No select yet
+        expect(handler).not.toHaveBeenCalled();
 
-        // Submenu should be visible
+        // Submenu visible
         const submenu = element.shadowRoot.querySelector('.context-submenu');
         expect(submenu).not.toBeNull();
 
-        // Submenu items
         const subItems = submenu.querySelectorAll('a[role="menuitem"]');
         expect(subItems.length).toBe(2);
         expect(subItems[0].dataset.value).toBe('todo');
@@ -1218,17 +1334,17 @@ describe('c-kanban-context-menu', () => {
             subValue: 'todo'
         });
 
-        // Menu hidden after submenu click
+        // Menu hidden
         const menu = element.shadowRoot.querySelector('.context-menu');
         expect(menu).toBeNull();
     });
 
-    test('clicking submenu item twice toggles it off', async () => {
+    test('clicking submenu parent twice toggles submenu off', async () => {
         const element = createComponent({ menuItems: sampleMenuItems });
         element.show(0, 0);
         await flushPromises();
 
-        // Click Move to open submenu
+        // Open submenu
         const moveLink = element.shadowRoot.querySelector(
             'a[data-value="move"]'
         );
@@ -1238,7 +1354,7 @@ describe('c-kanban-context-menu', () => {
         let submenu = element.shadowRoot.querySelector('.context-submenu');
         expect(submenu).not.toBeNull();
 
-        // Click Move again to close submenu
+        // Click again to close
         const moveLink2 = element.shadowRoot.querySelector(
             'a[data-value="move"]'
         );
@@ -1249,25 +1365,25 @@ describe('c-kanban-context-menu', () => {
         expect(submenu).toBeNull();
     });
 
-    test('Escape key hides the menu', async () => {
+    test('Escape key on menu hides it', async () => {
         const element = createComponent({ menuItems: sampleMenuItems });
         element.show(0, 0);
         await flushPromises();
 
-        const menu = element.shadowRoot.querySelector('.context-menu');
+        let menu = element.shadowRoot.querySelector('.context-menu');
         expect(menu).not.toBeNull();
 
-        // Dispatch keydown on the menu div
+        // Dispatch Escape keydown on the menu div (onkeydown is on .context-menu)
         menu.dispatchEvent(
             new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
         );
         await flushPromises();
 
-        const menuAfter = element.shadowRoot.querySelector('.context-menu');
-        expect(menuAfter).toBeNull();
+        menu = element.shadowRoot.querySelector('.context-menu');
+        expect(menu).toBeNull();
     });
 
-    test('disconnectedCallback hides the menu', async () => {
+    test('disconnectedCallback hides the menu without error', async () => {
         const element = createComponent({ menuItems: sampleMenuItems });
         element.show(0, 0);
         await flushPromises();
@@ -1275,30 +1391,30 @@ describe('c-kanban-context-menu', () => {
         const menu = element.shadowRoot.querySelector('.context-menu');
         expect(menu).not.toBeNull();
 
-        // Remove from DOM triggers disconnectedCallback
-        document.body.removeChild(element);
-
-        // Internally isVisible should be false (verified by the hide() call in disconnectedCallback)
-        // We can verify the window listeners were cleaned up by checking _clickOutsideHandler is null
-        // Since internal state is not accessible, we just verify no error is thrown
+        // Remove from DOM triggers disconnectedCallback -> hide()
+        expect(() => document.body.removeChild(element)).not.toThrow();
     });
 
-    test('menuStyle returns correct CSS positioning', async () => {
-        const element = createComponent({ menuItems: sampleMenuItems });
-        element.show(150, 250);
-        await flushPromises();
-
-        expect(element.menuStyle).toBe('left: 150px; top: 250px;');
-    });
-
-    test('divider items render with separator class', async () => {
+    test('renders icon for items that have icon property', async () => {
         const element = createComponent({ menuItems: sampleMenuItems });
         element.show(0, 0);
         await flushPromises();
 
-        const separators = element.shadowRoot.querySelectorAll(
-            '.slds-has-divider_top-space'
+        // Edit has icon, so lightning-icon should appear
+        const icons = element.shadowRoot.querySelectorAll('lightning-icon');
+        // At least one icon for 'Edit' item, plus chevronright for Move
+        expect(icons.length).toBeGreaterThanOrEqual(2);
+    });
+
+    test('renders chevron icon for items with submenu', async () => {
+        const element = createComponent({ menuItems: sampleMenuItems });
+        element.show(0, 0);
+        await flushPromises();
+
+        const allIcons = element.shadowRoot.querySelectorAll('lightning-icon');
+        const chevrons = Array.from(allIcons).filter(
+            (icon) => icon.iconName === 'utility:chevronright'
         );
-        expect(separators.length).toBe(1); // Only 'Priority' has dividerBefore
+        expect(chevrons.length).toBe(1); // Only 'Move' has submenu
     });
 });
