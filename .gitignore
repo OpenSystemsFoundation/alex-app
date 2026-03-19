@@ -83,4 +83,4 @@ playwright/.cache/
 !*.spec.ts
 
 # Playwright Traces
-trace.zip
+trace.zipapex-test-results.json

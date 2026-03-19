@@ -8,17 +8,17 @@
     <protected>false</protected>
     <values>
         <field>FieldNames__c</field>
-        <value xsi:type="xsd:string">Subject__c,
-Description__c,
-Status__c,
-CardType__c,
-Priority__c,
-Epic__c,
-Assignee__c,
-PeerReviewer__c,
-DueDate__c,
-StoryPoints__c,
-Color__c,
-NeedsRefinement__c</value>
+        <value xsi:type="xsd:string">OpenSF__Subject__c,
+OpenSF__Description__c,
+OpenSF__Status__c,
+OpenSF__CardType__c,
+OpenSF__Priority__c,
+OpenSF__Epic__c,
+OpenSF__Assignee__c,
+OpenSF__PeerReviewer__c,
+OpenSF__DueDate__c,
+OpenSF__StoryPoints__c,
+OpenSF__Color__c,
+OpenSF__NeedsRefinement__c</value>
     </values>
 </CustomMetadata>

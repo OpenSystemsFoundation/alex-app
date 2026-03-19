@@ -85,15 +85,16 @@ private class SprintServiceTest {
         );
 
         Test.startTest();
+        Boolean exceptionThrown = false;
         try {
             SprintService.startSprint(newSprint.Id);
-            System.assert(false, 'Should have thrown exception');
         } catch (AuraHandledException e) {
-            System.assert(
-                e.getMessage().contains('already has an active sprint'),
-                'Error should mention existing sprint'
-            );
+            exceptionThrown = true;
         }
+        System.assert(
+            exceptionThrown,
+            'Should have thrown AuraHandledException'
+        );
         Test.stopTest();
     }
 

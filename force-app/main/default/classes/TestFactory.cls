@@ -247,6 +247,10 @@ public class TestFactory {
         String cardType,
         String status
     ) {
+        // Bypass triggers to avoid recursion during test setup
+        TriggerHandler.bypass('CardTriggerHandler');
+        TriggerHandler.bypass('ColumnTriggerHandler');
+
         List<OpenSF__Card__c> cards = new List<OpenSF__Card__c>();
         String previousPosition = null;
 
@@ -266,6 +270,11 @@ public class TestFactory {
             previousPosition = position;
         }
         insert cards;
+
+        // Clear bypasses for actual test execution
+        TriggerHandler.clearBypass('CardTriggerHandler');
+        TriggerHandler.clearBypass('ColumnTriggerHandler');
+
         return cards;
     }
 
