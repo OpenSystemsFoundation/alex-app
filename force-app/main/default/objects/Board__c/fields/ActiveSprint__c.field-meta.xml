@@ -4,7 +4,7 @@
     <deleteConstraint>SetNull</deleteConstraint>
     <description>The currently active sprint for this board.</description>
     <label>Active Sprint</label>
-    <referenceTo>OpenSF__Sprint__c</referenceTo>
+    <referenceTo>Sprint__c</referenceTo>
     <relationshipLabel>Active Board</relationshipLabel>
     <relationshipName>ActiveBoard</relationshipName>
     <required>false</required>

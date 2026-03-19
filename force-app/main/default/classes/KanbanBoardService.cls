@@ -94,6 +94,7 @@ public with sharing class KanbanBoardService {
                     OpenSF__DueDate__c,
                     OpenSF__StoryPoints__c,
                     OpenSF__Column__c,
+                    OpenSF__Board__c,
                     OpenSF__LexoRankPosition__c,
                     OpenSF__Assignee__c,
                     OpenSF__Assignee__r.Name,
@@ -104,6 +105,7 @@ public with sharing class KanbanBoardService {
                     OpenSF__Epic__c,
                     OpenSF__Epic__r.OpenSF__Subject__c,
                     OpenSF__Locked__c,
+                    OpenSF__NeedsRefinement__c,
                     OpenSF__SequenceNumber__c,
                     LastModifiedDate,
                     LastModifiedById

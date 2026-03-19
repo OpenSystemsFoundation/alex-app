@@ -202,6 +202,49 @@ public with sharing class KanbanBoardController {
         return KanbanBoardService.getModalSettings();
     }
 
+    /**
+     * Get backlog cards for a board (cards not assigned to any column)
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.CardDTO> getBacklogCards(Id boardId) {
+        try {
+            List<OpenSF__Card__c> cards = KanbanBoardSelector.getBacklogCardsByBoardId(
+                boardId
+            );
+            return KanbanBoardDTO.convertCards(cards);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading backlog cards: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Create a new backlog card (not assigned to any column)
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.CardDTO createBacklogCard(
+        Id boardId,
+        String subject,
+        String cardType,
+        String priority,
+        Decimal storyPoints
+    ) {
+        try {
+            return KanbanCardService.createBacklogCard(
+                boardId,
+                subject,
+                cardType,
+                priority,
+                storyPoints
+            );
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error creating backlog card: ' + e.getMessage()
+            );
+        }
+    }
+
     // =========================================================================
     // Sprint Management Methods
     // =========================================================================

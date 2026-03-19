@@ -130,6 +130,7 @@ public with sharing class KanbanCardService {
         OpenSF__Card__c card = new OpenSF__Card__c(
             OpenSF__Subject__c = subject,
             OpenSF__Column__c = columnId,
+            OpenSF__Board__c = column.OpenSF__Board__c,
             OpenSF__LexoRankPosition__c = position,
             OpenSF__LastClientRequestId__c = clientRequestId,
             OpenSF__LastClientId__c = clientId,
@@ -247,6 +248,11 @@ public with sharing class KanbanCardService {
             if (updates.containsKey('assigneeId')) {
                 card.OpenSF__Assignee__c = (Id) updates.get('assigneeId');
             }
+            if (updates.containsKey('needsRefinement')) {
+                card.OpenSF__NeedsRefinement__c = (Boolean) updates.get(
+                    'needsRefinement'
+                );
+            }
 
             update Security.stripInaccessible(
                     AccessType.UPDATABLE,
@@ -277,6 +283,40 @@ public with sharing class KanbanCardService {
             result.conflictReason = e.getMessage();
             return result;
         }
+    }
+
+    /**
+     * Create a backlog card (not assigned to any column)
+     */
+    public static KanbanBoardDTO.CardDTO createBacklogCard(
+        Id boardId,
+        String subject,
+        String cardType,
+        String priority,
+        Decimal storyPoints
+    ) {
+        // Create card with board reference but no column (backlog card)
+        OpenSF__Card__c card = new OpenSF__Card__c(
+            OpenSF__Subject__c = subject,
+            OpenSF__Board__c = boardId,
+            OpenSF__CardType__c = cardType,
+            OpenSF__Priority__c = priority,
+            OpenSF__StoryPoints__c = storyPoints,
+            OpenSF__NeedsRefinement__c = true,
+            OpenSF__SequenceNumber__c = 1
+        );
+
+        List<OpenSF__Card__c> strippedCards = (List<OpenSF__Card__c>) Security.stripInaccessible(
+                AccessType.CREATABLE,
+                new List<OpenSF__Card__c>{ card }
+            )
+            .getRecords();
+        insert strippedCards;
+        card.Id = strippedCards[0].Id;
+
+        // Return full card data as DTO
+        OpenSF__Card__c createdCard = KanbanBoardSelector.getCardById(card.Id);
+        return new KanbanBoardDTO.CardDTO(createdCard);
     }
 
     /**

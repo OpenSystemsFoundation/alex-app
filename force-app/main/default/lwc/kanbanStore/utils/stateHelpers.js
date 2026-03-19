@@ -130,6 +130,11 @@ export const addCardToState = (columns, card, columnId) => {
     const column = newState.find((col) => col.Id === columnId);
 
     if (column) {
+        // Skip if card already exists in this column (prevents race condition duplicates)
+        if (card.Id && column.cards.some((c) => c.Id === card.Id)) {
+            return newState;
+        }
+
         // Enrich card before adding to state
         const enrichedCard = enrichCardData(card);
         column.cards.push(enrichedCard);

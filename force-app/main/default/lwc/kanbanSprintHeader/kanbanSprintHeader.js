@@ -128,7 +128,5 @@ export default class KanbanSprintHeader extends LightningElement {
         );
     }
 
-    handleToggleBacklog() {
-        this.dispatchEvent(new CustomEvent('togglebacklog'));
-    }
+    // Backlog toggle removed - now handled by tab bar in kanbanBoard
 }

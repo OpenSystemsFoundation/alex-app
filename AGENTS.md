@@ -2,6 +2,38 @@
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for technical architecture and design patterns.
 
+## ⚠️ NAMESPACE WARNING — READ BEFORE WRITING ANY METADATA
+
+**This project uses a Salesforce scratch org with namespace `OpenSF`. The namespace prefix is added AUTOMATICALLY during deployment.**
+
+### NEVER add `OpenSF__` prefix to:
+- Object directory names (use `Sprint__c/` not `OpenSF__Sprint__c/`)
+- Field file names (use `Status__c.field-meta.xml` not `OpenSF__Status__c.field-meta.xml`)
+- `<fullName>` values in XML metadata
+- `<referenceTo>` values in XML metadata
+- `<relationshipName>` values in XML metadata
+- Flow field references, flexipage references, permission set object/field references, custom metadata values
+
+### DO use `OpenSF__` prefix in:
+- Apex code (.cls, .trigger) — SObject names and field API names at runtime
+- LWC JavaScript — field API names in wire adapters and imperatively called methods
+- SOQL queries inside Apex code
+
+### Examples
+```
+CORRECT metadata:  objects/Sprint__c/fields/Board__c.field-meta.xml
+                   <fullName>Board__c</fullName>
+                   <referenceTo>Board__c</referenceTo>
+
+WRONG metadata:    objects/OpenSF__Sprint__c/fields/OpenSF__Board__c.field-meta.xml
+                   <fullName>OpenSF__Board__c</fullName>
+
+CORRECT Apex:      OpenSF__Sprint__c sprint = [SELECT OpenSF__Status__c FROM OpenSF__Sprint__c];
+CORRECT LWC:       import STATUS from '@salesforce/schema/OpenSF__Sprint__c.OpenSF__Status__c';
+```
+
+**Why this matters:** If metadata has the prefix, deployment silently reports "Unchanged/success" but the fields never actually get created. This caused a major debugging session in March 2026.
+
 ## Response Style
 
 - Be concise and action-oriented

@@ -9,6 +9,7 @@
 
 import moveCardApex from '@salesforce/apex/KanbanBoardController.moveCard';
 import createCardApex from '@salesforce/apex/KanbanBoardController.createCard';
+import createBacklogCardApex from '@salesforce/apex/KanbanBoardController.createBacklogCard';
 import updateCardApex from '@salesforce/apex/KanbanBoardController.updateCard';
 import deleteCardApex from '@salesforce/apex/KanbanBoardController.deleteCard';
 import {
@@ -16,7 +17,10 @@ import {
     moveCard as moveCardAction,
     commitDrag,
     updateCard as updateCardAction,
-    deleteCard as deleteCardAction
+    deleteCard as deleteCardAction,
+    addBacklogCard,
+    updateBacklogCard,
+    removeBacklogCard
 } from '../state/actions';
 import { findColumn } from '../state/selectors';
 import { calculateCardPosition } from '../utils/positionCalculator';
@@ -193,6 +197,79 @@ export const updateCardAsync = (cardId, updates, clientId = null) => {
         } catch (error) {
             console.error('Error updating card:', error);
             // TODO: Consider reverting optimistic update on error
+            throw error;
+        }
+    };
+};
+
+/**
+ * Create a new backlog card (not assigned to any column)
+ * @param {string} boardId - Board ID
+ * @param {Object} cardData - Card data { subject, cardType, priority, storyPoints }
+ * @returns {Function} Thunk function
+ */
+export const createBacklogCardAsync = (boardId, cardData) => {
+    return async (dispatch) => {
+        try {
+            const newCard = await createBacklogCardApex({
+                boardId,
+                subject: cardData.subject || 'New Card',
+                cardType: cardData.cardType || null,
+                priority: cardData.priority || null,
+                storyPoints: cardData.storyPoints || null
+            });
+
+            dispatch(addBacklogCard(newCard));
+
+            return {
+                success: true,
+                card: newCard
+            };
+        } catch (error) {
+            console.error('Error creating backlog card:', error);
+            throw error;
+        }
+    };
+};
+
+/**
+ * Update a backlog card
+ * @param {string} cardId - Card ID to update
+ * @param {Object} updates - Field updates
+ * @returns {Function} Thunk function
+ */
+export const updateBacklogCardAsync = (cardId, updates) => {
+    return async (dispatch) => {
+        // Optimistic update
+        dispatch(updateBacklogCard(cardId, updates));
+
+        try {
+            await updateCardApex({ cardId, updates });
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating backlog card:', error);
+            throw error;
+        }
+    };
+};
+
+/**
+ * Delete multiple backlog cards
+ * @param {Array<string>} cardIds - Card IDs to delete
+ * @returns {Function} Thunk function
+ */
+export const deleteBacklogCardsAsync = (cardIds) => {
+    return async (dispatch) => {
+        try {
+            const promises = cardIds.map((cardId) =>
+                deleteCardApex({ cardId }).then(() => {
+                    dispatch(removeBacklogCard(cardId));
+                })
+            );
+            await Promise.all(promises);
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting backlog cards:', error);
             throw error;
         }
     };

@@ -109,7 +109,9 @@ public with sharing class SprintSelector {
                 OpenSF__Card__r.OpenSF__PeerReviewer__r.Name,
                 OpenSF__Card__r.OpenSF__Epic__c,
                 OpenSF__Card__r.OpenSF__Epic__r.OpenSF__Subject__c,
+                OpenSF__Card__r.OpenSF__Board__c,
                 OpenSF__Card__r.OpenSF__Locked__c,
+                OpenSF__Card__r.OpenSF__NeedsRefinement__c,
                 OpenSF__Card__r.OpenSF__SequenceNumber__c,
                 OpenSF__Card__r.LastModifiedDate,
                 OpenSF__Card__r.LastModifiedById
@@ -145,6 +147,7 @@ public with sharing class SprintSelector {
                 OpenSF__Subject__c,
                 OpenSF__Description__c,
                 OpenSF__Column__c,
+                OpenSF__Board__c,
                 OpenSF__LexoRankPosition__c,
                 OpenSF__Color__c,
                 OpenSF__Priority__c,
@@ -160,12 +163,15 @@ public with sharing class SprintSelector {
                 OpenSF__Epic__c,
                 OpenSF__Epic__r.OpenSF__Subject__c,
                 OpenSF__Locked__c,
+                OpenSF__NeedsRefinement__c,
                 OpenSF__SequenceNumber__c,
                 LastModifiedDate,
                 LastModifiedById
             FROM OpenSF__Card__c
             WHERE
-                OpenSF__Column__r.OpenSF__Board__c = :boardId
+                (OpenSF__Column__r.OpenSF__Board__c = :boardId
+                    OR (OpenSF__Board__c = :boardId
+                        AND OpenSF__Column__c = NULL))
                 AND Id NOT IN :cardsInActiveSprints
             ORDER BY OpenSF__LexoRankPosition__c ASC NULLS LAST
         ];

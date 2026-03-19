@@ -1,0 +1,318 @@
+<template>
+    <div class="backlog-view">
+        <!-- Toolbar -->
+        <div
+            class="backlog-view__toolbar slds-grid slds-grid_vertical-align-center slds-wrap slds-gutters_x-small slds-var-p-around_small"
+        >
+            <div class="slds-col slds-grow">
+                <lightning-input
+                    type="search"
+                    placeholder="Search backlog..."
+                    value={searchTerm}
+                    onchange={handleSearchChange}
+                    variant="label-hidden"
+                    class="backlog-search"
+                ></lightning-input>
+            </div>
+            <div class="slds-col">
+                <lightning-combobox
+                    label="View"
+                    value={viewMode}
+                    options={viewModeOptions}
+                    onchange={handleViewModeChange}
+                    variant="label-hidden"
+                    class="backlog-filter"
+                ></lightning-combobox>
+            </div>
+            <div class="slds-col">
+                <lightning-combobox
+                    label="Priority"
+                    value={filterPriority}
+                    options={priorityFilterOptions}
+                    onchange={handlePriorityFilterChange}
+                    variant="label-hidden"
+                    class="backlog-filter"
+                ></lightning-combobox>
+            </div>
+            <div class="slds-col">
+                <lightning-combobox
+                    label="Type"
+                    value={filterCardType}
+                    options={cardTypeFilterOptions}
+                    onchange={handleCardTypeFilterChange}
+                    variant="label-hidden"
+                    class="backlog-filter"
+                ></lightning-combobox>
+            </div>
+            <div class="slds-col slds-no-flex">
+                <span
+                    class="slds-text-body_small slds-text-color_weak slds-var-m-right_small"
+                >
+                    {cardCount} cards &bull; {totalStoryPoints} pts
+                </span>
+            </div>
+            <div class="slds-col slds-no-flex">
+                <lightning-button
+                    label="New Card"
+                    icon-name="utility:add"
+                    onclick={handleToggleCreateForm}
+                    variant="brand"
+                ></lightning-button>
+            </div>
+        </div>
+
+        <!-- Bulk Action Bar -->
+        <template lwc:if={hasSelectedCards}>
+            <div
+                class="backlog-view__bulk-actions slds-grid slds-grid_vertical-align-center slds-gutters_x-small slds-var-p-horizontal_small slds-var-p-vertical_x-small"
+            >
+                <span class="slds-text-body_small slds-var-m-right_small"
+                    ><strong>{selectedCount}</strong> selected</span
+                >
+                <template lwc:if={hasActiveSprint}>
+                    <lightning-button
+                        label={addToSprintLabel}
+                        onclick={handleBulkAddToSprint}
+                        variant="brand"
+                        class="slds-var-m-right_x-small"
+                    ></lightning-button>
+                </template>
+                <lightning-combobox
+                    label="Set Priority"
+                    options={priorityOptions}
+                    onchange={handleBulkSetPriority}
+                    variant="label-hidden"
+                    placeholder="Set Priority"
+                    class="backlog-filter slds-var-m-right_x-small"
+                ></lightning-combobox>
+                <lightning-button
+                    label="Delete"
+                    onclick={handleBulkDelete}
+                    variant="destructive-text"
+                    icon-name="utility:delete"
+                    class="slds-var-m-right_x-small"
+                ></lightning-button>
+                <lightning-button
+                    label="Clear"
+                    onclick={handleDeselectAll}
+                    variant="neutral"
+                ></lightning-button>
+            </div>
+        </template>
+
+        <!-- Create Card Form -->
+        <template lwc:if={showCreateForm}>
+            <div
+                class="backlog-view__create-form slds-grid slds-grid_vertical-align-center slds-gutters_xx-small slds-var-p-horizontal_small slds-var-p-vertical_x-small"
+            >
+                <div class="slds-col slds-grow">
+                    <lightning-input
+                        label="Card subject"
+                        value={newCardSubject}
+                        onchange={handleNewSubjectChange}
+                        onkeydown={handleCreateKeyDown}
+                        placeholder="What needs to be done?"
+                        variant="label-hidden"
+                        class="create-input"
+                    ></lightning-input>
+                </div>
+                <div class="slds-col slds-no-flex">
+                    <lightning-button
+                        label="Save"
+                        variant="brand"
+                        onclick={handleCreateCard}
+                        disabled={isCreateDisabled}
+                    ></lightning-button>
+                </div>
+                <div class="slds-col slds-no-flex">
+                    <lightning-button
+                        label="Cancel"
+                        onclick={handleCancelCreate}
+                    ></lightning-button>
+                </div>
+            </div>
+        </template>
+
+        <!-- Card List Table -->
+        <div class="backlog-view__table">
+            <template lwc:if={hasCards}>
+                <!-- Table Header -->
+                <div
+                    class="backlog-row backlog-row--header slds-grid slds-grid_vertical-align-center"
+                >
+                    <div class="backlog-cell backlog-cell--drag"></div>
+                    <div class="backlog-cell backlog-cell--checkbox">
+                        <lightning-input
+                            type="checkbox"
+                            checked={isAllSelected}
+                            onchange={handleSelectAll}
+                            variant="label-hidden"
+                            label="Select All"
+                        ></lightning-input>
+                    </div>
+                    <div class="backlog-cell backlog-cell--refinement"></div>
+                    <div class="backlog-cell backlog-cell--name">
+                        <strong>Name</strong>
+                    </div>
+                    <div class="backlog-cell backlog-cell--subject">
+                        <strong>Subject</strong>
+                    </div>
+                    <div class="backlog-cell backlog-cell--type">
+                        <strong>Type</strong>
+                    </div>
+                    <div class="backlog-cell backlog-cell--priority">
+                        <strong>Priority</strong>
+                    </div>
+                    <div class="backlog-cell backlog-cell--points">
+                        <strong>Points</strong>
+                    </div>
+                    <div class="backlog-cell backlog-cell--assignee">
+                        <strong>Assignee</strong>
+                    </div>
+                </div>
+
+                <!-- Table Body -->
+                <template for:each={backlogCards} for:item="card">
+                    <div
+                        key={card.Id}
+                        class="backlog-row slds-grid slds-grid_vertical-align-center"
+                        data-card-id={card.Id}
+                        data-index={card.__index}
+                        draggable="true"
+                        ondragstart={handleDragStart}
+                        ondragover={handleDragOver}
+                        ondragend={handleDragEnd}
+                        ondrop={handleDrop}
+                        oncontextmenu={handleContextMenu}
+                    >
+                        <!-- Drag Handle -->
+                        <div class="backlog-cell backlog-cell--drag">
+                            <lightning-icon
+                                icon-name="utility:drag_and_drop"
+                                size="xx-small"
+                                alternative-text="Drag"
+                            ></lightning-icon>
+                        </div>
+
+                        <!-- Checkbox -->
+                        <div class="backlog-cell backlog-cell--checkbox">
+                            <lightning-input
+                                type="checkbox"
+                                data-card-id={card.Id}
+                                checked={card.isSelected}
+                                onchange={handleCardSelect}
+                                variant="label-hidden"
+                                label="Select"
+                            ></lightning-input>
+                        </div>
+
+                        <!-- Refinement Toggle -->
+                        <div class="backlog-cell backlog-cell--refinement">
+                            <button
+                                class="refinement-toggle slds-button slds-button_icon slds-button_icon-x-small"
+                                data-card-id={card.Id}
+                                onclick={handleRefinementToggle}
+                                title="Toggle Refinement"
+                            >
+                                <lightning-icon
+                                    icon-name={card.refinementIcon}
+                                    size="xx-small"
+                                    alternative-text="Refinement"
+                                    class={card.refinementClass}
+                                ></lightning-icon>
+                            </button>
+                        </div>
+
+                        <!-- Name -->
+                        <div class="backlog-cell backlog-cell--name">
+                            <a
+                                data-card-id={card.Id}
+                                onclick={handleCardClick}
+                                class="slds-text-link"
+                                >{card.Name}</a
+                            >
+                        </div>
+
+                        <!-- Subject -->
+                        <div
+                            class="backlog-cell backlog-cell--subject slds-truncate"
+                            title={card.subject}
+                        >
+                            {card.subject}
+                        </div>
+
+                        <!-- Type -->
+                        <div class="backlog-cell backlog-cell--type">
+                            <template lwc:if={card.cardType}>
+                                <span class="slds-badge slds-badge_inverse"
+                                    >{card.cardType}</span
+                                >
+                            </template>
+                        </div>
+
+                        <!-- Priority -->
+                        <div class="backlog-cell backlog-cell--priority">
+                            <template lwc:if={card.priority}>
+                                <span class={card.priorityBadgeClass}
+                                    >{card.priority}</span
+                                >
+                            </template>
+                        </div>
+
+                        <!-- Points -->
+                        <div class="backlog-cell backlog-cell--points">
+                            {card.storyPoints}
+                        </div>
+
+                        <!-- Assignee -->
+                        <div
+                            class="backlog-cell backlog-cell--assignee slds-truncate"
+                        >
+                            <template lwc:if={card.assignee}>
+                                {card.assignee.name}
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </template>
+
+            <!-- Empty State -->
+            <template lwc:if={showEmptyState}>
+                <div
+                    class="slds-align_absolute-center slds-var-p-around_large"
+                    style="min-height: 300px"
+                >
+                    <div class="slds-text-align_center">
+                        <lightning-icon
+                            icon-name="standard:task2"
+                            size="large"
+                            class="slds-var-m-bottom_medium"
+                        ></lightning-icon>
+                        <h3
+                            class="slds-text-heading_medium slds-var-m-bottom_small"
+                        >
+                            No backlog cards
+                        </h3>
+                        <p
+                            class="slds-text-body_regular slds-text-color_weak slds-var-m-bottom_medium"
+                        >
+                            Create your first backlog card to start planning
+                        </p>
+                        <lightning-button
+                            label="Create Card"
+                            icon-name="utility:add"
+                            onclick={handleToggleCreateForm}
+                            variant="brand"
+                        ></lightning-button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Context Menu -->
+        <c-kanban-context-menu
+            menu-items={contextMenuItems}
+            onselect={handleContextMenuSelect}
+        ></c-kanban-context-menu>
+    </div>
+</template>

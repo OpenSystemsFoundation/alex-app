@@ -365,3 +365,17 @@ export const getSelectedBacklogCards = (state) => {
 export const getBacklogCardCount = (state) => {
     return (state.backlogCards || []).length;
 };
+
+/**
+ * Get a specific backlog card by ID
+ */
+export const getBacklogCardById = (state, cardId) => {
+    return (state.backlogCards || []).find((c) => c.Id === cardId) || null;
+};
+
+/**
+ * Get backlog cards that need refinement
+ */
+export const getUnrefinedBacklogCards = (state) => {
+    return (state.backlogCards || []).filter((c) => c.needsRefinement);
+};

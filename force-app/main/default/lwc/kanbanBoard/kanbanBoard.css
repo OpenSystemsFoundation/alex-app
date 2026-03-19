@@ -21,6 +21,16 @@
     border-bottom: 1px solid rgb(221, 219, 218);
 }
 
+.kanban-tabs {
+    flex-shrink: 0;
+}
+
+.kanban-backlog-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
 .kanban-board-container {
     background: rgb(240, 242, 245);
     display: flex;

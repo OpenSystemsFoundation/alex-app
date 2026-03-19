@@ -18,9 +18,16 @@ export default class CardOperations {
 
     /**
      * Handle card click to open detail view
+     * Searches both columns and backlog cards
      */
     handleCardClick(cardId) {
-        const card = this.findCard(cardId);
+        let card = this.findCard(cardId);
+
+        // Also check backlog cards if not found in columns
+        if (!card) {
+            const state = this.component.store.getState();
+            card = (state.backlogCards || []).find((c) => c.Id === cardId);
+        }
 
         if (card) {
             this.component.selectedCard = card;

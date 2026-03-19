@@ -398,6 +398,29 @@ export const backlogReducer = (state, action) => {
             return state;
         }
 
+        case types.UPDATE_BACKLOG_CARD: {
+            const { cardId, updates } = action.payload;
+            return {
+                ...state,
+                backlogCards: state.backlogCards.map((c) => {
+                    return c.Id === cardId ? { ...c, ...updates } : c;
+                })
+            };
+        }
+
+        case types.REORDER_BACKLOG: {
+            const { cardId: reorderCardId, newIndex } = action.payload;
+            const cards = [...state.backlogCards];
+            const oldIndex = cards.findIndex((c) => c.Id === reorderCardId);
+            if (oldIndex === -1) return state;
+            const [moved] = cards.splice(oldIndex, 1);
+            cards.splice(newIndex, 0, moved);
+            return {
+                ...state,
+                backlogCards: cards
+            };
+        }
+
         case types.SET_BACKLOG_VISIBLE:
             return {
                 ...state,

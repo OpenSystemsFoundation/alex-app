@@ -64,6 +64,10 @@
                 <behavior>Edit</behavior>
                 <field>Locked__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>NeedsRefinement__c</field>
+            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>

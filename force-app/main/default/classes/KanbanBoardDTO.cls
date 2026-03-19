@@ -92,6 +92,8 @@ public with sharing class KanbanBoardDTO {
         @AuraEnabled
         public Id columnId;
         @AuraEnabled
+        public Id boardId;
+        @AuraEnabled
         public String position;
         @AuraEnabled
         public String color;
@@ -125,6 +127,8 @@ public with sharing class KanbanBoardDTO {
         public Id lastModifiedById;
         @AuraEnabled
         public Decimal sequenceNumber;
+        @AuraEnabled
+        public Boolean needsRefinement;
 
         public CardDTO(OpenSF__Card__c card) {
             this.Id = card.Id;
@@ -132,6 +136,7 @@ public with sharing class KanbanBoardDTO {
             this.subject = card.OpenSF__Subject__c;
             this.description = card.OpenSF__Description__c;
             this.columnId = card.OpenSF__Column__c;
+            this.boardId = card.OpenSF__Board__c;
             this.position = card.OpenSF__LexoRankPosition__c;
             this.color = card.OpenSF__Color__c;
             this.priority = card.OpenSF__Priority__c;
@@ -146,6 +151,7 @@ public with sharing class KanbanBoardDTO {
             this.lastModifiedDate = card.LastModifiedDate;
             this.lastModifiedById = card.LastModifiedById;
             this.sequenceNumber = card.OpenSF__SequenceNumber__c;
+            this.needsRefinement = card.OpenSF__NeedsRefinement__c;
 
             // Map nested relationships
             if (card.OpenSF__Assignee__r != null) {

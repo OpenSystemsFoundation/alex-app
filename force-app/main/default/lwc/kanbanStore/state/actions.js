@@ -285,6 +285,16 @@ export const removeBacklogCard = (cardId) => ({
     payload: { cardId }
 });
 
+export const updateBacklogCard = (cardId, updates) => ({
+    type: types.UPDATE_BACKLOG_CARD,
+    payload: { cardId, updates }
+});
+
+export const reorderBacklog = (cardId, newIndex) => ({
+    type: types.REORDER_BACKLOG,
+    payload: { cardId, newIndex }
+});
+
 // ===================================================================
 // Sprint Card Action Creators
 // ===================================================================

@@ -38,7 +38,10 @@ export {
     moveCardAsync,
     createCardAsync,
     updateCardAsync,
-    deleteCardAsync
+    deleteCardAsync,
+    createBacklogCardAsync,
+    updateBacklogCardAsync,
+    deleteBacklogCardsAsync
 } from './thunks/cardThunks';
 export {
     loadSprintDataAsync,

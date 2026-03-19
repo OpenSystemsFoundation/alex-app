@@ -1,6 +1,6 @@
 import { LightningElement, api, track } from 'lwc';
-import { createStore, selectors } from 'c/kanbanStore';
-import { setBacklogVisible } from 'c/kanbanStore';
+import { createStore, selectors, moveCardToBacklog, deleteCard } from 'c/kanbanStore';
+import { removeCardFromSprintAsync } from 'c/kanbanStore';
 import EventHandler from './handlers/eventHandler';
 import RequestTracker from './helpers/requestTracker';
 import ReducerQueue from './helpers/reducerQueue';
@@ -31,6 +31,9 @@ export default class KanbanBoard extends LightningElement {
     showCardDetail = false;
     @track _eventCount = 0; // Needs @track for indicator reactivity
     @track _lastSyncTime = null; // Needs @track for indicator reactivity
+
+    // Tab state
+    @track activeTab = 'board';
 
     // Sprint UI state
     @track showSprintModal = false;
@@ -446,6 +449,36 @@ export default class KanbanBoard extends LightningElement {
         return this.columns && this.columns.length > 0;
     }
 
+    // =============================================================================
+    // Tab Getters
+    // =============================================================================
+
+    get isBoardTabActive() {
+        return this.activeTab === 'board';
+    }
+
+    get isBacklogTabActive() {
+        return this.activeTab === 'backlog';
+    }
+
+    get boardTabClass() {
+        return this.activeTab === 'board'
+            ? 'slds-tabs_default__item slds-is-active'
+            : 'slds-tabs_default__item';
+    }
+
+    get backlogTabClass() {
+        return this.activeTab === 'backlog'
+            ? 'slds-tabs_default__item slds-is-active'
+            : 'slds-tabs_default__item';
+    }
+
+    get backlogCardCount() {
+        return this._storeState
+            ? selectors.getBacklogCardCount(this._storeState)
+            : 0;
+    }
+
     get boardName() {
         return this.board?.Name || 'Kanban Board';
     }
@@ -474,12 +507,6 @@ export default class KanbanBoard extends LightningElement {
             : false;
     }
 
-    get showBacklog() {
-        return this._storeState
-            ? selectors.isBacklogVisible(this._storeState)
-            : false;
-    }
-
     get activeSprint() {
         return this._storeState
             ? selectors.getActiveSprint(this._storeState)
@@ -490,21 +517,13 @@ export default class KanbanBoard extends LightningElement {
         return this.activeSprint?.Id || null;
     }
 
-    get backlogMode() {
-        return this.isSprintBoard ? 'panel' : 'sidebar';
-    }
-
     // =============================================================================
-    // Sprint Event Handlers
+    // Tab Event Handlers
     // =============================================================================
 
-    handleToggleBacklog() {
-        if (this.store) {
-            const current = this._storeState
-                ? selectors.isBacklogVisible(this._storeState)
-                : false;
-            this.store.dispatch(setBacklogVisible(!current));
-        }
+    handleTabClick(event) {
+        event.preventDefault();
+        this.activeTab = event.currentTarget.dataset.tabId;
     }
 
     handleCreateSprint() {
@@ -548,9 +567,70 @@ export default class KanbanBoard extends LightningElement {
         this.showSprintReports = false;
     }
 
-    handleBacklogCardsAdded() {
-        this.loadBoardData();
+    // =============================================================================
+    // Board Context Menu
+    // =============================================================================
+
+    _boardContextMenuCardId = null;
+
+    get boardContextMenuItems() {
+        return [
+            {
+                label: 'Move to Backlog',
+                value: 'moveToBacklog',
+                icon: 'utility:back'
+            },
+            {
+                label: 'Delete',
+                value: 'delete',
+                icon: 'utility:delete',
+                dividerBefore: true
+            }
+        ];
     }
+
+    handleBoardCardContextMenu(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const cardId = event.currentTarget.dataset.cardId;
+        this._boardContextMenuCardId = cardId;
+        const contextMenu = this.template.querySelector(
+            'c-kanban-context-menu'
+        );
+        if (contextMenu) {
+            contextMenu.show(event.clientX, event.clientY);
+        }
+    }
+
+    async handleBoardContextMenuSelect(event) {
+        const { value } = event.detail;
+        const cardId = this._boardContextMenuCardId;
+        if (!cardId || !this.store) return;
+
+        switch (value) {
+            case 'moveToBacklog':
+                this.store.dispatch(moveCardToBacklog(cardId));
+                this.store.dispatch(deleteCard(cardId));
+                if (this.activeSprint) {
+                    await this.store.dispatch(
+                        removeCardFromSprintAsync(
+                            this.activeSprint.Id,
+                            cardId
+                        )
+                    );
+                }
+                break;
+            case 'delete':
+                this.cardOperations.handleCardDeleted(cardId);
+                break;
+            default:
+                break;
+        }
+    }
+
+    // =============================================================================
+    // Backlog Event Handlers
+    // =============================================================================
 
     handleBacklogCardClick(event) {
         const cardId = event.detail?.cardId;
@@ -559,9 +639,10 @@ export default class KanbanBoard extends LightningElement {
         }
     }
 
-    handleBacklogClose() {
-        if (this.store) {
-            this.store.dispatch(setBacklogVisible(false));
+    handleBacklogError(event) {
+        const message = event.detail?.message;
+        if (message && this.toastManager) {
+            this.toastManager.showError('Backlog Error', message);
         }
     }
 }

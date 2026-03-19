@@ -240,6 +240,16 @@
                 <identifier>RecordOpenSF_Locked_cField</identifier>
             </fieldInstance>
         </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.NeedsRefinement__c</fieldItem>
+                <identifier>RecordOpenSF_NeedsRefinement_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
         <name>Facet-62f38994-01d3-4a7b-970c-8b96acce0ed4</name>
         <type>Facet</type>
     </flexiPageRegions>

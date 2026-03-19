@@ -1,0 +1,159 @@
+.backlog-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: rgb(255, 255, 255);
+}
+
+.backlog-view__toolbar {
+    border-bottom: 1px solid rgb(221, 219, 218);
+    background: rgb(250, 250, 250);
+    flex-shrink: 0;
+}
+
+.backlog-view__bulk-actions {
+    background: rgb(240, 248, 255);
+    border-bottom: 1px solid rgb(176, 213, 255);
+    flex-shrink: 0;
+}
+
+.backlog-view__create-form {
+    background: rgb(248, 248, 248);
+    border-bottom: 1px solid rgb(221, 219, 218);
+    flex-shrink: 0;
+}
+
+.backlog-view__table {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.backlog-search {
+    --slds-c-input-sizing-min-height: 2rem;
+}
+
+.backlog-filter {
+    --slds-c-input-sizing-min-height: 2rem;
+    min-width: 130px;
+}
+
+/* Table rows */
+.backlog-row {
+    border-bottom: 1px solid rgb(238, 238, 238);
+    padding: 0.25rem 0;
+    min-height: 2.25rem;
+}
+
+.backlog-row--header {
+    background: rgb(250, 250, 250);
+    border-bottom: 2px solid rgb(221, 219, 218);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: rgb(112, 110, 107);
+}
+
+.backlog-row:not(.backlog-row--header):hover {
+    background: rgb(248, 248, 248);
+}
+
+.backlog-row:not(.backlog-row--header) {
+    cursor: pointer;
+}
+
+.backlog-row.dragging {
+    opacity: 0.4;
+}
+
+/* Table cells */
+.backlog-cell {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.backlog-cell--drag {
+    width: 28px;
+    flex: 0 0 28px;
+    cursor: grab;
+    opacity: 0.4;
+}
+
+.backlog-cell--drag:hover {
+    opacity: 1;
+}
+
+.backlog-cell--checkbox {
+    width: 32px;
+    flex: 0 0 32px;
+}
+
+.backlog-cell--refinement {
+    width: 32px;
+    flex: 0 0 32px;
+}
+
+.backlog-cell--name {
+    width: 100px;
+    flex: 0 0 100px;
+}
+
+.backlog-cell--subject {
+    flex: 1;
+    min-width: 150px;
+}
+
+.backlog-cell--type {
+    width: 80px;
+    flex: 0 0 80px;
+}
+
+.backlog-cell--priority {
+    width: 80px;
+    flex: 0 0 80px;
+}
+
+.backlog-cell--points {
+    width: 60px;
+    flex: 0 0 60px;
+    text-align: center;
+}
+
+.backlog-cell--assignee {
+    width: 120px;
+    flex: 0 0 120px;
+}
+
+/* Refinement toggle */
+.refinement-active {
+    color: rgb(4, 132, 75);
+}
+
+.refinement-inactive {
+    opacity: 0.3;
+}
+
+/* Priority badges */
+.priority-high {
+    background: rgb(194, 57, 52);
+    color: white;
+}
+
+.priority-medium {
+    background: rgb(255, 183, 93);
+    color: rgb(24, 24, 24);
+}
+
+.priority-low {
+    background: rgb(221, 219, 218);
+    color: rgb(24, 24, 24);
+}
+
+@media (max-width: 768px) {
+    .backlog-cell--assignee,
+    .backlog-cell--type {
+        display: none;
+    }
+}
