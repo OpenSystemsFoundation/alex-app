@@ -73,8 +73,11 @@
     "dependencies": {
         "@lwc/engine": "^1.17.6",
         "chromedriver": "^131.0.0",
+        "cssom": "^0.3.8",
+        "cssstyle": "^2.3.0",
         "dotenv": "^16.4.5",
         "selenium-webdriver": "^4.27.0",
+        "source-map": "^0.7.6",
         "typescript": "^5.7.2"
     }
 }
