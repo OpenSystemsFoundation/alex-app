@@ -29,6 +29,9 @@ jobs:
             - name: Deploy Source
               run: sf project deploy start --target-org ci-test --ignore-conflicts
 
+            - name: Assign Permission Set
+              run: sf org assign permset --name Alex_Admin --target-org ci-test
+
             - name: Run Apex Tests
               run: |
                   mkdir -p apex-results
