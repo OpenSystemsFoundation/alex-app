@@ -253,6 +253,14 @@ public with sharing class KanbanCardService {
                     'needsRefinement'
                 );
             }
+            if (updates.containsKey('columnId')) {
+                card.OpenSF__Column__c = (Id) updates.get('columnId');
+            }
+            if (updates.containsKey('lexoRankPosition')) {
+                card.OpenSF__LexoRankPosition__c = (String) updates.get(
+                    'lexoRankPosition'
+                );
+            }
 
             update Security.stripInaccessible(
                     AccessType.UPDATABLE,
@@ -286,7 +294,8 @@ public with sharing class KanbanCardService {
     }
 
     /**
-     * Create a backlog card (not assigned to any column)
+     * Create a backlog card (not assigned to any column).
+     * New cards are placed at the top of the backlog.
      */
     public static KanbanBoardDTO.CardDTO createBacklogCard(
         Id boardId,
@@ -295,6 +304,22 @@ public with sharing class KanbanCardService {
         String priority,
         Decimal storyPoints
     ) {
+        // Find the current first backlog card's position to insert before it
+        List<OpenSF__Card__c> topCards = [
+            SELECT OpenSF__LexoRankPosition__c
+            FROM OpenSF__Card__c
+            WHERE
+                OpenSF__Board__c = :boardId
+                AND OpenSF__Column__c = NULL
+                AND OpenSF__LexoRankPosition__c != NULL
+            ORDER BY OpenSF__LexoRankPosition__c ASC
+            LIMIT 1
+        ];
+        String firstPosition = topCards.isEmpty()
+            ? null
+            : topCards[0].OpenSF__LexoRankPosition__c;
+        String newPosition = LexoRank.between(null, firstPosition);
+
         // Create card with board reference but no column (backlog card)
         OpenSF__Card__c card = new OpenSF__Card__c(
             OpenSF__Subject__c = subject,
@@ -302,8 +327,9 @@ public with sharing class KanbanCardService {
             OpenSF__CardType__c = cardType,
             OpenSF__Priority__c = priority,
             OpenSF__StoryPoints__c = storyPoints,
-            OpenSF__NeedsRefinement__c = true,
-            OpenSF__SequenceNumber__c = 1
+            OpenSF__NeedsRefinement__c = false,
+            OpenSF__SequenceNumber__c = 1,
+            OpenSF__LexoRankPosition__c = newPosition
         );
 
         List<OpenSF__Card__c> strippedCards = (List<OpenSF__Card__c>) Security.stripInaccessible(
@@ -317,6 +343,52 @@ public with sharing class KanbanCardService {
         // Return full card data as DTO
         OpenSF__Card__c createdCard = KanbanBoardSelector.getCardById(card.Id);
         return new KanbanBoardDTO.CardDTO(createdCard);
+    }
+
+    /**
+     * Backfill LexoRankPosition for cards that have NULL positions.
+     * Assigns positions after the last positioned card so existing
+     * order is preserved. Updates are persisted to the database.
+     *
+     * Skips processing entirely when all cards already have positions
+     * (the common case) to avoid unnecessary iteration and DML.
+     */
+    public static void backfillMissingPositions(List<OpenSF__Card__c> cards) {
+        // Quick scan: bail out if no nulls exist
+        Boolean hasNulls = false;
+        for (OpenSF__Card__c card : cards) {
+            if (card.OpenSF__LexoRankPosition__c == null) {
+                hasNulls = true;
+                break;
+            }
+        }
+        if (!hasNulls) {
+            return;
+        }
+
+        String lastPosition = null;
+        List<OpenSF__Card__c> toUpdate = new List<OpenSF__Card__c>();
+
+        for (OpenSF__Card__c card : cards) {
+            if (card.OpenSF__LexoRankPosition__c != null) {
+                lastPosition = card.OpenSF__LexoRankPosition__c;
+            } else {
+                String newPosition = LexoRank.between(lastPosition, null);
+                card.OpenSF__LexoRankPosition__c = newPosition;
+                toUpdate.add(
+                    new OpenSF__Card__c(
+                        Id = card.Id,
+                        OpenSF__LexoRankPosition__c = newPosition
+                    )
+                );
+                lastPosition = newPosition;
+            }
+        }
+
+        if (!toUpdate.isEmpty()) {
+            update Security.stripInaccessible(AccessType.UPDATABLE, toUpdate)
+                .getRecords();
+        }
     }
 
     /**

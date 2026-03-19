@@ -1,6 +1,6 @@
-import { LightningElement, api, track } from 'lwc';
-import { createStore, selectors, moveCardToBacklog, deleteCard } from 'c/kanbanStore';
-import { removeCardFromSprintAsync } from 'c/kanbanStore';
+import { LightningElement, api, track, wire } from 'lwc';
+import { createStore, selectors, moveCardToBacklogAsync } from 'c/kanbanStore';
+import getKanbanConfig from '@salesforce/apex/KanbanBoardController.getKanbanConfig';
 import EventHandler from './handlers/eventHandler';
 import RequestTracker from './helpers/requestTracker';
 import ReducerQueue from './helpers/reducerQueue';
@@ -19,7 +19,7 @@ export default class KanbanBoard extends LightningElement {
     _store = null;
     _storeUnsubscribe = null;
     _resizeObserver = null;
-    _boardElement = null;
+    _wrapperElement = null;
     _windowResizeHandler = null;
     _clientId = null; // Unique ID for this browser window/tab
 
@@ -32,8 +32,12 @@ export default class KanbanBoard extends LightningElement {
     @track _eventCount = 0; // Needs @track for indicator reactivity
     @track _lastSyncTime = null; // Needs @track for indicator reactivity
 
+    // Config
+    @track _showDebugInfo = false;
+
     // Tab state
     @track activeTab = 'board';
+    @track _isRefreshing = false;
 
     // Sprint UI state
     @track showSprintModal = false;
@@ -164,6 +168,17 @@ export default class KanbanBoard extends LightningElement {
             this._subscriptionEventHandler = new SubscriptionEventHandler(this);
         }
         return this._subscriptionEventHandler;
+    }
+
+    @wire(getKanbanConfig)
+    wiredConfig({ data }) {
+        if (data) {
+            this._showDebugInfo = data.showDebugInfo === true;
+        }
+    }
+
+    get showDebugInfo() {
+        return this._showDebugInfo;
     }
 
     @api
@@ -380,8 +395,23 @@ export default class KanbanBoard extends LightningElement {
     // UI Event Handlers
     // =============================================================================
 
-    handleRefresh() {
-        this.loadBoardData();
+    async handleRefresh() {
+        this._isRefreshing = true;
+        try {
+            await this.loadBoardData();
+        } finally {
+            // Keep spinning for at least 600ms so user sees feedback
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            setTimeout(() => {
+                this._isRefreshing = false;
+            }, 600);
+        }
+    }
+
+    get refreshButtonClass() {
+        return this._isRefreshing
+            ? 'topbar-icon-btn topbar-icon-btn--spinning'
+            : 'topbar-icon-btn';
     }
 
     handleWindowFocus() {
@@ -393,15 +423,20 @@ export default class KanbanBoard extends LightningElement {
     // =============================================================================
 
     initializeDynamicHeight() {
-        this._boardElement = this.template.querySelector('.kanban-board');
+        this._wrapperElement = this.template.querySelector(
+            '.kanban-board-wrapper'
+        );
 
-        if (!this._boardElement) {
+        if (!this._wrapperElement) {
             return;
         }
 
         // If height is manually set, use it and skip dynamic calculation
         if (this.height) {
-            this._boardElement.style.setProperty('--board-height', this.height);
+            this._wrapperElement.style.setProperty(
+                '--board-height',
+                this.height
+            );
             return;
         }
 
@@ -413,8 +448,8 @@ export default class KanbanBoard extends LightningElement {
             this.updateBoardHeight();
         });
 
-        // Observe the board element itself
-        this._resizeObserver.observe(this._boardElement);
+        // Observe the wrapper element
+        this._resizeObserver.observe(this._wrapperElement);
 
         // Also observe viewport changes via window resize
         this._windowResizeHandler = this.updateBoardHeight.bind(this);
@@ -422,24 +457,23 @@ export default class KanbanBoard extends LightningElement {
     }
 
     updateBoardHeight() {
-        if (!this._boardElement || this.height) {
+        if (!this._wrapperElement || this.height) {
             return; // Skip dynamic calculation if height is manually set
         }
 
-        // Get the board element's position relative to viewport
-        const rect = this._boardElement.getBoundingClientRect();
+        // Get the wrapper's position relative to viewport
+        const rect = this._wrapperElement.getBoundingClientRect();
 
-        // Calculate available height:
-        // viewport height - distance from top - padding/margin buffer
-        const buffer = 80; // Space for bottom padding and any floating elements
+        // Fill to near-bottom of viewport — no page scrolling
+        const buffer = 24;
         const availableHeight = window.innerHeight - rect.top - buffer;
 
         // Set minimum height to prevent collapse
-        const minHeight = 400;
+        const minHeight = 300;
         const calculatedHeight = Math.max(minHeight, availableHeight);
 
-        // Update CSS custom property
-        this._boardElement.style.setProperty(
+        // Update CSS custom property on wrapper
+        this._wrapperElement.style.setProperty(
             '--board-height',
             `${calculatedHeight}px`
         );
@@ -471,6 +505,18 @@ export default class KanbanBoard extends LightningElement {
         return this.activeTab === 'backlog'
             ? 'slds-tabs_default__item slds-is-active'
             : 'slds-tabs_default__item';
+    }
+
+    get boardTabButtonClass() {
+        return this.activeTab === 'board'
+            ? 'topbar-tab topbar-tab--active'
+            : 'topbar-tab';
+    }
+
+    get backlogTabButtonClass() {
+        return this.activeTab === 'backlog'
+            ? 'topbar-tab topbar-tab--active'
+            : 'topbar-tab';
     }
 
     get backlogCardCount() {
@@ -609,16 +655,12 @@ export default class KanbanBoard extends LightningElement {
 
         switch (value) {
             case 'moveToBacklog':
-                this.store.dispatch(moveCardToBacklog(cardId));
-                this.store.dispatch(deleteCard(cardId));
-                if (this.activeSprint) {
-                    await this.store.dispatch(
-                        removeCardFromSprintAsync(
-                            this.activeSprint.Id,
-                            cardId
-                        )
-                    );
-                }
+                await this.store.dispatch(
+                    moveCardToBacklogAsync(
+                        this.activeSprint?.Id || null,
+                        cardId
+                    )
+                );
                 break;
             case 'delete':
                 this.cardOperations.handleCardDeleted(cardId);
@@ -636,6 +678,26 @@ export default class KanbanBoard extends LightningElement {
         const cardId = event.detail?.cardId;
         if (cardId) {
             this.cardOperations.handleCardClick(cardId);
+        }
+    }
+
+    async handleBacklogNavigateToCard(event) {
+        const cardId = event.detail?.cardId;
+        if (cardId && this.navigationUtil) {
+            await this.navigationUtil.navigateToRecord(
+                cardId,
+                'OpenSF__Card__c'
+            );
+        }
+    }
+
+    async handlePanelNavigateToCard(event) {
+        const cardId = event.detail?.cardId;
+        if (cardId && this.navigationUtil) {
+            await this.navigationUtil.navigateToRecord(
+                cardId,
+                'OpenSF__Card__c'
+            );
         }
     }
 

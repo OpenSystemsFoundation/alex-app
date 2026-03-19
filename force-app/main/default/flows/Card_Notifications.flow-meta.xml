@@ -88,7 +88,7 @@
         <nameSegment>customNotificationAction</nameSegment>
         <offset>0</offset>
     </actionCalls>
-    <apiVersion>66.0</apiVersion>
+    <apiVersion>64.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
     <assignments>
         <name>Assign_Update_Recipients</name>
@@ -178,7 +178,7 @@
             </conditions>
             <conditions>
                 <leftValueReference
-                >$Record.LexoRankPosition__c</leftValueReference>
+                >$Record.OpenSF__LexoRankPosition__c</leftValueReference>
                 <operator>IsChanged</operator>
                 <rightValue>
                     <booleanValue>false</booleanValue>

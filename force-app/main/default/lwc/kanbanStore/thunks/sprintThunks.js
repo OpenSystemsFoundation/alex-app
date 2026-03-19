@@ -14,13 +14,20 @@ import addCardsToSprintApex from '@salesforce/apex/KanbanBoardController.addCard
 import removeCardFromSprintApex from '@salesforce/apex/KanbanBoardController.removeCardFromSprint';
 import getBurndownDataApex from '@salesforce/apex/KanbanBoardController.getBurndownData';
 import getVelocityDataApex from '@salesforce/apex/KanbanBoardController.getVelocityData';
+import updateCardApex from '@salesforce/apex/KanbanBoardController.updateCard';
+import moveCardApex from '@salesforce/apex/KanbanBoardController.moveCard';
 import {
     setSprint,
     setSprints,
     setSprintCards,
     setBacklogCards,
-    removeBacklogCard
+    removeBacklogCard,
+    moveCardToBacklog,
+    deleteCard,
+    addCard
 } from '../state/actions';
+import { findColumn } from '../state/selectors';
+import { calculateCardPosition } from '../utils/positionCalculator';
 
 /**
  * Load sprint data for a board
@@ -195,6 +202,115 @@ export const loadVelocityDataAsync = (boardId, count = 10) => {
             return { success: true, data };
         } catch (error) {
             console.error('Error loading velocity data:', error);
+            throw error;
+        }
+    };
+};
+
+/**
+ * Move a card from the board back to the backlog.
+ * Clears the card's column assignment on the server and removes the sprint junction.
+ * @param {string} sprintId - Active sprint ID (or null if no sprint)
+ * @param {string} cardId - Card ID to move
+ * @returns {Function} Thunk function
+ */
+export const moveCardToBacklogAsync = (sprintId, cardId) => {
+    return async (dispatch, getState) => {
+        // Optimistic: move card to backlog state and remove from columns
+        dispatch(moveCardToBacklog(cardId));
+        dispatch(deleteCard(cardId));
+
+        try {
+            // Clear column assignment on server
+            await updateCardApex({
+                cardId,
+                updates: { columnId: null }
+            });
+
+            // Remove from sprint if applicable
+            if (sprintId) {
+                await removeCardFromSprintApex({ sprintId, cardId });
+
+                const state = getState();
+                const updatedCards = (state.sprintCards || []).filter(
+                    (sc) => sc.cardId !== cardId
+                );
+                dispatch(setSprintCards(updatedCards));
+            }
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error moving card to backlog:', error);
+            throw error;
+        }
+    };
+};
+
+/**
+ * Move cards from the backlog to the sprint board.
+ * Creates sprint junctions AND assigns cards to the first column.
+ * @param {string} sprintId - Sprint ID
+ * @param {Array<string>} cardIds - Card IDs to add
+ * @returns {Function} Thunk function
+ */
+export const moveCardsToSprintAsync = (sprintId, cardIds) => {
+    return async (dispatch, getState) => {
+        try {
+            // Capture card data from backlog before removing
+            let state = getState();
+            const backlogCards = state.backlogCards || [];
+            const cardDataMap = {};
+            for (const cardId of cardIds) {
+                const card = backlogCards.find((c) => c.Id === cardId);
+                if (card) {
+                    cardDataMap[cardId] = card;
+                }
+            }
+
+            // Add to sprint (creates junction records)
+            const sprintCards = await addCardsToSprintApex({
+                sprintId,
+                cardIds
+            });
+            dispatch(setSprintCards(sprintCards));
+
+            // Remove from backlog state
+            for (const cardId of cardIds) {
+                dispatch(removeBacklogCard(cardId));
+            }
+
+            // Assign each card to the first column so it appears on the board
+            state = getState();
+            const columns = state.columns || [];
+            if (columns.length > 0) {
+                const firstColumnId = columns[0].Id;
+
+                for (const cardId of cardIds) {
+                    const targetColumn = findColumn(getState(), firstColumnId);
+                    const cards = targetColumn?.cards || [];
+                    const targetIndex = cards.length;
+                    const { previousPosition, nextPosition } =
+                        calculateCardPosition(cards, cardId, targetIndex);
+
+                    const params = {
+                        cardId,
+                        targetColumnId: firstColumnId,
+                        previousCardPosition: previousPosition,
+                        nextCardPosition: nextPosition
+                    };
+
+                    // eslint-disable-next-line no-await-in-loop
+                    await moveCardApex(params);
+
+                    // Add card to column in local state
+                    const cardData = cardDataMap[cardId] || { Id: cardId };
+                    dispatch(addCard(cardData, firstColumnId));
+                }
+            }
+
+            return { success: true, sprintCards };
+        } catch (error) {
+            console.error('Error moving cards to sprint:', error);
             throw error;
         }
     };

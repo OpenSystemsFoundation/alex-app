@@ -252,9 +252,7 @@ public with sharing class KanbanBoardSelector {
                 LastModifiedDate,
                 LastModifiedById
             FROM OpenSF__Card__c
-            WHERE
-                OpenSF__Board__c = :boardId
-                AND OpenSF__Column__c = NULL
+            WHERE OpenSF__Board__c = :boardId AND OpenSF__Column__c = NULL
             ORDER BY OpenSF__LexoRankPosition__c ASC NULLS LAST
         ];
     }

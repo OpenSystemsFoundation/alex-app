@@ -1,106 +1,69 @@
 <template>
-    <div
-        class="sprint-header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-var-p-horizontal_medium slds-var-p-vertical_x-small"
-    >
-        <!-- Left: Sprint Info -->
-        <div
-            class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate"
-        >
-            <template lwc:if={hasSprint}>
-                <div class="slds-var-m-right_small">
-                    <div
-                        class="slds-grid slds-grid_vertical-align-center"
-                    >
-                        <lightning-icon
-                            icon-name="standard:sprint"
-                            size="small"
-                            class="slds-var-m-right_xx-small"
-                        ></lightning-icon>
-                        <span
-                            class="slds-text-heading_small slds-truncate"
-                            >{sprintName}</span
-                        >
-                    </div>
-                    <template lwc:if={sprintGoal}>
-                        <p
-                            class="slds-text-body_small slds-text-color_weak slds-truncate"
-                            title={sprintGoal}
-                        >
-                            {sprintGoal}
-                        </p>
-                    </template>
-                </div>
-            </template>
-            <template lwc:else>
-                <span
-                    class="slds-text-body_regular slds-text-color_weak"
-                    >No active sprint</span
-                >
-            </template>
-        </div>
-
-        <!-- Center: Progress -->
+    <div class="sprint-inline">
         <template lwc:if={hasSprint}>
-            <div
-                class="sprint-header__progress slds-grid slds-grid_vertical-align-center"
+            <!-- Sprint name + goal -->
+            <span class="sprint-inline__divider"></span>
+            <span
+                class="sprint-inline__name"
+                title={sprintName}
+                >{sprintName}</span
             >
-                <template lwc:if={dateRange}>
-                    <span
-                        class="slds-text-body_small slds-var-m-right_small"
-                        >{dateRange}</span
-                    >
-                </template>
-                <template lwc:if={daysRemainingLabel}>
-                    <span class={daysRemainingClass}>
-                        <strong class="slds-text-body_small"
-                            >{daysRemainingLabel}</strong
-                        >
-                    </span>
-                </template>
-                <div
-                    class="progress-bar slds-var-m-horizontal_small"
-                    title={progressLabel}
-                >
-                    <div
-                        class="progress-bar__fill"
-                        style={progressStyle}
-                    ></div>
-                </div>
+            <template lwc:if={sprintGoal}>
                 <span
-                    class="slds-text-body_small slds-var-m-left_xx-small"
-                    >{progressLabel}</span
+                    class="sprint-inline__goal"
+                    title={sprintGoal}
+                    >{sprintGoal}</span
                 >
-            </div>
-        </template>
-
-        <!-- Right: Actions -->
-        <div
-            class="slds-grid slds-grid_vertical-align-center slds-gutters_xx-small"
-        >
-            <template lwc:if={hasSprint}>
-                <lightning-button
-                    label="Reports"
-                    icon-name="utility:chart"
-                    onclick={handleShowReports}
-                    variant="neutral"
-                    class="slds-var-m-right_xx-small"
-                ></lightning-button>
-                <template lwc:if={canComplete}>
-                    <lightning-button
-                        label="Complete Sprint"
-                        onclick={handleCompleteSprint}
-                        variant="brand"
-                    ></lightning-button>
-                </template>
             </template>
-            <template lwc:else>
+
+            <!-- Progress -->
+            <span class="sprint-inline__divider"></span>
+            <template lwc:if={daysRemainingLabel}>
+                <span class={daysRemainingClass}
+                    >{daysRemainingLabel}</span
+                >
+            </template>
+            <div
+                class="sprint-inline__progress-bar"
+                title={progressLabel}
+            >
+                <div
+                    class="sprint-inline__progress-fill"
+                    style={progressStyle}
+                ></div>
+            </div>
+            <span class="sprint-inline__progress-label"
+                >{progressLabel}</span
+            >
+
+            <!-- Actions -->
+            <span class="sprint-inline__divider"></span>
+            <lightning-button-icon
+                icon-name="utility:chart"
+                alternative-text="Reports"
+                title="Reports"
+                onclick={handleShowReports}
+                size="small"
+            ></lightning-button-icon>
+            <template lwc:if={canComplete}>
                 <lightning-button
-                    label="New Sprint"
-                    icon-name="utility:add"
-                    onclick={handleCreateSprint}
+                    label="Complete"
+                    onclick={handleCompleteSprint}
                     variant="brand"
                 ></lightning-button>
             </template>
-        </div>
+        </template>
+        <template lwc:else>
+            <span class="sprint-inline__divider"></span>
+            <span class="sprint-inline__empty"
+                >No active sprint</span
+            >
+            <lightning-button
+                label="New Sprint"
+                icon-name="utility:add"
+                onclick={handleCreateSprint}
+                variant="brand"
+            ></lightning-button>
+        </template>
     </div>
 </template>

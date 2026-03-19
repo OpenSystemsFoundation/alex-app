@@ -379,3 +379,10 @@ export const getBacklogCardById = (state, cardId) => {
 export const getUnrefinedBacklogCards = (state) => {
     return (state.backlogCards || []).filter((c) => c.needsRefinement);
 };
+
+/**
+ * Check if a backlog reorder is in-flight
+ */
+export const isBacklogSyncing = (state) => {
+    return state.backlogSyncing || false;
+};

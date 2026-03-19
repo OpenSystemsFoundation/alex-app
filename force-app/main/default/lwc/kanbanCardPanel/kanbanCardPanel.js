@@ -83,6 +83,21 @@ export default class KanbanCardPanel extends LightningElement {
         return `width: ${this.panelWidth}px`;
     }
 
+    get cardRecordUrl() {
+        return this.card?.Id
+            ? `/lightning/r/OpenSF__Card__c/${this.card.Id}/view`
+            : '#';
+    }
+
+    handleNameClick(event) {
+        event.preventDefault();
+        this.dispatchEvent(
+            new CustomEvent('navigatetocard', {
+                detail: { cardId: this.card.Id }
+            })
+        );
+    }
+
     get hasFields() {
         return this.formFields && this.formFields.length > 0;
     }
@@ -121,9 +136,7 @@ export default class KanbanCardPanel extends LightningElement {
         const optimisticCard = { ...this.card, ...updatedFields };
         updateCard(this.store, optimisticCard);
 
-        const form = this.template.querySelector(
-            'lightning-record-edit-form'
-        );
+        const form = this.template.querySelector('lightning-record-edit-form');
         if (form) {
             form.submit();
         }
@@ -176,26 +189,36 @@ export default class KanbanCardPanel extends LightningElement {
         }
     }
 
-    performDelete() {
+    async performDelete() {
         if (this._deleteTimer) {
             clearTimeout(this._deleteTimer);
             this._deleteTimer = null;
         }
         this.deleteConfirmState = false;
 
-        deleteCardAsync(this.store, this.card.Id);
-        this.dispatchEvent(
-            new CustomEvent('carddeleted', {
-                detail: { cardId: this.card.Id }
-            })
-        );
-        this.dispatchEvent(
-            new ShowToastEvent({
-                title: 'Success',
-                message: 'Card deleted',
-                variant: 'success'
-            })
-        );
+        try {
+            await this.store.dispatch(deleteCardAsync(this.card.Id));
+            this.dispatchEvent(
+                new CustomEvent('carddeleted', {
+                    detail: { cardId: this.card.Id }
+                })
+            );
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Success',
+                    message: 'Card deleted',
+                    variant: 'success'
+                })
+            );
+        } catch (error) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error',
+                    message: 'Failed to delete card',
+                    variant: 'error'
+                })
+            );
+        }
         this.handleClose();
     }
 
@@ -233,7 +256,10 @@ export default class KanbanCardPanel extends LightningElement {
         }
         const delta = this._resizeStartX - event.clientX;
         let newWidth = this._resizeStartWidth + delta;
-        newWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, newWidth));
+        newWidth = Math.max(
+            MIN_PANEL_WIDTH,
+            Math.min(MAX_PANEL_WIDTH, newWidth)
+        );
         this.panelWidth = newWidth;
     }
 

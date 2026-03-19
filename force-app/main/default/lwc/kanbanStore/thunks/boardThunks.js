@@ -52,10 +52,7 @@ export const loadBoardData = (boardId) => {
                     const backlogCards = await getBacklogCardsApex({ boardId });
                     dispatch(setBacklogCards(backlogCards));
                 } catch (backlogError) {
-                    console.error(
-                        'Error loading backlog cards:',
-                        backlogError
-                    );
+                    console.error('Error loading backlog cards:', backlogError);
                 }
             }
 

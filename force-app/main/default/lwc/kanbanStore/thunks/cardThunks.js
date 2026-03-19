@@ -12,6 +12,7 @@ import createCardApex from '@salesforce/apex/KanbanBoardController.createCard';
 import createBacklogCardApex from '@salesforce/apex/KanbanBoardController.createBacklogCard';
 import updateCardApex from '@salesforce/apex/KanbanBoardController.updateCard';
 import deleteCardApex from '@salesforce/apex/KanbanBoardController.deleteCard';
+import reorderBacklogCardApex from '@salesforce/apex/KanbanBoardController.reorderBacklogCard';
 import {
     addCard,
     moveCard as moveCardAction,
@@ -20,7 +21,10 @@ import {
     deleteCard as deleteCardAction,
     addBacklogCard,
     updateBacklogCard,
-    removeBacklogCard
+    removeBacklogCard,
+    reorderBacklog,
+    setBacklogSyncing,
+    setBacklogCards
 } from '../state/actions';
 import { findColumn } from '../state/selectors';
 import { calculateCardPosition } from '../utils/positionCalculator';
@@ -168,7 +172,7 @@ export const createCardAsync = (
  * @returns {Function} Thunk function
  */
 export const updateCardAsync = (cardId, updates, clientId = null) => {
-    return async (dispatch, getState) => {
+    return async (dispatch) => {
         // Optimistically update local state immediately
         dispatch(updateCardAction(cardId, updates));
 
@@ -295,6 +299,65 @@ export const deleteCardAsync = (cardId) => {
         } catch (error) {
             console.error('Error deleting card:', error);
             throw error;
+        }
+    };
+};
+
+/**
+ * Reorder a backlog card and persist the new position to the server.
+ * Guards against concurrent data reloads overwriting the optimistic state.
+ * On failure, reverts the backlog to its pre-reorder order.
+ *
+ * @param {string} cardId - Card ID to reorder
+ * @param {number} newIndex - New index in the backlog list
+ * @returns {Function} Thunk function
+ */
+export const reorderBacklogCardAsync = (cardId, newIndex) => {
+    return async (dispatch, getState) => {
+        // Snapshot the current backlog so we can revert on error
+        const previousCards = getState().backlogCards || [];
+
+        // Optimistic local reorder + mark as syncing to guard against reloads
+        dispatch(reorderBacklog(cardId, newIndex));
+        dispatch(setBacklogSyncing(true));
+
+        try {
+            // Get the reordered backlog to find neighboring positions
+            const state = getState();
+            const cards = state.backlogCards || [];
+            const idx = cards.findIndex((c) => c.Id === cardId);
+            if (idx === -1) {
+                dispatch(setBacklogSyncing(false));
+                return { success: true };
+            }
+
+            const previousCardPosition =
+                idx > 0 ? cards[idx - 1].position : null;
+            const nextCardPosition =
+                idx < cards.length - 1 ? cards[idx + 1].position : null;
+
+            const newPosition = await reorderBacklogCardApex({
+                cardId,
+                previousCardPosition,
+                nextCardPosition
+            });
+
+            // Update the card's local position to reflect server state so
+            // subsequent reorders use the correct neighbor positions
+            if (newPosition) {
+                dispatch(updateBacklogCard(cardId, { position: newPosition }));
+            }
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error reordering backlog card:', error);
+            // Clear syncing FIRST so the setBacklogCards dispatch isn't blocked
+            dispatch(setBacklogSyncing(false));
+            // Revert to the pre-reorder order so UI matches server
+            dispatch(setBacklogCards(previousCards));
+            throw error;
+        } finally {
+            dispatch(setBacklogSyncing(false));
         }
     };
 };

@@ -2,18 +2,19 @@ import { LightningElement, api, track } from 'lwc';
 import { selectors } from 'c/kanbanStore';
 import {
     setSelectedBacklogCards,
-    toggleBacklogCardSelection,
-    reorderBacklog
+    toggleBacklogCardSelection
 } from 'c/kanbanStore';
 import {
     createBacklogCardAsync,
     updateBacklogCardAsync,
-    deleteBacklogCardsAsync
+    deleteBacklogCardsAsync,
+    reorderBacklogCardAsync
 } from 'c/kanbanStore';
-import { addCardsToSprintAsync } from 'c/kanbanStore';
+import { moveCardsToSprintAsync } from 'c/kanbanStore';
 
 export default class KanbanBacklogView extends LightningElement {
     @api store;
+    @api showDebugInfo = false;
 
     @track searchTerm = '';
     @track filterPriority = 'all';
@@ -35,6 +36,7 @@ export default class KanbanBacklogView extends LightningElement {
     // Drag state
     @track draggedCardId = null;
     @track dragOverIndex = null;
+    _dragTargetIndex = null; // Final drop target index (not tracked — no re-render)
 
     _storeUnsubscribe = null;
 
@@ -91,9 +93,11 @@ export default class KanbanBacklogView extends LightningElement {
             ...card,
             __index: index,
             isSelected: this.selectedCards.includes(card.Id),
+            recordUrl: `/lightning/r/OpenSF__Card__c/${card.Id}/view`,
+            rowStyle: card.color ? `border-left: 3px solid ${card.color}` : '',
             refinementIcon: card.needsRefinement
-                ? 'utility:check'
-                : 'utility:add',
+                ? 'utility:search'
+                : 'utility:dash',
             refinementClass: card.needsRefinement
                 ? 'refinement-active'
                 : 'refinement-inactive',
@@ -189,6 +193,11 @@ export default class KanbanBacklogView extends LightningElement {
             { label: 'Medium', value: 'Medium' },
             { label: 'Low', value: 'Low' }
         ];
+    }
+
+    get isBacklogSaving() {
+        if (!this._storeState) return false;
+        return selectors.isBacklogSyncing(this._storeState);
     }
 
     get addToSprintLabel() {
@@ -319,7 +328,7 @@ export default class KanbanBacklogView extends LightningElement {
 
         try {
             await this.store.dispatch(
-                addCardsToSprintAsync(this.activeSprint.Id, this.selectedCards)
+                moveCardsToSprintAsync(this.activeSprint.Id, this.selectedCards)
             );
             this.store.dispatch(setSelectedBacklogCards([]));
         } catch (error) {
@@ -373,10 +382,51 @@ export default class KanbanBacklogView extends LightningElement {
     // ===================================================================
 
     handleCardClick(event) {
+        event.stopPropagation();
         const cardId = event.currentTarget.dataset.cardId;
         this.dispatchEvent(
             new CustomEvent('cardclick', { detail: { cardId } })
         );
+    }
+
+    handleCardNameClick(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const cardId = event.currentTarget.dataset.cardId;
+        this.dispatchEvent(
+            new CustomEvent('navigatetocard', { detail: { cardId } })
+        );
+    }
+
+    handleCardNameMiddleClick(event) {
+        // Middle click (button === 1) — let the browser open href in new tab
+        if (event.button === 1) {
+            event.stopPropagation();
+            // Don't prevent default — browser will open the href in new tab
+        }
+    }
+
+    handleRowClick(event) {
+        // Don't open panel if clicking on checkbox, drag handle, refinement toggle, or link
+        const target = event.target;
+        const tag = target.tagName?.toLowerCase();
+        if (
+            tag === 'input' ||
+            tag === 'a' ||
+            tag === 'button' ||
+            target.closest('lightning-input') ||
+            target.closest('.backlog-cell--drag') ||
+            target.closest('.backlog-cell--checkbox') ||
+            target.closest('.refinement-toggle')
+        ) {
+            return;
+        }
+        const cardId = event.currentTarget.dataset.cardId;
+        if (cardId) {
+            this.dispatchEvent(
+                new CustomEvent('cardclick', { detail: { cardId } })
+            );
+        }
     }
 
     async handleRefinementToggle(event) {
@@ -435,7 +485,7 @@ export default class KanbanBacklogView extends LightningElement {
             {
                 label: 'Toggle Refinement',
                 value: 'toggleRefinement',
-                icon: 'utility:checkin',
+                icon: 'utility:search',
                 dividerBefore: true
             },
             {
@@ -464,11 +514,14 @@ export default class KanbanBacklogView extends LightningElement {
 
         switch (value) {
             case 'moveTop':
-                this.store.dispatch(reorderBacklog(cardId, 0));
+                await this.store.dispatch(reorderBacklogCardAsync(cardId, 0));
                 break;
             case 'moveBottom':
-                this.store.dispatch(
-                    reorderBacklog(cardId, this.backlogCards.length - 1)
+                await this.store.dispatch(
+                    reorderBacklogCardAsync(
+                        cardId,
+                        this.backlogCards.length - 1
+                    )
                 );
                 break;
             case 'setPriority':
@@ -492,7 +545,7 @@ export default class KanbanBacklogView extends LightningElement {
             case 'moveToSprint':
                 if (this.activeSprint) {
                     await this.store.dispatch(
-                        addCardsToSprintAsync(this.activeSprint.Id, [cardId])
+                        moveCardsToSprintAsync(this.activeSprint.Id, [cardId])
                     );
                 }
                 break;
@@ -525,29 +578,96 @@ export default class KanbanBacklogView extends LightningElement {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
 
-        if (!this.draggedCardId || !this.store) return;
+        if (!this.draggedCardId) return;
 
         const row = event.currentTarget;
         const targetIndex = Number(row.dataset.index);
 
-        // Only reorder if position actually changed
-        if (this.dragOverIndex !== targetIndex) {
-            this.dragOverIndex = targetIndex;
-            // Live reorder in store
-            this.store.dispatch(reorderBacklog(this.draggedCardId, targetIndex));
+        // Determine if cursor is in top or bottom half of row
+        const rect = row.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+        const insertAfter = event.clientY > midpoint;
+        const effectiveIndex = insertAfter ? targetIndex + 1 : targetIndex;
+
+        if (this.dragOverIndex === effectiveIndex) return;
+
+        // Clear previous indicator
+        this._clearDropIndicators();
+
+        // Show drop indicator (CSS only — no state mutation during drag)
+        if (insertAfter) {
+            row.classList.add('drag-indicator-below');
+        } else {
+            row.classList.add('drag-indicator-above');
         }
+
+        this.dragOverIndex = effectiveIndex;
+        this._dragTargetIndex = effectiveIndex;
+    }
+
+    _clearDropIndicators() {
+        const rows = this.template.querySelectorAll('.backlog-row');
+        rows.forEach((r) => {
+            r.classList.remove('drag-indicator-above', 'drag-indicator-below');
+        });
     }
 
     handleDragEnd(event) {
         event.currentTarget.classList.remove('dragging');
-        this.draggedCardId = null;
-        this.dragOverIndex = null;
+        this._clearDropIndicators();
+        // If drop didn't fire (e.g. dropped outside), reset drag state
+        if (this.draggedCardId) {
+            this.draggedCardId = null;
+            this.dragOverIndex = null;
+            this._dragTargetIndex = null;
+        }
     }
 
-    handleDrop(event) {
+    async handleDrop(event) {
         event.preventDefault();
-        // Reorder already applied live during dragOver - nothing else needed
+        this._clearDropIndicators();
+
+        const cardId = this.draggedCardId;
+        const targetIndex = this._dragTargetIndex;
         this.draggedCardId = null;
         this.dragOverIndex = null;
+        this._dragTargetIndex = null;
+
+        if (cardId == null || targetIndex == null || !this.store) return;
+
+        // Compute the target index in the unfiltered backlog array.
+        // _dragTargetIndex is based on the filtered/displayed list.
+        // Convert to the unfiltered array index using the card at that position.
+        const state = this.store.getState();
+        const allCards = state.backlogCards || [];
+        const oldIndex = allCards.findIndex((c) => c.Id === cardId);
+        if (oldIndex === -1) return;
+
+        // Account for the dragged card being removed before re-inserting
+        let newIndex;
+        if (targetIndex >= this.backlogCards.length) {
+            // Dropped at the end
+            newIndex = allCards.length - 1;
+        } else {
+            const anchorCard = this.backlogCards[targetIndex];
+            newIndex = allCards.findIndex((c) => c.Id === anchorCard.Id);
+            // If moving down, the anchor shifts after removing the dragged card
+            if (newIndex > oldIndex) {
+                newIndex = Math.max(0, newIndex - 1);
+            }
+        }
+
+        // Reorder locally + persist to server in one dispatch
+        try {
+            await this.store.dispatch(
+                reorderBacklogCardAsync(cardId, newIndex)
+            );
+        } catch (error) {
+            this.dispatchEvent(
+                new CustomEvent('error', {
+                    detail: { message: 'Failed to save card position' }
+                })
+            );
+        }
     }
 }

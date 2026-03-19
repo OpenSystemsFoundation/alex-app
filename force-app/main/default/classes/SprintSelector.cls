@@ -170,8 +170,8 @@ public with sharing class SprintSelector {
             FROM OpenSF__Card__c
             WHERE
                 (OpenSF__Column__r.OpenSF__Board__c = :boardId
-                    OR (OpenSF__Board__c = :boardId
-                        AND OpenSF__Column__c = NULL))
+                OR (OpenSF__Board__c = :boardId
+                AND OpenSF__Column__c = NULL))
                 AND Id NOT IN :cardsInActiveSprints
             ORDER BY OpenSF__LexoRankPosition__c ASC NULLS LAST
         ];

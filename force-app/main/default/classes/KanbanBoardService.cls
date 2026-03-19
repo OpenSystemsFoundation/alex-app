@@ -17,6 +17,9 @@ public with sharing class KanbanBoardService {
                 boardId
             );
 
+            // Backfill any cards missing LexoRank positions
+            KanbanCardService.backfillMissingPositions(cards);
+
             // Convert to DTOs for LWC consumption
             KanbanBoardController.BoardData result = new KanbanBoardController.BoardData();
             result.board = new KanbanBoardDTO.BoardDTO(board);
@@ -215,5 +218,18 @@ public with sharing class KanbanBoardService {
             };
             return result;
         }
+    }
+
+    /**
+     * Get runtime config from the KanbanConfig hierarchy custom setting.
+     * Returns the effective values for the running user (org → profile → user).
+     */
+    public static KanbanBoardController.KanbanConfigResult getKanbanConfig() {
+        KanbanBoardController.KanbanConfigResult result = new KanbanBoardController.KanbanConfigResult();
+        OpenSF__KanbanConfig__c cfg = OpenSF__KanbanConfig__c.getInstance();
+        if (cfg != null) {
+            result.showDebugInfo = cfg.OpenSF__ShowDebugInfo__c == true;
+        }
+        return result;
     }
 }

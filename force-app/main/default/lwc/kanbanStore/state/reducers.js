@@ -40,6 +40,7 @@ export const initialState = {
     activeSprint: null,
     sprints: [],
     backlogCards: [],
+    backlogSyncing: false, // true while a backlog reorder is in-flight
     sprintCards: [],
     backlogVisible: false,
     selectedBacklogCards: []
@@ -344,15 +345,26 @@ export const sprintReducer = (state, action) => {
 export const backlogReducer = (state, action) => {
     switch (action.type) {
         case types.SET_BACKLOG_CARDS:
+            // Skip replacing backlog if a reorder is in-flight — the
+            // server data is stale relative to the optimistic local order
+            if (state.backlogSyncing) {
+                return state;
+            }
             return {
                 ...state,
                 backlogCards: action.payload || []
             };
 
+        case types.SET_BACKLOG_SYNCING:
+            return {
+                ...state,
+                backlogSyncing: !!action.payload
+            };
+
         case types.ADD_BACKLOG_CARD:
             return {
                 ...state,
-                backlogCards: [...state.backlogCards, action.payload]
+                backlogCards: [action.payload, ...state.backlogCards]
             };
 
         case types.REMOVE_BACKLOG_CARD:

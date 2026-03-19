@@ -332,10 +332,12 @@ public with sharing class SprintService {
             SprintSelector.getSprintsByBoardId(boardId)
         );
 
-        // Get backlog cards
-        data.backlogCards = KanbanBoardDTO.convertCards(
-            SprintSelector.getBacklogCardsByBoardId(boardId)
+        // Get backlog cards and backfill any missing positions
+        List<OpenSF__Card__c> backlogCards = SprintSelector.getBacklogCardsByBoardId(
+            boardId
         );
+        KanbanCardService.backfillMissingPositions(backlogCards);
+        data.backlogCards = KanbanBoardDTO.convertCards(backlogCards);
 
         return data;
     }

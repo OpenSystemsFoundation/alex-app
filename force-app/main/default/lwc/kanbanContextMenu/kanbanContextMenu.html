@@ -1,30 +1,87 @@
 <template>
     <template lwc:if={isVisible}>
-        <div class="context-menu slds-dropdown slds-dropdown_left" style={menuStyle} onkeydown={handleKeyDown} role="menu">
-            <ul class="slds-dropdown__list" role="presentation">
-                <template for:each={processedItems} for:item="item">
+        <div
+            class="context-menu slds-dropdown slds-dropdown_left"
+            style={menuStyle}
+            onkeydown={handleKeyDown}
+            role="menu"
+        >
+            <ul
+                class="slds-dropdown__list"
+                role="presentation"
+            >
+                <template
+                    for:each={processedItems}
+                    for:item="item"
+                >
                     <template lwc:if={item.dividerBefore}>
-                        <li key={item.key} class="slds-has-divider_top-space" role="separator"></li>
+                        <li
+                            key={item.key}
+                            class="slds-has-divider_top-space"
+                            role="separator"
+                        ></li>
                     </template>
-                    <li key={item.key} class={item.itemClass} role="presentation">
-                        <a role="menuitem" data-value={item.value} onclick={handleItemClick} class="slds-dropdown__item-link">
+                    <li
+                        key={item.key}
+                        class={item.itemClass}
+                        role="presentation"
+                    >
+                        <a
+                            role="menuitem"
+                            data-value={item.value}
+                            onclick={handleItemClick}
+                            class="slds-dropdown__item-link"
+                        >
                             <span class="slds-truncate">
-                                <template lwc:if={item.icon}>
-                                    <lightning-icon icon-name={item.icon} size="xx-small" class="slds-var-m-right_x-small"></lightning-icon>
+                                <template
+                                    lwc:if={item.icon}
+                                >
+                                    <lightning-icon
+                                        icon-name={item.icon}
+                                        size="xx-small"
+                                        class="slds-var-m-right_x-small"
+                                    ></lightning-icon>
                                 </template>
                                 {item.label}
                             </span>
-                            <template lwc:if={item.hasSubmenu}>
-                                <lightning-icon icon-name="utility:chevronright" size="xx-small" class="slds-var-m-left_x-small"></lightning-icon>
+                            <template
+                                lwc:if={item.hasSubmenu}
+                            >
+                                <lightning-icon
+                                    icon-name="utility:chevronright"
+                                    size="xx-small"
+                                    class="slds-var-m-left_x-small"
+                                ></lightning-icon>
                             </template>
                         </a>
                         <!-- Submenu -->
-                        <template lwc:if={item.isSubmenuActive}>
-                            <ul class="context-submenu slds-dropdown__list" role="presentation">
-                                <template for:each={item.submenu} for:item="sub">
-                                    <li key={sub.value} class="context-menu__item" role="presentation">
-                                        <a role="menuitem" data-value={sub.value} data-parent={item.value} onclick={handleSubmenuClick} class="slds-dropdown__item-link">
-                                            <span class="slds-truncate">{sub.label}</span>
+                        <template
+                            lwc:if={item.isSubmenuActive}
+                        >
+                            <ul
+                                class="context-submenu slds-dropdown__list"
+                                role="presentation"
+                            >
+                                <template
+                                    for:each={item.submenu}
+                                    for:item="sub"
+                                >
+                                    <li
+                                        key={sub.value}
+                                        class="context-menu__item"
+                                        role="presentation"
+                                    >
+                                        <a
+                                            role="menuitem"
+                                            data-value={sub.value}
+                                            data-parent={item.value}
+                                            onclick={handleSubmenuClick}
+                                            class="slds-dropdown__item-link"
+                                        >
+                                            <span
+                                                class="slds-truncate"
+                                                >{sub.label}</span
+                                            >
                                         </a>
                                     </li>
                                 </template>

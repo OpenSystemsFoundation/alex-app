@@ -1,20 +1,40 @@
 <template>
     <template lwc:if={isOpen}>
-        <div class="card-panel" style={panelStyle} onkeydown={handleKeyDown} tabindex="-1">
+        <div
+            class="card-panel"
+            style={panelStyle}
+            onkeydown={handleKeyDown}
+            tabindex="-1"
+        >
             <!-- Resize Handle -->
-            <div class="card-panel__resize-handle" onmousedown={handleResizeStart}></div>
+            <div
+                class="card-panel__resize-handle"
+                onmousedown={handleResizeStart}
+            ></div>
 
             <!-- Panel Header -->
             <div
                 class="card-panel__header slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-var-p-around_small"
             >
-                <div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate">
+                <div
+                    class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate"
+                >
                     <lightning-icon
                         icon-name="standard:task"
                         size="small"
                         class="slds-var-m-right_x-small"
                     ></lightning-icon>
-                    <h2 class="slds-text-heading_small slds-truncate">{card.Name}</h2>
+                    <h2
+                        class="slds-text-heading_small slds-truncate"
+                    >
+                        <a
+                            href={cardRecordUrl}
+                            data-card-id={card.Id}
+                            onclick={handleNameClick}
+                            class="slds-text-link"
+                            >{card.Name}</a
+                        >
+                    </h2>
                 </div>
                 <button
                     class="slds-button slds-button_icon slds-button_icon-small"
@@ -30,25 +50,41 @@
             </div>
 
             <!-- Panel Body - scrollable -->
-            <div class="card-panel__body slds-var-p-around_small">
+            <div
+                class="card-panel__body slds-var-p-around_small"
+            >
                 <lightning-record-edit-form
                     object-api-name="OpenSF__Card__c"
                     record-id={card.Id}
                     onsuccess={handleSuccess}
                     onerror={handleError}
                 >
-                    <div class="slds-form slds-form_stacked">
-                        <div class="slds-grid slds-wrap slds-gutters_small">
-                            <template for:each={regularFields} for:item="field">
-                                <div key={field.key} class={field.columnClass}>
+                    <div
+                        class="slds-form slds-form_stacked"
+                    >
+                        <div
+                            class="slds-grid slds-wrap slds-gutters_small"
+                        >
+                            <template
+                                for:each={regularFields}
+                                for:item="field"
+                            >
+                                <div
+                                    key={field.key}
+                                    class={field.columnClass}
+                                >
                                     <lightning-input-field
                                         field-name={field.fieldName}
                                         variant="label-stacked"
                                     ></lightning-input-field>
                                 </div>
                             </template>
-                            <template lwc:if={descriptionField}>
-                                <div class="slds-col slds-size_1-of-1 slds-var-m-top_small">
+                            <template
+                                lwc:if={descriptionField}
+                            >
+                                <div
+                                    class="slds-col slds-size_1-of-1 slds-var-m-top_small"
+                                >
                                     <lightning-input-field
                                         field-name={descriptionField.fieldName}
                                         variant="label-stacked"
@@ -61,7 +97,9 @@
             </div>
 
             <!-- Panel Footer -->
-            <div class="card-panel__footer slds-grid slds-grid_align-spread slds-var-p-around_small">
+            <div
+                class="card-panel__footer slds-grid slds-grid_align-spread slds-var-p-around_small"
+            >
                 <lightning-button
                     variant={deleteButtonVariant}
                     label={deleteButtonLabel}

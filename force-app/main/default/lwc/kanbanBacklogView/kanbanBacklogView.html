@@ -48,7 +48,18 @@
                 <span
                     class="slds-text-body_small slds-text-color_weak slds-var-m-right_small"
                 >
-                    {cardCount} cards &bull; {totalStoryPoints} pts
+                    <template lwc:if={isBacklogSaving}>
+                        <lightning-spinner
+                            size="xx-small"
+                            alternative-text="Saving"
+                            class="saving-spinner"
+                        ></lightning-spinner>
+                        Saving&hellip;
+                    </template>
+                    <template lwc:else>
+                        {cardCount} cards &bull;
+                        {totalStoryPoints} pts
+                    </template>
                 </span>
             </div>
             <div class="slds-col slds-no-flex">
@@ -66,8 +77,10 @@
             <div
                 class="backlog-view__bulk-actions slds-grid slds-grid_vertical-align-center slds-gutters_x-small slds-var-p-horizontal_small slds-var-p-vertical_x-small"
             >
-                <span class="slds-text-body_small slds-var-m-right_small"
-                    ><strong>{selectedCount}</strong> selected</span
+                <span
+                    class="slds-text-body_small slds-var-m-right_small"
+                    ><strong>{selectedCount}</strong>
+                    selected</span
                 >
                 <template lwc:if={hasActiveSprint}>
                     <lightning-button
@@ -140,8 +153,12 @@
                 <div
                     class="backlog-row backlog-row--header slds-grid slds-grid_vertical-align-center"
                 >
-                    <div class="backlog-cell backlog-cell--drag"></div>
-                    <div class="backlog-cell backlog-cell--checkbox">
+                    <div
+                        class="backlog-cell backlog-cell--drag"
+                    ></div>
+                    <div
+                        class="backlog-cell backlog-cell--checkbox"
+                    >
                         <lightning-input
                             type="checkbox"
                             checked={isAllSelected}
@@ -150,43 +167,79 @@
                             label="Select All"
                         ></lightning-input>
                     </div>
-                    <div class="backlog-cell backlog-cell--refinement"></div>
-                    <div class="backlog-cell backlog-cell--name">
-                        <strong>Name</strong>
+                    <div
+                        class="backlog-cell backlog-cell--refinement"
+                        title="Needs Refinement"
+                    >
+                        <lightning-icon
+                            icon-name="utility:search"
+                            size="xx-small"
+                            alternative-text="Refinement"
+                            class="header-icon"
+                        ></lightning-icon>
                     </div>
-                    <div class="backlog-cell backlog-cell--subject">
-                        <strong>Subject</strong>
+                    <div
+                        class="backlog-cell backlog-cell--name"
+                    >
+                        Name
                     </div>
-                    <div class="backlog-cell backlog-cell--type">
-                        <strong>Type</strong>
+                    <div
+                        class="backlog-cell backlog-cell--subject"
+                    >
+                        Subject
                     </div>
-                    <div class="backlog-cell backlog-cell--priority">
-                        <strong>Priority</strong>
+                    <div
+                        class="backlog-cell backlog-cell--type"
+                    >
+                        Type
                     </div>
-                    <div class="backlog-cell backlog-cell--points">
-                        <strong>Points</strong>
+                    <div
+                        class="backlog-cell backlog-cell--priority"
+                    >
+                        Priority
                     </div>
-                    <div class="backlog-cell backlog-cell--assignee">
-                        <strong>Assignee</strong>
+                    <div
+                        class="backlog-cell backlog-cell--points"
+                    >
+                        Points
                     </div>
+                    <div
+                        class="backlog-cell backlog-cell--assignee"
+                    >
+                        Assignee
+                    </div>
+                    <template lwc:if={showDebugInfo}>
+                        <div
+                            class="backlog-cell backlog-cell--debug"
+                        >
+                            LexoRank
+                        </div>
+                    </template>
                 </div>
 
                 <!-- Table Body -->
-                <template for:each={backlogCards} for:item="card">
+                <template
+                    for:each={backlogCards}
+                    for:item="card"
+                >
                     <div
                         key={card.Id}
                         class="backlog-row slds-grid slds-grid_vertical-align-center"
                         data-card-id={card.Id}
                         data-index={card.__index}
+                        style={card.rowStyle}
                         draggable="true"
                         ondragstart={handleDragStart}
                         ondragover={handleDragOver}
                         ondragend={handleDragEnd}
                         ondrop={handleDrop}
+                        onclick={handleRowClick}
                         oncontextmenu={handleContextMenu}
                     >
                         <!-- Drag Handle -->
-                        <div class="backlog-cell backlog-cell--drag">
+                        <div
+                            class="backlog-cell backlog-cell--drag"
+                        >
                             <lightning-icon
                                 icon-name="utility:drag_and_drop"
                                 size="xx-small"
@@ -195,7 +248,9 @@
                         </div>
 
                         <!-- Checkbox -->
-                        <div class="backlog-cell backlog-cell--checkbox">
+                        <div
+                            class="backlog-cell backlog-cell--checkbox"
+                        >
                             <lightning-input
                                 type="checkbox"
                                 data-card-id={card.Id}
@@ -207,7 +262,9 @@
                         </div>
 
                         <!-- Refinement Toggle -->
-                        <div class="backlog-cell backlog-cell--refinement">
+                        <div
+                            class="backlog-cell backlog-cell--refinement"
+                        >
                             <button
                                 class="refinement-toggle slds-button slds-button_icon slds-button_icon-x-small"
                                 data-card-id={card.Id}
@@ -224,10 +281,14 @@
                         </div>
 
                         <!-- Name -->
-                        <div class="backlog-cell backlog-cell--name">
+                        <div
+                            class="backlog-cell backlog-cell--name"
+                        >
                             <a
+                                href={card.recordUrl}
                                 data-card-id={card.Id}
-                                onclick={handleCardClick}
+                                onclick={handleCardNameClick}
+                                onauxclick={handleCardNameMiddleClick}
                                 class="slds-text-link"
                                 >{card.Name}</a
                             >
@@ -242,25 +303,37 @@
                         </div>
 
                         <!-- Type -->
-                        <div class="backlog-cell backlog-cell--type">
-                            <template lwc:if={card.cardType}>
-                                <span class="slds-badge slds-badge_inverse"
+                        <div
+                            class="backlog-cell backlog-cell--type"
+                        >
+                            <template
+                                lwc:if={card.cardType}
+                            >
+                                <span
+                                    class="slds-badge slds-badge_inverse"
                                     >{card.cardType}</span
                                 >
                             </template>
                         </div>
 
                         <!-- Priority -->
-                        <div class="backlog-cell backlog-cell--priority">
-                            <template lwc:if={card.priority}>
-                                <span class={card.priorityBadgeClass}
+                        <div
+                            class="backlog-cell backlog-cell--priority"
+                        >
+                            <template
+                                lwc:if={card.priority}
+                            >
+                                <span
+                                    class={card.priorityBadgeClass}
                                     >{card.priority}</span
                                 >
                             </template>
                         </div>
 
                         <!-- Points -->
-                        <div class="backlog-cell backlog-cell--points">
+                        <div
+                            class="backlog-cell backlog-cell--points"
+                        >
                             {card.storyPoints}
                         </div>
 
@@ -268,10 +341,29 @@
                         <div
                             class="backlog-cell backlog-cell--assignee slds-truncate"
                         >
-                            <template lwc:if={card.assignee}>
+                            <template
+                                lwc:if={card.assignee}
+                            >
                                 {card.assignee.name}
                             </template>
                         </div>
+
+                        <!-- Debug: LexoRank -->
+                        <template lwc:if={showDebugInfo}>
+                            <div
+                                class="backlog-cell backlog-cell--debug slds-truncate"
+                                title={card.position}
+                            >
+                                <template
+                                    lwc:if={card.position}
+                                >
+                                    {card.position}
+                                </template>
+                                <template lwc:else>
+                                    <em>null</em>
+                                </template>
+                            </div>
+                        </template>
                     </div>
                 </template>
             </template>
@@ -296,7 +388,8 @@
                         <p
                             class="slds-text-body_regular slds-text-color_weak slds-var-m-bottom_medium"
                         >
-                            Create your first backlog card to start planning
+                            Create your first backlog card
+                            to start planning
                         </p>
                         <lightning-button
                             label="Create Card"

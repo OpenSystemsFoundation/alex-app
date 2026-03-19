@@ -211,6 +211,7 @@ public with sharing class KanbanBoardController {
             List<OpenSF__Card__c> cards = KanbanBoardSelector.getBacklogCardsByBoardId(
                 boardId
             );
+            KanbanCardService.backfillMissingPositions(cards);
             return KanbanBoardDTO.convertCards(cards);
         } catch (Exception e) {
             throw new AuraHandledException(
@@ -241,6 +242,39 @@ public with sharing class KanbanBoardController {
         } catch (Exception e) {
             throw new AuraHandledException(
                 'Error creating backlog card: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Reorder a backlog card by computing a new LexoRank position
+     * between two neighboring cards.
+     * @return The computed LexoRank position string
+     */
+    @AuraEnabled
+    public static String reorderBacklogCard(
+        Id cardId,
+        String previousCardPosition,
+        String nextCardPosition
+    ) {
+        try {
+            String newPosition = LexoRank.between(
+                previousCardPosition,
+                nextCardPosition
+            );
+            OpenSF__Card__c card = new OpenSF__Card__c(
+                Id = cardId,
+                OpenSF__LexoRankPosition__c = newPosition
+            );
+            update Security.stripInaccessible(
+                    AccessType.UPDATABLE,
+                    new List<OpenSF__Card__c>{ card }
+                )
+                .getRecords();
+            return newPosition;
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error reordering backlog card: ' + e.getMessage()
             );
         }
     }
@@ -473,5 +507,18 @@ public with sharing class KanbanBoardController {
         public Decimal deliveryRate;
         @AuraEnabled
         public String message;
+    }
+
+    public class KanbanConfigResult {
+        @AuraEnabled
+        public Boolean showDebugInfo = false;
+    }
+
+    /**
+     * Get runtime config from the KanbanConfig hierarchy custom setting
+     */
+    @AuraEnabled(cacheable=true)
+    public static KanbanConfigResult getKanbanConfig() {
+        return KanbanBoardService.getKanbanConfig();
     }
 }

@@ -295,6 +295,11 @@ export const reorderBacklog = (cardId, newIndex) => ({
     payload: { cardId, newIndex }
 });
 
+export const setBacklogSyncing = (syncing) => ({
+    type: types.SET_BACKLOG_SYNCING,
+    payload: syncing
+});
+
 // ===================================================================
 // Sprint Card Action Creators
 // ===================================================================

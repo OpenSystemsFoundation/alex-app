@@ -46,7 +46,10 @@ export default class KanbanContextMenu extends LightningElement {
         this.activeSubmenu = null;
         if (this._clickOutsideHandler) {
             window.removeEventListener('click', this._clickOutsideHandler);
-            window.removeEventListener('contextmenu', this._clickOutsideHandler);
+            window.removeEventListener(
+                'contextmenu',
+                this._clickOutsideHandler
+            );
             this._clickOutsideHandler = null;
         }
     }
@@ -77,9 +80,7 @@ export default class KanbanContextMenu extends LightningElement {
             return;
         }
 
-        this.dispatchEvent(
-            new CustomEvent('select', { detail: { value } })
-        );
+        this.dispatchEvent(new CustomEvent('select', { detail: { value } }));
         this.hide();
     }
 
