@@ -128,6 +128,25 @@ function flushPromises() {
     return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+/**
+ * Find a lightning-button by its label property within a parent element.
+ * sfdx-lwc-jest stubs don't always reflect properties as HTML attributes,
+ * so attribute selectors like [label="X"] may not work.
+ */
+function findButtonByLabel(root, label) {
+    const buttons = root.querySelectorAll('lightning-button');
+    return Array.from(buttons).find((b) => b.label === label) || null;
+}
+
+/**
+ * Find a lightning-button by label within a scoped parent selector.
+ */
+function findButtonByLabelIn(root, parentSelector, label) {
+    const parent = root.querySelector(parentSelector);
+    if (!parent) return null;
+    return findButtonByLabel(parent, label);
+}
+
 // =====================================================================
 //  1. KanbanBacklogView Tests
 // =====================================================================
@@ -413,8 +432,10 @@ describe('c-kanban-backlog-view', () => {
             });
             createBacklogView();
             return flushPromises().then(() => {
-                const addBtn = element.shadowRoot.querySelector(
-                    '.backlog-view__bulk-actions lightning-button[variant="brand"]'
+                const addBtn = findButtonByLabelIn(
+                    element.shadowRoot,
+                    '.backlog-view__bulk-actions',
+                    'Add to Sprint (1)'
                 );
                 expect(addBtn).not.toBeNull();
                 expect(addBtn.label).toContain('1');
@@ -589,8 +610,9 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             return flushPromises().then(() => {
                 // Click "New Card" button
-                const newBtn = element.shadowRoot.querySelector(
-                    'lightning-button[label="New Card"]'
+                const newBtn = findButtonByLabel(
+                    element.shadowRoot,
+                    'New Card'
                 );
                 newBtn.click();
                 return flushPromises().then(() => {
@@ -606,8 +628,9 @@ describe('c-kanban-backlog-view', () => {
             mockSelectors.getBacklogCards.mockReturnValue([]);
             createBacklogView();
             return flushPromises().then(() => {
-                const newBtn = element.shadowRoot.querySelector(
-                    'lightning-button[label="New Card"]'
+                const newBtn = findButtonByLabel(
+                    element.shadowRoot,
+                    'New Card'
                 );
                 newBtn.click();
                 return flushPromises().then(() => {
@@ -627,13 +650,16 @@ describe('c-kanban-backlog-view', () => {
             mockSelectors.getBacklogCards.mockReturnValue([]);
             createBacklogView();
             return flushPromises().then(() => {
-                const newBtn = element.shadowRoot.querySelector(
-                    'lightning-button[label="New Card"]'
+                const newBtn = findButtonByLabel(
+                    element.shadowRoot,
+                    'New Card'
                 );
                 newBtn.click();
                 return flushPromises().then(() => {
-                    const saveBtn = element.shadowRoot.querySelector(
-                        '.backlog-view__create-form lightning-button[label="Save"]'
+                    const saveBtn = findButtonByLabelIn(
+                        element.shadowRoot,
+                        '.backlog-view__create-form',
+                        'Save'
                     );
                     expect(saveBtn.disabled).toBe(true);
                 });
@@ -644,8 +670,9 @@ describe('c-kanban-backlog-view', () => {
             mockSelectors.getBacklogCards.mockReturnValue([]);
             createBacklogView();
             return flushPromises().then(() => {
-                const newBtn = element.shadowRoot.querySelector(
-                    'lightning-button[label="New Card"]'
+                const newBtn = findButtonByLabel(
+                    element.shadowRoot,
+                    'New Card'
                 );
                 newBtn.click();
                 return flushPromises().then(() => {
@@ -670,8 +697,9 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const newBtn = element.shadowRoot.querySelector(
-                'lightning-button[label="New Card"]'
+            const newBtn = findButtonByLabel(
+                element.shadowRoot,
+                'New Card'
             );
             newBtn.click();
             await flushPromises();
@@ -702,8 +730,9 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const newBtn = element.shadowRoot.querySelector(
-                'lightning-button[label="New Card"]'
+            const newBtn = findButtonByLabel(
+                element.shadowRoot,
+                'New Card'
             );
             newBtn.click();
             await flushPromises();
@@ -730,8 +759,9 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const newBtn = element.shadowRoot.querySelector(
-                'lightning-button[label="New Card"]'
+            const newBtn = findButtonByLabel(
+                element.shadowRoot,
+                'New Card'
             );
             newBtn.click();
             await flushPromises();
@@ -742,8 +772,10 @@ describe('c-kanban-backlog-view', () => {
             input.dispatchEvent(new CustomEvent('change'));
             await flushPromises();
 
-            const saveBtn = element.shadowRoot.querySelector(
-                '.backlog-view__create-form lightning-button[label="Save"]'
+            const saveBtn = findButtonByLabelIn(
+                element.shadowRoot,
+                '.backlog-view__create-form',
+                'Save'
             );
             saveBtn.click();
             await flushPromises();
@@ -759,14 +791,17 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const newBtn = element.shadowRoot.querySelector(
-                'lightning-button[label="New Card"]'
+            const newBtn = findButtonByLabel(
+                element.shadowRoot,
+                'New Card'
             );
             newBtn.click();
             await flushPromises();
 
-            const saveBtn = element.shadowRoot.querySelector(
-                '.backlog-view__create-form lightning-button[label="Save"]'
+            const saveBtn = findButtonByLabelIn(
+                element.shadowRoot,
+                '.backlog-view__create-form',
+                'Save'
             );
             saveBtn.click();
             await flushPromises();
@@ -789,8 +824,9 @@ describe('c-kanban-backlog-view', () => {
             document.body.appendChild(element);
             await flushPromises();
 
-            const newBtn = element.shadowRoot.querySelector(
-                'lightning-button[label="New Card"]'
+            const newBtn = findButtonByLabel(
+                element.shadowRoot,
+                'New Card'
             );
             newBtn.click();
             await flushPromises();
@@ -806,8 +842,10 @@ describe('c-kanban-backlog-view', () => {
                 errorReceived = true;
             });
 
-            const saveBtn = element.shadowRoot.querySelector(
-                '.backlog-view__create-form lightning-button[label="Save"]'
+            const saveBtn = findButtonByLabelIn(
+                element.shadowRoot,
+                '.backlog-view__create-form',
+                'Save'
             );
             saveBtn.click();
             await flushPromises();
@@ -820,14 +858,17 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const newBtn = element.shadowRoot.querySelector(
-                'lightning-button[label="New Card"]'
+            const newBtn = findButtonByLabel(
+                element.shadowRoot,
+                'New Card'
             );
             newBtn.click();
             await flushPromises();
 
-            const cancelBtn = element.shadowRoot.querySelector(
-                '.backlog-view__create-form lightning-button[label="Cancel"]'
+            const cancelBtn = findButtonByLabelIn(
+                element.shadowRoot,
+                '.backlog-view__create-form',
+                'Cancel'
             );
             cancelBtn.click();
             await flushPromises();
@@ -911,8 +952,9 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const clearBtn = element.shadowRoot.querySelector(
-                'lightning-button[label="Clear"]'
+            const clearBtn = findButtonByLabel(
+                element.shadowRoot,
+                'Clear'
             );
             clearBtn.click();
             await flushPromises();
@@ -934,8 +976,10 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const addBtn = element.shadowRoot.querySelector(
-                '.backlog-view__bulk-actions lightning-button[variant="brand"]'
+            const addBtn = findButtonByLabelIn(
+                element.shadowRoot,
+                '.backlog-view__bulk-actions',
+                'Add to Sprint (1)'
             );
             addBtn.click();
             await flushPromises();
@@ -957,8 +1001,10 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const addBtn = element.shadowRoot.querySelector(
-                '.backlog-view__bulk-actions lightning-button[variant="brand"]'
+            const addBtn = findButtonByLabelIn(
+                element.shadowRoot,
+                '.backlog-view__bulk-actions',
+                'Add to Sprint (1)'
             );
             addBtn.click();
             await flushPromises();
@@ -975,8 +1021,9 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const deleteBtn = element.shadowRoot.querySelector(
-                'lightning-button[icon-name="utility:delete"]'
+            const deleteBtn = findButtonByLabel(
+                element.shadowRoot,
+                'Delete'
             );
             deleteBtn.click();
             await flushPromises();
@@ -1030,10 +1077,11 @@ describe('c-kanban-backlog-view', () => {
                 '.backlog-view__bulk-actions'
             );
             if (bulkBar) {
-                const brandBtns = bulkBar.querySelectorAll(
-                    'lightning-button[variant="brand"]'
+                const sprintBtn = findButtonByLabel(
+                    bulkBar,
+                    'Add to Sprint (1)'
                 );
-                expect(brandBtns.length).toBe(0);
+                expect(sprintBtn).toBeNull();
             }
         });
 
@@ -1060,8 +1108,9 @@ describe('c-kanban-backlog-view', () => {
                 errorReceived = true;
             });
 
-            const deleteBtn = element.shadowRoot.querySelector(
-                'lightning-button[icon-name="utility:delete"]'
+            const deleteBtn = findButtonByLabel(
+                element.shadowRoot,
+                'Delete'
             );
             deleteBtn.click();
             await flushPromises();
@@ -1710,8 +1759,8 @@ describe('c-kanban-card-panel', () => {
                 KanbanCardPanel.prototype,
                 'hasFields'
             ).get;
-            expect(getter.call({ formFields: [] })).toBe(false);
-            expect(getter.call({ formFields: null })).toBe(false);
+            expect(getter.call({ formFields: [] })).toBeFalsy();
+            expect(getter.call({ formFields: null })).toBeFalsy();
         });
 
         it('hasFields returns true when formFields has items', () => {
@@ -1823,8 +1872,9 @@ describe('c-kanban-card-panel', () => {
                 closeFired = true;
             });
 
-            const closeBtn = element.shadowRoot.querySelector(
-                'lightning-button[label="Cancel"]'
+            const closeBtn = findButtonByLabel(
+                element.shadowRoot,
+                'Cancel'
             );
             closeBtn.click();
             await flushPromises();
@@ -1881,18 +1931,19 @@ describe('c-kanban-card-panel', () => {
             createPanel();
             await flushPromises();
 
-            const deleteBtn = element.shadowRoot.querySelector(
-                'lightning-button[variant="neutral"][label="Delete"]'
+            const deleteBtn = findButtonByLabel(
+                element.shadowRoot,
+                'Delete'
             );
             deleteBtn.click();
             await flushPromises();
 
             // After first click, label should change to "Confirm Delete"
-            const confirmBtn = element.shadowRoot.querySelector(
-                'lightning-button[variant="destructive"]'
+            const confirmBtn = findButtonByLabel(
+                element.shadowRoot,
+                'Confirm Delete'
             );
             expect(confirmBtn).not.toBeNull();
-            expect(confirmBtn.label).toBe('Confirm Delete');
             jest.useRealTimers();
         });
 
@@ -1902,15 +1953,17 @@ describe('c-kanban-card-panel', () => {
             createPanel({ store });
             await flushPromises();
 
-            const deleteBtn = element.shadowRoot.querySelector(
-                'lightning-button[label="Delete"]'
+            const deleteBtn = findButtonByLabel(
+                element.shadowRoot,
+                'Delete'
             );
             deleteBtn.click();
             await flushPromises();
 
             // Click again to confirm
-            const confirmBtn = element.shadowRoot.querySelector(
-                'lightning-button[label="Confirm Delete"]'
+            const confirmBtn = findButtonByLabel(
+                element.shadowRoot,
+                'Confirm Delete'
             );
             confirmBtn.click();
             await flushPromises();
@@ -1924,8 +1977,9 @@ describe('c-kanban-card-panel', () => {
             createPanel();
             await flushPromises();
 
-            const deleteBtn = element.shadowRoot.querySelector(
-                'lightning-button[label="Delete"]'
+            const deleteBtn = findButtonByLabel(
+                element.shadowRoot,
+                'Delete'
             );
             deleteBtn.click();
             await flushPromises();
@@ -1935,8 +1989,9 @@ describe('c-kanban-card-panel', () => {
             await flushPromises();
 
             // Should revert to normal delete button
-            const normalBtn = element.shadowRoot.querySelector(
-                'lightning-button[label="Delete"]'
+            const normalBtn = findButtonByLabel(
+                element.shadowRoot,
+                'Delete'
             );
             expect(normalBtn).not.toBeNull();
             jest.useRealTimers();

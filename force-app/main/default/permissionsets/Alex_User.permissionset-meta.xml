@@ -203,11 +203,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Sprint__c.Board__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>Sprint__c.CompletedStoryPoints__c</field>
         <readable>true</readable>
     </fieldPermissions>
