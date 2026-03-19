@@ -38,6 +38,6 @@ module.exports = {
     // Test match patterns
     testMatch: ['**/test/unit/**/*.test.js'],
 
-    // Roots for test discovery
-    roots: ['<rootDir>/test/unit']
+    // Roots for test discovery and coverage collection
+    roots: ['<rootDir>/test/unit', '<rootDir>/force-app']
 };
