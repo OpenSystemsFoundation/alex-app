@@ -278,10 +278,10 @@ This project is dual-licensed — you may use it under either license at your ch
 ### Future
 
 - [ ] **Customer-facing boards via Experience Cloud** — let your customers see project progress in their community portal
-  - [ ] Board/column/card visibility controls (internal vs. customer-facing)
-  - [ ] Community-ready LWC component
-  - [ ] Internal vs. external comments on cards
-  - [ ] Customer notifications on card status changes
+    - [ ] Board/column/card visibility controls (internal vs. customer-facing)
+    - [ ] Community-ready LWC component
+    - [ ] Internal vs. external comments on cards
+    - [ ] Customer notifications on card status changes
 - [ ] Approval gates on column transitions (Salesforce Approvals integration)
 - [ ] Agentforce integration — sprint planning assistant, retrospective summarizer, smart auto-assignment, natural language board queries
 - [ ] Salesforce Reports & Dashboards integration

@@ -127,9 +127,22 @@
         border-color 0.1s ease;
 }
 
-.topbar-icon-btn:hover {
+.topbar-icon-btn:hover:not(:disabled) {
     background: rgb(243, 244, 246);
     border-color: rgb(209, 213, 219);
+}
+
+.topbar-icon-btn--disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.topbar-undo-redo {
+    display: flex;
+    gap: 0.125rem;
+    margin-right: 0.25rem;
+    padding-right: 0.5rem;
+    border-right: 1px solid rgb(229, 231, 235);
 }
 
 /* ---------- Board container ---------- */
@@ -289,6 +302,24 @@
     color: rgb(37, 99, 235) !important;
     font-size: 0.6875rem !important;
     letter-spacing: 0.02em;
+}
+
+/* Card type line: icon + type + status */
+.card-type-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1875rem;
+}
+
+.card-type-icon {
+    --slds-c-icon-color-foreground-default: rgb(107, 114, 128);
+    flex-shrink: 0;
+}
+
+.card-type-icon lightning-primitive-icon svg,
+.card-type-icon svg {
+    width: 0.75rem !important;
+    height: 0.75rem !important;
 }
 
 /* Card body: compact subject line */
@@ -597,7 +628,9 @@
     background: rgb(249, 250, 251);
     color: rgb(17, 24, 39);
     outline: none;
-    transition: border-color 0.12s ease, background 0.12s ease;
+    transition:
+        border-color 0.12s ease,
+        background 0.12s ease;
 }
 
 .board-filter-search:focus {

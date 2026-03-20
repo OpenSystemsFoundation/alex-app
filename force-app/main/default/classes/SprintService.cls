@@ -11,6 +11,17 @@ public with sharing class SprintService {
         Date startDate,
         Date endDate
     ) {
+        // Validate board exists
+        List<OpenSF__Board__c> boards = [
+            SELECT Id
+            FROM OpenSF__Board__c
+            WHERE Id = :boardId
+            LIMIT 1
+        ];
+        if (boards.isEmpty()) {
+            throw new AuraHandledException('Board not found: ' + boardId);
+        }
+
         // Calculate next sprint number
         List<OpenSF__Sprint__c> existingSprints = SprintSelector.getSprintsByBoardId(
             boardId

@@ -61,14 +61,14 @@ The Alex interface has three main areas:
 
 Columns represent the stages of your workflow. Common setups include:
 
-| Simple | Scrum | Custom |
-|--------|-------|--------|
-| To Do | Backlog | Triage |
-| In Progress | Sprint Ready | Design |
-| Done | In Development | Development |
-| | In Review | Code Review |
-| | Done | QA |
-| | | Released |
+| Simple      | Scrum          | Custom      |
+| ----------- | -------------- | ----------- |
+| To Do       | Backlog        | Triage      |
+| In Progress | Sprint Ready   | Design      |
+| Done        | In Development | Development |
+|             | In Review      | Code Review |
+|             | Done           | QA          |
+|             |                | Released    |
 
 Each column can have a **WIP (Work In Progress) limit** — a maximum number of cards allowed in that column. When the limit is reached, the column header shows a visual warning to help the team focus on finishing work before starting new items.
 
@@ -77,9 +77,9 @@ Each column can have a **WIP (Work In Progress) limit** — a maximum number of 
 - **Switch boards** using the board dropdown at the top
 - **Toggle between board view and backlog view** using the view controls
 - **Connection indicator** in the header shows your real-time sync status:
-  - **Connected** — Live updates via platform events
-  - **Polling** — Updates via periodic refresh (usually due to firewall restrictions)
-  - **Offline** — No connection; changes will sync when reconnected
+    - **Connected** — Live updates via platform events
+    - **Polling** — Updates via periodic refresh (usually due to firewall restrictions)
+    - **Offline** — No connection; changes will sync when reconnected
 
 <!-- Screenshot: Connection status indicator states -->
 
@@ -91,17 +91,17 @@ Each column can have a **WIP (Work In Progress) limit** — a maximum number of 
 
 1. Click the **"+" button** at the bottom of any column
 2. Fill in the card details:
-   - **Subject** (required) — Brief description of the work item
-   - **Description** — Detailed information, acceptance criteria, notes
-   - **Card Type** — Story, Bug, Task, or Epic
-   - **Priority** — High, Medium, or Low
-   - **Story Points** — Effort estimate (used for sprint velocity tracking)
-   - **Assignee** — Team member responsible for the work
-   - **Peer Reviewer** — Team member assigned for review
-   - **Due Date** — Deadline for the work item
-   - **Color** — Visual color coding for quick identification
-   - **Needs Refinement** — Flag for items that need further discussion
-   - **Epic** — Parent epic for grouping related work
+    - **Subject** (required) — Brief description of the work item
+    - **Description** — Detailed information, acceptance criteria, notes
+    - **Card Type** — Story, Bug, Task, or Epic
+    - **Priority** — High, Medium, or Low
+    - **Story Points** — Effort estimate (used for sprint velocity tracking)
+    - **Assignee** — Team member responsible for the work
+    - **Peer Reviewer** — Team member assigned for review
+    - **Due Date** — Deadline for the work item
+    - **Color** — Visual color coding for quick identification
+    - **Needs Refinement** — Flag for items that need further discussion
+    - **Epic** — Parent epic for grouping related work
 3. Click **Save**
 
 <!-- Screenshot: Card creation panel -->
@@ -121,12 +121,12 @@ Changes are immediately visible to all connected users via real-time sync.
 
 ### Card Types
 
-| Type | Purpose | When to Use |
-|------|---------|-------------|
-| **Story** | A user-facing feature or requirement | New functionality that delivers user value |
-| **Bug** | A defect or issue to fix | Something that is broken or behaving unexpectedly |
-| **Task** | A technical or operational task | Infrastructure, documentation, research |
-| **Epic** | A large body of work spanning multiple cards | Group related stories together |
+| Type      | Purpose                                      | When to Use                                       |
+| --------- | -------------------------------------------- | ------------------------------------------------- |
+| **Story** | A user-facing feature or requirement         | New functionality that delivers user value        |
+| **Bug**   | A defect or issue to fix                     | Something that is broken or behaving unexpectedly |
+| **Task**  | A technical or operational task              | Infrastructure, documentation, research           |
+| **Epic**  | A large body of work spanning multiple cards | Group related stories together                    |
 
 ### Card Colors
 
@@ -207,10 +207,10 @@ Drag rows using the **drag handle** (six-dot icon on the left) to reorder priori
 
 1. Select cards using the checkboxes (or use **Select All** in the header)
 2. The bulk action bar appears with these options:
-   - **Add to Sprint** — Move selected cards into the active sprint (only available when a sprint is active)
-   - **Set Priority** — Change priority for all selected cards at once
-   - **Delete** — Remove all selected cards
-   - **Clear** — Deselect all
+    - **Add to Sprint** — Move selected cards into the active sprint (only available when a sprint is active)
+    - **Set Priority** — Change priority for all selected cards at once
+    - **Delete** — Remove all selected cards
+    - **Clear** — Deselect all
 
 <!-- Screenshot: Bulk action bar -->
 
@@ -254,9 +254,9 @@ Planning  ──>  Active  ──>  Completed
 1. If no sprint is active, the sprint header shows **"No active sprint"** with a **"New Sprint"** button
 2. Click **New Sprint**
 3. Fill in:
-   - **Sprint Goal** — What the team aims to achieve this sprint
-   - **Start Date** — Defaults to today
-   - **End Date** — Defaults to 2 weeks from start date
+    - **Sprint Goal** — What the team aims to achieve this sprint
+    - **Start Date** — Defaults to today
+    - **End Date** — Defaults to 2 weeks from start date
 4. Click **Save**
 
 The sprint is created in **Planning** status. You can add cards before starting it.
@@ -278,8 +278,8 @@ When a card is added to a sprint, its story points at that moment are captured (
 1. Click the sprint name or use the sprint modal
 2. Click **"Start Sprint"**
 3. Validation checks:
-   - The sprint must have at least one card
-   - No other sprint can be active on the same board
+    - The sprint must have at least one card
+    - No other sprint can be active on the same board
 4. The sprint status changes to **Active**
 5. An initial burndown snapshot is created
 6. All connected users are notified via platform events
@@ -293,9 +293,9 @@ When a sprint is active, the sprint header shows:
 - **Progress bar** — Visual indicator of completed vs. total story points
 - **Points display** — "25 / 100 pts (25%)"
 - **Days remaining** — Color-coded:
-  - Green: 3+ days remaining
-  - Yellow: 2-3 days remaining
-  - Red: Overdue or last day
+    - Green: 3+ days remaining
+    - Yellow: 2-3 days remaining
+    - Red: Overdue or last day
 - **Reports button** — Opens sprint analytics
 - **Complete button** — Starts the sprint completion wizard
 
@@ -307,16 +307,17 @@ When the sprint is done (or the time box expires):
 
 1. Click **"Complete"** in the sprint header
 2. **Step 1 — Summary**: Review sprint metrics
-   - Completed cards count
-   - Incomplete cards count
-   - Completed story points
-   - Total story points
+    - Completed cards count
+    - Incomplete cards count
+    - Completed story points
+    - Total story points
 3. **Step 2 — Dispositions** (if incomplete cards exist): For each incomplete card, choose:
-   - **Move to Backlog** — Card returns to the unassigned backlog
+    - **Move to Backlog** — Card returns to the unassigned backlog
 4. **Step 3 — Confirmation**: Review and confirm
 5. Click **Complete Sprint**
 
 After completion:
+
 - Sprint velocity is calculated (completed story points)
 - A final burndown snapshot is saved
 - The board's active sprint is cleared
@@ -359,13 +360,13 @@ Use the average velocity line to plan future sprint commitments. If your average
 
 A historical table of all completed sprints showing:
 
-| Column | Description |
-|--------|-------------|
-| Sprint Name | Auto-numbered (SP-0001, SP-0002, etc.) |
-| Status | Planning, Active, or Completed |
-| Completed Points | Story points completed in this sprint |
-| Total Points | Story points committed at sprint start |
-| Velocity | Completed story points (same as completed points) |
+| Column           | Description                                       |
+| ---------------- | ------------------------------------------------- |
+| Sprint Name      | Auto-numbered (SP-0001, SP-0002, etc.)            |
+| Status           | Planning, Active, or Completed                    |
+| Completed Points | Story points completed in this sprint             |
+| Total Points     | Story points committed at sprint start            |
+| Velocity         | Completed story points (same as completed points) |
 
 ---
 
@@ -406,14 +407,14 @@ Each browser tab gets its own client ID, so you can have multiple tabs open to t
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Escape` | Close card detail panel / cancel drag |
-| `N` | Create new card (when column is focused) |
-| `E` | Edit selected card |
+| Shortcut | Action                                   |
+| -------- | ---------------------------------------- |
+| `Escape` | Close card detail panel / cancel drag    |
+| `N`      | Create new card (when column is focused) |
+| `E`      | Edit selected card                       |
 | `Delete` | Delete selected card (with confirmation) |
-| `Tab` | Navigate between cards |
-| `Enter` | Open card details |
+| `Tab`    | Navigate between cards                   |
+| `Enter`  | Open card details                        |
 
 ---
 

@@ -25,6 +25,7 @@ public with sharing class KanbanBoardService {
             result.board = new KanbanBoardDTO.BoardDTO(board);
             result.columns = KanbanBoardDTO.convertColumns(columns);
             result.cards = KanbanBoardDTO.convertCards(cards);
+            result.cardTypeIcons = getCardTypeIcons();
 
             return result;
         } catch (Exception e) {
@@ -221,6 +222,24 @@ public with sharing class KanbanBoardService {
     }
 
     /**
+     * Get card type icon mappings from custom metadata.
+     * Returns a map of picklist value → SLDS icon name.
+     */
+    public static Map<String, String> getCardTypeIcons() {
+        Map<String, String> iconMap = new Map<String, String>();
+        for (OpenSF__CardTypeIcon__mdt icon : [
+            SELECT OpenSF__PicklistValue__c, OpenSF__IconName__c
+            FROM OpenSF__CardTypeIcon__mdt
+        ]) {
+            iconMap.put(
+                icon.OpenSF__PicklistValue__c,
+                icon.OpenSF__IconName__c
+            );
+        }
+        return iconMap;
+    }
+
+    /**
      * Get runtime config from the KanbanConfig hierarchy custom setting.
      * Returns the effective values for the running user (org → profile → user).
      */
@@ -229,6 +248,7 @@ public with sharing class KanbanBoardService {
         OpenSF__KanbanConfig__c cfg = OpenSF__KanbanConfig__c.getInstance();
         if (cfg != null) {
             result.showDebugInfo = cfg.OpenSF__ShowDebugInfo__c == true;
+            result.enableDevTools = cfg.OpenSF__EnableDevTools__c == true;
         }
         return result;
     }

@@ -7,6 +7,7 @@
 - [Data Model](#data-model)
 - [Component Architecture](#component-architecture)
 - [State Management](#state-management)
+- [Redux DevTools](#redux-devtools)
 - [Real-time Collaboration](#real-time-collaboration)
 - [Security Model](#security-model)
 - [Performance Considerations](#performance-considerations)

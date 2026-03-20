@@ -35,6 +35,34 @@
 
             <!-- Right: Status + Actions -->
             <div class="kanban-topbar__actions">
+                <template lwc:if={hasDevTools}>
+                    <div class="topbar-undo-redo">
+                        <button
+                            class={undoButtonClass}
+                            title={undoTooltip}
+                            onclick={handleUndo}
+                            disabled={isUndoDisabled}
+                        >
+                            <lightning-icon
+                                icon-name="utility:undo"
+                                size="xx-small"
+                                alternative-text="Undo"
+                            ></lightning-icon>
+                        </button>
+                        <button
+                            class={redoButtonClass}
+                            title={redoTooltip}
+                            onclick={handleRedo}
+                            disabled={isRedoDisabled}
+                        >
+                            <lightning-icon
+                                icon-name="utility:redo"
+                                size="xx-small"
+                                alternative-text="Redo"
+                            ></lightning-icon>
+                        </button>
+                    </div>
+                </template>
                 <c-connection-status-indicator
                     config={connectionStatusConfig}
                 ></c-connection-status-indicator>
@@ -296,8 +324,17 @@
                                                         </h2>
 
                                                         <p
-                                                            class="slds-text-body_small slds-truncate"
+                                                            class="slds-text-body_small slds-truncate card-type-line"
                                                         >
+                                                            <template
+                                                                lwc:if={card.cardTypeIconName}
+                                                            >
+                                                                <lightning-icon
+                                                                    icon-name={card.cardTypeIconName}
+                                                                    size="xx-small"
+                                                                    class="card-type-icon"
+                                                                ></lightning-icon>
+                                                            </template>
                                                             <template
                                                                 lwc:if={card.cardType}
                                                             >

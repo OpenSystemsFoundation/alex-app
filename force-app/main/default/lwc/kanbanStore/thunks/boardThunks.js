@@ -10,7 +10,11 @@
 import getBoardData from '@salesforce/apex/KanbanBoardController.getBoardData';
 import getBacklogCardsApex from '@salesforce/apex/KanbanBoardController.getBacklogCards';
 import { setBoard, setColumns, setBacklogCards } from '../state/actions';
-import { processColumnsData, processCardsData } from '../utils/dataProcessors';
+import {
+    processColumnsData,
+    processCardsData,
+    setCardTypeIconMap
+} from '../utils/dataProcessors';
 import { loadSprintDataAsync } from './sprintThunks';
 
 /**
@@ -29,6 +33,9 @@ export const loadBoardData = (boardId) => {
 
             // Dispatch board update
             dispatch(setBoard(data.board));
+
+            // Cache icon map for all future enrichment calls
+            setCardTypeIconMap(data.cardTypeIcons || null);
 
             // Process and dispatch columns with cards
             const columns = processColumnsData(data.columns || []);

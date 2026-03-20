@@ -7,6 +7,18 @@
  * @module dataProcessors
  */
 
+// Cached icon map — set once during initial board load, used by all
+// subsequent enrichCardData calls (e.g. from stateHelpers).
+let _cardTypeIcons = null;
+
+/**
+ * Set the card-type → icon-name map (called once at board load).
+ * @param {Object|null} iconMap - Map of cardType → SLDS icon name
+ */
+export const setCardTypeIconMap = (iconMap) => {
+    _cardTypeIcons = iconMap || null;
+};
+
 /**
  * Process columns data - add derived properties
  * @param {Array} columns - Raw columns from server
@@ -71,9 +83,12 @@ const formatDate = (dateString) => {
 /**
  * Enrich a single card with derived properties
  * @param {Object} card - Raw card object
+ * @param {Object} [cardTypeIcons] - Optional map of cardType → SLDS icon name
  * @returns {Object} Enriched card
  */
-export const enrichCardData = (card) => {
+export const enrichCardData = (card, cardTypeIcons) => {
+    const icons = cardTypeIcons || _cardTypeIcons;
+    const iconName = card.cardType && icons ? icons[card.cardType] : null;
     return {
         ...card,
         priorityClass: getPriorityClass(card.priority),
@@ -84,7 +99,8 @@ export const enrichCardData = (card) => {
         hasStoryPoints:
             card.storyPoints !== null && card.storyPoints !== undefined,
         cardStyle: card.color ? `border-left: 4px solid ${card.color}` : '',
-        recordUrl: `/lightning/r/OpenSF__Card__c/${card.Id}/view`
+        recordUrl: `/lightning/r/OpenSF__Card__c/${card.Id}/view`,
+        cardTypeIconName: iconName || null
     };
 };
 
@@ -92,9 +108,10 @@ export const enrichCardData = (card) => {
  * Process cards data - distribute to columns and enrich
  * @param {Array} cards - Raw cards from server
  * @param {Array} columns - Processed columns
+ * @param {Object} [cardTypeIcons] - Optional map of cardType → SLDS icon name
  * @returns {Array} Columns with cards distributed and enriched
  */
-export const processCardsData = (cards, columns) => {
+export const processCardsData = (cards, columns, cardTypeIcons) => {
     if (!cards || !columns || columns.length === 0) {
         return columns;
     }
@@ -112,7 +129,7 @@ export const processCardsData = (cards, columns) => {
     cards.forEach((card) => {
         const column = processedColumns.find((col) => col.Id === card.columnId);
         if (column) {
-            const enrichedCard = enrichCardData(card);
+            const enrichedCard = enrichCardData(card, cardTypeIcons);
             column.cards.push(enrichedCard);
             column.cardCount++;
         }

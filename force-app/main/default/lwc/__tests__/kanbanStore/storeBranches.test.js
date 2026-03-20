@@ -221,3 +221,67 @@ describe('KanbanStore - thunk middleware', () => {
         expect(store.getBoard()).toEqual({ Id: 'thunk-board' });
     });
 });
+
+describe('KanbanStore - enableDevTools', () => {
+    let consoleSpy;
+
+    beforeEach(() => {
+        consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        consoleSpy.mockRestore();
+        delete window.__KANBAN_DEVTOOLS__;
+    });
+
+    it('devTools is null by default', () => {
+        const store = createStore();
+        expect(store.devTools).toBeNull();
+    });
+
+    it('enableDevTools installs recorder and bridge', () => {
+        const store = createStore();
+        store.enableDevTools();
+        expect(store.devTools).not.toBeNull();
+        expect(store.devTools.getHistory).toBeDefined();
+    });
+
+    it('enableDevTools is idempotent', () => {
+        const store = createStore();
+        store.enableDevTools();
+        const firstRecorder = store.devTools;
+        store.enableDevTools();
+        expect(store.devTools).toBe(firstRecorder);
+    });
+
+    it('devTools records actions after enableDevTools', () => {
+        const store = createStore();
+        store.enableDevTools();
+        store.dispatch({ type: 'SET_BOARD', payload: { Id: 'b1' } });
+        expect(store.devTools.getHistory()).toHaveLength(1);
+    });
+
+    it('_applyState is no-op when devTools disabled', () => {
+        const store = createStore();
+        const subscriber = jest.fn();
+        store.subscribe(subscriber);
+        subscriber.mockClear();
+
+        store._applyState({ columns: [] });
+        // Should not have notified — _applyState is guarded
+        expect(subscriber).not.toHaveBeenCalled();
+    });
+
+    it('_applyState works when devTools enabled', () => {
+        const store = createStore();
+        store.enableDevTools();
+        const subscriber = jest.fn();
+        store.subscribe(subscriber);
+        subscriber.mockClear();
+
+        store._applyState({ columns: [], isLoading: true });
+        expect(subscriber).toHaveBeenCalledTimes(1);
+        const state = store.getState();
+        expect(state.isLoading).toBe(true);
+    });
+});

@@ -148,6 +148,7 @@ Salesforce Lightning Web Component (LWC) Kanban board application called "Alex" 
 ### What Was Built
 
 **Core Kanban:**
+
 - Redux-style store with middleware (thunk, logging)
 - Platform events for real-time multi-user sync (CardUpdateEvent, ColumnUpdateEvent, SprintUpdateEvent)
 - Echo prevention via clientRequestId tracking
@@ -162,31 +163,35 @@ Salesforce Lightning Web Component (LWC) Kanban board application called "Alex" 
 - Comprehensive test suite (unit + e2e)
 
 **Sprint Management (recently implemented):**
+
 - Sprint lifecycle: Planning → Active → Completed
 - Sprint creation with auto-numbering (SP-{0000})
 - Sprint start with validation (single active sprint per board)
 - Sprint completion wizard with card disposition (move to backlog or next sprint)
-- SprintCard junction table with soft-delete (RemovedDate__c) and carry-over tracking
+- SprintCard junction table with soft-delete (RemovedDate\_\_c) and carry-over tracking
 - Story points tracking: per-card, per-sprint (total, completed, velocity)
 - Sprint header component with real-time progress bar and days-remaining indicator
-- SprintUpdateEvent__e platform events for multi-user sprint sync
+- SprintUpdateEvent\_\_e platform events for multi-user sprint sync
 
 **Backlog Management (recently implemented):**
+
 - Full backlog view with search, filtering (priority, card type, refinement status)
 - Bulk selection and actions (add to sprint, set priority, delete)
 - Inline card creation for rapid entry
 - Drag-and-drop reordering with LexoRank
 - Right-click context menu (move to top/bottom, set priority, toggle refinement, move to sprint)
-- NeedsRefinement__c flag for refinement session filtering
+- NeedsRefinement\_\_c flag for refinement session filtering
 
 **Sprint Analytics (recently implemented):**
+
 - Burndown chart (Canvas-based, actual vs. ideal trend lines)
 - Velocity chart (bar chart with average velocity line)
 - Sprint summary table (historical sprint metrics)
-- SprintSnapshot__c daily snapshots for burndown data
+- SprintSnapshot\_\_c daily snapshots for burndown data
 - SprintSnapshotScheduler for automated daily snapshots
 
 **Apex Service Layer (recently implemented):**
+
 - SprintService.cls — full sprint business logic
 - SprintSelector.cls — optimized sprint SOQL queries
 - SprintCardTriggerHandler.cls — junction record event publishing
@@ -204,34 +209,34 @@ Full pipeline managed via GitHub Actions — no IDE required for releases, testi
 
 ### Existing workflows
 
-| Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| `test.yml` | Push / PR | Lint, Prettier formatting, LWC Jest tests |
-| `apex-tests.yml` | Push to main / PR | Scratch org Apex tests with code coverage |
-| `security-scan.yml` | PR to main | Salesforce Code Analyzer + npm audit |
+| Workflow            | Trigger           | Purpose                                   |
+| ------------------- | ----------------- | ----------------------------------------- |
+| `test.yml`          | Push / PR         | Lint, Prettier formatting, LWC Jest tests |
+| `apex-tests.yml`    | Push to main / PR | Scratch org Apex tests with code coverage |
+| `security-scan.yml` | PR to main        | Salesforce Code Analyzer + npm audit      |
 
 ### Planned workflows (see [docs/2026-03-20-cicd-release-plan.md](docs/2026-03-20-cicd-release-plan.md))
 
-| Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| `version-bump.yml` | PR merge to main | Auto-bump `sfdx-project.json` version based on conventional commit PR title |
-| `release-beta.yml` | Manual (main only) | Create managed beta package, post install URL as GitHub prerelease |
-| `promote-release.yml` | Manual + approval | Promote beta to GA, create production GitHub Release |
-| `scratch-org.yml` | Manual (any branch) | Spin up scratch org, deploy, get login URL |
-| `package-versions.yml` | Manual | List all package versions with status and install links |
-| `deploy-to-org.yml` | Manual | Deploy source to staging/UAT with optional tests and dry-run |
-| `run-apex-tests.yml` | Manual | Run Apex tests against scratch, staging, or UAT org |
+| Workflow               | Trigger             | Purpose                                                                     |
+| ---------------------- | ------------------- | --------------------------------------------------------------------------- |
+| `version-bump.yml`     | PR merge to main    | Auto-bump `sfdx-project.json` version based on conventional commit PR title |
+| `release-beta.yml`     | Manual (main only)  | Create managed beta package, post install URL as GitHub prerelease          |
+| `promote-release.yml`  | Manual + approval   | Promote beta to GA, create production GitHub Release                        |
+| `scratch-org.yml`      | Manual (any branch) | Spin up scratch org, deploy, get login URL                                  |
+| `package-versions.yml` | Manual              | List all package versions with status and install links                     |
+| `deploy-to-org.yml`    | Manual              | Deploy source to staging/UAT with optional tests and dry-run                |
+| `run-apex-tests.yml`   | Manual              | Run Apex tests against scratch, staging, or UAT org                         |
 
 ### Conventional commits (PR titles)
 
 Version bumps are driven by PR title prefixes:
 
-| Prefix | Bump | Example |
-|--------|------|---------|
-| `feat:` | Minor | `feat: add burndown chart` |
-| `feat!:` / `BREAKING CHANGE` | Major | `feat!: redesign data model` |
-| `fix:` / `perf:` / `refactor:` | Patch | `fix: card drag on mobile` |
-| `docs:` / `chore:` / `ci:` / `test:` / `style:` | None | `docs: update README` |
+| Prefix                                          | Bump  | Example                      |
+| ----------------------------------------------- | ----- | ---------------------------- |
+| `feat:`                                         | Minor | `feat: add burndown chart`   |
+| `feat!:` / `BREAKING CHANGE`                    | Major | `feat!: redesign data model` |
+| `fix:` / `perf:` / `refactor:`                  | Patch | `fix: card drag on mobile`   |
+| `docs:` / `chore:` / `ci:` / `test:` / `style:` | None  | `docs: update README`        |
 
 ### Release flow
 
@@ -243,11 +248,11 @@ Feature branch → PR (tests run) → Merge to main (version auto-bumps)
 
 ### Secrets
 
-| Secret | Purpose | Status |
-|--------|---------|--------|
-| `SFDX_AUTH_URL` | DevHub authentication | Configured |
+| Secret             | Purpose                                      | Status                     |
+| ------------------ | -------------------------------------------- | -------------------------- |
+| `SFDX_AUTH_URL`    | DevHub authentication                        | Configured                 |
 | `STAGING_AUTH_URL` | Staging org auth (for deploy/test workflows) | Optional — add when needed |
-| `UAT_AUTH_URL` | UAT org auth (for deploy/test workflows) | Optional — add when needed |
+| `UAT_AUTH_URL`     | UAT org auth (for deploy/test workflows)     | Optional — add when needed |
 
 ### Key decisions
 

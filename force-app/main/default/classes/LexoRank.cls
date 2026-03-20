@@ -91,49 +91,62 @@ public with sharing class LexoRank {
     }
 
     /**
-     * Calculate midpoint between two keys
+     * Calculate midpoint between two keys using numerical averaging.
+     * Treats keys as numbers in a base-75 system (ASCII '0' to 'z')
+     * and computes the exact average, maintaining DEFAULT_LENGTH.
      */
     private static String midpoint(String prev, String next) {
-        // Pad to same length
-        Integer maxLen = Math.max(prev.length(), next.length());
-        String paddedPrev = padRight(prev, maxLen);
-        String paddedNext = padRight(next, maxLen);
+        // Strip trailing colon before calculation
+        String cleanPrev = prev.endsWith(':')
+            ? prev.substring(0, prev.length() - 1)
+            : prev;
+        String cleanNext = next.endsWith(':')
+            ? next.substring(0, next.length() - 1)
+            : next;
 
-        List<Integer> prevChars = getCharCodes(paddedPrev);
-        List<Integer> nextChars = getCharCodes(paddedNext);
+        // Pad to at least DEFAULT_LENGTH
+        Integer maxLen = Math.max(
+            Math.max(cleanPrev.length(), cleanNext.length()),
+            DEFAULT_LENGTH
+        );
+        cleanPrev = padRight(cleanPrev, maxLen);
+        cleanNext = padRight(cleanNext, maxLen);
+
+        Integer minCode = getCharCode('0');
+        Integer maxCode = getCharCode('z');
 
         List<Integer> result = new List<Integer>();
-        Boolean foundDiff = false;
+        Boolean useMaxForNext = false;
 
-        for (Integer i = 0; i < maxLen; i++) {
-            Integer pChar = prevChars[i];
-            Integer nChar = nextChars[i];
+        // Allow extra positions for precision extension
+        Integer lim = maxLen + 8;
+        for (Integer i = 0; i < lim; i++) {
+            Integer p = i < cleanPrev.length() ? cleanPrev.charAt(i) : minCode;
+            Integer n = useMaxForNext
+                ? maxCode
+                : (i < cleanNext.length() ? cleanNext.charAt(i) : minCode);
 
-            if (!foundDiff) {
-                if (pChar == nChar) {
-                    result.add(pChar);
-                } else if (nChar - pChar > 1) {
-                    // Can fit a character in between
-                    Integer mid = (pChar + nChar) / 2;
-                    result.add(mid);
-                    foundDiff = true;
-                } else {
-                    // Adjacent characters, need to extend
-                    result.add(pChar);
-                    foundDiff = false; // Keep looking
-                }
-            } else {
-                // After finding difference, we can stop
-                break;
+            if (p == n) {
+                result.add(p);
+                continue;
             }
+
+            Integer mid = (p + n) / 2;
+            if (mid > p) {
+                result.add(mid);
+                String key = buildString(result);
+                return padRight(key, DEFAULT_LENGTH) + ':';
+            }
+
+            // Adjacent characters: take lower, use max bound going forward
+            result.add(p);
+            useMaxForNext = true;
         }
 
-        // If we never found a valid midpoint, append a character
-        if (!foundDiff || result.isEmpty()) {
-            result.add(getCharCode('m')); // Add middle character
-        }
-
-        return buildString(result) + ':';
+        // Safety fallback — should not normally be reached
+        result.add((minCode + maxCode) / 2);
+        String key = buildString(result);
+        return padRight(key, DEFAULT_LENGTH) + ':';
     }
 
     /**
@@ -141,6 +154,7 @@ public with sharing class LexoRank {
      */
     private static String incrementKey(String key) {
         String cleanKey = key.replace(':', '');
+        cleanKey = padRight(cleanKey, DEFAULT_LENGTH);
         List<Integer> chars = getCharCodes(cleanKey);
 
         // Increment like a number with base-36
@@ -170,6 +184,7 @@ public with sharing class LexoRank {
      */
     private static String decrementKey(String key) {
         String cleanKey = key.replace(':', '');
+        cleanKey = padRight(cleanKey, DEFAULT_LENGTH);
         List<Integer> chars = getCharCodes(cleanKey);
 
         if (chars.isEmpty()) {

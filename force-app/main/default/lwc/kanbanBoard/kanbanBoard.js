@@ -52,6 +52,11 @@ export default class KanbanBoard extends LightningElement {
     @track showSprintReports = false;
     @track editSprint = null;
 
+    // Undo/redo state
+    @track _canUndo = false;
+    @track _canRedo = false;
+    _keyboardHandler = null;
+
     // Drag state
     dragData = null;
     dragPlaceholder = null;
@@ -81,6 +86,10 @@ export default class KanbanBoard extends LightningElement {
     get store() {
         if (!this._store) {
             this._store = createStore();
+            // Enable devtools if config already arrived (wire fired before connectedCallback)
+            if (this._enableDevTools) {
+                this._store.enableDevTools();
+            }
         }
         return this._store;
     }
@@ -289,6 +298,11 @@ export default class KanbanBoard extends LightningElement {
     wiredConfig({ data }) {
         if (data) {
             this._showDebugInfo = data.showDebugInfo === true;
+            this._enableDevTools = data.enableDevTools === true;
+            // Enable devtools if store already exists (wire fired after connectedCallback)
+            if (this._enableDevTools && this._store) {
+                this._store.enableDevTools();
+            }
         }
     }
 
@@ -329,7 +343,13 @@ export default class KanbanBoard extends LightningElement {
         // Subscribe to store updates
         this._storeUnsubscribe = this.store.subscribe((state) => {
             this._storeState = state;
+            this._refreshUndoRedoState();
         });
+
+        // Keyboard shortcuts for undo/redo
+        this._keyboardHandler = this._handleKeyboard.bind(this);
+        // eslint-disable-next-line @lwc/lwc/no-document-query
+        document.addEventListener('keydown', this._keyboardHandler);
 
         // Initialize lifecycle (lazy getters handle instance creation)
         this.lifecycleManager.initialize();
@@ -363,6 +383,13 @@ export default class KanbanBoard extends LightningElement {
             this._windowResizeHandler = null;
         }
 
+        // Cleanup keyboard listener
+        if (this._keyboardHandler) {
+            // eslint-disable-next-line @lwc/lwc/no-document-query
+            document.removeEventListener('keydown', this._keyboardHandler);
+            this._keyboardHandler = null;
+        }
+
         // Cleanup search debounce timer
         if (this._searchDebounceTimer) {
             clearTimeout(this._searchDebounceTimer);
@@ -380,6 +407,13 @@ export default class KanbanBoard extends LightningElement {
 
         // Use lazy getter to ensure boardDataLoader is instantiated
         await this.boardDataLoader.loadBoardData();
+
+        // Clear DevTools history after first load so only
+        // user-initiated actions are undoable.
+        if (this.store.devTools && !this._initialLoadDone) {
+            this._initialLoadDone = true;
+            this.store.devTools.clear();
+        }
     } // =============================================================================
     // Drag & Drop Event Handlers
     // =============================================================================
@@ -534,6 +568,103 @@ export default class KanbanBoard extends LightningElement {
             : 'topbar-icon-btn';
     }
 
+    // =============================================================================
+    // Undo / Redo
+    // =============================================================================
+
+    get hasDevTools() {
+        return !!this.store.devTools;
+    }
+
+    get isUndoDisabled() {
+        return !this._canUndo;
+    }
+
+    get isRedoDisabled() {
+        return !this._canRedo;
+    }
+
+    get undoButtonClass() {
+        return this._canUndo
+            ? 'topbar-icon-btn'
+            : 'topbar-icon-btn topbar-icon-btn--disabled';
+    }
+
+    get redoButtonClass() {
+        return this._canRedo
+            ? 'topbar-icon-btn'
+            : 'topbar-icon-btn topbar-icon-btn--disabled';
+    }
+
+    get _isMac() {
+        return /mac/i.test(
+            navigator.userAgentData?.platform || navigator.platform || ''
+        );
+    }
+
+    get undoTooltip() {
+        return this._isMac ? 'Undo (\u2318Z)' : 'Undo (Ctrl+Z)';
+    }
+
+    get redoTooltip() {
+        return this._isMac ? 'Redo (\u2318\u21E7Z)' : 'Redo (Ctrl+Y)';
+    }
+
+    _refreshUndoRedoState() {
+        const dt = this.store.devTools;
+        if (dt) {
+            this._canUndo = dt.canUndo();
+            this._canRedo = dt.canRedo();
+        }
+    }
+
+    handleUndo() {
+        const dt = this.store.devTools;
+        if (!dt) return;
+        const state = dt.undo();
+        if (state) {
+            this.store._applyState(state);
+            this._refreshUndoRedoState();
+        }
+    }
+
+    handleRedo() {
+        const dt = this.store.devTools;
+        if (!dt) return;
+        const state = dt.redo();
+        if (state) {
+            this.store._applyState(state);
+            this._refreshUndoRedoState();
+        }
+    }
+
+    _handleKeyboard(event) {
+        if (!this.store.devTools) return;
+
+        const isMeta = event.metaKey || event.ctrlKey;
+        if (!isMeta) return;
+
+        // Ignore when typing in inputs/textareas
+        const tag = event.target?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+        if (event.key === 'z' || event.key === 'Z') {
+            if (event.shiftKey) {
+                // Ctrl+Shift+Z or Cmd+Shift+Z → Redo
+                event.preventDefault();
+                this.handleRedo();
+            } else {
+                // Ctrl+Z or Cmd+Z → Undo
+                event.preventDefault();
+                this.handleUndo();
+            }
+        } else if (event.key === 'y' || event.key === 'Y') {
+            // Ctrl+Y → Redo (Windows/Linux)
+            event.preventDefault();
+            this.handleRedo();
+        }
+    }
+
     handleWindowFocus() {
         this.lifecycleManager.handleWindowFocus();
     }
@@ -615,18 +746,6 @@ export default class KanbanBoard extends LightningElement {
         return this.activeTab === 'backlog';
     }
 
-    get boardTabClass() {
-        return this.activeTab === 'board'
-            ? 'slds-tabs_default__item slds-is-active'
-            : 'slds-tabs_default__item';
-    }
-
-    get backlogTabClass() {
-        return this.activeTab === 'backlog'
-            ? 'slds-tabs_default__item slds-is-active'
-            : 'slds-tabs_default__item';
-    }
-
     get boardTabButtonClass() {
         return this.activeTab === 'board'
             ? 'topbar-tab topbar-tab--active'
@@ -643,10 +762,6 @@ export default class KanbanBoard extends LightningElement {
         return this._storeState
             ? selectors.getBacklogCardCount(this._storeState)
             : 0;
-    }
-
-    get boardName() {
-        return this.board?.Name || 'Kanban Board';
     }
 
     get connectionStatusConfig() {
@@ -727,9 +842,7 @@ export default class KanbanBoard extends LightningElement {
         this._boardFilterCardType = 'All';
         this._boardHideCompleted = false;
         // Clear the search input element value
-        const searchInput = this.template.querySelector(
-            '.board-filter-search'
-        );
+        const searchInput = this.template.querySelector('.board-filter-search');
         if (searchInput) {
             searchInput.value = '';
         }
