@@ -12,24 +12,12 @@
     "scripts": {
         "lint": "eslint **/{aura,lwc}/**/*.js",
         "test": "npm run test:unit",
-        "test:all": "npm run test:apex && npm run test:unit && npm run test:e2e",
+        "test:all": "npm run test:apex && npm run test:unit",
         "test:unit": "sfdx-lwc-jest",
         "test:unit:watch": "sfdx-lwc-jest --watch",
         "test:unit:debug": "sfdx-lwc-jest --debug",
         "test:unit:coverage": "sfdx-lwc-jest --coverage",
         "test:apex": "sf apex run test --test-level RunLocalTests --result-format human --code-coverage",
-        "test:e2e": "playwright test",
-        "test:e2e:headed": "playwright test --headed",
-        "test:e2e:debug": "playwright test --debug",
-        "test:e2e:ui": "playwright test --ui",
-        "test:e2e:chromium": "playwright test --project=chromium",
-        "test:e2e:firefox": "playwright test --project=firefox",
-        "test:e2e:webkit": "playwright test --project=webkit",
-        "test:e2e:report": "playwright show-report",
-        "test:e2e:scratch": "playwright test --config=playwright.config.scratch.ts",
-        "test:e2e:scratch:headed": "playwright test --config=playwright.config.scratch.ts --headed",
-        "test:e2e:scratch:debug": "playwright test --config=playwright.config.scratch.ts --debug",
-        "test:e2e:scratch:keep": "cross-env KEEP_SCRATCH_ORG=true playwright test --config=playwright.config.scratch.ts",
         "prettier": "prettier --write \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
         "prettier:verify": "prettier --check \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
         "prepare": "husky",
@@ -43,7 +31,6 @@
     "devDependencies": {
         "@lwc/eslint-plugin-lwc": "^2.2.0",
         "@lwc/jest-preset": "^18.1.2",
-        "@playwright/test": "^1.49.0",
         "@prettier/plugin-xml": "^3.2.2",
         "@salesforce-ux/eslint-plugin-slds": "^1.0.2",
         "@salesforce-ux/slds-linter": "^1.0.2",
@@ -51,14 +38,11 @@
         "@salesforce/eslint-plugin-aura": "^2.1.0",
         "@salesforce/eslint-plugin-lightning": "^1.0.1",
         "@salesforce/sfdx-lwc-jest": "^7.3.0",
-        "@types/node": "^22.10.1",
-        "cross-env": "^10.1.0",
         "eslint": "^8.57.0",
         "eslint-plugin-import": "^2.25.4",
         "eslint-plugin-jest": "28.9.0",
         "husky": "9.1.7",
         "lint-staged": "^15.1.0",
-        "mocha": "^10.8.2",
         "prettier": "^3.3.3",
         "prettier-plugin-apex": "2.1.5"
     },
@@ -71,13 +55,6 @@
         ]
     },
     "dependencies": {
-        "@lwc/engine": "^1.17.6",
-        "chromedriver": "^131.0.0",
-        "cssom": "^0.3.8",
-        "cssstyle": "^2.3.0",
-        "dotenv": "^16.4.5",
-        "selenium-webdriver": "^4.27.0",
-        "source-map": "^0.7.6",
-        "typescript": "^5.7.2"
+        "@lwc/engine": "^1.17.6"
     }
 }
