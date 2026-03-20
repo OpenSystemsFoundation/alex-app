@@ -40,8 +40,9 @@ const createMockComponent = () => ({
     operationQueue: {
         enqueue: jest.fn(async (operation) => {
             if (typeof operation === 'function') {
-                return await operation();
+                return operation();
             }
+            return undefined;
         })
     },
     eventHandler: {
@@ -144,9 +145,11 @@ describe('DragDropHandler', () => {
             });
 
             // dragging class is added via requestAnimationFrame
-            jest.runAllTimers
-                ? jest.runAllTimers()
-                : jest.advanceTimersByTime(0);
+            if (jest.runAllTimers) {
+                jest.runAllTimers();
+            } else {
+                jest.advanceTimersByTime(0);
+            }
         });
 
         it('should create a custom drag image element', () => {

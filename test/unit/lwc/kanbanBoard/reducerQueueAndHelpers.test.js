@@ -62,7 +62,6 @@ import {
     setLoading,
     setError,
     clearError,
-    createCardAsync,
     deleteCardAsync
 } from 'c/kanbanStore';
 
@@ -589,9 +588,7 @@ describe('RequestTracker', () => {
         });
 
         it('no-ops for unknown requestId', () => {
-            expect(() =>
-                tracker.completeRequest('nonexistent')
-            ).not.toThrow();
+            expect(() => tracker.completeRequest('nonexistent')).not.toThrow();
         });
     });
 
@@ -912,9 +909,7 @@ describe('CardOperations', () => {
             store: {
                 findCard: jest.fn(),
                 getState: jest.fn(() => ({
-                    backlogCards: [
-                        { Id: 'backlog1', subject: 'Backlog Card' }
-                    ]
+                    backlogCards: [{ Id: 'backlog1', subject: 'Backlog Card' }]
                 })),
                 dispatch: jest.fn()
             },
@@ -1063,9 +1058,7 @@ describe('CardOperations', () => {
                 'Invalid column',
                 'Column ID not found'
             );
-            expect(
-                mockComponent.operationQueue.enqueue
-            ).not.toHaveBeenCalled();
+            expect(mockComponent.operationQueue.enqueue).not.toHaveBeenCalled();
         });
 
         it('handles missing toastManager for null columnId', async () => {
@@ -1085,9 +1078,7 @@ describe('CardOperations', () => {
                 columnId: 'col1',
                 subject: 'New Card'
             });
-            expect(
-                mockComponent.operationQueue.enqueue
-            ).toHaveBeenCalledWith(
+            expect(mockComponent.operationQueue.enqueue).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'create',
                     cardId: null,
@@ -1119,11 +1110,8 @@ describe('CardOperations', () => {
             const cardResult = { card: { Id: 'new-card-1' } };
             mockComponent.store.dispatch.mockResolvedValue(cardResult);
 
-            // Capture the enqueued operation
-            let capturedOp;
             mockComponent.operationQueue.enqueue.mockImplementation(
                 async (op) => {
-                    capturedOp = op;
                     return op.execute();
                 }
             );
@@ -1147,11 +1135,7 @@ describe('CardOperations', () => {
 
             mockComponent.operationQueue.enqueue.mockImplementation(
                 async (op) => {
-                    try {
-                        return await op.execute();
-                    } catch (e) {
-                        throw e;
-                    }
+                    return op.execute();
                 }
             );
 
@@ -1171,11 +1155,7 @@ describe('CardOperations', () => {
 
             mockComponent.operationQueue.enqueue.mockImplementation(
                 async (op) => {
-                    try {
-                        return await op.execute();
-                    } catch (e) {
-                        throw e;
-                    }
+                    return op.execute();
                 }
             );
 
@@ -1192,11 +1172,7 @@ describe('CardOperations', () => {
 
             mockComponent.operationQueue.enqueue.mockImplementation(
                 async (op) => {
-                    try {
-                        return await op.execute();
-                    } catch (e) {
-                        throw e;
-                    }
+                    return op.execute();
                 }
             );
 
@@ -1354,9 +1330,7 @@ describe('BoardDataLoader', () => {
                 type: 'UPDATE_CARD',
                 payload: { cardId: 'card1', updates: updates.cards[0] }
             });
-            expect(mockComponent._lastSyncTime).toBe(
-                '2025-06-01T00:00:00Z'
-            );
+            expect(mockComponent._lastSyncTime).toBe('2025-06-01T00:00:00Z');
         });
 
         it('returns updates without dispatching when no changes', async () => {
@@ -1422,9 +1396,12 @@ describe('BoardDataLoader', () => {
             loader.startPolling();
 
             // Execute 3 polling intervals (MAX_FAILED_POLLS = 3)
+            // eslint-disable-next-line no-await-in-loop -- intentional sequential microtask flushing between timer advances
             for (let i = 0; i < BoardDataLoader.MAX_FAILED_POLLS; i++) {
                 jest.advanceTimersByTime(15000);
+                // eslint-disable-next-line no-await-in-loop
                 await Promise.resolve(); // flush microtasks
+                // eslint-disable-next-line no-await-in-loop
                 await Promise.resolve();
             }
 

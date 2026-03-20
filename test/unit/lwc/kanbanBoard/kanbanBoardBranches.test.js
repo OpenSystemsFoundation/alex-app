@@ -34,15 +34,6 @@ jest.mock(
     { virtual: true }
 );
 
-// Track subscribe callbacks so we can update state
-let storeSubscribeCallback = null;
-const mockDispatch = jest.fn(async (action) => {
-    if (typeof action === 'function') {
-        return action(mockDispatch, () => mockStoreState);
-    }
-    return action;
-});
-
 let mockStoreState = {
     columns: [
         {
@@ -75,10 +66,19 @@ let mockStoreState = {
     selectedBacklogCards: []
 };
 
+// Track subscribe callbacks so we can update state
+let _storeSubscribeCallback = null;
+const mockDispatch = jest.fn(async (action) => {
+    if (typeof action === 'function') {
+        return action(mockDispatch, () => mockStoreState);
+    }
+    return action;
+});
+
 jest.mock('c/kanbanStore', () => ({
     createStore: jest.fn(() => ({
         subscribe: jest.fn((cb) => {
-            storeSubscribeCallback = cb;
+            _storeSubscribeCallback = cb;
             cb(mockStoreState);
             return jest.fn();
         }),
@@ -86,15 +86,15 @@ jest.mock('c/kanbanStore', () => ({
         getColumns: jest.fn(() => mockStoreState.columns),
         getState: jest.fn(() => mockStoreState)
     })),
-    loadBoardData: jest.fn((boardId) => (dispatch) => {
+    loadBoardData: jest.fn((_boardId) => (dispatch) => {
         dispatch({ type: 'SET_BOARD', payload: mockStoreState.board });
         return { success: true };
     }),
     moveCardToBacklogAsync: jest.fn(
-        (sprintId, cardId) => (dispatch) =>
+        (_sprintId, _cardId) => (_dispatch) =>
             Promise.resolve({ success: true })
     ),
-    moveCardAsync: jest.fn(() => (dispatch) => Promise.resolve()),
+    moveCardAsync: jest.fn(() => (_dispatch) => Promise.resolve()),
     setLoading: jest.fn((v) => ({ type: 'SET_LOADING', payload: v })),
     setError: jest.fn((v) => ({ type: 'SET_ERROR', payload: v })),
     clearError: jest.fn(() => ({ type: 'CLEAR_ERROR' })),
@@ -120,9 +120,7 @@ jest.mock('c/kanbanStore', () => ({
         getLastSyncError: jest.fn((s) => s.lastSyncError),
         isSprintBoard: jest.fn((s) => !!s.activeSprint),
         getActiveSprint: jest.fn((s) => s.activeSprint),
-        getBacklogCardCount: jest.fn(
-            (s) => (s.backlogCards || []).length
-        ),
+        getBacklogCardCount: jest.fn((s) => (s.backlogCards || []).length),
         getSprints: jest.fn((s) => s.sprints || []),
         getSprintProgress: jest.fn(() => 50),
         getSprintDaysRemaining: jest.fn(() => 5),
@@ -147,7 +145,7 @@ describe('c-kanban-board branch coverage', () => {
             document.body.removeChild(document.body.firstChild);
         }
         jest.clearAllMocks();
-        storeSubscribeCallback = null;
+        _storeSubscribeCallback = null;
     });
 
     function createComponent(props = {}) {
@@ -172,12 +170,10 @@ describe('c-kanban-board branch coverage', () => {
             await flushPromises();
 
             // boardName getter should return 'Test Board'
-            const boardNameEl = element.shadowRoot.querySelector(
-                '.topbar-board-name'
-            );
-            if (boardNameEl) {
-                expect(boardNameEl.textContent).toContain('Test Board');
-            }
+            const boardNameEl =
+                element.shadowRoot.querySelector('.topbar-board-name');
+            expect(boardNameEl).not.toBeNull();
+            expect(boardNameEl.textContent).toContain('Test Board');
         });
 
         it('shows backlog tab count', async () => {
@@ -188,9 +184,8 @@ describe('c-kanban-board branch coverage', () => {
             const backlogTab = element.shadowRoot.querySelector(
                 '[data-tab-id="backlog"]'
             );
-            if (backlogTab) {
-                expect(backlogTab.textContent).toContain('2');
-            }
+            expect(backlogTab).not.toBeNull();
+            expect(backlogTab.textContent).toContain('2');
         });
     });
 
@@ -220,15 +215,14 @@ describe('c-kanban-board branch coverage', () => {
             const header = element.shadowRoot.querySelector(
                 'c-kanban-sprint-header'
             );
-            if (header) {
-                header.dispatchEvent(new CustomEvent('createsprint'));
-                await flushPromises();
+            expect(header).not.toBeNull();
+            header.dispatchEvent(new CustomEvent('createsprint'));
+            await flushPromises();
 
-                const modal = element.shadowRoot.querySelector(
-                    'c-kanban-sprint-modal'
-                );
-                expect(modal).not.toBeNull();
-            }
+            const modal = element.shadowRoot.querySelector(
+                'c-kanban-sprint-modal'
+            );
+            expect(modal).not.toBeNull();
         });
 
         it('handleCompleteSprint shows sprint complete', async () => {
@@ -238,19 +232,18 @@ describe('c-kanban-board branch coverage', () => {
             const header = element.shadowRoot.querySelector(
                 'c-kanban-sprint-header'
             );
-            if (header) {
-                header.dispatchEvent(
-                    new CustomEvent('completesprint', {
-                        detail: { sprintId: 'sprint1' }
-                    })
-                );
-                await flushPromises();
+            expect(header).not.toBeNull();
+            header.dispatchEvent(
+                new CustomEvent('completesprint', {
+                    detail: { sprintId: 'sprint1' }
+                })
+            );
+            await flushPromises();
 
-                const completeModal = element.shadowRoot.querySelector(
-                    'c-kanban-sprint-complete'
-                );
-                expect(completeModal).not.toBeNull();
-            }
+            const completeModal = element.shadowRoot.querySelector(
+                'c-kanban-sprint-complete'
+            );
+            expect(completeModal).not.toBeNull();
         });
 
         it('handleShowReports shows reports', async () => {
@@ -260,19 +253,18 @@ describe('c-kanban-board branch coverage', () => {
             const header = element.shadowRoot.querySelector(
                 'c-kanban-sprint-header'
             );
-            if (header) {
-                header.dispatchEvent(
-                    new CustomEvent('showreports', {
-                        detail: { sprintId: 'sprint1' }
-                    })
-                );
-                await flushPromises();
+            expect(header).not.toBeNull();
+            header.dispatchEvent(
+                new CustomEvent('showreports', {
+                    detail: { sprintId: 'sprint1' }
+                })
+            );
+            await flushPromises();
 
-                const reports = element.shadowRoot.querySelector(
-                    'c-kanban-sprint-reports'
-                );
-                expect(reports).not.toBeNull();
-            }
+            const reports = element.shadowRoot.querySelector(
+                'c-kanban-sprint-reports'
+            );
+            expect(reports).not.toBeNull();
         });
 
         it('handleSprintModalClose hides modal', async () => {
@@ -383,9 +375,7 @@ describe('c-kanban-board branch coverage', () => {
                     'c-kanban-sprint-complete'
                 );
                 if (complete) {
-                    complete.dispatchEvent(
-                        new CustomEvent('sprintcompleted')
-                    );
+                    complete.dispatchEvent(new CustomEvent('sprintcompleted'));
                     await flushPromises();
                 }
             }
@@ -534,9 +524,7 @@ describe('c-kanban-board branch coverage', () => {
             );
             if (contextMenu) {
                 // First set a card id via context menu trigger
-                const card = element.shadowRoot.querySelector(
-                    '[data-card-id]'
-                );
+                const card = element.shadowRoot.querySelector('[data-card-id]');
                 if (card) {
                     card.dispatchEvent(
                         new MouseEvent('contextmenu', {

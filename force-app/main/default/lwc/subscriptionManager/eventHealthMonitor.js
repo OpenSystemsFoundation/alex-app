@@ -22,6 +22,7 @@ export default class EventHealthMonitor {
         this.onUnhealthy = onUnhealthy;
         this.startTime = Date.now();
 
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
         this.healthCheckInterval = setInterval(() => {
             this._performHealthCheck();
         }, EventHealthMonitor.HEALTH_CHECK_INTERVAL);

@@ -96,6 +96,7 @@ export default class RequestTracker {
     }
 
     startCleanup() {
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
         this.cleanupTimer = setInterval(() => {
             this.cleanup();
         }, this.CLEANUP_INTERVAL);

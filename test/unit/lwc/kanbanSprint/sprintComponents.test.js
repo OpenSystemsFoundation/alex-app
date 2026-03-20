@@ -144,9 +144,7 @@ describe('c-kanban-sprint-header', () => {
         expect(label.textContent).toBe('5 / 13 pts (38%)');
 
         // Complete button visible (find by checking all lightning-buttons)
-        const allBtns = element.shadowRoot.querySelectorAll(
-            'lightning-button'
-        );
+        const allBtns = element.shadowRoot.querySelectorAll('lightning-button');
         const completeBtn = Array.from(allBtns).find(
             (b) => b.label === 'Complete'
         );
@@ -718,9 +716,7 @@ describe('c-kanban-sprint-complete', () => {
         expect(heading.textContent).toContain('incomplete cards');
 
         // Step 2 -> 3
-        nextBtn = element.shadowRoot.querySelector(
-            'button.slds-button_brand'
-        );
+        nextBtn = element.shadowRoot.querySelector('button.slds-button_brand');
         nextBtn.click();
         await flushPromises();
 
@@ -734,9 +730,7 @@ describe('c-kanban-sprint-complete', () => {
         const confirmText = element.shadowRoot.querySelector(
             '.slds-text-heading_medium'
         );
-        expect(confirmText.textContent).toContain(
-            'Ready to Complete Sprint'
-        );
+        expect(confirmText.textContent).toContain('Ready to Complete Sprint');
 
         // Back button
         const backBtn = element.shadowRoot.querySelector(

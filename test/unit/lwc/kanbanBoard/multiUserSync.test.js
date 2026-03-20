@@ -1142,7 +1142,7 @@ describe('Multi-User Realtime Sync', () => {
             );
 
             // Verify final state is consistent between both stores
-            const verifyStore = (store, label) => {
+            const verifyStore = (store) => {
                 const state = store.getState();
                 state.columns.forEach((col) => {
                     expect(col.cardCount).toBe(col.cards.length);

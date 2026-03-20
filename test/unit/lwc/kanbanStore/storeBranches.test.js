@@ -188,9 +188,7 @@ describe('createStore with logging', () => {
         const groupSpy = jest
             .spyOn(console, 'group')
             .mockImplementation(() => {});
-        const logSpy = jest
-            .spyOn(console, 'log')
-            .mockImplementation(() => {});
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
         const endSpy = jest
             .spyOn(console, 'groupEnd')
             .mockImplementation(() => {});
@@ -214,7 +212,7 @@ describe('KanbanStore - thunk middleware', () => {
     it('handles thunk actions (functions)', async () => {
         const store = createStore();
         const thunkResult = await store.dispatch((dispatch, getState) => {
-            const state = getState();
+            getState();
             dispatch({
                 type: 'SET_BOARD',
                 payload: { Id: 'thunk-board' }

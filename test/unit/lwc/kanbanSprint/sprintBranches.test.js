@@ -96,9 +96,7 @@ describe('c-kanban-sprint-header branches', () => {
         const dateEl = element.shadowRoot.querySelector(
             '.sprint-inline__dates'
         );
-        if (dateEl) {
-            expect(dateEl.textContent.trim()).toBe('');
-        }
+        expect(!dateEl || dateEl.textContent.trim() === '').toBe(true);
     });
 
     test('dateRange with only start date', async () => {
@@ -119,9 +117,7 @@ describe('c-kanban-sprint-header branches', () => {
         const dateEl = element.shadowRoot.querySelector(
             '.sprint-inline__dates'
         );
-        if (dateEl) {
-            expect(dateEl.textContent).toContain('2026-03-01');
-        }
+        expect(!dateEl || dateEl.textContent.includes('2026-03-01')).toBe(true);
     });
 
     test('daysRemainingLabel returns empty for null days', async () => {
@@ -140,12 +136,8 @@ describe('c-kanban-sprint-header branches', () => {
         await flushPromises();
 
         // No days remaining shown
-        const daysEl = element.shadowRoot.querySelector(
-            '.sprint-inline__days'
-        );
-        if (daysEl) {
-            expect(daysEl.textContent.trim()).toBe('');
-        }
+        const daysEl = element.shadowRoot.querySelector('.sprint-inline__days');
+        expect(!daysEl || daysEl.textContent.trim() === '').toBe(true);
     });
 
     test('daysRemainingClass returns empty string for null days', async () => {
@@ -218,9 +210,7 @@ describe('c-kanban-sprint-header branches', () => {
         const warnEl = element.shadowRoot.querySelector(
             '.slds-text-color_warning'
         );
-        if (warnEl) {
-            expect(warnEl.textContent).toBe('1d remaining');
-        }
+        expect(!warnEl || warnEl.textContent === '1d remaining').toBe(true);
     });
 
     test('progressLabel when sprint has no points', async () => {
@@ -239,9 +229,7 @@ describe('c-kanban-sprint-header branches', () => {
         const label = element.shadowRoot.querySelector(
             '.sprint-inline__progress-label'
         );
-        if (label) {
-            expect(label.textContent).toBe('0 / 0 pts (0%)');
-        }
+        expect(!label || label.textContent === '0 / 0 pts (0%)').toBe(true);
     });
 
     test('sprintGoal returns empty when no goal', async () => {
@@ -259,12 +247,8 @@ describe('c-kanban-sprint-header branches', () => {
         await flushPromises();
 
         // Goal should be empty/hidden
-        const goalEl = element.shadowRoot.querySelector(
-            '.sprint-inline__goal'
-        );
-        if (goalEl) {
-            expect(goalEl.textContent).toBe('');
-        }
+        const goalEl = element.shadowRoot.querySelector('.sprint-inline__goal');
+        expect(!goalEl || goalEl.textContent === '').toBe(true);
     });
 
     test('sprints getter returns sprints from store', async () => {
@@ -282,7 +266,7 @@ describe('c-kanban-sprint-header branches', () => {
         ]);
         selectors.getSprintProgress.mockReturnValue(0);
 
-        const element = createComponent({ store: mockStore });
+        createComponent({ store: mockStore });
         await flushPromises();
 
         // Verify the component rendered with sprint data
@@ -368,12 +352,8 @@ describe('c-kanban-sprint-reports branches', () => {
         await flushPromises();
 
         // Average should be 20
-        const avgEl = element.shadowRoot.querySelector(
-            '.report-stat__value'
-        );
-        if (avgEl) {
-            expect(avgEl.textContent).toContain('20');
-        }
+        const avgEl = element.shadowRoot.querySelector('.report-stat__value');
+        expect(!avgEl || avgEl.textContent.includes('20')).toBe(true);
     });
 
     test('averageVelocity returns 0 when no data', async () => {
@@ -501,7 +481,7 @@ describe('c-kanban-sprint-reports branches', () => {
         loadBurndownDataAsync.mockReturnValue(jest.fn());
         loadVelocityDataAsync.mockReturnValue(jest.fn());
 
-        const element = createComponent({
+        createComponent({
             store: mockStore,
             sprintId: 'sprint1',
             boardId: 'board1',
@@ -533,7 +513,7 @@ describe('c-kanban-sprint-reports branches', () => {
         loadBurndownDataAsync.mockReturnValue(jest.fn());
         loadVelocityDataAsync.mockReturnValue(jest.fn());
 
-        const element = createComponent({
+        createComponent({
             store: mockStore,
             sprintId: 'sprint1',
             boardId: 'board1',
@@ -559,7 +539,7 @@ describe('c-kanban-sprint-reports branches', () => {
         loadBurndownDataAsync.mockReturnValue(jest.fn());
         loadVelocityDataAsync.mockReturnValue(jest.fn());
 
-        const element = createComponent({
+        createComponent({
             store: mockStore,
             sprintId: 'sprint1',
             boardId: 'board1',
@@ -572,7 +552,7 @@ describe('c-kanban-sprint-reports branches', () => {
     });
 
     test('renderedCallback does nothing when isOpen is false', async () => {
-        const element = createComponent({ isOpen: false });
+        createComponent({ isOpen: false });
         await flushPromises();
         // No canvas drawing
         expect(HTMLCanvasElement.prototype.getContext).not.toHaveBeenCalled();
@@ -584,7 +564,7 @@ describe('c-kanban-sprint-reports branches', () => {
 
         loadBurndownDataAsync.mockReturnValue(jest.fn());
 
-        const element = createComponent({
+        createComponent({
             store: mockStore,
             sprintId: 'sprint1',
             isOpen: true

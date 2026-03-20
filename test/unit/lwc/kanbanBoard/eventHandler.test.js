@@ -556,7 +556,7 @@ describe('EventHandler', () => {
         });
 
         it('should apply event when event has no sequence number (backward compatibility)', () => {
-            const mockStore = {
+            const localMockStore = {
                 getState: jest.fn(() => ({
                     columns: [
                         {
@@ -585,13 +585,13 @@ describe('EventHandler', () => {
                 })
             };
 
-            handler.handlePlatformEvent(event, mockStore);
+            handler.handlePlatformEvent(event, localMockStore);
 
-            expect(mockStore.dispatch).toHaveBeenCalled();
+            expect(localMockStore.dispatch).toHaveBeenCalled();
         });
 
         it('should apply event for new card (not in state)', () => {
-            const mockStore = {
+            const localMockStore = {
                 getState: jest.fn(() => ({
                     columns: [
                         {
@@ -614,13 +614,13 @@ describe('EventHandler', () => {
                 })
             };
 
-            handler.handlePlatformEvent(event, mockStore);
+            handler.handlePlatformEvent(event, localMockStore);
 
-            expect(mockStore.dispatch).toHaveBeenCalled();
+            expect(localMockStore.dispatch).toHaveBeenCalled();
         });
 
         it('should handle out-of-order events correctly', () => {
-            const mockStore = {
+            const localMockStore = {
                 getState: jest.fn(() => ({
                     columns: [
                         {
@@ -650,10 +650,10 @@ describe('EventHandler', () => {
                 })
             };
 
-            handler.handlePlatformEvent(staleEvent, mockStore);
+            handler.handlePlatformEvent(staleEvent, localMockStore);
 
             // Should be ignored
-            expect(mockStore.dispatch).not.toHaveBeenCalled();
+            expect(localMockStore.dispatch).not.toHaveBeenCalled();
 
             // Now event with seq 3 arrives
             const newerEvent = {
@@ -666,10 +666,10 @@ describe('EventHandler', () => {
                 })
             };
 
-            handler.handlePlatformEvent(newerEvent, mockStore);
+            handler.handlePlatformEvent(newerEvent, localMockStore);
 
             // Should be applied
-            expect(mockStore.dispatch).toHaveBeenCalledTimes(1);
+            expect(localMockStore.dispatch).toHaveBeenCalledTimes(1);
         });
     });
 

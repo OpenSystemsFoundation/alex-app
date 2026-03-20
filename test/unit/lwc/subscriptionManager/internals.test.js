@@ -229,9 +229,7 @@ describe('EventHealthMonitor', () => {
         monitor.recordEvent();
 
         // Advance the remaining time to trigger the health check
-        jest.advanceTimersByTime(
-            EventHealthMonitor.EVENT_TIMEOUT - 1000
-        );
+        jest.advanceTimersByTime(EventHealthMonitor.EVENT_TIMEOUT - 1000);
 
         expect(monitor.healthCheckAttempts).toBe(0);
         expect(callback).not.toHaveBeenCalled();
@@ -478,9 +476,7 @@ describe('SubscriptionManager — additional coverage', () => {
     // ── Health monitoring / polling fallback ──
 
     it('dispatches pollingrequired when health monitor reports unhealthy', async () => {
-        let messageCallback;
-        subscribe.mockImplementationOnce((channel, replay, callback) => {
-            messageCallback = callback;
+        subscribe.mockImplementationOnce((channel) => {
             return Promise.resolve({ channel });
         });
 

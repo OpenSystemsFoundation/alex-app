@@ -209,6 +209,8 @@ const buildState = (overrides = {}) => ({
 
 /** Create dispatch spy and getState stub for thunk tests. */
 const createThunkHelpers = (stateOverrides = {}) => {
+    const state = buildState(stateOverrides);
+    const getState = jest.fn(() => state);
     const dispatch = jest.fn((action) => {
         // If a thunk is dispatched (function), call it recursively
         if (typeof action === 'function') {
@@ -216,8 +218,6 @@ const createThunkHelpers = (stateOverrides = {}) => {
         }
         return action;
     });
-    const state = buildState(stateOverrides);
-    const getState = jest.fn(() => state);
     return { dispatch, getState, state };
 };
 
@@ -531,12 +531,8 @@ describe('Selectors', () => {
         });
         it('isSprintBoard', () => {
             expect(isSprintBoard({})).toBe(false);
-            expect(
-                isSprintBoard({ board: { type: 'Sprint' } })
-            ).toBe(true);
-            expect(
-                isSprintBoard({ board: { type: 'Kanban' } })
-            ).toBe(false);
+            expect(isSprintBoard({ board: { type: 'Sprint' } })).toBe(true);
+            expect(isSprintBoard({ board: { type: 'Kanban' } })).toBe(false);
         });
     });
 
@@ -577,9 +573,7 @@ describe('Selectors', () => {
             expect(getSprintDaysRemaining({})).toBeNull();
         });
         it('returns null when no endDate', () => {
-            expect(
-                getSprintDaysRemaining({ activeSprint: {} })
-            ).toBeNull();
+            expect(getSprintDaysRemaining({ activeSprint: {} })).toBeNull();
         });
         it('calculates days remaining', () => {
             const future = new Date();
@@ -628,9 +622,9 @@ describe('Selectors', () => {
         });
         it('getBacklogCardById', () => {
             const cards = [{ Id: 'b1' }, { Id: 'b2' }];
-            expect(
-                getBacklogCardById({ backlogCards: cards }, 'b2')
-            ).toEqual({ Id: 'b2' });
+            expect(getBacklogCardById({ backlogCards: cards }, 'b2')).toEqual({
+                Id: 'b2'
+            });
             expect(
                 getBacklogCardById({ backlogCards: cards }, 'missing')
             ).toBeNull();
@@ -642,9 +636,7 @@ describe('Selectors', () => {
                 { Id: '2', needsRefinement: false },
                 { Id: '3', needsRefinement: true }
             ];
-            expect(
-                getUnrefinedBacklogCards({ backlogCards: cards })
-            ).toEqual([
+            expect(getUnrefinedBacklogCards({ backlogCards: cards })).toEqual([
                 { Id: '1', needsRefinement: true },
                 { Id: '3', needsRefinement: true }
             ]);
@@ -700,8 +692,7 @@ describe('boardThunks', () => {
             // Verify setColumns was dispatched
             const setColumnsCall = dispatch.mock.calls.find(
                 (c) =>
-                    typeof c[0] === 'object' &&
-                    c[0].type === types.SET_COLUMNS
+                    typeof c[0] === 'object' && c[0].type === types.SET_COLUMNS
             );
             expect(setColumnsCall).toBeTruthy();
         });
@@ -837,9 +828,7 @@ describe('cardThunks', () => {
             expect(result.success).toBe(true);
 
             const moveCall = dispatch.mock.calls.find(
-                (c) =>
-                    typeof c[0] === 'object' &&
-                    c[0].type === types.MOVE_CARD
+                (c) => typeof c[0] === 'object' && c[0].type === types.MOVE_CARD
             );
             expect(moveCall).toBeTruthy();
         });
@@ -855,8 +844,7 @@ describe('cardThunks', () => {
 
             const commitCall = dispatch.mock.calls.find(
                 (c) =>
-                    typeof c[0] === 'object' &&
-                    c[0].type === types.COMMIT_DRAG
+                    typeof c[0] === 'object' && c[0].type === types.COMMIT_DRAG
             );
             expect(commitCall).toBeTruthy();
         });
@@ -911,10 +899,10 @@ describe('cardThunks', () => {
             createCardApex.mockResolvedValue(newCard);
             const { dispatch, getState } = createThunkHelpers({ columns });
 
-            const result = await createCardAsync(
-                'col1',
-                'Test'
-            )(dispatch, getState);
+            const result = await createCardAsync('col1', 'Test')(
+                dispatch,
+                getState
+            );
 
             expect(createCardApex).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -926,9 +914,7 @@ describe('cardThunks', () => {
             expect(result.card).toBe(newCard);
 
             const addCall = dispatch.mock.calls.find(
-                (c) =>
-                    typeof c[0] === 'object' &&
-                    c[0].type === types.ADD_CARD
+                (c) => typeof c[0] === 'object' && c[0].type === types.ADD_CARD
             );
             expect(addCall).toBeTruthy();
             expect(addCall[0].payload.card).toBe(newCard);
@@ -988,10 +974,9 @@ describe('cardThunks', () => {
             updateCardApex.mockResolvedValue(updated);
             const { dispatch } = createThunkHelpers();
 
-            const result = await updateCardAsync(
-                'k1',
-                { subject: 'Updated' }
-            )(dispatch);
+            const result = await updateCardAsync('k1', { subject: 'Updated' })(
+                dispatch
+            );
 
             // First dispatch should be optimistic updateCard
             const firstAction = dispatch.mock.calls[0][0];
@@ -1009,11 +994,7 @@ describe('cardThunks', () => {
             updateCardApex.mockResolvedValue({});
             const { dispatch } = createThunkHelpers();
 
-            await updateCardAsync(
-                'k1',
-                { subject: 'x' },
-                'client1'
-            )(dispatch);
+            await updateCardAsync('k1', { subject: 'x' }, 'client1')(dispatch);
 
             expect(updateCardApex).toHaveBeenCalledWith(
                 expect.objectContaining({ clientId: 'client1' })
@@ -1023,9 +1004,9 @@ describe('cardThunks', () => {
         it('throws on apex error', async () => {
             updateCardApex.mockRejectedValue(new Error('update failed'));
             const { dispatch } = createThunkHelpers();
-            await expect(
-                updateCardAsync('k1', {})(dispatch)
-            ).rejects.toThrow('update failed');
+            await expect(updateCardAsync('k1', {})(dispatch)).rejects.toThrow(
+                'update failed'
+            );
         });
     });
 
@@ -1122,11 +1103,9 @@ describe('cardThunks', () => {
             deleteCardApex.mockResolvedValue({});
             const { dispatch } = createThunkHelpers();
 
-            const result = await deleteBacklogCardsAsync([
-                'k1',
-                'k2',
-                'k3'
-            ])(dispatch);
+            const result = await deleteBacklogCardsAsync(['k1', 'k2', 'k3'])(
+                dispatch
+            );
 
             expect(deleteCardApex).toHaveBeenCalledTimes(3);
             expect(result.success).toBe(true);
@@ -1163,8 +1142,7 @@ describe('cardThunks', () => {
 
             const delCall = dispatch.mock.calls.find(
                 (c) =>
-                    typeof c[0] === 'object' &&
-                    c[0].type === types.DELETE_CARD
+                    typeof c[0] === 'object' && c[0].type === types.DELETE_CARD
             );
             expect(delCall).toBeTruthy();
             expect(delCall[0].payload.cardId).toBe('k1');
@@ -1193,10 +1171,10 @@ describe('cardThunks', () => {
                 backlogCards
             });
 
-            const result = await reorderBacklogCardAsync(
-                'b3',
-                1
-            )(dispatch, getState);
+            const result = await reorderBacklogCardAsync('b3', 1)(
+                dispatch,
+                getState
+            );
 
             expect(result.success).toBe(true);
 
@@ -1258,10 +1236,10 @@ describe('cardThunks', () => {
                 backlogSyncing: false
             }));
 
-            const result = await reorderBacklogCardAsync(
-                'missing',
-                0
-            )(dispatch, getState);
+            const result = await reorderBacklogCardAsync('missing', 0)(
+                dispatch,
+                getState
+            );
 
             expect(result.success).toBe(true);
             expect(reorderBacklogCardApex).not.toHaveBeenCalled();
@@ -1282,9 +1260,9 @@ describe('sprintThunks', () => {
     describe('loadSprintDataAsync', () => {
         it('throws when boardId is falsy', async () => {
             const { dispatch } = createThunkHelpers();
-            await expect(
-                loadSprintDataAsync(null)(dispatch)
-            ).rejects.toThrow('Board ID is required');
+            await expect(loadSprintDataAsync(null)(dispatch)).rejects.toThrow(
+                'Board ID is required'
+            );
         });
 
         it('dispatches sprint data when all fields present', async () => {
@@ -1328,9 +1306,9 @@ describe('sprintThunks', () => {
         it('throws on apex error', async () => {
             getSprintDataApex.mockRejectedValue(new Error('sprint err'));
             const { dispatch } = createThunkHelpers();
-            await expect(
-                loadSprintDataAsync('b1')(dispatch)
-            ).rejects.toThrow('sprint err');
+            await expect(loadSprintDataAsync('b1')(dispatch)).rejects.toThrow(
+                'sprint err'
+            );
         });
     });
 
@@ -1360,8 +1338,7 @@ describe('sprintThunks', () => {
 
             const sprintsCall = dispatch.mock.calls.find(
                 (c) =>
-                    typeof c[0] === 'object' &&
-                    c[0].type === types.SET_SPRINTS
+                    typeof c[0] === 'object' && c[0].type === types.SET_SPRINTS
             );
             expect(sprintsCall).toBeTruthy();
             expect(sprintsCall[0].payload).toHaveLength(2);
@@ -1390,8 +1367,7 @@ describe('sprintThunks', () => {
 
             const call = dispatch.mock.calls.find(
                 (c) =>
-                    typeof c[0] === 'object' &&
-                    c[0].type === types.SET_SPRINT
+                    typeof c[0] === 'object' && c[0].type === types.SET_SPRINT
             );
             expect(call).toBeTruthy();
             expect(call[0].payload).toBe(sprint);
@@ -1400,9 +1376,9 @@ describe('sprintThunks', () => {
         it('throws on error', async () => {
             startSprintApex.mockRejectedValue(new Error('start err'));
             const { dispatch } = createThunkHelpers();
-            await expect(
-                startSprintAsync('s1')(dispatch)
-            ).rejects.toThrow('start err');
+            await expect(startSprintAsync('s1')(dispatch)).rejects.toThrow(
+                'start err'
+            );
         });
     });
 
@@ -1433,8 +1409,7 @@ describe('sprintThunks', () => {
 
             const setSprintsCall = dispatch.mock.calls.find(
                 (c) =>
-                    typeof c[0] === 'object' &&
-                    c[0].type === types.SET_SPRINTS
+                    typeof c[0] === 'object' && c[0].type === types.SET_SPRINTS
             );
             expect(setSprintsCall).toBeTruthy();
             expect(setSprintsCall[0].payload).toEqual([]);
@@ -1459,10 +1434,9 @@ describe('sprintThunks', () => {
             addCardsToSprintApex.mockResolvedValue(sprintCards);
             const { dispatch } = createThunkHelpers();
 
-            const result = await addCardsToSprintAsync('s1', [
-                'k1',
-                'k2'
-            ])(dispatch);
+            const result = await addCardsToSprintAsync('s1', ['k1', 'k2'])(
+                dispatch
+            );
 
             expect(addCardsToSprintApex).toHaveBeenCalledWith({
                 sprintId: 's1',
@@ -1507,10 +1481,10 @@ describe('sprintThunks', () => {
                 ]
             });
 
-            const result = await removeCardFromSprintAsync(
-                's1',
-                'k1'
-            )(dispatch, getState);
+            const result = await removeCardFromSprintAsync('s1', 'k1')(
+                dispatch,
+                getState
+            );
 
             expect(removeCardFromSprintApex).toHaveBeenCalledWith({
                 sprintId: 's1',
@@ -1525,9 +1499,7 @@ describe('sprintThunks', () => {
             );
             expect(call).toBeTruthy();
             // Only k2 should remain
-            expect(call[0].payload).toEqual([
-                { cardId: 'k2', sprintId: 's1' }
-            ]);
+            expect(call[0].payload).toEqual([{ cardId: 'k2', sprintId: 's1' }]);
         });
 
         it('throws on error', async () => {
@@ -1546,7 +1518,10 @@ describe('sprintThunks', () => {
             getBurndownDataApex.mockResolvedValue(data);
 
             const thunk = loadBurndownDataAsync('s1');
-            const result = await thunk(() => {}, () => ({}));
+            const result = await thunk(
+                () => {},
+                () => ({})
+            );
 
             expect(getBurndownDataApex).toHaveBeenCalledWith({
                 sprintId: 's1'
@@ -1558,7 +1533,10 @@ describe('sprintThunks', () => {
         it('throws on error', async () => {
             getBurndownDataApex.mockRejectedValue(new Error('burn err'));
             await expect(
-                loadBurndownDataAsync('s1')(() => {}, () => ({}))
+                loadBurndownDataAsync('s1')(
+                    () => {},
+                    () => ({})
+                )
             ).rejects.toThrow('burn err');
         });
     });
@@ -1570,7 +1548,10 @@ describe('sprintThunks', () => {
             getVelocityDataApex.mockResolvedValue(data);
 
             const thunk = loadVelocityDataAsync('b1');
-            const result = await thunk(() => {}, () => ({}));
+            const result = await thunk(
+                () => {},
+                () => ({})
+            );
 
             expect(getVelocityDataApex).toHaveBeenCalledWith({
                 boardId: 'b1',
@@ -1583,7 +1564,10 @@ describe('sprintThunks', () => {
         it('accepts custom count', async () => {
             getVelocityDataApex.mockResolvedValue([]);
 
-            await loadVelocityDataAsync('b1', 5)(() => {}, () => ({}));
+            await loadVelocityDataAsync('b1', 5)(
+                () => {},
+                () => ({})
+            );
 
             expect(getVelocityDataApex).toHaveBeenCalledWith({
                 boardId: 'b1',
@@ -1594,7 +1578,10 @@ describe('sprintThunks', () => {
         it('throws on error', async () => {
             getVelocityDataApex.mockRejectedValue(new Error('vel err'));
             await expect(
-                loadVelocityDataAsync('b1')(() => {}, () => ({}))
+                loadVelocityDataAsync('b1')(
+                    () => {},
+                    () => ({})
+                )
             ).rejects.toThrow('vel err');
         });
     });
@@ -1608,10 +1595,10 @@ describe('sprintThunks', () => {
                 sprintCards: [{ cardId: 'k1' }, { cardId: 'k2' }]
             });
 
-            const result = await moveCardToBacklogAsync(
-                's1',
-                'k1'
-            )(dispatch, getState);
+            const result = await moveCardToBacklogAsync('s1', 'k1')(
+                dispatch,
+                getState
+            );
 
             expect(result.success).toBe(true);
 
@@ -1625,8 +1612,7 @@ describe('sprintThunks', () => {
 
             const delCard = dispatch.mock.calls.find(
                 (c) =>
-                    typeof c[0] === 'object' &&
-                    c[0].type === types.DELETE_CARD
+                    typeof c[0] === 'object' && c[0].type === types.DELETE_CARD
             );
             expect(delCard).toBeTruthy();
 
@@ -1680,9 +1666,10 @@ describe('sprintThunks', () => {
                 backlogCards
             });
 
-            const result = await moveCardsToSprintAsync('s1', [
-                'k1'
-            ])(dispatch, getState);
+            const result = await moveCardsToSprintAsync('s1', ['k1'])(
+                dispatch,
+                getState
+            );
 
             expect(result.success).toBe(true);
             expect(addCardsToSprintApex).toHaveBeenCalledWith({
@@ -1720,8 +1707,7 @@ describe('sprintThunks', () => {
             expect(
                 dispatch.mock.calls.some(
                     (c) =>
-                        typeof c[0] === 'object' &&
-                        c[0].type === types.ADD_CARD
+                        typeof c[0] === 'object' && c[0].type === types.ADD_CARD
                 )
             ).toBe(true);
         });
@@ -1765,10 +1751,10 @@ describe('sprintThunks', () => {
                 backlogCards
             });
 
-            await moveCardsToSprintAsync('s1', [
-                'k1',
-                'k2'
-            ])(dispatch, getState);
+            await moveCardsToSprintAsync('s1', ['k1', 'k2'])(
+                dispatch,
+                getState
+            );
 
             // moveCard called for each card
             expect(moveCardApex).toHaveBeenCalledTimes(2);

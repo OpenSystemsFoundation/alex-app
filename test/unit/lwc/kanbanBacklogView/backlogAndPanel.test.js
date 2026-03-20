@@ -131,6 +131,7 @@ const SAMPLE_CARDS = [
 ];
 
 function flushPromises() {
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
     return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
@@ -271,9 +272,7 @@ describe('c-kanban-backlog-view', () => {
             return flushPromises().then(() => {
                 // Find the priority combobox (2nd combobox = index 1)
                 const comboboxes =
-                    element.shadowRoot.querySelectorAll(
-                        'lightning-combobox'
-                    );
+                    element.shadowRoot.querySelectorAll('lightning-combobox');
                 const priorityCombo = comboboxes[1]; // Priority filter
                 priorityCombo.dispatchEvent(
                     new CustomEvent('change', { detail: { value: 'High' } })
@@ -294,9 +293,7 @@ describe('c-kanban-backlog-view', () => {
 
             return flushPromises().then(() => {
                 const comboboxes =
-                    element.shadowRoot.querySelectorAll(
-                        'lightning-combobox'
-                    );
+                    element.shadowRoot.querySelectorAll('lightning-combobox');
                 const typeCombo = comboboxes[2]; // Type filter
                 typeCombo.dispatchEvent(
                     new CustomEvent('change', {
@@ -315,9 +312,7 @@ describe('c-kanban-backlog-view', () => {
 
         it('enriches cards with selection state and UI helpers', () => {
             mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
-            mockSelectors.getSelectedBacklogCards.mockReturnValue([
-                'card1'
-            ]);
+            mockSelectors.getSelectedBacklogCards.mockReturnValue(['card1']);
             createBacklogView();
 
             return flushPromises().then(() => {
@@ -342,9 +337,7 @@ describe('c-kanban-backlog-view', () => {
             return flushPromises().then(() => {
                 // Switch to refinement view
                 const comboboxes =
-                    element.shadowRoot.querySelectorAll(
-                        'lightning-combobox'
-                    );
+                    element.shadowRoot.querySelectorAll('lightning-combobox');
                 const viewModeCombo = comboboxes[0];
                 viewModeCombo.dispatchEvent(
                     new CustomEvent('change', {
@@ -429,9 +422,7 @@ describe('c-kanban-backlog-view', () => {
 
         it('addToSprintLabel includes selected count', () => {
             mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
-            mockSelectors.getSelectedBacklogCards.mockReturnValue([
-                'card1'
-            ]);
+            mockSelectors.getSelectedBacklogCards.mockReturnValue(['card1']);
             mockSelectors.getActiveSprint.mockReturnValue({
                 Id: 'sprint1',
                 Name: 'Sprint 1'
@@ -453,9 +444,8 @@ describe('c-kanban-backlog-view', () => {
             mockSelectors.getBacklogCards.mockReturnValue([]);
             createBacklogView();
             return flushPromises().then(() => {
-                const spinner = element.shadowRoot.querySelector(
-                    'lightning-spinner'
-                );
+                const spinner =
+                    element.shadowRoot.querySelector('lightning-spinner');
                 expect(spinner).not.toBeNull();
             });
         });
@@ -480,9 +470,7 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             return flushPromises().then(() => {
                 const comboboxes =
-                    element.shadowRoot.querySelectorAll(
-                        'lightning-combobox'
-                    );
+                    element.shadowRoot.querySelectorAll('lightning-combobox');
                 const viewCombo = comboboxes[0];
                 expect(viewCombo.options).toEqual([
                     { label: 'All', value: 'all' },
@@ -495,9 +483,7 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             return flushPromises().then(() => {
                 const comboboxes =
-                    element.shadowRoot.querySelectorAll(
-                        'lightning-combobox'
-                    );
+                    element.shadowRoot.querySelectorAll('lightning-combobox');
                 expect(comboboxes[1].options).toHaveLength(4);
             });
         });
@@ -506,9 +492,7 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             return flushPromises().then(() => {
                 const comboboxes =
-                    element.shadowRoot.querySelectorAll(
-                        'lightning-combobox'
-                    );
+                    element.shadowRoot.querySelectorAll('lightning-combobox');
                 expect(comboboxes[2].options).toHaveLength(5);
             });
         });
@@ -527,9 +511,7 @@ describe('c-kanban-backlog-view', () => {
                     'c-kanban-context-menu'
                 );
                 const items = contextMenu.menuItems;
-                const moveItem = items.find(
-                    (i) => i.value === 'moveToSprint'
-                );
+                const moveItem = items.find((i) => i.value === 'moveToSprint');
                 expect(moveItem).toBeDefined();
             });
         });
@@ -543,9 +525,7 @@ describe('c-kanban-backlog-view', () => {
                     'c-kanban-context-menu'
                 );
                 const items = contextMenu.menuItems;
-                const moveItem = items.find(
-                    (i) => i.value === 'moveToSprint'
-                );
+                const moveItem = items.find((i) => i.value === 'moveToSprint');
                 expect(moveItem).toBeUndefined();
             });
         });
@@ -594,9 +574,7 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             return flushPromises().then(() => {
                 const comboboxes =
-                    element.shadowRoot.querySelectorAll(
-                        'lightning-combobox'
-                    );
+                    element.shadowRoot.querySelectorAll('lightning-combobox');
                 comboboxes[0].dispatchEvent(
                     new CustomEvent('change', {
                         detail: { value: 'refinement' }
@@ -642,10 +620,9 @@ describe('c-kanban-backlog-view', () => {
                 return flushPromises().then(() => {
                     newBtn.click();
                     return flushPromises().then(() => {
-                        const createForm =
-                            element.shadowRoot.querySelector(
-                                '.backlog-view__create-form'
-                            );
+                        const createForm = element.shadowRoot.querySelector(
+                            '.backlog-view__create-form'
+                        );
                         expect(createForm).toBeNull();
                     });
                 });
@@ -682,9 +659,8 @@ describe('c-kanban-backlog-view', () => {
                 );
                 newBtn.click();
                 return flushPromises().then(() => {
-                    const input = element.shadowRoot.querySelector(
-                        '.create-input'
-                    );
+                    const input =
+                        element.shadowRoot.querySelector('.create-input');
                     input.value = 'New task';
                     input.dispatchEvent(new CustomEvent('change'));
                     return flushPromises().then(() => {
@@ -705,15 +681,11 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const newBtn = findButtonByLabel(
-                element.shadowRoot,
-                'New Card'
-            );
+            const newBtn = findButtonByLabel(element.shadowRoot, 'New Card');
             newBtn.click();
             await flushPromises();
 
-            const input =
-                element.shadowRoot.querySelector('.create-input');
+            const input = element.shadowRoot.querySelector('.create-input');
             input.value = 'My new card';
             input.dispatchEvent(new CustomEvent('change'));
             await flushPromises();
@@ -726,10 +698,9 @@ describe('c-kanban-backlog-view', () => {
             );
             await flushPromises();
 
-            expect(mockCreateBacklogCardAsync).toHaveBeenCalledWith(
-                'board1',
-                { subject: 'My new card' }
-            );
+            expect(mockCreateBacklogCardAsync).toHaveBeenCalledWith('board1', {
+                subject: 'My new card'
+            });
             expect(mockStore.dispatch).toHaveBeenCalled();
         });
 
@@ -738,15 +709,11 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const newBtn = findButtonByLabel(
-                element.shadowRoot,
-                'New Card'
-            );
+            const newBtn = findButtonByLabel(element.shadowRoot, 'New Card');
             newBtn.click();
             await flushPromises();
 
-            const input =
-                element.shadowRoot.querySelector('.create-input');
+            const input = element.shadowRoot.querySelector('.create-input');
             input.dispatchEvent(
                 new KeyboardEvent('keydown', {
                     key: 'Escape',
@@ -767,15 +734,11 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const newBtn = findButtonByLabel(
-                element.shadowRoot,
-                'New Card'
-            );
+            const newBtn = findButtonByLabel(element.shadowRoot, 'New Card');
             newBtn.click();
             await flushPromises();
 
-            const input =
-                element.shadowRoot.querySelector('.create-input');
+            const input = element.shadowRoot.querySelector('.create-input');
             input.value = 'Create me';
             input.dispatchEvent(new CustomEvent('change'));
             await flushPromises();
@@ -788,10 +751,9 @@ describe('c-kanban-backlog-view', () => {
             saveBtn.click();
             await flushPromises();
 
-            expect(mockCreateBacklogCardAsync).toHaveBeenCalledWith(
-                'board1',
-                { subject: 'Create me' }
-            );
+            expect(mockCreateBacklogCardAsync).toHaveBeenCalledWith('board1', {
+                subject: 'Create me'
+            });
         });
 
         it('handleCreateCard does nothing without subject', async () => {
@@ -799,10 +761,7 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const newBtn = findButtonByLabel(
-                element.shadowRoot,
-                'New Card'
-            );
+            const newBtn = findButtonByLabel(element.shadowRoot, 'New Card');
             newBtn.click();
             await flushPromises();
 
@@ -821,9 +780,7 @@ describe('c-kanban-backlog-view', () => {
             mockSelectors.getBacklogCards.mockReturnValue([]);
             mockSelectors.getBoardId.mockReturnValue('board1');
             const failStore = createMockStore();
-            failStore.dispatch.mockRejectedValueOnce(
-                new Error('Server error')
-            );
+            failStore.dispatch.mockRejectedValueOnce(new Error('Server error'));
 
             element = createElement('c-kanban-backlog-view', {
                 is: KanbanBacklogView
@@ -832,15 +789,11 @@ describe('c-kanban-backlog-view', () => {
             document.body.appendChild(element);
             await flushPromises();
 
-            const newBtn = findButtonByLabel(
-                element.shadowRoot,
-                'New Card'
-            );
+            const newBtn = findButtonByLabel(element.shadowRoot, 'New Card');
             newBtn.click();
             await flushPromises();
 
-            const input =
-                element.shadowRoot.querySelector('.create-input');
+            const input = element.shadowRoot.querySelector('.create-input');
             input.value = 'Fail card';
             input.dispatchEvent(new CustomEvent('change'));
             await flushPromises();
@@ -866,10 +819,7 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const newBtn = findButtonByLabel(
-                element.shadowRoot,
-                'New Card'
-            );
+            const newBtn = findButtonByLabel(element.shadowRoot, 'New Card');
             newBtn.click();
             await flushPromises();
 
@@ -899,9 +849,7 @@ describe('c-kanban-backlog-view', () => {
             const selectAllCheckbox = element.shadowRoot
                 .querySelector('.backlog-row--header')
                 .querySelector('lightning-input');
-            selectAllCheckbox.dispatchEvent(
-                new CustomEvent('change')
-            );
+            selectAllCheckbox.dispatchEvent(new CustomEvent('change'));
             await flushPromises();
 
             expect(mockStore.dispatch).toHaveBeenCalled();
@@ -925,9 +873,7 @@ describe('c-kanban-backlog-view', () => {
             const selectAllCheckbox = element.shadowRoot
                 .querySelector('.backlog-row--header')
                 .querySelector('lightning-input');
-            selectAllCheckbox.dispatchEvent(
-                new CustomEvent('change')
-            );
+            selectAllCheckbox.dispatchEvent(new CustomEvent('change'));
             await flushPromises();
 
             expect(mockSetSelectedBacklogCards).toHaveBeenCalledWith([]);
@@ -942,8 +888,7 @@ describe('c-kanban-backlog-view', () => {
             const dataRows = element.shadowRoot.querySelectorAll(
                 '.backlog-row:not(.backlog-row--header)'
             );
-            const firstCheckbox =
-                dataRows[0].querySelector('lightning-input');
+            const firstCheckbox = dataRows[0].querySelector('lightning-input');
             // Simulate click on first card's checkbox
             firstCheckbox.dispatchEvent(new CustomEvent('change'));
             await flushPromises();
@@ -962,10 +907,7 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const clearBtn = findButtonByLabel(
-                element.shadowRoot,
-                'Clear'
-            );
+            const clearBtn = findButtonByLabel(element.shadowRoot, 'Clear');
             clearBtn.click();
             await flushPromises();
 
@@ -977,9 +919,7 @@ describe('c-kanban-backlog-view', () => {
     describe('bulk action handlers', () => {
         it('handleBulkAddToSprint dispatches moveCardsToSprintAsync', async () => {
             mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
-            mockSelectors.getSelectedBacklogCards.mockReturnValue([
-                'card1'
-            ]);
+            mockSelectors.getSelectedBacklogCards.mockReturnValue(['card1']);
             mockSelectors.getActiveSprint.mockReturnValue({
                 Id: 'sprint1'
             });
@@ -994,17 +934,14 @@ describe('c-kanban-backlog-view', () => {
             addBtn.click();
             await flushPromises();
 
-            expect(mockMoveCardsToSprintAsync).toHaveBeenCalledWith(
-                'sprint1',
-                ['card1']
-            );
+            expect(mockMoveCardsToSprintAsync).toHaveBeenCalledWith('sprint1', [
+                'card1'
+            ]);
         });
 
         it('handleBulkAddToSprint clears selection after success', async () => {
             mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
-            mockSelectors.getSelectedBacklogCards.mockReturnValue([
-                'card1'
-            ]);
+            mockSelectors.getSelectedBacklogCards.mockReturnValue(['card1']);
             mockSelectors.getActiveSprint.mockReturnValue({
                 Id: 'sprint1'
             });
@@ -1031,10 +968,7 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const deleteBtn = findButtonByLabel(
-                element.shadowRoot,
-                'Delete'
-            );
+            const deleteBtn = findButtonByLabel(element.shadowRoot, 'Delete');
             deleteBtn.click();
             await flushPromises();
 
@@ -1063,21 +997,17 @@ describe('c-kanban-backlog-view', () => {
             );
             await flushPromises();
 
-            expect(mockUpdateBacklogCardAsync).toHaveBeenCalledWith(
-                'card1',
-                { priority: 'High' }
-            );
-            expect(mockUpdateBacklogCardAsync).toHaveBeenCalledWith(
-                'card2',
-                { priority: 'High' }
-            );
+            expect(mockUpdateBacklogCardAsync).toHaveBeenCalledWith('card1', {
+                priority: 'High'
+            });
+            expect(mockUpdateBacklogCardAsync).toHaveBeenCalledWith('card2', {
+                priority: 'High'
+            });
         });
 
         it('handleBulkAddToSprint does nothing without active sprint', async () => {
             mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
-            mockSelectors.getSelectedBacklogCards.mockReturnValue([
-                'card1'
-            ]);
+            mockSelectors.getSelectedBacklogCards.mockReturnValue(['card1']);
             mockSelectors.getActiveSprint.mockReturnValue(null);
             createBacklogView();
             await flushPromises();
@@ -1091,20 +1021,17 @@ describe('c-kanban-backlog-view', () => {
                     bulkBar,
                     'Add to Sprint (1)'
                 );
+                // eslint-disable-next-line jest/no-conditional-expect
                 expect(sprintBtn).toBeNull();
             }
         });
 
         it('handleBulkDelete dispatches error on failure', async () => {
             mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
-            mockSelectors.getSelectedBacklogCards.mockReturnValue([
-                'card1'
-            ]);
+            mockSelectors.getSelectedBacklogCards.mockReturnValue(['card1']);
 
             const failStore = createMockStore();
-            failStore.dispatch.mockRejectedValueOnce(
-                new Error('fail')
-            );
+            failStore.dispatch.mockRejectedValueOnce(new Error('fail'));
 
             element = createElement('c-kanban-backlog-view', {
                 is: KanbanBacklogView
@@ -1118,10 +1045,7 @@ describe('c-kanban-backlog-view', () => {
                 errorReceived = true;
             });
 
-            const deleteBtn = findButtonByLabel(
-                element.shadowRoot,
-                'Delete'
-            );
+            const deleteBtn = findButtonByLabel(element.shadowRoot, 'Delete');
             deleteBtn.click();
             await flushPromises();
 
@@ -1205,9 +1129,9 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            let cardClicked = false;
+            let _cardClicked = false;
             element.addEventListener('cardclick', () => {
-                cardClicked = true;
+                _cardClicked = true;
             });
 
             // Click checkbox area
@@ -1230,16 +1154,14 @@ describe('c-kanban-backlog-view', () => {
             createBacklogView();
             await flushPromises();
 
-            const refinementBtn = element.shadowRoot.querySelector(
-                '.refinement-toggle'
-            );
+            const refinementBtn =
+                element.shadowRoot.querySelector('.refinement-toggle');
             refinementBtn.click();
             await flushPromises();
 
-            expect(mockUpdateBacklogCardAsync).toHaveBeenCalledWith(
-                'card1',
-                { needsRefinement: true }
-            );
+            expect(mockUpdateBacklogCardAsync).toHaveBeenCalledWith('card1', {
+                needsRefinement: true
+            });
         });
     });
 
@@ -1340,10 +1262,9 @@ describe('c-kanban-backlog-view', () => {
             );
             await flushPromises();
 
-            expect(mockUpdateBacklogCardAsync).toHaveBeenCalledWith(
-                'card1',
-                { priority: 'Low' }
-            );
+            expect(mockUpdateBacklogCardAsync).toHaveBeenCalledWith('card1', {
+                priority: 'Low'
+            });
         });
 
         it('handleContextMenuSelect toggleRefinement dispatches update', async () => {
@@ -1374,10 +1295,9 @@ describe('c-kanban-backlog-view', () => {
             await flushPromises();
 
             // card1 has needsRefinement: false, so should toggle to true
-            expect(mockUpdateBacklogCardAsync).toHaveBeenCalledWith(
-                'card1',
-                { needsRefinement: true }
-            );
+            expect(mockUpdateBacklogCardAsync).toHaveBeenCalledWith('card1', {
+                needsRefinement: true
+            });
         });
 
         it('handleContextMenuSelect moveToSprint dispatches move', async () => {
@@ -1410,10 +1330,9 @@ describe('c-kanban-backlog-view', () => {
             );
             await flushPromises();
 
-            expect(mockMoveCardsToSprintAsync).toHaveBeenCalledWith(
-                'sprint1',
-                ['card1']
-            );
+            expect(mockMoveCardsToSprintAsync).toHaveBeenCalledWith('sprint1', [
+                'card1'
+            ]);
         });
 
         it('handleContextMenuSelect delete dispatches delete', async () => {
@@ -1443,9 +1362,7 @@ describe('c-kanban-backlog-view', () => {
             );
             await flushPromises();
 
-            expect(mockDeleteBacklogCardsAsync).toHaveBeenCalledWith([
-                'card1'
-            ]);
+            expect(mockDeleteBacklogCardsAsync).toHaveBeenCalledWith(['card1']);
         });
 
         it('handleContextMenuSelect does nothing without cardId', async () => {
@@ -1511,7 +1428,7 @@ describe('c-kanban-backlog-view', () => {
             // (the callback references event.target which may be null
             // after async in jsdom)
             origRAF = window.requestAnimationFrame;
-            window.requestAnimationFrame = jest.fn((cb) => {
+            window.requestAnimationFrame = jest.fn((_cb) => {
                 // Don't execute the callback — avoids the classList
                 // error on detached event targets
                 return 0;
@@ -1535,10 +1452,9 @@ describe('c-kanban-backlog-view', () => {
                 setData: jest.fn()
             };
             row.dispatchEvent(
-                Object.assign(
-                    new Event('dragstart', { bubbles: true }),
-                    { dataTransfer: mockDataTransfer }
-                )
+                Object.assign(new CustomEvent('dragstart', { bubbles: true }), {
+                    dataTransfer: mockDataTransfer
+                })
             );
             await flushPromises();
 
@@ -1564,17 +1480,14 @@ describe('c-kanban-backlog-view', () => {
                 setData: jest.fn()
             };
             row.dispatchEvent(
-                Object.assign(
-                    new Event('dragstart', { bubbles: true }),
-                    { dataTransfer: mockDataTransfer }
-                )
+                Object.assign(new CustomEvent('dragstart', { bubbles: true }), {
+                    dataTransfer: mockDataTransfer
+                })
             );
             await flushPromises();
 
             // End it
-            row.dispatchEvent(
-                new Event('dragend', { bubbles: true })
-            );
+            row.dispatchEvent(new CustomEvent('dragend', { bubbles: true }));
             await flushPromises();
 
             // Drag state should be cleared
@@ -1609,18 +1522,14 @@ describe('c-kanban-backlog-view', () => {
                 setData: jest.fn()
             };
             sourceRow.dispatchEvent(
-                Object.assign(
-                    new Event('dragstart', { bubbles: true }),
-                    { dataTransfer: mockDataTransfer }
-                )
+                Object.assign(new CustomEvent('dragstart', { bubbles: true }), {
+                    dataTransfer: mockDataTransfer
+                })
             );
             await flushPromises();
 
             // Drag over target
-            jest.spyOn(
-                targetRow,
-                'getBoundingClientRect'
-            ).mockReturnValue({
+            jest.spyOn(targetRow, 'getBoundingClientRect').mockReturnValue({
                 top: 100,
                 height: 40
             });
@@ -1640,7 +1549,7 @@ describe('c-kanban-backlog-view', () => {
             // Drop
             targetRow.dispatchEvent(
                 Object.assign(
-                    new Event('drop', {
+                    new CustomEvent('drop', {
                         bubbles: true,
                         cancelable: true
                     }),
@@ -1664,7 +1573,7 @@ describe('c-kanban-backlog-view', () => {
             // Drop without starting a drag
             targetRow.dispatchEvent(
                 Object.assign(
-                    new Event('drop', {
+                    new CustomEvent('drop', {
                         bubbles: true,
                         cancelable: true
                     }),
@@ -1731,8 +1640,7 @@ describe('c-kanban-card-panel', () => {
 
     describe('processFields', () => {
         // Test processFields via the prototype (avoids illegal constructor)
-        const processFields =
-            KanbanCardPanel.prototype.processFields;
+        const processFields = KanbanCardPanel.prototype.processFields;
 
         it('maps unqualified field names to qualified names', () => {
             const result = processFields(['Subject__c', 'Status__c']);
@@ -1749,18 +1657,14 @@ describe('c-kanban-card-panel', () => {
             const result = processFields(['Description__c']);
             expect(result[0].fullWidth).toBe(true);
             expect(result[0].isTextarea).toBe(true);
-            expect(result[0].columnClass).toBe(
-                'slds-col slds-size_1-of-1'
-            );
+            expect(result[0].columnClass).toBe('slds-col slds-size_1-of-1');
         });
 
         it('applies default metadata for unknown fields', () => {
             const result = processFields(['CustomField__c']);
             expect(result[0].fullWidth).toBe(false);
             expect(result[0].isTextarea).toBe(false);
-            expect(result[0].columnClass).toBe(
-                'slds-col slds-size_1-of-2'
-            );
+            expect(result[0].columnClass).toBe('slds-col slds-size_1-of-2');
         });
 
         it('sets key equal to fieldName', () => {
@@ -1872,9 +1776,7 @@ describe('c-kanban-card-panel', () => {
                 KanbanCardPanel.prototype,
                 'deleteButtonLabel'
             ).get;
-            expect(getter.call({ deleteConfirmState: false })).toBe(
-                'Delete'
-            );
+            expect(getter.call({ deleteConfirmState: false })).toBe('Delete');
         });
 
         it('deleteButtonLabel returns Confirm Delete when in confirm state', () => {
@@ -1892,9 +1794,7 @@ describe('c-kanban-card-panel', () => {
                 KanbanCardPanel.prototype,
                 'deleteButtonVariant'
             ).get;
-            expect(getter.call({ deleteConfirmState: false })).toBe(
-                'neutral'
-            );
+            expect(getter.call({ deleteConfirmState: false })).toBe('neutral');
         });
 
         it('deleteButtonVariant returns destructive when in confirm state', () => {
@@ -1918,10 +1818,7 @@ describe('c-kanban-card-panel', () => {
                 closeFired = true;
             });
 
-            const closeBtn = findButtonByLabel(
-                element.shadowRoot,
-                'Cancel'
-            );
+            const closeBtn = findButtonByLabel(element.shadowRoot, 'Cancel');
             closeBtn.click();
             await flushPromises();
 
@@ -1937,8 +1834,7 @@ describe('c-kanban-card-panel', () => {
                 closeFired = true;
             });
 
-            const panelDiv =
-                element.shadowRoot.querySelector('.card-panel');
+            const panelDiv = element.shadowRoot.querySelector('.card-panel');
             panelDiv.dispatchEvent(
                 new KeyboardEvent('keydown', {
                     key: 'Escape',
@@ -1959,8 +1855,7 @@ describe('c-kanban-card-panel', () => {
                 closeFired = true;
             });
 
-            const panelDiv =
-                element.shadowRoot.querySelector('.card-panel');
+            const panelDiv = element.shadowRoot.querySelector('.card-panel');
             panelDiv.dispatchEvent(
                 new KeyboardEvent('keydown', {
                     key: 'Enter',
@@ -1976,10 +1871,7 @@ describe('c-kanban-card-panel', () => {
             createPanel();
             await flushPromises();
 
-            const deleteBtn = findButtonByLabel(
-                element.shadowRoot,
-                'Delete'
-            );
+            const deleteBtn = findButtonByLabel(element.shadowRoot, 'Delete');
             deleteBtn.click();
             await flushPromises();
 
@@ -1996,10 +1888,7 @@ describe('c-kanban-card-panel', () => {
             createPanel({ store });
             await flushPromises();
 
-            const deleteBtn = findButtonByLabel(
-                element.shadowRoot,
-                'Delete'
-            );
+            const deleteBtn = findButtonByLabel(element.shadowRoot, 'Delete');
             deleteBtn.click();
             await flushPromises();
 
@@ -2020,10 +1909,7 @@ describe('c-kanban-card-panel', () => {
             // Use sync microtask flushing with fake timers
             jest.advanceTimersByTime(0);
 
-            const deleteBtn = findButtonByLabel(
-                element.shadowRoot,
-                'Delete'
-            );
+            const deleteBtn = findButtonByLabel(element.shadowRoot, 'Delete');
             deleteBtn.click();
             jest.advanceTimersByTime(0);
 
@@ -2031,10 +1917,7 @@ describe('c-kanban-card-panel', () => {
             jest.advanceTimersByTime(3500);
 
             // Should revert to normal delete button
-            const normalBtn = findButtonByLabel(
-                element.shadowRoot,
-                'Delete'
-            );
+            const normalBtn = findButtonByLabel(element.shadowRoot, 'Delete');
             expect(normalBtn).not.toBeNull();
             jest.useRealTimers();
         });
@@ -2048,8 +1931,7 @@ describe('c-kanban-card-panel', () => {
                 receivedDetail = e.detail;
             });
 
-            const link =
-                element.shadowRoot.querySelector('.slds-text-link');
+            const link = element.shadowRoot.querySelector('.slds-text-link');
             link.click();
             await flushPromises();
 
@@ -2059,8 +1941,7 @@ describe('c-kanban-card-panel', () => {
 
     describe('resize handling', () => {
         it('handleResize clamps to min/max bounds', () => {
-            const handleResize =
-                KanbanCardPanel.prototype.handleResize;
+            const handleResize = KanbanCardPanel.prototype.handleResize;
             const ctx = {
                 _resizing: true,
                 _resizeStartX: 500,
@@ -2078,8 +1959,7 @@ describe('c-kanban-card-panel', () => {
         });
 
         it('handleResize does nothing when not resizing', () => {
-            const handleResize =
-                KanbanCardPanel.prototype.handleResize;
+            const handleResize = KanbanCardPanel.prototype.handleResize;
             const ctx = {
                 _resizing: false,
                 panelWidth: 400
@@ -2089,12 +1969,8 @@ describe('c-kanban-card-panel', () => {
         });
 
         it('handleResizeEnd cleans up listeners', () => {
-            const handleResizeEnd =
-                KanbanCardPanel.prototype.handleResizeEnd;
-            const mockRemove = jest.spyOn(
-                window,
-                'removeEventListener'
-            );
+            const handleResizeEnd = KanbanCardPanel.prototype.handleResizeEnd;
+            const mockRemove = jest.spyOn(window, 'removeEventListener');
 
             const ctx = {
                 _resizing: true,
@@ -2118,6 +1994,7 @@ describe('c-kanban-card-panel', () => {
             jest.useFakeTimers();
             const disconnectedCallback =
                 KanbanCardPanel.prototype.disconnectedCallback;
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
             const timer = setTimeout(() => {}, 3000);
             const ctx = {
                 _deleteTimer: timer,
@@ -2135,10 +2012,7 @@ describe('c-kanban-card-panel', () => {
         it('removes resize listeners if active', () => {
             const disconnectedCallback =
                 KanbanCardPanel.prototype.disconnectedCallback;
-            const mockRemove = jest.spyOn(
-                window,
-                'removeEventListener'
-            );
+            const mockRemove = jest.spyOn(window, 'removeEventListener');
             const ctx = {
                 _deleteTimer: null,
                 _boundHandleResize: () => {},
@@ -2160,22 +2034,18 @@ describe('c-kanban-card-panel', () => {
                 _boundHandleResizeEnd: null
             };
 
-            expect(() =>
-                disconnectedCallback.call(ctx)
-            ).not.toThrow();
+            expect(() => disconnectedCallback.call(ctx)).not.toThrow();
         });
     });
 
     // ── Wire handler: wiredModalSettings ────────────────────────────
     describe('wiredModalSettings', () => {
         it('processes fields when data has visibleFields', () => {
-            const handler =
-                KanbanCardPanel.prototype.wiredModalSettings;
+            const handler = KanbanCardPanel.prototype.wiredModalSettings;
             const ctx = {
                 modalSettings: null,
                 formFields: [],
-                processFields:
-                    KanbanCardPanel.prototype.processFields,
+                processFields: KanbanCardPanel.prototype.processFields,
                 dispatchEvent: jest.fn()
             };
 
@@ -2190,14 +2060,11 @@ describe('c-kanban-card-panel', () => {
                 visibleFields: ['Subject__c', 'Status__c']
             });
             expect(ctx.formFields).toHaveLength(2);
-            expect(ctx.formFields[0].fieldName).toBe(
-                'OpenSF__Subject__c'
-            );
+            expect(ctx.formFields[0].fieldName).toBe('OpenSF__Subject__c');
         });
 
         it('does not process fields when data has no visibleFields', () => {
-            const handler =
-                KanbanCardPanel.prototype.wiredModalSettings;
+            const handler = KanbanCardPanel.prototype.wiredModalSettings;
             const ctx = {
                 modalSettings: null,
                 formFields: [],
@@ -2215,8 +2082,7 @@ describe('c-kanban-card-panel', () => {
         });
 
         it('dispatches toast on error with body message', () => {
-            const handler =
-                KanbanCardPanel.prototype.wiredModalSettings;
+            const handler = KanbanCardPanel.prototype.wiredModalSettings;
             const ctx = {
                 modalSettings: null,
                 formFields: [],
@@ -2232,8 +2098,7 @@ describe('c-kanban-card-panel', () => {
         });
 
         it('dispatches toast on error without body', () => {
-            const handler =
-                KanbanCardPanel.prototype.wiredModalSettings;
+            const handler = KanbanCardPanel.prototype.wiredModalSettings;
             const ctx = {
                 modalSettings: null,
                 formFields: [],
@@ -2252,8 +2117,7 @@ describe('c-kanban-card-panel', () => {
     // ── handleSave, handleSuccess, handleError ──────────────────────
     describe('save and error handlers', () => {
         it('handleSave collects input fields and calls updateCard', () => {
-            const handleSave =
-                KanbanCardPanel.prototype.handleSave;
+            const handleSave = KanbanCardPanel.prototype.handleSave;
             const mockField = {
                 fieldName: 'OpenSF__Subject__c',
                 value: 'Updated'
@@ -2277,14 +2141,13 @@ describe('c-kanban-card-panel', () => {
                 Id: 'card1',
                 Name: 'Test'
             });
-            expect(
-                ctx.template.querySelector
-            ).toHaveBeenCalledWith('lightning-record-edit-form');
+            expect(ctx.template.querySelector).toHaveBeenCalledWith(
+                'lightning-record-edit-form'
+            );
         });
 
         it('handleSave handles no form gracefully', () => {
-            const handleSave =
-                KanbanCardPanel.prototype.handleSave;
+            const handleSave = KanbanCardPanel.prototype.handleSave;
             const ctx = {
                 card: { Id: 'card1' },
                 store: createMockStore(),
@@ -2299,16 +2162,14 @@ describe('c-kanban-card-panel', () => {
         });
 
         it('handleSuccess clears original card and dispatches events', () => {
-            const handleSuccess =
-                KanbanCardPanel.prototype.handleSuccess;
+            const handleSuccess = KanbanCardPanel.prototype.handleSuccess;
             const ctx = {
                 card: { Id: 'card1' },
                 _originalCard: { Id: 'card1', Name: 'Old' },
                 dispatchEvent: jest.fn(),
                 deleteConfirmState: false,
                 _deleteTimer: null,
-                handleClose:
-                    KanbanCardPanel.prototype.handleClose
+                handleClose: KanbanCardPanel.prototype.handleClose
             };
 
             handleSuccess.call(ctx);
@@ -2319,8 +2180,7 @@ describe('c-kanban-card-panel', () => {
         });
 
         it('handleError reverts to original card if set', () => {
-            const handleError =
-                KanbanCardPanel.prototype.handleError;
+            const handleError = KanbanCardPanel.prototype.handleError;
             const originalCard = { Id: 'card1', Name: 'Original' };
             const ctx = {
                 _originalCard: { ...originalCard },
@@ -2341,8 +2201,7 @@ describe('c-kanban-card-panel', () => {
         });
 
         it('handleError uses default message when detail is missing', () => {
-            const handleError =
-                KanbanCardPanel.prototype.handleError;
+            const handleError = KanbanCardPanel.prototype.handleError;
             const ctx = {
                 _originalCard: null,
                 store: createMockStore(),
@@ -2355,8 +2214,7 @@ describe('c-kanban-card-panel', () => {
         });
 
         it('handleError does not revert when no original card', () => {
-            const handleError =
-                KanbanCardPanel.prototype.handleError;
+            const handleError = KanbanCardPanel.prototype.handleError;
             mockUpdateCard.mockClear();
             const ctx = {
                 _originalCard: null,
@@ -2377,10 +2235,7 @@ describe('c-kanban-card-panel', () => {
         it('sets up resize tracking and listeners', () => {
             const handleResizeStart =
                 KanbanCardPanel.prototype.handleResizeStart;
-            const mockAdd = jest.spyOn(
-                window,
-                'addEventListener'
-            );
+            const mockAdd = jest.spyOn(window, 'addEventListener');
 
             const ctx = {
                 _resizing: false,
@@ -2389,10 +2244,8 @@ describe('c-kanban-card-panel', () => {
                 panelWidth: 400,
                 _boundHandleResize: null,
                 _boundHandleResizeEnd: null,
-                handleResize:
-                    KanbanCardPanel.prototype.handleResize,
-                handleResizeEnd:
-                    KanbanCardPanel.prototype.handleResizeEnd
+                handleResize: KanbanCardPanel.prototype.handleResize,
+                handleResizeEnd: KanbanCardPanel.prototype.handleResizeEnd
             };
 
             handleResizeStart.call(ctx, {
@@ -2421,8 +2274,7 @@ describe('c-kanban-card-panel', () => {
     // ── performDelete error path ────────────────────────────────────
     describe('performDelete error path', () => {
         it('dispatches toast on delete failure', async () => {
-            const performDelete =
-                KanbanCardPanel.prototype.performDelete;
+            const performDelete = KanbanCardPanel.prototype.performDelete;
             const failStore = createMockStore();
             failStore.dispatch.mockRejectedValueOnce(
                 new Error('Delete failed')
@@ -2434,8 +2286,7 @@ describe('c-kanban-card-panel', () => {
                 _deleteTimer: null,
                 deleteConfirmState: true,
                 dispatchEvent: jest.fn(),
-                handleClose:
-                    KanbanCardPanel.prototype.handleClose
+                handleClose: KanbanCardPanel.prototype.handleClose
             };
 
             await performDelete.call(ctx);
@@ -2481,9 +2332,7 @@ describe('loggingMiddleware', () => {
     });
 
     it('logs action type, previous state, and next state when enabled', () => {
-        const groupSpy = jest
-            .spyOn(console, 'group')
-            .mockImplementation();
+        const groupSpy = jest.spyOn(console, 'group').mockImplementation();
         const logSpy = jest.spyOn(console, 'log').mockImplementation();
         const groupEndSpy = jest
             .spyOn(console, 'groupEnd')
@@ -2499,10 +2348,7 @@ describe('loggingMiddleware', () => {
         const result = middleware(mockStore)(mockNext)(action);
 
         expect(groupSpy).toHaveBeenCalledWith('Action: INCREMENT');
-        expect(logSpy).toHaveBeenCalledWith(
-            'Previous State:',
-            { count: 0 }
-        );
+        expect(logSpy).toHaveBeenCalledWith('Previous State:', { count: 0 });
         expect(logSpy).toHaveBeenCalledWith('Action:', action);
         expect(logSpy).toHaveBeenCalledWith('Next State:', { count: 1 });
         expect(groupEndSpy).toHaveBeenCalled();
@@ -2535,9 +2381,7 @@ describe('loggingMiddleware', () => {
     });
 
     it('defaults to disabled when no argument is provided', () => {
-        const groupSpy = jest
-            .spyOn(console, 'group')
-            .mockImplementation();
+        const groupSpy = jest.spyOn(console, 'group').mockImplementation();
 
         const middleware = createLoggingMiddleware();
         middleware(mockStore)(mockNext)({ type: 'TEST' });
@@ -2549,9 +2393,7 @@ describe('loggingMiddleware', () => {
     });
 
     it('handles thunk-like actions without type gracefully when enabled', () => {
-        const groupSpy = jest
-            .spyOn(console, 'group')
-            .mockImplementation();
+        const groupSpy = jest.spyOn(console, 'group').mockImplementation();
         jest.spyOn(console, 'log').mockImplementation();
         jest.spyOn(console, 'groupEnd').mockImplementation();
 
@@ -2570,9 +2412,7 @@ describe('loggingMiddleware', () => {
     });
 
     it('handles undefined action gracefully when enabled', () => {
-        const groupSpy = jest
-            .spyOn(console, 'group')
-            .mockImplementation();
+        const groupSpy = jest.spyOn(console, 'group').mockImplementation();
         jest.spyOn(console, 'log').mockImplementation();
         jest.spyOn(console, 'groupEnd').mockImplementation();
 

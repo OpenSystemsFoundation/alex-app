@@ -6,13 +6,9 @@
 
 // Mock kanbanStore
 jest.mock('c/kanbanStore', () => ({
-    moveCardAsync: jest.fn(
-        (cardId, columnId, index, requestId, clientId) => (dispatch) =>
-            Promise.resolve({ success: true })
-    ),
+    moveCardAsync: jest.fn(() => () => Promise.resolve({ success: true })),
     addCardsToSprintAsync: jest.fn(
-        (sprintId, cardIds) => (dispatch) =>
-            Promise.resolve({ success: true })
+        () => () => Promise.resolve({ success: true })
     ),
     selectors: {
         getActiveSprint: jest.fn(() => ({ Id: 'sprint1' }))
@@ -20,11 +16,7 @@ jest.mock('c/kanbanStore', () => ({
 }));
 
 import DragDropHandler from '../../../../force-app/main/default/lwc/kanbanBoard/handlers/dragDropHandler';
-import {
-    moveCardAsync,
-    addCardsToSprintAsync,
-    selectors
-} from 'c/kanbanStore';
+import { addCardsToSprintAsync, selectors } from 'c/kanbanStore';
 
 function createMockComponent(overrides = {}) {
     return {
@@ -164,9 +156,7 @@ describe('DragDropHandler', () => {
             const event = createMockEvent();
             handler.handleDragStart(event);
 
-            expect(event.target.classList.add).toHaveBeenCalledWith(
-                'dragging'
-            );
+            expect(event.target.classList.add).toHaveBeenCalledWith('dragging');
             rafSpy.mockRestore();
         });
     });
@@ -311,9 +301,7 @@ describe('DragDropHandler', () => {
                 columnId: 'colX', // not in columns
                 cardHeight: 80
             };
-            component.columns = [
-                { Id: 'col1', cards: [{ Id: 'card1' }] }
-            ];
+            component.columns = [{ Id: 'col1', cards: [{ Id: 'card1' }] }];
 
             const event = createMockEvent({
                 clientY: 200,
@@ -374,9 +362,7 @@ describe('DragDropHandler', () => {
         });
 
         it('handles backlog drop error', async () => {
-            component.store.dispatch.mockRejectedValueOnce(
-                new Error('fail')
-            );
+            component.store.dispatch.mockRejectedValueOnce(new Error('fail'));
             const consoleSpy = jest
                 .spyOn(console, 'error')
                 .mockImplementation(() => {});
@@ -492,14 +478,11 @@ describe('DragDropHandler', () => {
             await handler.moveCard('card1', 'col1', 'col2', 0);
 
             expect(component.operationQueue.enqueue).toHaveBeenCalled();
+            expect(executeCallback).toBeDefined();
 
             // Execute the callback
-            if (executeCallback) {
-                const result = await executeCallback();
-                expect(
-                    component.requestTracker.completeRequest
-                ).toHaveBeenCalled();
-            }
+            await executeCallback();
+            expect(component.requestTracker.completeRequest).toHaveBeenCalled();
         });
 
         it('handles move error with subscription not connected', async () => {
@@ -515,15 +498,10 @@ describe('DragDropHandler', () => {
 
             await handler.moveCard('card1', 'col1', 'col2', 0);
 
-            if (executeCallback) {
-                await expect(executeCallback()).rejects.toThrow(
-                    'Move failed'
-                );
-                expect(
-                    component.requestTracker.failRequest
-                ).toHaveBeenCalled();
-                expect(component.loadBoardData).toHaveBeenCalled();
-            }
+            expect(executeCallback).toBeDefined();
+            await expect(executeCallback()).rejects.toThrow('Move failed');
+            expect(component.requestTracker.failRequest).toHaveBeenCalled();
+            expect(component.loadBoardData).toHaveBeenCalled();
         });
 
         it('handles move error with subscription connected', async () => {
@@ -539,16 +517,11 @@ describe('DragDropHandler', () => {
 
             await handler.moveCard('card1', 'col1', 'col2', 0);
 
-            if (executeCallback) {
-                await expect(executeCallback()).rejects.toThrow(
-                    'Move failed'
-                );
-                expect(
-                    component.requestTracker.failRequest
-                ).toHaveBeenCalled();
-                // Should NOT reload board data when subscription is connected
-                expect(component.loadBoardData).not.toHaveBeenCalled();
-            }
+            expect(executeCallback).toBeDefined();
+            await expect(executeCallback()).rejects.toThrow('Move failed');
+            expect(component.requestTracker.failRequest).toHaveBeenCalled();
+            // Should NOT reload board data when subscription is connected
+            expect(component.loadBoardData).not.toHaveBeenCalled();
         });
 
         it('handles enqueue rejection with toast', async () => {
@@ -558,7 +531,7 @@ describe('DragDropHandler', () => {
 
             await handler.moveCard('card1', 'col1', 'col2', 0);
             // The .then(null, errorHandler) should call toastManager
-            await new Promise((r) => setTimeout(r, 0));
+            await Promise.resolve();
             expect(component.toastManager.showError).toHaveBeenCalled();
         });
 
@@ -570,7 +543,7 @@ describe('DragDropHandler', () => {
 
             // Should not throw
             await handler.moveCard('card1', 'col1', 'col2', 0);
-            await new Promise((r) => setTimeout(r, 0));
+            await Promise.resolve();
         });
     });
 

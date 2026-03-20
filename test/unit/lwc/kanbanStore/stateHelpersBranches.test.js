@@ -59,11 +59,7 @@ describe('calculateDragState', () => {
         const columns = [
             {
                 Id: 'col1',
-                cards: [
-                    { Id: 'c1' },
-                    { Id: 'c2' },
-                    { Id: 'c3' }
-                ]
+                cards: [{ Id: 'c1' }, { Id: 'c2' }, { Id: 'c3' }]
             }
         ];
         const state = {
@@ -137,17 +133,13 @@ describe('moveCardInState', () => {
     });
 
     it('returns state unchanged when card not found', () => {
-        const columns = [
-            { Id: 'col1', cards: [{ Id: 'c1' }], cardCount: 1 }
-        ];
+        const columns = [{ Id: 'col1', cards: [{ Id: 'c1' }], cardCount: 1 }];
         const result = moveCardInState(columns, 'nonexistent', 'col1', 0);
         expect(result[0].cards).toHaveLength(1);
     });
 
     it('returns state when target column not found', () => {
-        const columns = [
-            { Id: 'col1', cards: [{ Id: 'c1' }], cardCount: 1 }
-        ];
+        const columns = [{ Id: 'col1', cards: [{ Id: 'c1' }], cardCount: 1 }];
         const result = moveCardInState(columns, 'c1', 'nonexistent', 0);
         // Card removed from source but target not found
         expect(result[0].cards).toHaveLength(0);
@@ -352,10 +344,7 @@ describe('updateCardInState', () => {
             },
             {
                 Id: 'col2',
-                cards: [
-                    { Id: 'c2', position: 'a' },
-                    { Id: 'c3' }
-                ],
+                cards: [{ Id: 'c2', position: 'a' }, { Id: 'c3' }],
                 cardCount: 2
             }
         ];

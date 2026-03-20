@@ -57,7 +57,7 @@ jest.mock('c/kanbanStore', () => {
 
     // Create the loadBoardData thunk that calls getBoardData
     const mockLoadBoardData = jest.fn((boardId) => {
-        return async (dispatch, getState) => {
+        return async (dispatch, _getState) => {
             const data = await mockGetBoardData({ boardId });
             // Dispatch actions as the real thunk would
             dispatch({ type: 'board/set', payload: data.board });
