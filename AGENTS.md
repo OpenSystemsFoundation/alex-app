@@ -147,23 +147,56 @@ Salesforce Lightning Web Component (LWC) Kanban board application called "Alex" 
 
 ### What Was Built
 
+**Core Kanban:**
 - Redux-style store with middleware (thunk, logging)
-- Platform events for real-time multi-user sync (CardUpdateEvent, ColumnUpdateEvent)
+- Platform events for real-time multi-user sync (CardUpdateEvent, ColumnUpdateEvent, SprintUpdateEvent)
 - Echo prevention via clientRequestId tracking
 - Connection status indicator with graceful degradation (connected → polling → offline)
 - LexoRank positioning for efficient drag-and-drop
 - Selector pattern for Apex SOQL queries
-- DTO layer for clean data transfer
+- DTO layer for clean data transfer (BoardDTO, ColumnDTO, CardDTO, UserDTO, EpicDTO, SprintDTO, SprintCardDTO, SprintSnapshotDTO)
 - Request tracker for pending operation management
 - Health monitoring with polling fallback
 - Multi-window tracking (clientId per browser tab)
 - Sequence numbers for better event ordering
 - Comprehensive test suite (unit + e2e)
 
+**Sprint Management (recently implemented):**
+- Sprint lifecycle: Planning → Active → Completed
+- Sprint creation with auto-numbering (SP-{0000})
+- Sprint start with validation (single active sprint per board)
+- Sprint completion wizard with card disposition (move to backlog or next sprint)
+- SprintCard junction table with soft-delete (RemovedDate__c) and carry-over tracking
+- Story points tracking: per-card, per-sprint (total, completed, velocity)
+- Sprint header component with real-time progress bar and days-remaining indicator
+- SprintUpdateEvent__e platform events for multi-user sprint sync
+
+**Backlog Management (recently implemented):**
+- Full backlog view with search, filtering (priority, card type, refinement status)
+- Bulk selection and actions (add to sprint, set priority, delete)
+- Inline card creation for rapid entry
+- Drag-and-drop reordering with LexoRank
+- Right-click context menu (move to top/bottom, set priority, toggle refinement, move to sprint)
+- NeedsRefinement__c flag for refinement session filtering
+
+**Sprint Analytics (recently implemented):**
+- Burndown chart (Canvas-based, actual vs. ideal trend lines)
+- Velocity chart (bar chart with average velocity line)
+- Sprint summary table (historical sprint metrics)
+- SprintSnapshot__c daily snapshots for burndown data
+- SprintSnapshotScheduler for automated daily snapshots
+
+**Apex Service Layer (recently implemented):**
+- SprintService.cls — full sprint business logic
+- SprintSelector.cls — optimized sprint SOQL queries
+- SprintCardTriggerHandler.cls — junction record event publishing
+- KanbanCardService.cls — card CRUD and positioning
+- KanbanBoardService.cls — board operations
+
 ### What Still Needs Doing
 
-- Apex backend refactoring into service layer
-- See [docs/2026-03-18-roadmap-and-analysis.md](docs/2026-03-18-roadmap-and-analysis.md) for full roadmap
+- See the **Roadmap** section in the [README](README.md) for Now / Next / Future priorities
+- See [docs/2026-03-18-roadmap-and-analysis.md](docs/2026-03-18-roadmap-and-analysis.md) for detailed technical analysis
 
 ## Architecture Overview
 
@@ -188,13 +221,19 @@ kanbanCardDetail     → card detail modal
 ### Backend Layers
 
 ```
-KanbanBoardController.cls  → @AuraEnabled API endpoints (8 methods)
-KanbanBoardSelector.cls    → SOQL query abstraction
-KanbanBoardDTO.cls         → BoardDTO, ColumnDTO, CardDTO, UserDTO, EpicDTO
-CardTriggerHandler.cls     → publishes CardUpdateEvent__e platform events
-ColumnTriggerHandler.cls   → publishes ColumnUpdateEvent__e platform events
-LexoRank.cls               → fractional indexing for drag-and-drop ordering
-TriggerHandler.cls         → base class with recursion control
+KanbanBoardController.cls      → @AuraEnabled API endpoints (8 methods)
+KanbanBoardService.cls         → board business logic
+KanbanCardService.cls          → card CRUD and positioning
+SprintService.cls              → sprint lifecycle, velocity, snapshots
+KanbanBoardSelector.cls        → board/column/card SOQL queries
+SprintSelector.cls             → sprint/backlog SOQL queries
+KanbanBoardDTO.cls             → BoardDTO, ColumnDTO, CardDTO, UserDTO, EpicDTO, SprintDTO, SprintCardDTO, SprintSnapshotDTO
+CardTriggerHandler.cls         → publishes CardUpdateEvent__e platform events
+ColumnTriggerHandler.cls       → publishes ColumnUpdateEvent__e platform events
+SprintCardTriggerHandler.cls   → publishes SprintUpdateEvent__e platform events
+LexoRank.cls                   → fractional indexing for drag-and-drop ordering
+TriggerHandler.cls             → base class with recursion control
+SprintSnapshotScheduler.cls    → scheduled daily snapshot creation
 ```
 
 ### Real-time Data Flow

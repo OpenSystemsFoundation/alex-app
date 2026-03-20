@@ -1,5 +1,7 @@
 # CLAUDE.md — Project Instructions for Claude Code
 
+For full project context, architecture, coding standards, and communication style, see [AGENTS.md](AGENTS.md).
+
 ## Namespace Warning
 
 **CRITICAL: This is a namespaced scratch org (namespace: `OpenSF`). The namespace prefix is added AUTOMATICALLY during deployment.**
