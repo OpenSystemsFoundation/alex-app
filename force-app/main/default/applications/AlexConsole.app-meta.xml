@@ -17,6 +17,7 @@
     <navType>Console</navType>
     <tabs>Board__c</tabs>
     <tabs>Card__c</tabs>
+    <tabs>Planning_Poker</tabs>
     <tabs>standard-Task</tabs>
     <tabs>standard-report</tabs>
     <tabs>standard-Dashboard</tabs>
@@ -29,6 +30,9 @@
         </mappings>
         <mappings>
             <tab>Card__c</tab>
+        </mappings>
+        <mappings>
+            <tab>Planning_Poker</tab>
         </mappings>
         <mappings>
             <tab>standard-Dashboard</tab>

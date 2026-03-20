@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>A participant in a planning poker session.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>false</enableReports>
+    <enableSearch>false</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>Poker Participant</label>
+    <nameField>
+        <label>Display Name</label>
+        <type>Text</type>
+    </nameField>
+    <pluralLabel>Poker Participants</pluralLabel>
+    <sharingModel>ReadWrite</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

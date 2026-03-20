@@ -16,6 +16,10 @@
         <apexClass>LexoRank</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses>
+        <apexClass>PlanningPokerController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <customMetadataTypeAccesses>
         <enabled>true</enabled>
         <name>KanbanBoardSettings__mdt</name>
@@ -208,6 +212,66 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>PokerSession__c.SessionName__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>PokerSession__c.Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>PokerSession__c.VotingSystem__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>PokerSession__c.AutoReveal__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>PokerSession__c.AllowReactions__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>PokerSession__c.ShowClearPermission__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>PokerParticipant__c.UserId__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>PokerParticipant__c.Avatar__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>PokerParticipant__c.Role__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>PokerParticipant__c.Vote__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>PokerParticipant__c.HasVoted__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>PokerParticipant__c.IsActive__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Sprint__c.Board__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -396,6 +460,33 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
+        <object>PokerSession__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>PokerParticipant__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>PokerEvent__e</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
         <object>Column__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
@@ -409,6 +500,10 @@
     </tabSettings>
     <tabSettings>
         <tab>Column__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Planning_Poker</tab>
         <visibility>Visible</visibility>
     </tabSettings>
     <userPermissions>

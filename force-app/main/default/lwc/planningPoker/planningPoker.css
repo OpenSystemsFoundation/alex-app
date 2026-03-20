@@ -1,0 +1,232 @@
+:host {
+    display: block;
+}
+
+/* Lobby */
+.lobby-container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.sessions-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.session-item {
+    cursor: pointer;
+    transition:
+        background-color 0.15s,
+        border-color 0.15s;
+    border: 2px solid transparent;
+    border-radius: 0.25rem;
+}
+
+.session-item:hover {
+    background-color: #f3f3f3;
+    border-color: #1b96ff;
+}
+
+.advanced-toggle {
+    color: #1b96ff;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.full-width-btn {
+    width: 100%;
+}
+
+.full-width-btn lightning-button {
+    width: 100%;
+}
+
+/* Header */
+.poker-header {
+    background-color: #f3f3f3;
+    border-bottom: 1px solid #dddbda;
+}
+
+.poker-title {
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #3e3e3c;
+}
+
+.timer-display {
+    font-family: monospace;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #e74c3c;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* Voting Cards */
+.voting-section {
+    min-height: 300px;
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.75rem;
+    max-width: 600px;
+}
+
+.poker-card {
+    aspect-ratio: 3 / 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+    border: 2px solid #d8d8d8;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: #3e3e3c;
+    min-height: 72px;
+}
+
+.poker-card:hover {
+    border-color: #1b96ff;
+    background-color: #eef6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.poker-card.selected {
+    background-color: #04844b;
+    border-color: #04844b;
+    color: #ffffff;
+    transform: translateY(-4px);
+    box-shadow: 0 6px 12px rgba(4, 132, 75, 0.3);
+}
+
+.poker-card:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Participants */
+.participants-panel {
+    background-color: #fafaf9;
+    border-left: 1px solid #dddbda;
+    min-height: 400px;
+}
+
+.participant-row {
+    border-bottom: 1px solid #ecebea;
+    padding: 0.5rem 0;
+}
+
+.participant-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #e1e1e1;
+    font-size: 1rem;
+}
+
+.participant-badge {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+}
+
+.voted-badge {
+    background-color: #04844b;
+    color: #ffffff;
+}
+
+.observer-badge {
+    background-color: #ecebea;
+    color: #706e6b;
+}
+
+.participant-vote {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 28px;
+    border-radius: 0.25rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+
+.participant-vote.has-value {
+    background-color: #04844b;
+    color: #ffffff;
+    padding: 0 0.5rem;
+}
+
+/* Results */
+.results-section {
+    min-height: 300px;
+}
+
+.donut-chart {
+    display: block;
+    margin: 0 auto;
+}
+
+.reactions-bar {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.reaction-btn {
+    width: 48px;
+    height: 36px;
+    font-size: 1.25rem;
+    border: 1px solid #d8d8d8;
+    border-radius: 0.25rem;
+    background: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.reaction-btn:hover {
+    background-color: #f3f3f3;
+}
+
+.consensus-badge {
+    display: inline-block;
+    padding: 0.25rem 1rem;
+    background-color: #04844b;
+    color: #ffffff;
+    border-radius: 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+.stats-list {
+    border-top: 1px solid #ecebea;
+}
+
+.stat-row {
+    border-bottom: 1px solid #ecebea;
+}
+
+.stat-value {
+    font-weight: 700;
+    color: #3e3e3c;
+}
+
+/* Session container */
+.session-container {
+    background: #ffffff;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
