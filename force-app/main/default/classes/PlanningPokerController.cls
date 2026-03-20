@@ -1,5 +1,5 @@
 public with sharing class PlanningPokerController {
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<SessionDTO> getActiveSessions() {
         List<OpenSF__PokerSession__c> sessions = [
             SELECT

@@ -11,6 +11,7 @@ import clearVotes from '@salesforce/apex/PlanningPokerController.clearVotes';
 import getSession from '@salesforce/apex/PlanningPokerController.getSession';
 import closeSession from '@salesforce/apex/PlanningPokerController.closeSession';
 import getCurrentUserId from '@salesforce/apex/PlanningPokerController.getCurrentUserId';
+import getKanbanConfig from '@salesforce/apex/KanbanBoardController.getKanbanConfig';
 
 const VOTING_SYSTEMS = {
     Fibonacci: {
@@ -85,6 +86,9 @@ export default class PlanningPoker extends LightningElement {
 
     // Results state
     @track reactions = [];
+
+    // Debug
+    @track debugMode = false;
 
     // Internal
     _subscription = null;
@@ -294,9 +298,25 @@ export default class PlanningPoker extends LightningElement {
         return this.displayName && this.displayName.trim().length > 0;
     }
 
+    get debugInfo() {
+        if (!this.debugMode) {
+            return null;
+        }
+        return {
+            userId: this._currentUserId,
+            sessionId: this.session?.id || 'N/A',
+            sessionStatus: this.session?.status || 'N/A',
+            participantCount: this.session?.participants?.length || 0,
+            voterCount: this.voters.length,
+            subscribed: !!this._subscription,
+            view: this.currentView
+        };
+    }
+
     connectedCallback() {
         this._loadCurrentUserId();
         this._loadActiveSessions();
+        this._loadConfig();
         this._registerErrorHandler();
     }
 
@@ -344,6 +364,10 @@ export default class PlanningPoker extends LightningElement {
 
     toggleAdvancedSettings() {
         this.showAdvancedSettings = !this.showAdvancedSettings;
+    }
+
+    handleRefreshSessions() {
+        this._loadActiveSessions();
     }
 
     handleShowCreateForm() {
@@ -507,6 +531,15 @@ export default class PlanningPoker extends LightningElement {
         }
     }
 
+    async _loadConfig() {
+        try {
+            const config = await getKanbanConfig();
+            this.debugMode = config?.showDebugInfo || false;
+        } catch (error) {
+            console.error('Failed to load config', error);
+        }
+    }
+
     async _loadActiveSessions() {
         try {
             const sessions = await getActiveSessions();
@@ -606,7 +639,10 @@ export default class PlanningPoker extends LightningElement {
     }
 
     _startTimerCountdown() {
-        this._stopTimer();
+        if (this._timerInterval) {
+            clearInterval(this._timerInterval);
+            this._timerInterval = null;
+        }
         this._timerInterval = setInterval(() => {
             if (this.timerSeconds > 0) {
                 this.timerSeconds--;

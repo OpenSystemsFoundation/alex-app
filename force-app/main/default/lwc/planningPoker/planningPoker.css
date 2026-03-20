@@ -230,3 +230,29 @@
     border-radius: 0.25rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+/* Debug panel */
+.debug-panel {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    background: #1a1a2e;
+    color: #00ff88;
+    font-family: monospace;
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-top-left-radius: 0.5rem;
+    z-index: 9999;
+    opacity: 0.9;
+    max-width: 300px;
+}
+
+.debug-panel h4 {
+    color: #ff6b6b;
+    margin: 0 0 0.25rem 0;
+    font-size: 0.8rem;
+}
+
+.debug-panel p {
+    margin: 0.125rem 0;
+}

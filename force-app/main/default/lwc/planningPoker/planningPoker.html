@@ -2,7 +2,17 @@
     <!-- LOBBY VIEW -->
     <template lwc:if={isLobby}>
         <div class="lobby-container">
-            <!-- Active Sessions List -->
+            <!-- Refresh + Active Sessions List -->
+            <div
+                class="slds-grid slds-grid_align-end slds-m-bottom_small"
+            >
+                <lightning-button-icon
+                    icon-name="utility:refresh"
+                    alternative-text="Refresh sessions"
+                    onclick={handleRefreshSessions}
+                    variant="border-filled"
+                ></lightning-button-icon>
+            </div>
             <template lwc:if={hasActiveSessions}>
                 <lightning-card
                     title="Join an existing session"
@@ -697,5 +707,21 @@
             alternative-text="Loading"
             size="medium"
         ></lightning-spinner>
+    </template>
+
+    <!-- Debug Panel -->
+    <template lwc:if={debugMode}>
+        <div class="debug-panel">
+            <h4>Debug Info</h4>
+            <p>User ID: {debugInfo.userId}</p>
+            <p>Session ID: {debugInfo.sessionId}</p>
+            <p>Status: {debugInfo.sessionStatus}</p>
+            <p>
+                Participants: {debugInfo.participantCount}
+            </p>
+            <p>Voters: {debugInfo.voterCount}</p>
+            <p>Subscribed: {debugInfo.subscribed}</p>
+            <p>View: {debugInfo.view}</p>
+        </div>
     </template>
 </template>
