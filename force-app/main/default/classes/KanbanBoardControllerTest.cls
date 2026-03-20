@@ -668,4 +668,557 @@ private class KanbanBoardControllerTest {
         }
         Test.stopTest();
     }
+
+    // =========================================================================
+    // Sprint Management Tests
+    // =========================================================================
+
+    @isTest
+    static void testGetSprintData() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(board.Id, 'Active');
+        OpenSF__Card__c card = [SELECT Id FROM OpenSF__Card__c LIMIT 1];
+        TestFactory.createSprintCard(sprint.Id, card.Id);
+
+        Test.startTest();
+        SprintService.SprintBoardData result = KanbanBoardController.getSprintData(
+            board.Id
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(
+            null,
+            result.activeSprint,
+            'Should have active sprint'
+        );
+        System.assert(!result.sprints.isEmpty(), 'Should have sprints list');
+    }
+
+    @isTest
+    static void testGetSprintDataNoSprint() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+
+        Test.startTest();
+        SprintService.SprintBoardData result = KanbanBoardController.getSprintData(
+            board.Id
+        );
+        Test.stopTest();
+
+        System.assertEquals(
+            null,
+            result.activeSprint,
+            'Should have no active sprint'
+        );
+    }
+
+    @isTest
+    static void testCreateSprint() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+
+        Test.startTest();
+        KanbanBoardDTO.SprintDTO result = KanbanBoardController.createSprint(
+            board.Id,
+            'Sprint Goal',
+            Date.today(),
+            Date.today().addDays(14)
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, result.Id, 'Sprint should be created');
+        System.assertEquals(
+            'Planning',
+            result.status,
+            'Status should be Planning'
+        );
+    }
+
+    @isTest
+    static void testCreateSprintError() {
+        Id fakeBoardId = '001000000000000AAA';
+
+        Test.startTest();
+        try {
+            KanbanBoardController.createSprint(
+                fakeBoardId,
+                'Goal',
+                Date.today(),
+                Date.today().addDays(14)
+            );
+            System.assert(false, 'Should have thrown exception');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e, 'Should throw an exception');
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testStartSprint() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(
+            board.Id,
+            'Planning'
+        );
+        OpenSF__Card__c card = [SELECT Id FROM OpenSF__Card__c LIMIT 1];
+        card.OpenSF__StoryPoints__c = 5;
+        update card;
+        TestFactory.createSprintCard(sprint.Id, card.Id);
+
+        Test.startTest();
+        KanbanBoardDTO.SprintDTO result = KanbanBoardController.startSprint(
+            sprint.Id
+        );
+        Test.stopTest();
+
+        System.assertEquals('Active', result.status, 'Sprint should be Active');
+    }
+
+    @isTest
+    static void testStartSprintError() {
+        Id fakeSprintId = '001000000000000AAA';
+
+        Test.startTest();
+        try {
+            KanbanBoardController.startSprint(fakeSprintId);
+            System.assert(false, 'Should have thrown exception');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e, 'Should throw an exception');
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testCompleteSprint() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(board.Id, 'Active');
+        board.OpenSF__ActiveSprint__c = sprint.Id;
+        update board;
+
+        OpenSF__Card__c card = [SELECT Id FROM OpenSF__Card__c LIMIT 1];
+        card.OpenSF__StoryPoints__c = 3;
+        update card;
+        TestFactory.createSprintCard(sprint.Id, card.Id);
+
+        Map<Id, String> dispositions = new Map<Id, String>();
+        dispositions.put(card.Id, 'backlog');
+
+        Test.startTest();
+        KanbanBoardDTO.SprintDTO result = KanbanBoardController.completeSprint(
+            sprint.Id,
+            dispositions
+        );
+        Test.stopTest();
+
+        System.assertEquals(
+            'Completed',
+            result.status,
+            'Sprint should be Completed'
+        );
+    }
+
+    @isTest
+    static void testCompleteSprintError() {
+        Id fakeSprintId = '001000000000000AAA';
+
+        Test.startTest();
+        try {
+            KanbanBoardController.completeSprint(fakeSprintId, null);
+            System.assert(false, 'Should have thrown exception');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e, 'Should throw an exception');
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testAddCardsToSprint() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(
+            board.Id,
+            'Planning'
+        );
+        List<OpenSF__Card__c> cards = [SELECT Id FROM OpenSF__Card__c LIMIT 2];
+        List<Id> cardIds = new List<Id>();
+        for (OpenSF__Card__c card : cards) {
+            cardIds.add(card.Id);
+        }
+
+        Test.startTest();
+        List<KanbanBoardDTO.SprintCardDTO> result = KanbanBoardController.addCardsToSprint(
+            sprint.Id,
+            cardIds
+        );
+        Test.stopTest();
+
+        System.assertEquals(2, result.size(), 'Should have 2 sprint cards');
+    }
+
+    @isTest
+    static void testAddCardsToSprintError() {
+        Id fakeSprintId = '001000000000000AAA';
+
+        Test.startTest();
+        try {
+            KanbanBoardController.addCardsToSprint(
+                fakeSprintId,
+                new List<Id>()
+            );
+            System.assert(false, 'Should have thrown exception');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e, 'Should throw an exception');
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testRemoveCardFromSprint() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(
+            board.Id,
+            'Planning'
+        );
+        OpenSF__Card__c card = [SELECT Id FROM OpenSF__Card__c LIMIT 1];
+        TestFactory.createSprintCard(sprint.Id, card.Id);
+
+        Test.startTest();
+        KanbanBoardController.removeCardFromSprint(sprint.Id, card.Id);
+        Test.stopTest();
+
+        OpenSF__SprintCard__c sc = [
+            SELECT OpenSF__RemovedDate__c
+            FROM OpenSF__SprintCard__c
+            WHERE OpenSF__Sprint__c = :sprint.Id AND OpenSF__Card__c = :card.Id
+        ];
+        System.assertNotEquals(
+            null,
+            sc.OpenSF__RemovedDate__c,
+            'Should be soft-deleted'
+        );
+    }
+
+    @isTest
+    static void testRemoveCardFromSprintError() {
+        Id fakeSprintId = '001000000000000AAA';
+        Id fakeCardId = '001000000000000AAA';
+
+        Test.startTest();
+        try {
+            KanbanBoardController.removeCardFromSprint(
+                fakeSprintId,
+                fakeCardId
+            );
+            System.assert(false, 'Should have thrown exception');
+        } catch (Exception e) {
+            System.assertNotEquals(null, e, 'Should throw an exception');
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetBurndownData() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(board.Id, 'Active');
+        TestFactory.createSprintSnapshot(
+            sprint.Id,
+            Date.today().addDays(-1),
+            20,
+            15
+        );
+
+        Test.startTest();
+        List<KanbanBoardDTO.SprintSnapshotDTO> result = KanbanBoardController.getBurndownData(
+            sprint.Id
+        );
+        Test.stopTest();
+
+        System.assertEquals(1, result.size(), 'Should have 1 snapshot');
+    }
+
+    @isTest
+    static void testGetBurndownDataEmpty() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(board.Id, 'Active');
+
+        Test.startTest();
+        List<KanbanBoardDTO.SprintSnapshotDTO> result = KanbanBoardController.getBurndownData(
+            sprint.Id
+        );
+        Test.stopTest();
+
+        System.assertEquals(0, result.size(), 'Should have no snapshots');
+    }
+
+    @isTest
+    static void testGetVelocityData() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(
+            board.Id,
+            'Completed'
+        );
+        sprint.OpenSF__Velocity__c = 25;
+        sprint.OpenSF__CompletedStoryPoints__c = 25;
+        update sprint;
+
+        Test.startTest();
+        List<KanbanBoardDTO.SprintDTO> result = KanbanBoardController.getVelocityData(
+            board.Id,
+            5
+        );
+        Test.stopTest();
+
+        System.assertEquals(1, result.size(), 'Should have 1 completed sprint');
+    }
+
+    @isTest
+    static void testGetVelocityDataEmpty() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+
+        Test.startTest();
+        List<KanbanBoardDTO.SprintDTO> result = KanbanBoardController.getVelocityData(
+            board.Id,
+            5
+        );
+        Test.stopTest();
+
+        System.assertEquals(
+            0,
+            result.size(),
+            'Should have no completed sprints'
+        );
+    }
+
+    @isTest
+    static void testMarkCardCompletedInSprint() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(board.Id, 'Active');
+        OpenSF__Card__c card = [SELECT Id FROM OpenSF__Card__c LIMIT 1];
+        card.OpenSF__StoryPoints__c = 5;
+        update card;
+        TestFactory.createSprintCard(sprint.Id, card.Id);
+
+        Test.startTest();
+        KanbanBoardController.markCardCompletedInSprint(sprint.Id, card.Id);
+        Test.stopTest();
+
+        OpenSF__SprintCard__c sc = [
+            SELECT OpenSF__CompletedInSprint__c
+            FROM OpenSF__SprintCard__c
+            WHERE OpenSF__Sprint__c = :sprint.Id AND OpenSF__Card__c = :card.Id
+        ];
+        System.assertEquals(
+            true,
+            sc.OpenSF__CompletedInSprint__c,
+            'Should be marked complete'
+        );
+    }
+
+    @isTest
+    static void testMarkCardCompletedNoOp() {
+        // Calling with non-matching sprint/card should not throw, just no-op
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(board.Id, 'Active');
+        OpenSF__Card__c card = [SELECT Id FROM OpenSF__Card__c LIMIT 1];
+
+        Test.startTest();
+        // No sprint card junction exists, so this is a no-op
+        KanbanBoardController.markCardCompletedInSprint(sprint.Id, card.Id);
+        Test.stopTest();
+
+        // No assertion needed - just verifying no exception thrown
+        System.assert(true, 'Should complete without error');
+    }
+
+    // =========================================================================
+    // Backlog Tests
+    // =========================================================================
+
+    @isTest
+    static void testGetBacklogCards() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+
+        // Create a backlog card (no column)
+        TriggerHandler.bypass('CardTriggerHandler');
+        OpenSF__Card__c backlogCard = new OpenSF__Card__c(
+            OpenSF__Board__c = board.Id,
+            OpenSF__Subject__c = 'Backlog Card',
+            OpenSF__CardType__c = 'Story',
+            OpenSF__Priority__c = 'Medium',
+            OpenSF__LexoRankPosition__c = LexoRank.initial()
+        );
+        insert backlogCard;
+        TriggerHandler.clearBypass('CardTriggerHandler');
+
+        Test.startTest();
+        List<KanbanBoardDTO.CardDTO> result = KanbanBoardController.getBacklogCards(
+            board.Id
+        );
+        Test.stopTest();
+
+        System.assertEquals(1, result.size(), 'Should have 1 backlog card');
+    }
+
+    @isTest
+    static void testCreateBacklogCard() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+
+        Test.startTest();
+        KanbanBoardDTO.CardDTO result = KanbanBoardController.createBacklogCard(
+            board.Id,
+            'New Backlog Card',
+            'Story',
+            'Medium',
+            3
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, result.Id, 'Should create backlog card');
+        System.assertEquals(
+            'New Backlog Card',
+            result.subject,
+            'Subject should match'
+        );
+        System.assertEquals(null, result.columnId, 'Should have no column');
+    }
+
+    @isTest
+    static void testReorderBacklogCard() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+
+        // Create backlog cards
+        TriggerHandler.bypass('CardTriggerHandler');
+        OpenSF__Card__c card = new OpenSF__Card__c(
+            OpenSF__Board__c = board.Id,
+            OpenSF__Subject__c = 'Reorder Card',
+            OpenSF__CardType__c = 'Story',
+            OpenSF__Priority__c = 'Medium',
+            OpenSF__LexoRankPosition__c = LexoRank.initial()
+        );
+        insert card;
+        TriggerHandler.clearBypass('CardTriggerHandler');
+
+        Test.startTest();
+        String newPosition = KanbanBoardController.reorderBacklogCard(
+            card.Id,
+            null,
+            '0|zzzzzz:'
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, newPosition, 'Should return new position');
+    }
+
+    // =========================================================================
+    // Platform Event Health & Config Tests
+    // =========================================================================
+
+    @isTest
+    static void testCheckPlatformEventHealth() {
+        Test.startTest();
+        KanbanBoardController.PlatformEventHealth health = KanbanBoardController.checkPlatformEventHealth();
+        Test.stopTest();
+
+        System.assertNotEquals(null, health, 'Health should not be null');
+        System.assertEquals(true, health.isHealthy, 'Should be healthy');
+        System.assertNotEquals(null, health.timestamp, 'Should have timestamp');
+    }
+
+    @isTest
+    static void testGetKanbanConfig() {
+        Test.startTest();
+        KanbanBoardController.KanbanConfigResult config = KanbanBoardController.getKanbanConfig();
+        Test.stopTest();
+
+        System.assertNotEquals(null, config, 'Config should not be null');
+    }
+
+    @isTest
+    static void testGetModalSettingsReturnsFields() {
+        // Exercise the getModalSettings service method directly
+        // This covers the KanbanBoardService.getModalSettings path
+        Test.startTest();
+        KanbanBoardController.ModalSettings settings = KanbanBoardController.getModalSettings();
+        Test.stopTest();
+
+        System.assertNotEquals(null, settings, 'Settings not null');
+        System.assertNotEquals(null, settings.visibleFields, 'Fields not null');
+        System.assert(
+            settings.visibleFields.size() >= 4,
+            'Should have at least 4 fields'
+        );
+    }
+
+    @isTest
+    static void testCheckPlatformEventHealthDetails() {
+        Test.startTest();
+        KanbanBoardController.PlatformEventHealth health = KanbanBoardController.checkPlatformEventHealth();
+        Test.stopTest();
+
+        System.assertEquals(
+            100,
+            health.deliveryRate,
+            'Delivery rate should be 100'
+        );
+        System.assertNotEquals(
+            null,
+            health.message,
+            'Message should not be null'
+        );
+    }
+
+    // =========================================================================
+    // Conflict Detection Tests
+    // =========================================================================
+
+    @isTest
+    static void testMoveCardWithConflictDetection() {
+        OpenSF__Card__c card = [
+            SELECT Id, OpenSF__SequenceNumber__c
+            FROM OpenSF__Card__c
+            WHERE OpenSF__Subject__c = 'Test Card 1'
+            LIMIT 1
+        ];
+        OpenSF__Column__c targetColumn = [
+            SELECT Id
+            FROM OpenSF__Column__c
+            WHERE OpenSF__ColumnHeader__c = 'In Progress'
+            LIMIT 1
+        ];
+
+        Test.startTest();
+        KanbanBoardController.CardMoveResult result = KanbanBoardController.moveCardWithConflictDetection(
+            card.Id,
+            targetColumn.Id,
+            null,
+            null,
+            'req-123',
+            card.OpenSF__SequenceNumber__c,
+            'client-1'
+        );
+        Test.stopTest();
+
+        System.assert(result.success, 'Move should be successful');
+    }
+
+    @isTest
+    static void testUpdateCardWithConflictDetection() {
+        OpenSF__Card__c card = [
+            SELECT Id, OpenSF__SequenceNumber__c
+            FROM OpenSF__Card__c
+            WHERE OpenSF__Subject__c = 'Test Card 1'
+            LIMIT 1
+        ];
+
+        Map<String, Object> updates = new Map<String, Object>();
+        updates.put('subject', 'Conflict Detection Update');
+
+        Test.startTest();
+        KanbanBoardController.CardUpdateResult result = KanbanBoardController.updateCardWithConflictDetection(
+            card.Id,
+            updates,
+            card.OpenSF__SequenceNumber__c,
+            'client-1'
+        );
+        Test.stopTest();
+
+        System.assert(result.success, 'Update should be successful');
+    }
 }

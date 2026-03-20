@@ -96,6 +96,7 @@ export default class RequestTracker {
     }
 
     startCleanup() {
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
         this.cleanupTimer = setInterval(() => {
             this.cleanup();
         }, this.CLEANUP_INTERVAL);
@@ -118,10 +119,7 @@ export default class RequestTracker {
         for (const [requestId, request] of this.pendingRequests.entries()) {
             if (request.status === 'pending') {
                 // Auto-fail stuck requests
-                if (
-                    now - request.timestamp >
-                    RequestTracker.REQUEST_TIMEOUT
-                ) {
+                if (now - request.timestamp > RequestTracker.REQUEST_TIMEOUT) {
                     console.error(
                         `Request ${requestId} timed out after ${RequestTracker.REQUEST_TIMEOUT}ms`
                     );

@@ -247,10 +247,10 @@
                             <value>Edit</value>
                         </valueListItems>
                         <valueListItems>
-                            <value>OpenSF__Board__c.Create_Column_Action</value>
+                            <value>Board__c.Create_Column_Action</value>
                         </valueListItems>
                         <valueListItems>
-                            <value>OpenSF__Board__c.Give_Feedback_Action</value>
+                            <value>Board__c.Give_Feedback_Action</value>
                         </valueListItems>
                         <valueListItems>
                             <value>AssignRecordLabel</value>

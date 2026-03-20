@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>LastClientRequestId__c</fullName>
-    <description>UUID of the last client-initiated operation. Used to track operations and prevent race conditions with platform events.</description>
+    <description
+    >UUID of the last client-initiated operation. Used to track operations and prevent race conditions with platform events.</description>
     <externalId>false</externalId>
     <label>Last Client Request Id</label>
     <length>36</length>

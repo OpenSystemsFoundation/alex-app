@@ -67,7 +67,9 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
             newCard.OpenSF__LexoRankPosition__c !=
             oldCard.OpenSF__LexoRankPosition__c ||
             newCard.OpenSF__Status__c != oldCard.OpenSF__Status__c ||
-            newCard.OpenSF__StoryPoints__c != oldCard.OpenSF__StoryPoints__c);
+            newCard.OpenSF__StoryPoints__c != oldCard.OpenSF__StoryPoints__c ||
+            newCard.OpenSF__NeedsRefinement__c !=
+            oldCard.OpenSF__NeedsRefinement__c);
 
             // Only increment if not explicitly set and there's a real change
             if (

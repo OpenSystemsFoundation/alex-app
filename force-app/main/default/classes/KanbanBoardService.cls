@@ -3,7 +3,6 @@
  * Extracts board-level operations from KanbanBoardController
  */
 public with sharing class KanbanBoardService {
-
     /**
      * Load full board data (board + columns + cards)
      */
@@ -17,6 +16,9 @@ public with sharing class KanbanBoardService {
             List<OpenSF__Card__c> cards = KanbanBoardSelector.getCardsByBoardId(
                 boardId
             );
+
+            // Backfill any cards missing LexoRank positions
+            KanbanCardService.backfillMissingPositions(cards);
 
             // Convert to DTOs for LWC consumption
             KanbanBoardController.BoardData result = new KanbanBoardController.BoardData();
@@ -51,7 +53,11 @@ public with sharing class KanbanBoardService {
                 OpenSF__LexoRankPosition__c = newPosition
             );
 
-            update column;
+            update Security.stripInaccessible(
+                    AccessType.UPDATABLE,
+                    new List<OpenSF__Column__c>{ column }
+                )
+                .getRecords();
 
             // Return updated column as DTO
             OpenSF__Column__c updatedColumn = KanbanBoardSelector.getColumnById(
@@ -91,6 +97,7 @@ public with sharing class KanbanBoardService {
                     OpenSF__DueDate__c,
                     OpenSF__StoryPoints__c,
                     OpenSF__Column__c,
+                    OpenSF__Board__c,
                     OpenSF__LexoRankPosition__c,
                     OpenSF__Assignee__c,
                     OpenSF__Assignee__r.Name,
@@ -101,6 +108,7 @@ public with sharing class KanbanBoardService {
                     OpenSF__Epic__c,
                     OpenSF__Epic__r.OpenSF__Subject__c,
                     OpenSF__Locked__c,
+                    OpenSF__NeedsRefinement__c,
                     OpenSF__SequenceNumber__c,
                     LastModifiedDate,
                     LastModifiedById
@@ -210,5 +218,18 @@ public with sharing class KanbanBoardService {
             };
             return result;
         }
+    }
+
+    /**
+     * Get runtime config from the KanbanConfig hierarchy custom setting.
+     * Returns the effective values for the running user (org → profile → user).
+     */
+    public static KanbanBoardController.KanbanConfigResult getKanbanConfig() {
+        KanbanBoardController.KanbanConfigResult result = new KanbanBoardController.KanbanConfigResult();
+        OpenSF__KanbanConfig__c cfg = OpenSF__KanbanConfig__c.getInstance();
+        if (cfg != null) {
+            result.showDebugInfo = cfg.OpenSF__ShowDebugInfo__c == true;
+        }
+        return result;
     }
 }

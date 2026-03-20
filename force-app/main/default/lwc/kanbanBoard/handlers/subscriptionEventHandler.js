@@ -25,7 +25,7 @@ export default class SubscriptionEventHandler {
     /**
      * Handle event activity notification
      */
-    handleEventActivity(message) {
+    handleEventActivity(_message) {
         // Toast notification removed - silent update
     }
 

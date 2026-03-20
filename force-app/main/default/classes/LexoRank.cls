@@ -2,7 +2,7 @@
  * LexoRank implementation for efficient ordering in drag-and-drop interfaces
  * Based on the LexoRank algorithm used by Jira
  */
-public class LexoRank {
+public with sharing class LexoRank {
     private static final String MIN_CHAR = '0';
     private static final String MAX_CHAR = 'z';
     private static final String DEFAULT_START = '0|hzzzzz:';

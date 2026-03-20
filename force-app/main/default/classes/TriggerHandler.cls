@@ -2,7 +2,7 @@
  * TriggerHandler - Base class for all trigger handlers
  * Provides a framework for handling trigger events with proper recursion control
  */
-public virtual class TriggerHandler {
+public virtual with sharing class TriggerHandler {
     // Static map to track recursion for each handler
     private static Map<String, Boolean> bypassMap = new Map<String, Boolean>();
     private static Map<String, Integer> executionCountMap = new Map<String, Integer>();

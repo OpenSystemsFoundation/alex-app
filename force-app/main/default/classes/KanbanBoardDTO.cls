@@ -23,6 +23,8 @@ public with sharing class KanbanBoardDTO {
         public Boolean emailNotifications;
         @AuraEnabled
         public Boolean salesforceNotifications;
+        @AuraEnabled
+        public Id activeSprintId;
 
         public BoardDTO(OpenSF__Board__c board) {
             this.Id = board.Id;
@@ -33,6 +35,12 @@ public with sharing class KanbanBoardDTO {
             this.active = board.OpenSF__Active__c;
             this.emailNotifications = board.OpenSF__EmailNotifications__c;
             this.salesforceNotifications = board.OpenSF__SalesforceNotifications__c;
+            // Sprint field may not always be queried
+            try {
+                this.activeSprintId = board.OpenSF__ActiveSprint__c;
+            } catch (Exception e) {
+                this.activeSprintId = null;
+            }
         }
     }
 
@@ -84,6 +92,8 @@ public with sharing class KanbanBoardDTO {
         @AuraEnabled
         public Id columnId;
         @AuraEnabled
+        public Id boardId;
+        @AuraEnabled
         public String position;
         @AuraEnabled
         public String color;
@@ -117,6 +127,8 @@ public with sharing class KanbanBoardDTO {
         public Id lastModifiedById;
         @AuraEnabled
         public Decimal sequenceNumber;
+        @AuraEnabled
+        public Boolean needsRefinement;
 
         public CardDTO(OpenSF__Card__c card) {
             this.Id = card.Id;
@@ -124,6 +136,7 @@ public with sharing class KanbanBoardDTO {
             this.subject = card.OpenSF__Subject__c;
             this.description = card.OpenSF__Description__c;
             this.columnId = card.OpenSF__Column__c;
+            this.boardId = card.OpenSF__Board__c;
             this.position = card.OpenSF__LexoRankPosition__c;
             this.color = card.OpenSF__Color__c;
             this.priority = card.OpenSF__Priority__c;
@@ -138,6 +151,7 @@ public with sharing class KanbanBoardDTO {
             this.lastModifiedDate = card.LastModifiedDate;
             this.lastModifiedById = card.LastModifiedById;
             this.sequenceNumber = card.OpenSF__SequenceNumber__c;
+            this.needsRefinement = card.OpenSF__NeedsRefinement__c;
 
             // Map nested relationships
             if (card.OpenSF__Assignee__r != null) {
@@ -185,6 +199,122 @@ public with sharing class KanbanBoardDTO {
     }
 
     /**
+     * Sprint DTO
+     */
+    public class SprintDTO {
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public String Name;
+        @AuraEnabled
+        public Id boardId;
+        @AuraEnabled
+        public String goal;
+        @AuraEnabled
+        public String status;
+        @AuraEnabled
+        public Date startDate;
+        @AuraEnabled
+        public Date endDate;
+        @AuraEnabled
+        public Decimal sprintNumber;
+        @AuraEnabled
+        public Decimal totalStoryPoints;
+        @AuraEnabled
+        public Decimal completedStoryPoints;
+        @AuraEnabled
+        public Decimal velocity;
+
+        public SprintDTO(OpenSF__Sprint__c sprint) {
+            this.Id = sprint.Id;
+            this.Name = sprint.Name;
+            this.boardId = sprint.OpenSF__Board__c;
+            this.goal = sprint.OpenSF__Goal__c;
+            this.status = sprint.OpenSF__Status__c;
+            this.startDate = sprint.OpenSF__StartDate__c;
+            this.endDate = sprint.OpenSF__EndDate__c;
+            this.sprintNumber = sprint.OpenSF__SprintNumber__c;
+            this.totalStoryPoints = sprint.OpenSF__TotalStoryPoints__c;
+            this.completedStoryPoints = sprint.OpenSF__CompletedStoryPoints__c;
+            this.velocity = sprint.OpenSF__Velocity__c;
+        }
+    }
+
+    /**
+     * Sprint Card DTO (junction)
+     */
+    public class SprintCardDTO {
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public String Name;
+        @AuraEnabled
+        public Id sprintId;
+        @AuraEnabled
+        public Id cardId;
+        @AuraEnabled
+        public DateTime addedDate;
+        @AuraEnabled
+        public DateTime removedDate;
+        @AuraEnabled
+        public Decimal storyPointsAtAdd;
+        @AuraEnabled
+        public Boolean completedInSprint;
+        @AuraEnabled
+        public DateTime completedDate;
+        @AuraEnabled
+        public String position;
+        @AuraEnabled
+        public CardDTO card;
+
+        public SprintCardDTO(OpenSF__SprintCard__c sc) {
+            this.Id = sc.Id;
+            this.Name = sc.Name;
+            this.sprintId = sc.OpenSF__Sprint__c;
+            this.cardId = sc.OpenSF__Card__c;
+            this.addedDate = sc.OpenSF__AddedDate__c;
+            this.removedDate = sc.OpenSF__RemovedDate__c;
+            this.storyPointsAtAdd = sc.OpenSF__StoryPointsAtAdd__c;
+            this.completedInSprint = sc.OpenSF__CompletedInSprint__c;
+            this.completedDate = sc.OpenSF__CompletedDate__c;
+            this.position = sc.OpenSF__Position__c;
+        }
+    }
+
+    /**
+     * Sprint Snapshot DTO
+     */
+    public class SprintSnapshotDTO {
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public Id sprintId;
+        @AuraEnabled
+        public Date snapshotDate;
+        @AuraEnabled
+        public Decimal totalPoints;
+        @AuraEnabled
+        public Decimal remainingPoints;
+        @AuraEnabled
+        public Decimal completedPoints;
+        @AuraEnabled
+        public Decimal cardCount;
+        @AuraEnabled
+        public Decimal completedCardCount;
+
+        public SprintSnapshotDTO(OpenSF__SprintSnapshot__c snap) {
+            this.Id = snap.Id;
+            this.sprintId = snap.OpenSF__Sprint__c;
+            this.snapshotDate = snap.OpenSF__SnapshotDate__c;
+            this.totalPoints = snap.OpenSF__TotalPoints__c;
+            this.remainingPoints = snap.OpenSF__RemainingPoints__c;
+            this.completedPoints = snap.OpenSF__CompletedPoints__c;
+            this.cardCount = snap.OpenSF__CardCount__c;
+            this.completedCardCount = snap.OpenSF__CompletedCardCount__c;
+        }
+    }
+
+    /**
      * Convert list of boards
      */
     public static List<BoardDTO> convertBoards(List<OpenSF__Board__c> boards) {
@@ -215,6 +345,45 @@ public with sharing class KanbanBoardDTO {
         List<CardDTO> result = new List<CardDTO>();
         for (OpenSF__Card__c card : cards) {
             result.add(new CardDTO(card));
+        }
+        return result;
+    }
+
+    /**
+     * Convert list of sprints
+     */
+    public static List<SprintDTO> convertSprints(
+        List<OpenSF__Sprint__c> sprints
+    ) {
+        List<SprintDTO> result = new List<SprintDTO>();
+        for (OpenSF__Sprint__c sprint : sprints) {
+            result.add(new SprintDTO(sprint));
+        }
+        return result;
+    }
+
+    /**
+     * Convert list of sprint cards
+     */
+    public static List<SprintCardDTO> convertSprintCards(
+        List<OpenSF__SprintCard__c> sprintCards
+    ) {
+        List<SprintCardDTO> result = new List<SprintCardDTO>();
+        for (OpenSF__SprintCard__c sc : sprintCards) {
+            result.add(new SprintCardDTO(sc));
+        }
+        return result;
+    }
+
+    /**
+     * Convert list of sprint snapshots
+     */
+    public static List<SprintSnapshotDTO> convertSnapshots(
+        List<OpenSF__SprintSnapshot__c> snapshots
+    ) {
+        List<SprintSnapshotDTO> result = new List<SprintSnapshotDTO>();
+        for (OpenSF__SprintSnapshot__c snap : snapshots) {
+            result.add(new SprintSnapshotDTO(snap));
         }
         return result;
     }

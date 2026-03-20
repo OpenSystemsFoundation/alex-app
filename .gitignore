@@ -34,7 +34,8 @@ yarn-error.log*
 .env.*.local
 
 # Claude Code
-.claude/
+.claude/*
+!.claude/settings.json
 
 # Salesforce Specific Files
 .sfdx/
@@ -83,4 +84,4 @@ playwright/.cache/
 !*.spec.ts
 
 # Playwright Traces
-trace.zip
+trace.zipapex-test-results.json

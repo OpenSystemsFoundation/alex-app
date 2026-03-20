@@ -18,6 +18,7 @@ OpenSF__Assignee__c,
 OpenSF__PeerReviewer__c,
 OpenSF__DueDate__c,
 OpenSF__StoryPoints__c,
-OpenSF__Color__c</value>
+OpenSF__Color__c,
+OpenSF__NeedsRefinement__c</value>
     </values>
 </CustomMetadata>

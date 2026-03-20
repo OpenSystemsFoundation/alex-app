@@ -15,14 +15,14 @@ Alex is a real-time collaborative Kanban board built natively on Salesforce usin
 
 ### Branch Status
 
-| Branch | Status | Key Work |
-|---|---|---|
-| `main` | stable release | Last merge from develop |
-| `refactor` | current checkout | Redux store, platform events, DTOs, event handlers, selectors |
+| Branch           | Status                                   | Key Work                                                                 |
+| ---------------- | ---------------------------------------- | ------------------------------------------------------------------------ |
+| `main`           | stable release                           | Last merge from develop                                                  |
+| `refactor`       | current checkout                         | Redux store, platform events, DTOs, event handlers, selectors            |
 | `optimize-fixes` | **most advanced** (16 ahead of refactor) | Multi-window tracking, sequence numbers, namespace cleanup, mise tooling |
-| `backlog-board` | stale | Ghost drag-and-drop, optimistic UI (superseded) |
-| `agentforce` | stale | Copilot instructions (superseded) |
-| `develop` | stale | Old, behind main |
+| `backlog-board`  | stale                                    | Ghost drag-and-drop, optimistic UI (superseded)                          |
+| `agentforce`     | stale                                    | Copilot instructions (superseded)                                        |
+| `develop`        | stale                                    | Old, behind main                                                         |
 
 **Action needed:** Merge `optimize-fixes` → `refactor` → `main`, delete stale branches.
 
@@ -54,6 +54,7 @@ Same algorithm Jira uses. O(1) inserts without renumbering entire columns. Posit
 
 **3. Platform Events + echo prevention + polling fallback**
 Three-layer realtime system:
+
 - Platform events via EMP API (primary, ~1s latency)
 - Polling fallback via `getIncrementalUpdates` (when firewalls block CometD)
 - Manual refresh (last resort)
@@ -73,11 +74,11 @@ Rapid operations on the same card are intelligently merged: move + move = one mo
 
 **1. Three critical bugs silently break multi-user realtime**
 
-| Bug | File | Line | Impact |
-|---|---|---|---|
-| Wrong action type `'card/updated'` | `boardDataLoader.js` | 72 | Polling fallback completely non-functional |
-| Wrong action type `'REMOVE_CARD'` | `eventHandler.js` | 222 | Deletes from other users silently dropped |
-| Wrong payload key `card` vs `updates` | `eventHandler.js` | 194 | Updates from other users silently ignored |
+| Bug                                   | File                 | Line | Impact                                     |
+| ------------------------------------- | -------------------- | ---- | ------------------------------------------ |
+| Wrong action type `'card/updated'`    | `boardDataLoader.js` | 72   | Polling fallback completely non-functional |
+| Wrong action type `'REMOVE_CARD'`     | `eventHandler.js`    | 222  | Deletes from other users silently dropped  |
+| Wrong payload key `card` vs `updates` | `eventHandler.js`    | 194  | Updates from other users silently ignored  |
 
 These mean that the entire realtime collaboration system — the app's core differentiator — is broken for receiving other users' changes. The code paths are all there, but action types and payload shapes don't match what the reducers expect. The store silently ignores unrecognized actions (by design for Redux, but catastrophic when it's a typo).
 
@@ -88,9 +89,10 @@ The store has `columns`, `board`, `boardId`, `dragState`, `isDragging`, `dragSou
 `KanbanBoardController.cls` has 8 `@AuraEnabled` methods doing input validation, business logic, data transformation, and orchestration in one class. There's no service layer. This won't scale when adding sprints, backlog, planning poker, and analytics — each feature will add more methods to an already bloated controller.
 
 **4. Commit hygiene**
-Half the commits say "updates" or "update". The git history doesn't tell the story of the architecture decisions that were made. For a project this sophisticated, each commit should explain *why*, not just *what*.
+Half the commits say "updates" or "update". The git history doesn't tell the story of the architecture decisions that were made. For a project this sophisticated, each commit should explain _why_, not just _what_.
 
 **5. Silent error handling throughout**
+
 - Store subscriber errors are swallowed silently (`store.js` lines 55-60)
 - Incremental update failures log to console but don't notify the user
 - Event handler errors return `true` (triggering a refresh) but don't explain what happened
@@ -106,8 +108,8 @@ Half the commits say "updates" or "update". The git history doesn't tell the sto
 // boardDataLoader.js:70-75
 updates.cards.forEach((card) => {
     this.component.store.dispatch({
-        type: 'card/updated',  // ← This action type doesn't exist
-        payload: card           // ← Payload shape wrong too (needs {cardId, updates})
+        type: 'card/updated', // ← This action type doesn't exist
+        payload: card // ← Payload shape wrong too (needs {cardId, updates})
     });
 });
 ```
@@ -159,23 +161,29 @@ The reducer does `{ ...existingCard, ...updates }` — when `updates` is `undefi
 ## Improvement Plan (Phased)
 
 ### Phase 1: Critical Bug Fixes
+
 Fix the 3 action type/payload bugs. Add console.error for silent subscriber failures. **~30 minutes, 3 files, ~15 line changes.**
 
 ### Phase 2: Error Handling & Store Resilience
+
 Add `isLoading`, `error`, `subscriptionStatus` to Redux store. Implement window focus handler. Add request timeout handling. **~2-3 hours.**
 
 ### Phase 3: Event Handler Robustness
+
 Fix race conditions in change tracking (delete-after-move should always win). Fix board membership check for create events. Add sequence number validation. **~1-2 hours.**
 
 ### Phase 4: Performance & Cleanup
+
 Replace `JSON.parse(JSON.stringify())` with `structuredClone()`. Delete `.old` test file. **~30 minutes.**
 
 ### Phase 5: Testing Strategy
+
 - Expand Jest unit tests for event handler (correct action types, payload shapes, race conditions)
 - Create API-driven realtime test script (`scripts/js/test-realtime.js`) for development testing
 - Optionally remove Playwright after above is solid
 
 ### Phase 6: Apex Backend Refactor
+
 Extract service layer: `KanbanCardService`, `KanbanBoardService`, `KanbanEventService`. Controller becomes thin facade. **Pre-requisite for all new features.**
 
 ---
@@ -187,7 +195,7 @@ Extract service layer: `KanbanCardService`, `KanbanBoardService`, `KanbanEventSe
 1. **Branch consolidation** — merge `optimize-fixes` → `refactor` → `main`
 2. **Bug fixes** (Phase 1 above) — the realtime system must actually work
 3. **Apex service layer** (Phase 6 above) — unblocks everything below
-4. **Data model: Sprint__c** — start/end dates, velocity, board relationship
+4. **Data model: Sprint\_\_c** — start/end dates, velocity, board relationship
 5. **Remove Playwright** — replace with Jest + API-driven testing
 
 ### Priority 2: Core Features
@@ -209,32 +217,36 @@ Extract service layer: `KanbanCardService`, `KanbanBoardService`, `KanbanEventSe
 
 - **Planning Poker:** Use G-Counter CRDT for votes (each user's vote = separate record, merge = collect all). Platform events for reveal/re-vote. No need for Yjs — this is a simple CRDT.
 - **Backlog:** Extend LexoRank to a flat list view. Consider virtual scrolling for 500+ item backlogs.
-- **Analytics:** Add `ColumnEnteredAt__c` and `ColumnExitedAt__c` to Card__c. Calculate cycle time as exit - entry per column. Store historical data for rolling averages.
+- **Analytics:** Add `ColumnEnteredAt__c` and `ColumnExitedAt__c` to Card\_\_c. Calculate cycle time as exit - entry per column. Store historical data for rolling averages.
 - **Retro:** Anonymous mode needs a different auth approach — cards without `CreatedById` linkage. Timer via platform events for synchronization.
-- **Sprints:** Sprint__c master-detail to Board__c. Cards get an optional Sprint lookup. Backlog = cards without a sprint. Sprint board = filtered view.
+- **Sprints:** Sprint**c master-detail to Board**c. Cards get an optional Sprint lookup. Backlog = cards without a sprint. Sprint board = filtered view.
 
 ---
 
 ## Realtime Testing Strategy
 
 ### The Problem
+
 Testing realtime updates requires manually opening 2 browser windows and performing actions in both. This is tedious and error-prone.
 
 ### Recommended Solution
 
 **1. Expand Jest unit tests** (fast, deterministic, no org needed):
+
 - Test eventHandler dispatches correct action types with correct payload shapes
 - Test reducer handles all action types correctly
 - Test edge cases: delete-after-move, concurrent creates, out-of-order events
 - Run with `npm test`
 
 **2. API-driven realtime test script** (tests actual platform event pipeline):
+
 - Node.js script that uses Salesforce REST API to create/update/move/delete cards
 - Developer opens board in browser, runs script, watches updates arrive live
 - Script can also poll board state to verify convergence
 - Run with `npm run test:realtime -- --boardId <id>`
 
 **3. CRDT considerations for future:**
+
 - LexoRank is already a CRDT for ordering (commutative, idempotent inserts)
 - Planning poker votes → G-Counter (trivial CRDT, ~50 lines)
 - Card fields → last-write-wins register + presence indicators (simpler than Yjs)

@@ -1,5 +1,4 @@
-import { createCardAsync } from 'c/kanbanStore';
-import { deleteCard } from 'c/kanbanStore';
+import { createCardAsync, deleteCardAsync } from 'c/kanbanStore';
 
 /**
  * Handles card-related operations (create, update, delete)
@@ -18,9 +17,16 @@ export default class CardOperations {
 
     /**
      * Handle card click to open detail view
+     * Searches both columns and backlog cards
      */
     handleCardClick(cardId) {
-        const card = this.findCard(cardId);
+        let card = this.findCard(cardId);
+
+        // Also check backlog cards if not found in columns
+        if (!card) {
+            const state = this.component.store.getState();
+            card = (state.backlogCards || []).find((c) => c.Id === cardId);
+        }
 
         if (card) {
             this.component.selectedCard = card;
@@ -48,13 +54,22 @@ export default class CardOperations {
     /**
      * Handle card deleted
      */
-    handleCardDeleted(cardId) {
+    async handleCardDeleted(cardId) {
         if (!cardId) {
             return;
         }
 
-        // Dispatch action to remove from store
-        this.component.store.dispatch(deleteCard(cardId));
+        // Delete on server then remove from store
+        try {
+            await this.component.store.dispatch(deleteCardAsync(cardId));
+        } catch (error) {
+            if (this.component.toastManager) {
+                this.component.toastManager.showError(
+                    'Error deleting card',
+                    error
+                );
+            }
+        }
 
         this.component.showCardDetail = false;
         this.component.selectedCard = null;

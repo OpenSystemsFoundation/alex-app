@@ -203,6 +203,234 @@ public with sharing class KanbanBoardController {
     }
 
     /**
+     * Get backlog cards for a board (cards not assigned to any column)
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.CardDTO> getBacklogCards(Id boardId) {
+        try {
+            List<OpenSF__Card__c> cards = KanbanBoardSelector.getBacklogCardsByBoardId(
+                boardId
+            );
+            KanbanCardService.backfillMissingPositions(cards);
+            return KanbanBoardDTO.convertCards(cards);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading backlog cards: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Create a new backlog card (not assigned to any column)
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.CardDTO createBacklogCard(
+        Id boardId,
+        String subject,
+        String cardType,
+        String priority,
+        Decimal storyPoints
+    ) {
+        try {
+            return KanbanCardService.createBacklogCard(
+                boardId,
+                subject,
+                cardType,
+                priority,
+                storyPoints
+            );
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error creating backlog card: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Reorder a backlog card by computing a new LexoRank position
+     * between two neighboring cards.
+     * @return The computed LexoRank position string
+     */
+    @AuraEnabled
+    public static String reorderBacklogCard(
+        Id cardId,
+        String previousCardPosition,
+        String nextCardPosition
+    ) {
+        try {
+            String newPosition = LexoRank.between(
+                previousCardPosition,
+                nextCardPosition
+            );
+            OpenSF__Card__c card = new OpenSF__Card__c(
+                Id = cardId,
+                OpenSF__LexoRankPosition__c = newPosition
+            );
+            update Security.stripInaccessible(
+                    AccessType.UPDATABLE,
+                    new List<OpenSF__Card__c>{ card }
+                )
+                .getRecords();
+            return newPosition;
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error reordering backlog card: ' + e.getMessage()
+            );
+        }
+    }
+
+    // =========================================================================
+    // Sprint Management Methods
+    // =========================================================================
+
+    /**
+     * Get sprint data for a board
+     */
+    @AuraEnabled
+    public static SprintService.SprintBoardData getSprintData(Id boardId) {
+        try {
+            return SprintService.getSprintData(boardId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading sprint data: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Create a new sprint
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.SprintDTO createSprint(
+        Id boardId,
+        String goal,
+        Date startDate,
+        Date endDate
+    ) {
+        try {
+            return SprintService.createSprint(
+                boardId,
+                goal,
+                startDate,
+                endDate
+            );
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error creating sprint: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Start a sprint
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.SprintDTO startSprint(Id sprintId) {
+        try {
+            return SprintService.startSprint(sprintId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error starting sprint: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Complete a sprint with card dispositions
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.SprintDTO completeSprint(
+        Id sprintId,
+        Map<Id, String> dispositions
+    ) {
+        try {
+            return SprintService.completeSprint(sprintId, dispositions);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error completing sprint: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Add cards to a sprint
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.SprintCardDTO> addCardsToSprint(
+        Id sprintId,
+        List<Id> cardIds
+    ) {
+        try {
+            return SprintService.addCardsToSprint(sprintId, cardIds);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error adding cards to sprint: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Remove a card from a sprint
+     */
+    @AuraEnabled
+    public static void removeCardFromSprint(Id sprintId, Id cardId) {
+        try {
+            SprintService.removeCardFromSprint(sprintId, cardId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error removing card from sprint: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Get burndown data for a sprint
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.SprintSnapshotDTO> getBurndownData(
+        Id sprintId
+    ) {
+        try {
+            return SprintService.getBurndownData(sprintId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading burndown data: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Get velocity data for a board
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.SprintDTO> getVelocityData(
+        Id boardId,
+        Integer count
+    ) {
+        try {
+            return SprintService.getVelocityData(boardId, count);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading velocity data: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Mark a card as completed in the sprint
+     */
+    @AuraEnabled
+    public static void markCardCompletedInSprint(Id sprintId, Id cardId) {
+        try {
+            SprintService.markCardCompleted(sprintId, cardId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error marking card complete: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
      * Wrapper classes (kept here since they're @AuraEnabled)
      */
     public class BoardData {
@@ -279,5 +507,18 @@ public with sharing class KanbanBoardController {
         public Decimal deliveryRate;
         @AuraEnabled
         public String message;
+    }
+
+    public class KanbanConfigResult {
+        @AuraEnabled
+        public Boolean showDebugInfo = false;
+    }
+
+    /**
+     * Get runtime config from the KanbanConfig hierarchy custom setting
+     */
+    @AuraEnabled(cacheable=true)
+    public static KanbanConfigResult getKanbanConfig() {
+        return KanbanBoardService.getKanbanConfig();
     }
 }

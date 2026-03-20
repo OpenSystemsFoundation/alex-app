@@ -1,0 +1,243 @@
+<template>
+    <template lwc:if={isOpen}>
+        <section
+            role="dialog"
+            tabindex="-1"
+            aria-modal="true"
+            class="slds-modal slds-fade-in-open slds-modal_medium"
+        >
+            <div class="slds-modal__container">
+                <button
+                    class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                    title="Close"
+                    onclick={handleClose}
+                >
+                    <lightning-icon
+                        icon-name="utility:close"
+                        alternative-text="Close"
+                        size="small"
+                        variant="inverse"
+                    ></lightning-icon>
+                </button>
+
+                <div class="slds-modal__header">
+                    <h2 class="slds-modal__title">
+                        Complete Sprint
+                    </h2>
+                    <!-- Step indicator -->
+                    <div
+                        class="slds-progress slds-var-m-top_small"
+                    >
+                        <ol class="slds-progress__list">
+                            <li class={step1Class}>
+                                <span
+                                    class="slds-progress__marker"
+                                ></span>
+                            </li>
+                            <li class={step2Class}>
+                                <span
+                                    class="slds-progress__marker"
+                                ></span>
+                            </li>
+                            <li class={step3Class}>
+                                <span
+                                    class="slds-progress__marker"
+                                ></span>
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div
+                    class="slds-modal__content slds-var-p-around_medium"
+                >
+                    <!-- Step 1: Summary -->
+                    <template lwc:if={isStep1}>
+                        <div
+                            class="slds-text-align_center slds-var-m-bottom_medium"
+                        >
+                            <h3
+                                class="slds-text-heading_medium"
+                            >
+                                Sprint Summary
+                            </h3>
+                        </div>
+
+                        <div
+                            class="slds-grid slds-gutters slds-var-m-bottom_medium"
+                        >
+                            <div
+                                class="slds-col slds-text-align_center"
+                            >
+                                <div
+                                    class="slds-text-heading_large"
+                                >
+                                    {completedCount}
+                                </div>
+                                <div
+                                    class="slds-text-body_small slds-text-color_weak"
+                                >
+                                    Completed
+                                </div>
+                            </div>
+                            <div
+                                class="slds-col slds-text-align_center"
+                            >
+                                <div
+                                    class="slds-text-heading_large"
+                                >
+                                    {incompleteCount}
+                                </div>
+                                <div
+                                    class="slds-text-body_small slds-text-color_weak"
+                                >
+                                    Incomplete
+                                </div>
+                            </div>
+                            <div
+                                class="slds-col slds-text-align_center"
+                            >
+                                <div
+                                    class="slds-text-heading_large"
+                                >
+                                    {completedPoints}
+                                </div>
+                                <div
+                                    class="slds-text-body_small slds-text-color_weak"
+                                >
+                                    Points Done
+                                </div>
+                            </div>
+                            <div
+                                class="slds-col slds-text-align_center"
+                            >
+                                <div
+                                    class="slds-text-heading_large"
+                                >
+                                    {totalPoints}
+                                </div>
+                                <div
+                                    class="slds-text-body_small slds-text-color_weak"
+                                >
+                                    Total Points
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Step 2: Dispositions -->
+                    <template lwc:if={isStep2}>
+                        <div
+                            class="slds-var-m-bottom_medium"
+                        >
+                            <h3
+                                class="slds-text-heading_small slds-var-m-bottom_small"
+                            >
+                                What should happen to
+                                incomplete cards?
+                            </h3>
+                        </div>
+
+                        <template
+                            for:each={incompleteCardsWithDisposition}
+                            for:item="sc"
+                        >
+                            <div
+                                key={sc.Id}
+                                class="slds-grid slds-grid_vertical-align-center slds-var-p-vertical_x-small slds-border_bottom"
+                            >
+                                <div
+                                    class="slds-col slds-size_1-of-2 slds-truncate"
+                                >
+                                    <span
+                                        class="slds-text-body_regular"
+                                        >{sc.cardId}</span
+                                    >
+                                </div>
+                                <div
+                                    class="slds-col slds-size_1-of-2"
+                                >
+                                    <lightning-combobox
+                                        value={sc.disposition}
+                                        options={dispositionOptions}
+                                        data-card-id={sc.cardId}
+                                        onchange={handleDispositionChange}
+                                        variant="label-hidden"
+                                        label="Disposition"
+                                    ></lightning-combobox>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+
+                    <!-- Step 3: Confirm -->
+                    <template lwc:if={isStep3}>
+                        <div class="slds-text-align_center">
+                            <lightning-icon
+                                icon-name="action:approval"
+                                size="large"
+                                class="slds-var-m-bottom_medium"
+                            ></lightning-icon>
+                            <h3
+                                class="slds-text-heading_medium slds-var-m-bottom_small"
+                            >
+                                Ready to Complete Sprint?
+                            </h3>
+                            <p
+                                class="slds-text-body_regular slds-text-color_weak"
+                            >
+                                {completedCount} cards
+                                completed, {incompleteCount}
+                                cards will be moved to
+                                backlog.
+                            </p>
+                        </div>
+                    </template>
+                </div>
+
+                <div
+                    class="slds-modal__footer slds-grid slds-grid_align-spread"
+                >
+                    <div>
+                        <template lwc:if={isStep1}>
+                            <button
+                                class="slds-button slds-button_neutral"
+                                onclick={handleClose}
+                            >
+                                Cancel
+                            </button>
+                        </template>
+                        <template lwc:else>
+                            <button
+                                class="slds-button slds-button_neutral"
+                                onclick={handleBack}
+                            >
+                                Back
+                            </button>
+                        </template>
+                    </div>
+                    <div>
+                        <template lwc:if={isStep3}>
+                            <button
+                                class="slds-button slds-button_brand"
+                                onclick={handleComplete}
+                                disabled={isProcessing}
+                            >
+                                Complete Sprint
+                            </button>
+                        </template>
+                        <template lwc:else>
+                            <button
+                                class="slds-button slds-button_brand"
+                                onclick={handleNext}
+                            >
+                                Next
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

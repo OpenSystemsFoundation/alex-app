@@ -8,8 +8,10 @@
  */
 
 import getBoardData from '@salesforce/apex/KanbanBoardController.getBoardData';
-import { setBoard, setColumns } from '../state/actions';
+import getBacklogCardsApex from '@salesforce/apex/KanbanBoardController.getBacklogCards';
+import { setBoard, setColumns, setBacklogCards } from '../state/actions';
 import { processColumnsData, processCardsData } from '../utils/dataProcessors';
+import { loadSprintDataAsync } from './sprintThunks';
 
 /**
  * Load board data from server
@@ -17,7 +19,7 @@ import { processColumnsData, processCardsData } from '../utils/dataProcessors';
  * @returns {Function} Thunk function
  */
 export const loadBoardData = (boardId) => {
-    return async (dispatch, getState) => {
+    return async (dispatch) => {
         if (!boardId) {
             throw new Error('Board ID is required');
         }
@@ -36,6 +38,23 @@ export const loadBoardData = (boardId) => {
             );
 
             dispatch(setColumns(processedColumns));
+
+            // Load sprint data or backlog cards depending on board type
+            if (data.board && data.board.type === 'Sprint') {
+                try {
+                    await dispatch(loadSprintDataAsync(boardId));
+                } catch (sprintError) {
+                    console.error('Error loading sprint data:', sprintError);
+                }
+            } else {
+                // Non-sprint boards: load backlog cards (unassigned cards)
+                try {
+                    const backlogCards = await getBacklogCardsApex({ boardId });
+                    dispatch(setBacklogCards(backlogCards));
+                } catch (backlogError) {
+                    console.error('Error loading backlog cards:', backlogError);
+                }
+            }
 
             return {
                 success: true,

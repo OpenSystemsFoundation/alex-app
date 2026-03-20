@@ -11,16 +11,11 @@
 **/*.tmp
 
 # Test Files and Directories (not part of package)
-test/
-tests/
-**/test/
 **/__tests__/
 **/*.test.js
 **/*.spec.js
 **/*.test.ts
 **/*.spec.ts
-playwright-report/
-test-results/
 coverage/
 .nyc_output/
 

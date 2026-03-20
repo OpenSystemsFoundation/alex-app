@@ -3,7 +3,6 @@
  * Extracted from KanbanBoardController to separate concerns
  */
 public with sharing class KanbanCardService {
-
     /**
      * Move card with conflict detection based on expected sequence number
      * Client sends the sequence number it expects the card to have
@@ -19,9 +18,7 @@ public with sharing class KanbanCardService {
         String clientId
     ) {
         // Query full card data for conflict detection
-        OpenSF__Card__c existingCard = KanbanBoardSelector.getCardById(
-            cardId
-        );
+        OpenSF__Card__c existingCard = KanbanBoardSelector.getCardById(cardId);
 
         // Detect conflicts
         Boolean hasConflict = false;
@@ -80,7 +77,11 @@ public with sharing class KanbanCardService {
             existingCard.OpenSF__Status__c
         );
 
-        update card;
+        update Security.stripInaccessible(
+                AccessType.UPDATABLE,
+                new List<OpenSF__Card__c>{ card }
+            )
+            .getRecords();
 
         // Query updated card to get new sequence number
         OpenSF__Card__c updatedCard = [
@@ -123,14 +124,13 @@ public with sharing class KanbanCardService {
         );
 
         // Get the column to apply its status
-        OpenSF__Column__c column = KanbanBoardSelector.getColumnById(
-            columnId
-        );
+        OpenSF__Column__c column = KanbanBoardSelector.getColumnById(columnId);
 
         // Create card with initial sequence number and clientId
         OpenSF__Card__c card = new OpenSF__Card__c(
             OpenSF__Subject__c = subject,
             OpenSF__Column__c = columnId,
+            OpenSF__Board__c = column.OpenSF__Board__c,
             OpenSF__LexoRankPosition__c = position,
             OpenSF__LastClientRequestId__c = clientRequestId,
             OpenSF__LastClientId__c = clientId,
@@ -140,14 +140,18 @@ public with sharing class KanbanCardService {
         // Apply column status to new card (currentStatus is null for new cards)
         applyColumnStatusToCard(card, column, null);
 
-        insert card;
+        List<OpenSF__Card__c> strippedCards = (List<OpenSF__Card__c>) Security.stripInaccessible(
+                AccessType.CREATABLE,
+                new List<OpenSF__Card__c>{ card }
+            )
+            .getRecords();
+        insert strippedCards;
+        card.Id = strippedCards[0].Id;
 
         // Event published by trigger
 
         // Return full card data as DTO
-        OpenSF__Card__c createdCard = KanbanBoardSelector.getCardById(
-            card.Id
-        );
+        OpenSF__Card__c createdCard = KanbanBoardSelector.getCardById(card.Id);
         return new KanbanBoardDTO.CardDTO(createdCard);
     }
 
@@ -244,8 +248,25 @@ public with sharing class KanbanCardService {
             if (updates.containsKey('assigneeId')) {
                 card.OpenSF__Assignee__c = (Id) updates.get('assigneeId');
             }
+            if (updates.containsKey('needsRefinement')) {
+                card.OpenSF__NeedsRefinement__c = (Boolean) updates.get(
+                    'needsRefinement'
+                );
+            }
+            if (updates.containsKey('columnId')) {
+                card.OpenSF__Column__c = (Id) updates.get('columnId');
+            }
+            if (updates.containsKey('lexoRankPosition')) {
+                card.OpenSF__LexoRankPosition__c = (String) updates.get(
+                    'lexoRankPosition'
+                );
+            }
 
-            update card;
+            update Security.stripInaccessible(
+                    AccessType.UPDATABLE,
+                    new List<OpenSF__Card__c>{ card }
+                )
+                .getRecords();
 
             // Query updated card
             OpenSF__Card__c updatedCard = KanbanBoardSelector.getCardById(
@@ -273,9 +294,112 @@ public with sharing class KanbanCardService {
     }
 
     /**
+     * Create a backlog card (not assigned to any column).
+     * New cards are placed at the top of the backlog.
+     */
+    public static KanbanBoardDTO.CardDTO createBacklogCard(
+        Id boardId,
+        String subject,
+        String cardType,
+        String priority,
+        Decimal storyPoints
+    ) {
+        // Find the current first backlog card's position to insert before it
+        List<OpenSF__Card__c> topCards = [
+            SELECT OpenSF__LexoRankPosition__c
+            FROM OpenSF__Card__c
+            WHERE
+                OpenSF__Board__c = :boardId
+                AND OpenSF__Column__c = NULL
+                AND OpenSF__LexoRankPosition__c != NULL
+            ORDER BY OpenSF__LexoRankPosition__c ASC
+            LIMIT 1
+        ];
+        String firstPosition = topCards.isEmpty()
+            ? null
+            : topCards[0].OpenSF__LexoRankPosition__c;
+        String newPosition = LexoRank.between(null, firstPosition);
+
+        // Create card with board reference but no column (backlog card)
+        OpenSF__Card__c card = new OpenSF__Card__c(
+            OpenSF__Subject__c = subject,
+            OpenSF__Board__c = boardId,
+            OpenSF__CardType__c = cardType,
+            OpenSF__Priority__c = priority,
+            OpenSF__StoryPoints__c = storyPoints,
+            OpenSF__NeedsRefinement__c = false,
+            OpenSF__SequenceNumber__c = 1,
+            OpenSF__LexoRankPosition__c = newPosition
+        );
+
+        List<OpenSF__Card__c> strippedCards = (List<OpenSF__Card__c>) Security.stripInaccessible(
+                AccessType.CREATABLE,
+                new List<OpenSF__Card__c>{ card }
+            )
+            .getRecords();
+        insert strippedCards;
+        card.Id = strippedCards[0].Id;
+
+        // Return full card data as DTO
+        OpenSF__Card__c createdCard = KanbanBoardSelector.getCardById(card.Id);
+        return new KanbanBoardDTO.CardDTO(createdCard);
+    }
+
+    /**
+     * Backfill LexoRankPosition for cards that have NULL positions.
+     * Assigns positions after the last positioned card so existing
+     * order is preserved. Updates are persisted to the database.
+     *
+     * Skips processing entirely when all cards already have positions
+     * (the common case) to avoid unnecessary iteration and DML.
+     */
+    public static void backfillMissingPositions(List<OpenSF__Card__c> cards) {
+        // Quick scan: bail out if no nulls exist
+        Boolean hasNulls = false;
+        for (OpenSF__Card__c card : cards) {
+            if (card.OpenSF__LexoRankPosition__c == null) {
+                hasNulls = true;
+                break;
+            }
+        }
+        if (!hasNulls) {
+            return;
+        }
+
+        String lastPosition = null;
+        List<OpenSF__Card__c> toUpdate = new List<OpenSF__Card__c>();
+
+        for (OpenSF__Card__c card : cards) {
+            if (card.OpenSF__LexoRankPosition__c != null) {
+                lastPosition = card.OpenSF__LexoRankPosition__c;
+            } else {
+                String newPosition = LexoRank.between(lastPosition, null);
+                card.OpenSF__LexoRankPosition__c = newPosition;
+                toUpdate.add(
+                    new OpenSF__Card__c(
+                        Id = card.Id,
+                        OpenSF__LexoRankPosition__c = newPosition
+                    )
+                );
+                lastPosition = newPosition;
+            }
+        }
+
+        if (!toUpdate.isEmpty()) {
+            update Security.stripInaccessible(AccessType.UPDATABLE, toUpdate)
+                .getRecords();
+        }
+    }
+
+    /**
      * Delete card
      */
     public static void deleteCard(Id cardId) {
+        if (!Schema.sObjectType.OpenSF__Card__c.isDeletable()) {
+            throw new AuraHandledException(
+                'Insufficient access to delete cards.'
+            );
+        }
         delete new OpenSF__Card__c(Id = cardId);
         // Event published by trigger
     }
