@@ -58,7 +58,12 @@ jobs:
             - name: Get Login URL
               id: login
               run: |
-                  LOGIN_URL=$(sf org open --target-org e2e-test --url-only 2>&1)
+                  LOGIN_URL=$(sf org open --target-org e2e-test --json 2>/dev/null | node -e "
+                    let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                      const j=JSON.parse(d);
+                      console.log(j.result.url);
+                    });
+                  ")
                   echo "url=$LOGIN_URL" >> "$GITHUB_OUTPUT"
 
             - name: Run Playwright Tests
