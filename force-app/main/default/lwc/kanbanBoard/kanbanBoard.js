@@ -209,6 +209,12 @@ export default class KanbanBoard extends LightningElement {
             : 'filter-toggle';
     }
 
+    get cardsByColumn() {
+        return this._storeState
+            ? selectors.getCardsByColumnMap(this._storeState)
+            : {};
+    }
+
     get board() {
         return this._storeState ? selectors.getBoard(this._storeState) : null;
     }

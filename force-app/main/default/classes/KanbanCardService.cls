@@ -512,9 +512,7 @@ public with sharing class KanbanCardService {
                     junction.OpenSF__Sprint__c
                 );
             }
-        } else if (
-            isActiveWork && junction.OpenSF__CompletedInSprint__c
-        ) {
+        } else if (isActiveWork && junction.OpenSF__CompletedInSprint__c) {
             // Moving back to active work — un-complete (card was pulled back)
             junction.OpenSF__CompletedInSprint__c = false;
             junction.OpenSF__CompletedDate__c = null;

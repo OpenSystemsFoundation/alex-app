@@ -628,7 +628,9 @@
     background: rgb(249, 250, 251);
     color: rgb(17, 24, 39);
     outline: none;
-    transition: border-color 0.12s ease, background 0.12s ease;
+    transition:
+        border-color 0.12s ease,
+        background 0.12s ease;
 }
 
 .board-filter-search:focus {
