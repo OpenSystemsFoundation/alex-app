@@ -548,6 +548,140 @@ jobs:
         run: sf org delete scratch --target-org test-org --no-prompt || true
 ```
 
+### 7. Auto version bump on merge (`version-bump.yml`)
+
+**Trigger:** Automatic on PR merge to main. Parses the PR title using conventional commit prefixes to determine which version component to bump.
+
+**Convention:**
+- `feat:` or `feat(scope):` → **minor** bump (e.g. 2.0.0 → 2.1.0)
+- `fix:`, `perf:`, `refactor:` → **patch** bump (e.g. 2.0.0 → 2.0.1)
+- Title contains `BREAKING CHANGE` or prefix ends with `!` (e.g. `feat!:`) → **major** bump (e.g. 2.0.0 → 3.0.0)
+- `docs:`, `chore:`, `ci:`, `style:`, `test:` → **no bump** (non-code changes)
+
+```yaml
+# .github/workflows/version-bump.yml
+name: Auto Version Bump
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  bump:
+    name: Bump Package Version
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine bump type from PR title
+        id: bump
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          echo "PR title: $TITLE"
+
+          # Check for BREAKING CHANGE or ! suffix on prefix
+          if echo "$TITLE" | grep -qiE 'BREAKING CHANGE' || echo "$TITLE" | grep -qE '^[a-z]+(\(.+\))?!:'; then
+            echo "type=major" >> "$GITHUB_OUTPUT"
+            echo "Bump type: major"
+          elif echo "$TITLE" | grep -qE '^feat(\(.+\))?:'; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
+            echo "Bump type: minor"
+          elif echo "$TITLE" | grep -qE '^(fix|perf|refactor)(\(.+\))?:'; then
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+            echo "Bump type: patch"
+          else
+            echo "type=none" >> "$GITHUB_OUTPUT"
+            echo "Bump type: none (skipping)"
+          fi
+
+      - name: Bump version in sfdx-project.json
+        if: steps.bump.outputs.type != 'none'
+        run: |
+          BUMP="${{ steps.bump.outputs.type }}"
+
+          node -e "
+            const fs = require('fs');
+            const project = JSON.parse(fs.readFileSync('sfdx-project.json', 'utf8'));
+            const pkg = project.packageDirectories[0];
+            const parts = pkg.versionNumber.replace('.NEXT', '').split('.').map(Number);
+
+            let [major, minor, patch] = parts;
+
+            if ('$BUMP' === 'major') {
+              major++;
+              minor = 0;
+              patch = 0;
+            } else if ('$BUMP' === 'minor') {
+              minor++;
+              patch = 0;
+            } else if ('$BUMP' === 'patch') {
+              patch++;
+            }
+
+            const newVersion = major + '.' + minor + '.' + patch + '.NEXT';
+            const oldVersion = pkg.versionNumber;
+            pkg.versionNumber = newVersion;
+            pkg.versionName = 'ver ' + major + '.' + minor;
+
+            fs.writeFileSync('sfdx-project.json', JSON.stringify(project, null, 4) + '\n');
+            console.log('Bumped ' + oldVersion + ' → ' + newVersion + ' (' + '$BUMP' + ')');
+          "
+
+      - name: Commit and push
+        if: steps.bump.outputs.type != 'none'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sfdx-project.json
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "chore: bump version $(node -e "
+            const p = require('./sfdx-project.json');
+            console.log(p.packageDirectories[0].versionNumber);
+          ") [skip ci]"
+          git push
+
+      - name: Post summary
+        if: steps.bump.outputs.type != 'none'
+        run: |
+          VERSION=$(node -e "const p = require('./sfdx-project.json'); console.log(p.packageDirectories[0].versionNumber);")
+          echo "## Version Bumped" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**PR:** ${{ github.event.pull_request.title }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Bump type:** ${{ steps.bump.outputs.type }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**New version:** \`$VERSION\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Skip summary
+        if: steps.bump.outputs.type == 'none'
+        run: |
+          echo "## Version Bump Skipped" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "PR title prefix (\`docs:\`, \`chore:\`, \`ci:\`, etc.) does not trigger a version bump." >> "$GITHUB_STEP_SUMMARY"
+```
+
+### PR title convention reference
+
+For contributors/team reference — enforce via GitHub branch protection rule "Require linear history" + squash merge with PR title as commit message:
+
+| Prefix | Bump | Example PR title |
+|--------|------|------------------|
+| `feat:` | Minor | `feat: add burndown chart to sprint view` |
+| `feat!:` | Major | `feat!: redesign data model for multi-board support` |
+| `fix:` | Patch | `fix: card drag not saving position on mobile` |
+| `perf:` | Patch | `perf: reduce SOQL queries in board controller` |
+| `refactor:` | Patch | `refactor: extract card service from controller` |
+| `docs:` | None | `docs: update installation guide` |
+| `chore:` | None | `chore: update dependencies` |
+| `ci:` | None | `ci: add scratch org workflow` |
+| `test:` | None | `test: add coverage for sprint rollup trigger` |
+| `style:` | None | `style: fix Apex formatting` |
+
 ## Workflow summary
 
 | Workflow | Trigger | What it does |
@@ -555,6 +689,7 @@ jobs:
 | **Test** (existing) | Push / PR | Lint, formatting, LWC Jest tests |
 | **Apex Tests** (existing) | Push to main / PR | Scratch org Apex tests with coverage |
 | **Security Scan** (existing) | PR to main | Code analyzer + npm audit |
+| **Auto Version Bump** | PR merge to main | Parse PR title, bump version in sfdx-project.json |
 | **Release Beta** | Manual (main only) | Create managed beta, post GitHub Release |
 | **Promote to GA** | Manual + approval | Promote beta to GA, create GitHub Release |
 | **Scratch Org Test Drive** | Manual (any branch) | Spin up a scratch org, get login URL |
