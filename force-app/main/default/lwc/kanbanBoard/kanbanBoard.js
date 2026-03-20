@@ -13,6 +13,7 @@ import { generateClientId } from './helpers/clientIdGenerator';
 
 export default class KanbanBoard extends LightningElement {
     @api height; // Optional fixed height, if not set uses dynamic calculation
+    @api experienceCloud = false; // Experience Cloud mode for community portal
 
     // Private properties
     _recordId;
@@ -449,7 +450,20 @@ export default class KanbanBoard extends LightningElement {
 
         const cardId = event.currentTarget.dataset.cardId;
 
-        if (!cardId || !this.navigationUtil) {
+        if (!cardId) {
+            return;
+        }
+
+        // In Experience Cloud mode, let the browser handle navigation via href
+        if (this.experienceCloud) {
+            const href = event.currentTarget.getAttribute('href');
+            if (href) {
+                window.location.href = href;
+            }
+            return;
+        }
+
+        if (!this.navigationUtil) {
             return;
         }
 
@@ -487,7 +501,20 @@ export default class KanbanBoard extends LightningElement {
 
         const columnId = event.currentTarget.dataset.columnId;
 
-        if (!columnId || !this.navigationUtil) {
+        if (!columnId) {
+            return;
+        }
+
+        // In Experience Cloud mode, let the browser handle navigation via href
+        if (this.experienceCloud) {
+            const href = event.currentTarget.getAttribute('href');
+            if (href) {
+                window.location.href = href;
+            }
+            return;
+        }
+
+        if (!this.navigationUtil) {
             return;
         }
 
@@ -734,6 +761,10 @@ export default class KanbanBoard extends LightningElement {
         return this.columns && this.columns.length > 0;
     }
 
+    get isInternalMode() {
+        return !this.experienceCloud;
+    }
+
     // =============================================================================
     // Tab Getters
     // =============================================================================
@@ -744,6 +775,16 @@ export default class KanbanBoard extends LightningElement {
 
     get isBacklogTabActive() {
         return this.activeTab === 'backlog';
+    }
+
+    // In Experience Cloud mode, always show board (no tabs)
+    get showBoardContent() {
+        return this.experienceCloud || this.isBoardTabActive;
+    }
+
+    // Backlog is internal-only
+    get showBacklogContent() {
+        return !this.experienceCloud && this.isBacklogTabActive;
     }
 
     get boardTabButtonClass() {
