@@ -18,6 +18,10 @@
     </classAccesses>
     <customMetadataTypeAccesses>
         <enabled>true</enabled>
+        <name>CardCustomField__mdt</name>
+    </customMetadataTypeAccesses>
+    <customMetadataTypeAccesses>
+        <enabled>true</enabled>
         <name>KanbanBoardSettings__mdt</name>
     </customMetadataTypeAccesses>
     <description>Admin Permission Set</description>

@@ -89,6 +89,21 @@ const formatDate = (dateString) => {
 export const enrichCardData = (card, cardTypeIcons) => {
     const icons = cardTypeIcons || _cardTypeIcons;
     const iconName = card.cardType && icons ? icons[card.cardType] : null;
+    // Build formatted custom fields array for template rendering
+    const customFieldEntries = [];
+    if (card.customFields) {
+        Object.keys(card.customFields).forEach((key) => {
+            const val = card.customFields[key];
+            if (val !== null && val !== undefined && val !== '') {
+                customFieldEntries.push({
+                    key,
+                    value: val,
+                    label: key.replace('__c', '').replace(/_/g, ' ')
+                });
+            }
+        });
+    }
+
     return {
         ...card,
         priorityClass: getPriorityClass(card.priority),
@@ -100,7 +115,9 @@ export const enrichCardData = (card, cardTypeIcons) => {
             card.storyPoints !== null && card.storyPoints !== undefined,
         cardStyle: card.color ? `border-left: 4px solid ${card.color}` : '',
         recordUrl: `/lightning/r/OpenSF__Card__c/${card.Id}/view`,
-        cardTypeIconName: iconName || null
+        cardTypeIconName: iconName || null,
+        customFieldEntries,
+        hasCustomFields: customFieldEntries.length > 0
     };
 };
 
