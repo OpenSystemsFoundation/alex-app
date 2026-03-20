@@ -91,6 +91,7 @@ public with sharing class KanbanCardService {
             SELECT OpenSF__SequenceNumber__c, LastModifiedDate
             FROM OpenSF__Card__c
             WHERE Id = :cardId
+            WITH USER_MODE
             LIMIT 1
         ];
 
@@ -315,6 +316,7 @@ public with sharing class KanbanCardService {
                 OpenSF__Board__c = :boardId
                 AND OpenSF__Column__c = NULL
                 AND OpenSF__LexoRankPosition__c != NULL
+            WITH USER_MODE
             ORDER BY OpenSF__LexoRankPosition__c ASC
             LIMIT 1
         ];
@@ -473,6 +475,7 @@ public with sharing class KanbanCardService {
                 OpenSF__Card__c = :cardId
                 AND OpenSF__RemovedDate__c = NULL
                 AND OpenSF__Sprint__r.OpenSF__Status__c = 'Active'
+            WITH USER_MODE
             LIMIT 1
         ];
 

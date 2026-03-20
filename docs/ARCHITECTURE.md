@@ -31,8 +31,7 @@ Alex is a real-time collaborative Kanban board application built on the Salesfor
 - **Testing**: Jest (unit), Playwright (E2E), Apex Test Framework
 - **Build Tools**: Salesforce CLI, npm
 - **Development Environment**:
-    - Node.js v22.x LTS (managed via [mise](https://mise.jdx.dev/))
-    - The project includes a `.mise.toml` file for automatic Node version management
+    - Node.js v22.x LTS
     - VS Code with Salesforce Extensions Pack recommended
 
 ## System Architecture

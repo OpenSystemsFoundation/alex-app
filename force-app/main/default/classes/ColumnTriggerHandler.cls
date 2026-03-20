@@ -59,6 +59,13 @@ public with sharing class ColumnTriggerHandler extends TriggerHandler {
 
                 events.add(event);
             } catch (Exception e) {
+                System.debug(
+                    LoggingLevel.ERROR,
+                    'Error creating event for column ' +
+                        column.Id +
+                        ': ' +
+                        e.getMessage()
+                );
             }
         }
 

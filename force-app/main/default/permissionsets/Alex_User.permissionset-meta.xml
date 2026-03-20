@@ -172,6 +172,11 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>false</editable>
+        <field>Column__c.Category__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>true</editable>
         <field>Column__c.CardCount__c</field>
         <readable>true</readable>
@@ -199,6 +204,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Column__c.Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Sprint__c.Board__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
