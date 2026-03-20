@@ -39,6 +39,13 @@ export default class KanbanBoard extends LightningElement {
     @track activeTab = 'board';
     @track _isRefreshing = false;
 
+    // Board filter state
+    @track _boardSearchTerm = '';
+    @track _boardFilterPriority = 'All';
+    @track _boardFilterCardType = 'All';
+    @track _boardHideCompleted = false;
+    _searchDebounceTimer = null;
+
     // Sprint UI state
     @track showSprintModal = false;
     @track showSprintComplete = false;
@@ -83,6 +90,114 @@ export default class KanbanBoard extends LightningElement {
         return this._storeState
             ? selectors.getEnrichedColumns(this._storeState)
             : [];
+    }
+
+    get filteredColumns() {
+        const cols = this.columns;
+        if (!cols || cols.length === 0) return [];
+
+        const search = this._boardSearchTerm.toLowerCase().trim();
+        const priority = this._boardFilterPriority;
+        const cardType = this._boardFilterCardType;
+        const hideCompleted = this._boardHideCompleted;
+        const hasFilter =
+            search || priority !== 'All' || cardType !== 'All' || hideCompleted;
+
+        if (!hasFilter) return cols;
+
+        return cols.map((col) => {
+            // Hide entire Done-category columns when toggle is on
+            if (hideCompleted && col.isDone) {
+                return { ...col, cards: [], cardCount: 0, isHidden: true };
+            }
+
+            const filtered = (col.cards || []).filter((card) => {
+                // Search: match subject, Name, cardType, assignee name
+                if (search) {
+                    const haystack = [
+                        card.subject,
+                        card.Name,
+                        card.cardType,
+                        card.assignee?.name,
+                        card.status
+                    ]
+                        .filter(Boolean)
+                        .join(' ')
+                        .toLowerCase();
+                    if (!haystack.includes(search)) return false;
+                }
+
+                // Priority filter
+                if (priority !== 'All' && card.priority !== priority) {
+                    return false;
+                }
+
+                // Card type filter
+                if (cardType !== 'All' && card.cardType !== cardType) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            return { ...col, cards: filtered, cardCount: filtered.length };
+        });
+    }
+
+    get hasActiveFilters() {
+        return (
+            this._boardSearchTerm.trim() ||
+            this._boardFilterPriority !== 'All' ||
+            this._boardFilterCardType !== 'All' ||
+            this._boardHideCompleted
+        );
+    }
+
+    get filteredCardCount() {
+        if (!this.hasActiveFilters) return null;
+        return this.filteredColumns.reduce(
+            (sum, col) => sum + (col.cardCount || 0),
+            0
+        );
+    }
+
+    get totalCardCount() {
+        return this.columns.reduce(
+            (sum, col) => sum + (col.cards?.length || 0),
+            0
+        );
+    }
+
+    get filterSummary() {
+        if (!this.hasActiveFilters) return '';
+        return `${this.filteredCardCount} of ${this.totalCardCount} cards`;
+    }
+
+    get priorityFilterOptions() {
+        return [
+            { label: 'All Priorities', value: 'All' },
+            { label: 'Blocking', value: 'Blocking' },
+            { label: 'High', value: 'High' },
+            { label: 'Medium', value: 'Medium' },
+            { label: 'Low', value: 'Low' },
+            { label: 'Trivial', value: 'Trivial' }
+        ];
+    }
+
+    get cardTypeFilterOptions() {
+        return [
+            { label: 'All Types', value: 'All' },
+            { label: 'Story', value: 'Story' },
+            { label: 'Bug', value: 'Bug' },
+            { label: 'Task', value: 'Task' },
+            { label: 'Epic', value: 'Epic' }
+        ];
+    }
+
+    get hideCompletedClass() {
+        return this._boardHideCompleted
+            ? 'filter-toggle filter-toggle--active'
+            : 'filter-toggle';
     }
 
     get cardsByColumn() {
@@ -246,6 +361,11 @@ export default class KanbanBoard extends LightningElement {
         if (this._windowResizeHandler) {
             window.removeEventListener('resize', this._windowResizeHandler);
             this._windowResizeHandler = null;
+        }
+
+        // Cleanup search debounce timer
+        if (this._searchDebounceTimer) {
+            clearTimeout(this._searchDebounceTimer);
         }
     }
 
@@ -570,6 +690,49 @@ export default class KanbanBoard extends LightningElement {
     handleTabClick(event) {
         event.preventDefault();
         this.activeTab = event.currentTarget.dataset.tabId;
+    }
+
+    // =============================================================================
+    // Board Filter Handlers
+    // =============================================================================
+
+    handleBoardSearch(event) {
+        const value = event.target.value;
+        // Debounce search input for smooth typing
+        if (this._searchDebounceTimer) {
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            clearTimeout(this._searchDebounceTimer);
+        }
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this._searchDebounceTimer = setTimeout(() => {
+            this._boardSearchTerm = value;
+        }, 150);
+    }
+
+    handlePriorityFilter(event) {
+        this._boardFilterPriority = event.target.value;
+    }
+
+    handleCardTypeFilter(event) {
+        this._boardFilterCardType = event.target.value;
+    }
+
+    handleToggleHideCompleted() {
+        this._boardHideCompleted = !this._boardHideCompleted;
+    }
+
+    handleClearFilters() {
+        this._boardSearchTerm = '';
+        this._boardFilterPriority = 'All';
+        this._boardFilterCardType = 'All';
+        this._boardHideCompleted = false;
+        // Clear the search input element value
+        const searchInput = this.template.querySelector(
+            '.board-filter-search'
+        );
+        if (searchInput) {
+            searchInput.value = '';
+        }
     }
 
     handleCreateSprint() {

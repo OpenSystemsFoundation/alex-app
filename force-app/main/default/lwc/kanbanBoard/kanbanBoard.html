@@ -65,6 +65,83 @@
 
         <!-- Board Tab Content -->
         <template lwc:if={isBoardTabActive}>
+            <!-- Board Filter Bar -->
+            <div class="board-filter-bar">
+                <div class="board-filter-bar__search">
+                    <lightning-icon
+                        icon-name="utility:search"
+                        size="xx-small"
+                        class="search-icon"
+                    ></lightning-icon>
+                    <input
+                        type="text"
+                        class="board-filter-search"
+                        placeholder="Search cards..."
+                        oninput={handleBoardSearch}
+                    />
+                </div>
+                <select
+                    class="board-filter-select"
+                    onchange={handlePriorityFilter}
+                    value={_boardFilterPriority}
+                >
+                    <template
+                        for:each={priorityFilterOptions}
+                        for:item="opt"
+                    >
+                        <option
+                            key={opt.value}
+                            value={opt.value}
+                        >
+                            {opt.label}
+                        </option>
+                    </template>
+                </select>
+                <select
+                    class="board-filter-select"
+                    onchange={handleCardTypeFilter}
+                    value={_boardFilterCardType}
+                >
+                    <template
+                        for:each={cardTypeFilterOptions}
+                        for:item="opt"
+                    >
+                        <option
+                            key={opt.value}
+                            value={opt.value}
+                        >
+                            {opt.label}
+                        </option>
+                    </template>
+                </select>
+                <button
+                    class={hideCompletedClass}
+                    onclick={handleToggleHideCompleted}
+                    title="Hide cards in Done-category columns"
+                >
+                    <lightning-icon
+                        icon-name="utility:check"
+                        size="xx-small"
+                    ></lightning-icon>
+                    Hide Done
+                </button>
+                <template lwc:if={hasActiveFilters}>
+                    <span class="board-filter-summary"
+                        >{filterSummary}</span
+                    >
+                    <button
+                        class="board-filter-clear"
+                        onclick={handleClearFilters}
+                        title="Clear all filters"
+                    >
+                        <lightning-icon
+                            icon-name="utility:close"
+                            size="xx-small"
+                        ></lightning-icon>
+                    </button>
+                </template>
+            </div>
+
             <div class="kanban-board-container slds-grid">
                 <!-- Kanban Board -->
                 <div
@@ -72,7 +149,7 @@
                 >
                     <template lwc:if={hasColumns}>
                         <template
-                            for:each={columns}
+                            for:each={filteredColumns}
                             for:item="column"
                         >
                             <!-- Kanban Column -->
