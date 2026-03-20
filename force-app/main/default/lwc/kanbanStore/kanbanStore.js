@@ -37,7 +37,7 @@
 // Re-export everything from the modular structure
 export { createStore, KanbanStore } from './core/store';
 export * from './state/actions';
-export { enrichCardData } from './utils/dataProcessors';
+export { enrichCardData, setCardTypeIconMap } from './utils/dataProcessors';
 
 // Direct exports for convenience
 export { loadBoardData } from './thunks/boardThunks';

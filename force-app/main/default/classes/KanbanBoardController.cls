@@ -440,6 +440,8 @@ public with sharing class KanbanBoardController {
         public List<KanbanBoardDTO.ColumnDTO> columns;
         @AuraEnabled
         public List<KanbanBoardDTO.CardDTO> cards;
+        @AuraEnabled
+        public Map<String, String> cardTypeIcons;
     }
 
     public class CardMoveResult {
