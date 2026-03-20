@@ -19,7 +19,7 @@ Before you begin, ensure you have:
 
 - ✅ **Salesforce Org** (Developer Edition, Sandbox, or Production)
 - ✅ **Salesforce CLI** installed ([Download here](https://developer.salesforce.com/tools/sfdxcli))
-- ✅ **Node.js** (v18 or higher) - **Recommended**: Install via [mise](https://mise.jdx.dev/) for version management
+- ✅ **Node.js** (v18 or higher) - Install from [nodejs.org](https://nodejs.org/) or use your preferred version manager
 - ✅ **Git** installed ([Download here](https://git-scm.com/))
 - ✅ **Admin privileges** in your Salesforce org
 
@@ -38,31 +38,6 @@ npm --version
 # Check Git
 git --version
 ```
-
-### Installing Node.js with mise (Recommended)
-
-We recommend using [mise](https://mise.jdx.dev/) to manage Node.js versions:
-
-```bash
-# Install mise (macOS/Linux)
-curl https://mise.run | sh
-
-# Add mise to your shell (follow instructions from install script)
-echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc  # for bash
-echo 'eval "$(~/.local/bin/mise activate zsh)"' >> ~/.zshrc   # for zsh
-
-# Restart your shell or source the config
-source ~/.zshrc  # or ~/.bashrc
-
-# Install Node.js LTS (the project includes a .mise.toml file)
-cd alex-app
-mise install  # Automatically installs Node.js LTS from .mise.toml
-
-# Verify installation
-node --version  # Should show v22.x or higher
-```
-
-The project includes a `.mise.toml` file that automatically sets the Node.js version when you enter the directory.
 
 ## Installation
 

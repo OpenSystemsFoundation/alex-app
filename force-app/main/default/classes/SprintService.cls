@@ -16,6 +16,7 @@ public with sharing class SprintService {
             SELECT Id
             FROM OpenSF__Board__c
             WHERE Id = :boardId
+            WITH USER_MODE
             LIMIT 1
         ];
         if (boards.isEmpty()) {
@@ -163,6 +164,27 @@ public with sharing class SprintService {
         if (dispositions != null) {
             List<OpenSF__SprintCard__c> newJunctions = new List<OpenSF__SprintCard__c>();
 
+            // Collect and validate destination sprint IDs belong to the same board
+            Set<Id> destinationSprintIds = new Set<Id>();
+            for (String disposition : dispositions.values()) {
+                if (disposition != 'backlog' && disposition instanceof Id) {
+                    destinationSprintIds.add((Id) disposition);
+                }
+            }
+            Set<Id> validSprintIds = new Set<Id>();
+            if (!destinationSprintIds.isEmpty()) {
+                for (OpenSF__Sprint__c s : [
+                    SELECT Id
+                    FROM OpenSF__Sprint__c
+                    WHERE
+                        Id IN :destinationSprintIds
+                        AND OpenSF__Board__c = :sprint.OpenSF__Board__c
+                    WITH USER_MODE
+                ]) {
+                    validSprintIds.add(s.Id);
+                }
+            }
+
             for (OpenSF__SprintCard__c sc : sprintCards) {
                 if (
                     sc.OpenSF__CompletedInSprint__c != true &&
@@ -170,8 +192,12 @@ public with sharing class SprintService {
                 ) {
                     String disposition = dispositions.get(sc.OpenSF__Card__c);
 
-                    if (disposition != 'backlog' && disposition instanceof Id) {
-                        // Move to another sprint - create new junction
+                    if (
+                        disposition != 'backlog' &&
+                        disposition instanceof Id &&
+                        validSprintIds.contains((Id) disposition)
+                    ) {
+                        // Move to another sprint on the same board
                         newJunctions.add(
                             new OpenSF__SprintCard__c(
                                 OpenSF__Sprint__c = (Id) disposition,
@@ -182,7 +208,7 @@ public with sharing class SprintService {
                             )
                         );
                     }
-                    // 'backlog' = card just stays unassigned, no new junction needed
+                    // 'backlog' or invalid sprint = card stays unassigned
                 }
             }
 
@@ -304,6 +330,7 @@ public with sharing class SprintService {
                 OpenSF__Sprint__c = :sprintId
                 AND OpenSF__Card__c = :cardId
                 AND OpenSF__RemovedDate__c = NULL
+            WITH USER_MODE
             LIMIT 1
         ];
 
@@ -429,6 +456,7 @@ public with sharing class SprintService {
                 OpenSF__Sprint__c = :sprintId
                 AND OpenSF__Card__c = :cardId
                 AND OpenSF__RemovedDate__c = NULL
+            WITH USER_MODE
             LIMIT 1
         ];
 

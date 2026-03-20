@@ -141,7 +141,7 @@ Salesforce Lightning Web Component (LWC) Kanban board application called "Alex" 
 - TypeScript for test files
 - Jest for unit testing
 - Playwright for end-to-end testing
-- mise for Node.js version management
+- Node.js v22.x LTS
 
 ## Current Project State (March 2026)
 

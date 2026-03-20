@@ -117,6 +117,7 @@ public with sharing class KanbanBoardService {
                 WHERE
                     OpenSF__Column__r.OpenSF__Board__c = :boardId
                     AND LastModifiedDate > :lastSyncTime
+                WITH USER_MODE
                 ORDER BY LastModifiedDate ASC
             ];
 
