@@ -104,8 +104,11 @@ public with sharing class LexoRank {
             ? next.substring(0, next.length() - 1)
             : next;
 
-        // Pad to same length with min char
-        Integer maxLen = Math.max(cleanPrev.length(), cleanNext.length());
+        // Pad to at least DEFAULT_LENGTH
+        Integer maxLen = Math.max(
+            Math.max(cleanPrev.length(), cleanNext.length()),
+            DEFAULT_LENGTH
+        );
         cleanPrev = padRight(cleanPrev, maxLen);
         cleanNext = padRight(cleanNext, maxLen);
 
@@ -131,7 +134,8 @@ public with sharing class LexoRank {
             Integer mid = (p + n) / 2;
             if (mid > p) {
                 result.add(mid);
-                return buildString(result) + ':';
+                String key = buildString(result);
+                return padRight(key, DEFAULT_LENGTH) + ':';
             }
 
             // Adjacent characters: take lower, use max bound going forward
@@ -141,7 +145,8 @@ public with sharing class LexoRank {
 
         // Safety fallback — should not normally be reached
         result.add((minCode + maxCode) / 2);
-        return buildString(result) + ':';
+        String key = buildString(result);
+        return padRight(key, DEFAULT_LENGTH) + ':';
     }
 
     /**
