@@ -14,6 +14,11 @@ import { rootReducer, initialState } from '../state/reducers';
 import * as selectors from '../state/selectors';
 import { createThunkMiddleware } from '../middleware/thunkMiddleware';
 import { createLoggingMiddleware } from '../middleware/loggingMiddleware';
+import {
+    createDevToolsRecorder,
+    createDevToolsMiddleware
+} from '../middleware/devToolsMiddleware';
+import { installDevToolsBridge } from '../devtools/devToolsBridge';
 
 /**
  * KanbanStore class - Redux-style store implementation with middleware
@@ -186,6 +191,17 @@ class KanbanStore {
     }
 
     /**
+     * Apply a state snapshot directly (used by time-travel / undo / redo).
+     * Bypasses the reducer — the state is already computed.
+     * @param {Object} state - State snapshot to apply
+     */
+    _applyState(state) {
+        this._state = { ...state };
+        this._lastDragPosition = null;
+        this._notifySubscribers();
+    }
+
+    /**
      * Reset store to initial state
      */
     reset() {
@@ -199,20 +215,38 @@ class KanbanStore {
  * Create a new store instance with middleware
  * @param {Object} options - Configuration options
  * @param {boolean} options.enableLogging - Enable action logging
+ * @param {boolean} options.enableDevTools - Enable DevTools (history, time-travel, undo/redo)
  * @returns {KanbanStore} New store instance
  */
 export const createStore = (options = {}) => {
     const middlewares = [];
+    let recorder = null;
 
-    // Add thunk middleware (always enabled)
+    // Add thunk middleware (always enabled — must be first to intercept functions)
     middlewares.push(createThunkMiddleware);
+
+    // Add devtools middleware (records actions for time-travel/undo/redo)
+    if (options.enableDevTools !== false) {
+        recorder = createDevToolsRecorder();
+        middlewares.push(createDevToolsMiddleware(recorder));
+    }
 
     // Add logging middleware (optional)
     if (options.enableLogging) {
         middlewares.push(createLoggingMiddleware(true));
     }
 
-    return new KanbanStore(middlewares);
+    const store = new KanbanStore(middlewares);
+
+    // Expose the recorder on the store instance for programmatic access
+    store.devTools = recorder;
+
+    // Install the Chrome DevTools bridge (window.__KANBAN_DEVTOOLS__)
+    if (recorder) {
+        installDevToolsBridge(store, recorder);
+    }
+
+    return store;
 };
 
 export { KanbanStore };

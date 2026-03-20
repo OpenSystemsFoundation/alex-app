@@ -12,6 +12,8 @@
  * - state/selectors.js: Selectors (pure functions that extract/derive data from state)
  * - utils/stateHelpers.js: Helper functions for state transformations
  * - middleware/: Middleware for extending dispatch behavior
+ * - middleware/devToolsMiddleware.js: Action history, time-travel, undo/redo
+ * - devtools/devToolsBridge.js: Chrome DevTools console integration
  * - thunks/: Async action creators for server operations
  *
  * Usage:
@@ -19,10 +21,15 @@
  *   import * as actions from 'c/kanbanStore';
  *   import * as thunks from 'c/kanbanStore';
  *
- *   const store = createStore();
+ *   const store = createStore(); // DevTools enabled by default
  *   store.dispatch(actions.setBoard(boardData));
  *   store.dispatch(thunks.loadBoardData(boardId));
  *   const unsubscribe = store.subscribe((state) => { ... });
+ *
+ *   // Chrome DevTools (open console):
+ *   //   __KANBAN_DEVTOOLS__.help()   — list all commands
+ *   //   __KANBAN_DEVTOOLS__.undo()   — undo last action
+ *   //   __KANBAN_DEVTOOLS__.history() — view action log
  *
  * @module kanbanStore
  */
