@@ -253,6 +253,315 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 ```
 
+### 3. Scratch org test drive (`scratch-org.yml`)
+
+**Trigger:** Manual — spin up a scratch org, deploy, run tests, and get login credentials. No IDE needed.
+
+```yaml
+# .github/workflows/scratch-org.yml
+name: Scratch Org Test Drive
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: 'Scratch org duration in days (1-30)'
+        type: number
+        default: 7
+      branch:
+        description: 'Branch to deploy (default: current)'
+        required: false
+
+jobs:
+  create-scratch:
+    name: Create & Deploy Scratch Org
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
+
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      - name: Authenticate DevHub
+        run: |
+          echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
+          sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
+          rm sfdx_auth.txt
+
+      - name: Create Scratch Org
+        run: |
+          sf org create scratch \
+            --definition-file config/project-scratch-def.json \
+            --alias test-drive \
+            --duration-days ${{ inputs.duration }} \
+            --wait 10
+
+      - name: Deploy Source
+        run: sf project deploy start --target-org test-drive --ignore-conflicts
+
+      - name: Assign Permission Sets
+        run: sf org assign permset --name Alex_Admin --target-org test-drive
+
+      - name: Run Apex Tests
+        run: |
+          sf apex run test --target-org test-drive --code-coverage --result-format human --wait 15 || true
+
+      - name: Generate Login URL
+        id: login
+        run: |
+          LOGIN_URL=$(sf org open --target-org test-drive --url-only 2>&1)
+          echo "::notice::Scratch Org Login URL (valid for ${{ inputs.duration }} days): $LOGIN_URL"
+          echo "login_url=$LOGIN_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Post Summary
+        run: |
+          echo "## Scratch Org Ready" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Branch:** \`${{ inputs.branch || github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Duration:** ${{ inputs.duration }} days" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Login URL:** ${{ steps.login.outputs.login_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "> The login URL is a one-time use link. Bookmark your org after logging in." >> "$GITHUB_STEP_SUMMARY"
+```
+
+### 4. Package version dashboard (`package-versions.yml`)
+
+**Trigger:** Manual — lists all package versions with status, install links, and code coverage.
+
+```yaml
+# .github/workflows/package-versions.yml
+name: Package Versions
+
+on:
+  workflow_dispatch:
+
+jobs:
+  list-versions:
+    name: List Package Versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      - name: Authenticate DevHub
+        run: |
+          echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
+          sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
+          rm sfdx_auth.txt
+
+      - name: List Package Versions
+        run: |
+          RESULT=$(sf package version list \
+            --packages "Alex - A Kanban App" \
+            --verbose \
+            --json)
+
+          node -e "
+            const result = JSON.parse(process.argv[1]);
+            const versions = result.result || [];
+            const fs = require('fs');
+
+            let md = '## Alex Package Versions\n\n';
+            md += '| Version | Build | Status | Coverage | Install URL |\n';
+            md += '|---------|-------|--------|----------|-------------|\n';
+
+            versions
+              .sort((a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate))
+              .forEach(v => {
+                const ver = v.MajorVersion + '.' + v.MinorVersion + '.' + v.PatchVersion;
+                const build = ver + '.' + v.BuildNumber;
+                const status = v.IsReleased ? 'GA' : (v.ValidationSkipped ? 'Beta (unvalidated)' : 'Beta');
+                const coverage = v.CodeCoverage ? v.CodeCoverage.apexCodeCoveragePercentage + '%' : 'N/A';
+                const url = 'https://login.salesforce.com/packaging/installPackage.apexp?p0=' + v.SubscriberPackageVersionId;
+                const link = '[Install](' + url + ')';
+                md += '| ' + ver + ' | ' + build + ' | ' + status + ' | ' + coverage + ' | ' + link + ' |\n';
+              });
+
+            md += '\n> Generated on ' + new Date().toISOString().split('T')[0];
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
+
+            // Also print to console
+            console.log('');
+            versions
+              .sort((a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate))
+              .forEach(v => {
+                const ver = v.MajorVersion + '.' + v.MinorVersion + '.' + v.PatchVersion + '.' + v.BuildNumber;
+                const status = v.IsReleased ? 'GA' : 'Beta';
+                const id = v.SubscriberPackageVersionId;
+                console.log(ver.padEnd(12) + status.padEnd(8) + id);
+              });
+          " "$RESULT"
+```
+
+### 5. Deploy to org (`deploy-to-org.yml`)
+
+**Trigger:** Manual — deploy source to any authenticated org (staging, UAT, production sandbox).
+
+Requires additional auth URL secrets for target orgs (e.g. `STAGING_AUTH_URL`, `UAT_AUTH_URL`).
+
+```yaml
+# .github/workflows/deploy-to-org.yml
+name: Deploy to Org
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_org:
+        description: 'Target org'
+        type: choice
+        options:
+          - staging
+          - uat
+        required: true
+      run_tests:
+        description: 'Run Apex tests after deploy'
+        type: boolean
+        default: true
+      dry_run:
+        description: 'Validate only (do not deploy)'
+        type: boolean
+        default: false
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.target_org }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      - name: Authenticate Target Org
+        run: |
+          SECRET_NAME="${{ inputs.target_org }}"
+          AUTH_URL="${{ inputs.target_org == 'staging' && secrets.STAGING_AUTH_URL || secrets.UAT_AUTH_URL }}"
+          echo "$AUTH_URL" > auth.txt
+          sf org login sfdx-url --sfdx-url-file auth.txt --alias target-org
+          rm auth.txt
+
+      - name: Deploy Source
+        run: |
+          DRY_RUN_FLAG=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+
+          TEST_FLAG=""
+          if [ "${{ inputs.run_tests }}" = "true" ]; then
+            TEST_FLAG="--test-level RunLocalTests"
+          fi
+
+          sf project deploy start \
+            --target-org target-org \
+            --ignore-conflicts \
+            $DRY_RUN_FLAG \
+            $TEST_FLAG \
+            --wait 30
+
+      - name: Post Summary
+        if: always()
+        run: |
+          echo "## Deploy Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Target:** ${{ inputs.target_org }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Dry run:** ${{ inputs.dry_run }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Tests:** ${{ inputs.run_tests }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+```
+
+### 6. Run Apex tests on-demand (`run-apex-tests.yml`)
+
+**Trigger:** Manual — run Apex tests against any authenticated org without deploying.
+
+```yaml
+# .github/workflows/run-apex-tests.yml
+name: Run Apex Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_org:
+        description: 'Target org to run tests against'
+        type: choice
+        options:
+          - scratch (new)
+          - staging
+          - uat
+        default: 'scratch (new)'
+
+jobs:
+  test:
+    name: Apex Tests — ${{ inputs.target_org }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      - name: Authenticate DevHub
+        run: |
+          echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
+          sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
+          rm sfdx_auth.txt
+
+      - name: Setup target org
+        id: setup
+        run: |
+          if [ "${{ inputs.target_org }}" = "scratch (new)" ]; then
+            sf org create scratch \
+              --definition-file config/project-scratch-def.json \
+              --alias test-org \
+              --duration-days 1 \
+              --wait 10
+            sf project deploy start --target-org test-org --ignore-conflicts
+            sf org assign permset --name Alex_Admin --target-org test-org
+            echo "is_scratch=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ inputs.target_org }}" = "staging" ]; then
+            echo "${{ secrets.STAGING_AUTH_URL }}" > auth.txt
+            sf org login sfdx-url --sfdx-url-file auth.txt --alias test-org
+            rm auth.txt
+            echo "is_scratch=false" >> "$GITHUB_OUTPUT"
+          elif [ "${{ inputs.target_org }}" = "uat" ]; then
+            echo "${{ secrets.UAT_AUTH_URL }}" > auth.txt
+            sf org login sfdx-url --sfdx-url-file auth.txt --alias test-org
+            rm auth.txt
+            echo "is_scratch=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run Apex Tests
+        run: |
+          sf apex run test \
+            --target-org test-org \
+            --code-coverage \
+            --result-format human \
+            --wait 15
+
+      - name: Cleanup scratch org
+        if: always() && steps.setup.outputs.is_scratch == 'true'
+        run: sf org delete scratch --target-org test-org --no-prompt || true
+```
+
+## Workflow summary
+
+| Workflow | Trigger | What it does |
+|----------|---------|--------------|
+| **Test** (existing) | Push / PR | Lint, formatting, LWC Jest tests |
+| **Apex Tests** (existing) | Push to main / PR | Scratch org Apex tests with coverage |
+| **Security Scan** (existing) | PR to main | Code analyzer + npm audit |
+| **Release Beta** | Manual (main only) | Create managed beta, post GitHub Release |
+| **Promote to GA** | Manual + approval | Promote beta to GA, create GitHub Release |
+| **Scratch Org Test Drive** | Manual (any branch) | Spin up a scratch org, get login URL |
+| **Package Versions** | Manual | List all versions with status and install links |
+| **Deploy to Org** | Manual | Deploy source to staging/UAT with optional tests |
+| **Run Apex Tests** | Manual | Run Apex tests against any org |
+
 ## Setup required
 
 ### GitHub repository settings
@@ -261,7 +570,11 @@ jobs:
    - Add yourself as a required reviewer
    - This gates the promote-to-GA workflow
 
-2. **Secrets** (already have `SFDX_AUTH_URL`, nothing new needed)
+2. **Secrets**:
+   - `SFDX_AUTH_URL` — DevHub auth (already configured)
+   - `STAGING_AUTH_URL` — staging org auth (optional, needed for Deploy to Org / Run Apex Tests)
+   - `UAT_AUTH_URL` — UAT org auth (optional, same)
+   - Generate auth URLs with: `sf org display --target-org <alias> --verbose` → copy the `Sfdx Auth Url` value
 
 3. **Permissions** — the beta workflow pushes a commit back to main (to update `sfdx-project.json` with the new alias). Ensure the workflow has write permissions: Settings → Actions → General → Workflow permissions → "Read and write permissions"
 
