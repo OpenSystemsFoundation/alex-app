@@ -252,6 +252,20 @@ public with sharing class KanbanCardService {
             if (updates.containsKey('assigneeId')) {
                 card.OpenSF__Assignee__c = (Id) updates.get('assigneeId');
             }
+            if (updates.containsKey('status')) {
+                card.OpenSF__Status__c = (String) updates.get('status');
+            }
+            if (updates.containsKey('cardType')) {
+                card.OpenSF__CardType__c = (String) updates.get('cardType');
+            }
+            if (updates.containsKey('epicId')) {
+                card.OpenSF__Epic__c = (Id) updates.get('epicId');
+            }
+            if (updates.containsKey('peerReviewerId')) {
+                card.OpenSF__PeerReviewer__c = (Id) updates.get(
+                    'peerReviewerId'
+                );
+            }
             if (updates.containsKey('needsRefinement')) {
                 card.OpenSF__NeedsRefinement__c = (Boolean) updates.get(
                     'needsRefinement'
