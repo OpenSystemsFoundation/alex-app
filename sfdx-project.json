@@ -9,6 +9,20 @@
             "package": "Alex - A Kanban App",
             "versionDescription": "Manage your workflows with Alex, a Kanban App. Install for Admin only and assign Alex permission sets to Admins/Users.",
             "definitionFile": "config/default-project-scratch-def.json"
+        },
+        {
+            "path": "force-agentforce",
+            "package": "Alex - Agentforce",
+            "versionName": "ver 1.0",
+            "versionNumber": "1.0.0.NEXT",
+            "versionDescription": "Agentforce AI agent extension for Alex Kanban — sprint planning assistant, retrospective summarizer, smart auto-assignment, natural language board queries.",
+            "definitionFile": "config/default-project-scratch-def.json",
+            "dependencies": [
+                {
+                    "package": "Alex - A Kanban App",
+                    "versionNumber": "2.0.0.LATEST"
+                }
+            ]
         }
     ],
     "name": "OpenSF",
