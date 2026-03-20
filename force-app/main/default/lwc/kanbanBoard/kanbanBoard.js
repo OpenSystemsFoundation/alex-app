@@ -106,8 +106,8 @@ export default class KanbanBoard extends LightningElement {
         if (!hasFilter) return cols;
 
         return cols.map((col) => {
-            // Hide entire Done-category columns when toggle is on
-            if (hideCompleted && col.isDone) {
+            // Hide Done and Released columns when toggle is on
+            if (hideCompleted && col.isCompleted) {
                 return { ...col, cards: [], cardCount: 0, isHidden: true };
             }
 

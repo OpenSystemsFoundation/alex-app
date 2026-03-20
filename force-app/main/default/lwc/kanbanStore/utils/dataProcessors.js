@@ -23,7 +23,9 @@ export const processColumnsData = (columns) => {
         cards: [],
         columnStyle: col.color ? `border-top: 4px solid ${col.color}` : '',
         columnUrl: `/lightning/r/OpenSF__Column__c/${col.Id}/view`,
-        isDone: col.category === 'Done'
+        isDone: col.category === 'Done',
+        isReleased: col.category === 'Released',
+        isCompleted: col.category === 'Done' || col.category === 'Released'
     }));
 };
 

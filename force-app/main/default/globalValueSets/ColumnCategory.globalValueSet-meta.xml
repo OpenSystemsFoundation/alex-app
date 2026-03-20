@@ -15,7 +15,12 @@
         <default>false</default>
         <label>Done</label>
     </customValue>
-    <description>Column category for burndown tracking. Cards moving to a Done-category column are auto-completed in the sprint.</description>
+    <customValue>
+        <fullName>Released</fullName>
+        <default>false</default>
+        <label>Released</label>
+    </customValue>
+    <description>Column category for burndown tracking. Done = development complete (counts for burndown). Released = deployed to production (post-completion, no burndown impact).</description>
     <masterLabel>Column Category</masterLabel>
     <sorted>false</sorted>
 </GlobalValueSet>
