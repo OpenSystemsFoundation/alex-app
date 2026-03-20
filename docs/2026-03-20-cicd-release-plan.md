@@ -36,9 +36,10 @@ Alex is a Salesforce managed package listed on AppExchange (v1.1.1 released, v1.
 
 **What it does:**
 1. Authenticate to DevHub
-2. Create a new managed package version with `--skip-validation` set to false (runs Apex tests in package org)
-3. Tag the version as beta (`sf package version create` produces beta by default)
-4. Post the install URL to a GitHub Release tagged `beta-vX.Y.Z`
+2. Read version number from `sfdx-project.json` (`versionNumber: "2.0.0.NEXT"` → Salesforce auto-increments the build number)
+3. Create a managed beta package version (runs Apex tests unless skipped)
+4. Commit the new package alias back to `sfdx-project.json` so version history stays in source control
+5. Create a GitHub prerelease with the install URL
 
 ```yaml
 # .github/workflows/release-beta.yml
@@ -47,9 +48,6 @@ name: Release Beta Package
 on:
   workflow_dispatch:
     inputs:
-      version_name:
-        description: 'Version name (e.g. ver 2.0 Beta 1)'
-        required: true
       skip_validation:
         description: 'Skip Apex test validation (faster, not promotable)'
         type: boolean
@@ -59,7 +57,6 @@ jobs:
   create-beta:
     name: Create Beta Managed Package
     runs-on: ubuntu-latest
-    # Only allow from main branch
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
@@ -72,6 +69,15 @@ jobs:
           echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
           sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
           rm sfdx_auth.txt
+
+      - name: Read version from sfdx-project.json
+        id: read_version
+        run: |
+          VERSION_NAME=$(node -e "
+            const p = require('./sfdx-project.json');
+            console.log(p.packageDirectories[0].versionName);
+          ")
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Create Package Version
         id: create_version
@@ -86,59 +92,81 @@ jobs:
             --installation-key-bypass \
             --wait 30 \
             --code-coverage \
-            --version-name "${{ inputs.version_name }}" \
             $SKIP_FLAG \
             --json)
 
           echo "$RESULT" | tee version-result.json
 
-          VERSION_ID=$(echo "$RESULT" | node -e "
-            let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
-              const j=JSON.parse(d);
-              console.log(j.result.SubscriberPackageVersionId);
-            });
-          ")
+          # Extract subscriber package version ID (04t...) and version number
+          node -e "
+            const r = JSON.parse(require('fs').readFileSync('version-result.json','utf8'));
+            const id = r.result.SubscriberPackageVersionId;
+            console.log('version_id=' + id);
+            console.log('install_url=https://login.salesforce.com/packaging/installPackage.apexp?p0=' + id);
+          " >> "$GITHUB_OUTPUT"
 
-          echo "version_id=$VERSION_ID" >> "$GITHUB_OUTPUT"
-          echo "install_url=https://login.salesforce.com/packaging/installPackage.apexp?p0=$VERSION_ID" >> "$GITHUB_OUTPUT"
-
-      - name: Get Version Number
+      - name: Get version number from Salesforce
         id: version_info
         run: |
-          INFO=$(sf package version list --packages "Alex - A Kanban App" --json --order-by CreatedDate --verbose | tail -1)
-          VERSION=$(sf package version report --package ${{ steps.create_version.outputs.version_id }} --json | node -e "
-            let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
-              const j=JSON.parse(d);
-              const r=j.result;
-              console.log(r.MajorVersion+'.'+r.MinorVersion+'.'+r.PatchVersion+'.'+r.BuildNumber);
-            });
-          ")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          node -e "
+            const child = require('child_process');
+            const result = JSON.parse(child.execSync(
+              'sf package version report --package ${{ steps.create_version.outputs.version_id }} --json',
+              {encoding:'utf8'}
+            ));
+            const r = result.result;
+            const ver = r.MajorVersion + '.' + r.MinorVersion + '.' + r.PatchVersion;
+            const full = ver + '.' + r.BuildNumber;
+            console.log('version=' + ver);
+            console.log('version_full=' + full);
+          " >> "$GITHUB_OUTPUT"
+
+      - name: Update sfdx-project.json with new alias
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('sfdx-project.json','utf8'));
+            const alias = 'Alex - A Kanban App@${{ steps.version_info.outputs.version_full }}';
+            p.packageAliases[alias] = '${{ steps.create_version.outputs.version_id }}';
+            fs.writeFileSync('sfdx-project.json', JSON.stringify(p, null, 4) + '\n');
+          "
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sfdx-project.json
+          git commit -m "chore: add package alias for v${{ steps.version_info.outputs.version_full }} [skip ci]"
+          git push
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: beta-v${{ steps.version_info.outputs.version }}
-          name: "Alex Beta v${{ steps.version_info.outputs.version }}"
+          tag_name: v${{ steps.version_info.outputs.version }}-beta
+          name: "Alex v${{ steps.version_info.outputs.version }} Beta"
           body: |
-            **Beta managed package** — ${{ inputs.version_name }}
+            **Beta managed package** — ${{ steps.read_version.outputs.version_name }}
 
             **Install URL:** ${{ steps.create_version.outputs.install_url }}
+            **Package Version ID:** `${{ steps.create_version.outputs.version_id }}`
+            **Salesforce Version:** ${{ steps.version_info.outputs.version_full }}
 
-            > Beta packages can be installed in sandbox and Developer Edition orgs for testing.
-            > This version has NOT been promoted to GA and is not suitable for production.
+            ### Install in a sandbox or Developer Edition org:
+            1. Log in to your org
+            2. Navigate to: ${{ steps.create_version.outputs.install_url }}
+            3. Select "Install for Admins Only" (recommended)
+            4. Assign the `Alex_Admin` or `Alex_User` permission set
+
+            > This is a beta version and has NOT been promoted for production use.
           prerelease: true
 ```
 
 ### 2. Promote to GA workflow (`promote-release.yml`)
 
-**Trigger:** Manual with required approval via GitHub Environment
+**Trigger:** Manual — requires approval via GitHub `production` Environment
 
 **What it does:**
-1. Takes a package version ID (from a previous beta)
-2. Requires approval from the `production` GitHub Environment (you approve in the GitHub UI)
-3. Promotes the version with `sf package version promote`
-4. Creates a GA GitHub Release
+1. Lists all beta versions and lets you pick by version number (no need to look up 04t IDs)
+2. Requires approval in the GitHub UI before promoting
+3. Promotes the beta to GA with `sf package version promote`
+4. Creates a production GitHub Release with install link
 
 ```yaml
 # .github/workflows/promote-release.yml
@@ -147,18 +175,15 @@ name: Promote to GA Release
 on:
   workflow_dispatch:
     inputs:
-      package_version_id:
-        description: 'Package Version ID to promote (04t...)'
-        required: true
-      version_label:
-        description: 'Version label (e.g. 2.0.0)'
+      version:
+        description: 'Version to promote (e.g. 2.0.0) — must have a beta already created'
         required: true
 
 jobs:
   promote:
     name: Promote Managed Package to GA
     runs-on: ubuntu-latest
-    environment: production  # <-- Requires manual approval in GitHub
+    environment: production
     steps:
       - uses: actions/checkout@v4
 
@@ -171,24 +196,61 @@ jobs:
           sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
           rm sfdx_auth.txt
 
+      - name: Find package version ID
+        id: find_version
+        run: |
+          # Find the latest build for this major.minor.patch version
+          node -e "
+            const child = require('child_process');
+            const result = JSON.parse(child.execSync(
+              'sf package version list --packages \"Alex - A Kanban App\" --json --verbose',
+              {encoding:'utf8'}
+            ));
+            const [major, minor, patch] = '${{ inputs.version }}'.split('.').map(Number);
+            const match = result.result
+              .filter(v => v.MajorVersion === major && v.MinorVersion === minor && v.PatchVersion === patch)
+              .filter(v => !v.IsReleased)
+              .sort((a, b) => b.BuildNumber - a.BuildNumber)[0];
+            if (!match) {
+              console.error('No unreleased beta found for v${{ inputs.version }}');
+              process.exit(1);
+            }
+            console.log('version_id=' + match.SubscriberPackageVersionId);
+            console.log('version_full=' + major + '.' + minor + '.' + patch + '.' + match.BuildNumber);
+          " >> "$GITHUB_OUTPUT"
+
       - name: Promote Package Version
         run: |
           sf package version promote \
-            --package ${{ inputs.package_version_id }} \
+            --package ${{ steps.find_version.outputs.version_id }} \
             --no-prompt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ inputs.version_label }}
-          name: "Alex v${{ inputs.version_label }}"
+          tag_name: v${{ inputs.version }}
+          name: "Alex v${{ inputs.version }}"
           body: |
-            **GA Release** — Alex v${{ inputs.version_label }}
+            **GA Release** — Alex v${{ inputs.version }}
 
-            **Install URL:** https://login.salesforce.com/packaging/installPackage.apexp?p0=${{ inputs.package_version_id }}
+            **Install URL:** https://login.salesforce.com/packaging/installPackage.apexp?p0=${{ steps.find_version.outputs.version_id }}
+            **Package Version ID:** `${{ steps.find_version.outputs.version_id }}`
+
+            ### Install in any Salesforce org:
+            1. Log in to your org
+            2. Navigate to: https://login.salesforce.com/packaging/installPackage.apexp?p0=${{ steps.find_version.outputs.version_id }}
+            3. Select "Install for Admins Only" (recommended)
+            4. Assign the `Alex_Admin` or `Alex_User` permission set
 
             This is a promoted, production-ready managed package version.
           prerelease: false
+
+      - name: Delete beta prerelease tag
+        run: |
+          gh release delete "v${{ inputs.version }}-beta" --yes || true
+          git push --delete origin "v${{ inputs.version }}-beta" || true
+        env:
+          GH_TOKEN: ${{ github.token }}
 ```
 
 ## Setup required
@@ -201,9 +263,20 @@ jobs:
 
 2. **Secrets** (already have `SFDX_AUTH_URL`, nothing new needed)
 
+3. **Permissions** — the beta workflow pushes a commit back to main (to update `sfdx-project.json` with the new alias). Ensure the workflow has write permissions: Settings → Actions → General → Workflow permissions → "Read and write permissions"
+
 ### sfdx-project.json
 
-No changes needed. The `ancestorVersion: "HIGHEST"` setting already ensures new versions build on top of the latest released ancestor.
+No changes needed. The `ancestorVersion: "HIGHEST"` setting already ensures new versions build on top of the latest released ancestor. The `versionNumber: "2.0.0.NEXT"` auto-increments the build number. To bump major/minor/patch, update this field manually before creating a beta.
+
+### Versioning
+
+Versions are driven by `sfdx-project.json`:
+
+- **Major/minor/patch** — you control these by editing `versionNumber` (e.g. `"2.0.0.NEXT"` → `"2.1.0.NEXT"`)
+- **Build number** — Salesforce auto-increments via `.NEXT`
+- **GitHub tags** — beta creates `v2.0.0-beta`, GA promotion creates `v2.0.0` (and cleans up the beta tag)
+- **Package aliases** — the beta workflow auto-commits new aliases to `sfdx-project.json` so version history stays in source control
 
 ## Release flow (how it all fits together)
 
@@ -236,6 +309,10 @@ Merge to main
 
 2. **Beta before GA** — you always create a beta first, test it, then promote. You can never go straight from code to GA. This matches your current manual flow, just automated.
 
-3. **GitHub Environments for approval gating** — native GitHub feature, no third-party tools needed. You get an email, click approve in the UI, and the promotion runs.
+3. **Version numbers come from Salesforce** — `sfdx-project.json` is the single source of truth. The workflows read from it and write back to it. GitHub Release tags match the Salesforce version.
 
-4. **`--installation-key-bypass`** — since the app is free and open-source, no install key required. Change this if you ever need install keys.
+4. **GitHub Environments for approval gating** — native GitHub feature, no third-party tools needed. You get an email, click approve in the UI, and the promotion runs.
+
+5. **GA promotion cleans up beta tags** — when you promote `v2.0.0-beta` to GA, the workflow deletes the beta prerelease and creates a clean `v2.0.0` release. Your GitHub Releases page stays tidy.
+
+6. **`--installation-key-bypass`** — since the app is free and open-source, no install key required. Change this if you ever need install keys.
