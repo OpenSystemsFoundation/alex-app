@@ -20,6 +20,7 @@ public with sharing class PlanningPokerController {
                         OpenSF__UserId__c,
                         OpenSF__Avatar__c,
                         OpenSF__Role__c,
+                        OpenSF__Vote__c,
                         OpenSF__HasVoted__c,
                         OpenSF__IsActive__c
                     FROM OpenSF__Participants__r
