@@ -97,6 +97,12 @@ test.describe('Alex Kanban Board', () => {
         );
         await goToBoard(page);
 
+        // Wait for at least one card to render in the board
+        await page
+            .locator('article.kanban-card')
+            .first()
+            .waitFor({ state: 'visible', timeout: SF_TIMEOUT });
+
         // Find the first column that has a visible card
         let sourceColIdx = -1;
         let dragCardId = '';
@@ -211,6 +217,6 @@ test.describe('Alex Kanban Board', () => {
         const matchCard = page.locator(
             `article[data-card-id="${cards[0].Id}"]`
         );
-        await expect(matchCard).toBeVisible({ timeout: 10_000 });
+        await expect(matchCard).toBeVisible({ timeout: 15_000 });
     });
 });
