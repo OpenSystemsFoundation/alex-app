@@ -23,10 +23,15 @@ test.describe('Alex Kanban Board', () => {
         }
 
         // Login via frontdoor URL
-        await page.goto(loginUrl, { waitUntil: 'networkidle', timeout: LOGIN_TIMEOUT });
+        await page.goto(loginUrl, {
+            waitUntil: 'networkidle',
+            timeout: LOGIN_TIMEOUT
+        });
 
         // Wait for Lightning Experience to load
-        await page.waitForSelector('one-app-nav-bar', { timeout: LOGIN_TIMEOUT });
+        await page.waitForSelector('one-app-nav-bar', {
+            timeout: LOGIN_TIMEOUT
+        });
     });
 
     test('loads the app tab', async ({ page }) => {
@@ -48,8 +53,12 @@ test.describe('Alex Kanban Board', () => {
         });
 
         // Board should have at least one column
-        const columns = page.locator('c-kanban-column, [data-id="kanban-column"]');
-        await expect(columns.first()).toBeVisible({ timeout: LWC_LOAD_TIMEOUT });
+        const columns = page.locator(
+            'c-kanban-column, [data-id="kanban-column"]'
+        );
+        await expect(columns.first()).toBeVisible({
+            timeout: LWC_LOAD_TIMEOUT
+        });
         expect(await columns.count()).toBeGreaterThan(0);
     });
 
