@@ -18,6 +18,6 @@
         <type>Text</type>
     </nameField>
     <pluralLabel>Poker Participants</pluralLabel>
-    <sharingModel>ReadWrite</sharingModel>
+    <sharingModel>ControlledByParent</sharingModel>
     <visibility>Public</visibility>
 </CustomObject>
