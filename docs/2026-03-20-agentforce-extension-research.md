@@ -17,7 +17,29 @@ Agentforce is Salesforce's agentic AI platform that enables organizations to bui
 - **Topics (GenAiPlugin)** — categories of related actions for a specific job
 - **Agent Templates** — packageable, distributable agent definitions
 
-Agents leverage live CRM data, execute Flows and Apex, and can autonomously update records.
+Agents leverage live CRM data, execute Flows and Apex, and can autonomously update records. Powered by the **Atlas Reasoning Engine** (NLP + specialized LLMs).
+
+### Agentforce Evolution Timeline
+
+| Date | Milestone |
+|---|---|
+| Oct 2024 | Agentforce launch |
+| Dec 2024 | Agentforce 2 (improved Atlas Reasoning Engine) |
+| Mar 2025 | Agentforce 2dx (proactive trigger-based agents) + **AgentExchange marketplace** launch |
+| Jun 2025 | Agentforce 3 (interoperability, governance) |
+| Dreamforce 2025 | Agentforce 360 GA — "most significant expansion of the Salesforce Platform for partners since Force.com" |
+| Jan 2026 | Agentforce 360 updates — Builder, Agent Script (API v65+), Voice, Intelligent Context |
+
+### ISV / Partner Integration
+
+Salesforce opened Agentforce 360 to ISVs. Partners can build, distribute, and monetize agentic applications. Two distribution channels:
+
+1. **AppExchange** — traditional managed package listing (free or paid)
+2. **AgentExchange** ([agentexchange.salesforce.com](https://agentexchange.salesforce.com)) — Agentforce-specific marketplace supporting four component types:
+   - **Actions** — new integrations (Apex, flows, APIs, prompts)
+   - **Prompt Templates** — reusable prompts
+   - **Topics** — grouped actions with instructions
+   - **Agent Templates** — full solutions combining topics, actions, metadata, and instructions
 
 ## 2. Agentforce Metadata Types (Packageable in 2GP)
 
@@ -28,9 +50,11 @@ As of Spring '26 (API v66.0), the following Agentforce metadata types are offici
 | **Bot** | Base chatbot/agent definition | 45.0+ |
 | **BotVersion** | Versioned bot configuration | 45.0+ |
 | **GenAiPlannerBundle** | Agent planner (replaces GenAiPlanner) — container for all topics and actions | 64.0+ |
-| **GenAiPlugin** | Agent Topic — a category of related actions | 62.0+ |
-| **GenAiFunction** | Agent Action — individual action the agent can perform | 62.0+ |
-| **GenAiPromptTemplate** | Prompt template for LLM interactions | 61.0+ |
+| **GenAiPlugin** | Agent Topic — a category of related actions | 60.0+ |
+| **GenAiFunction** | Agent Action — individual action the agent can perform | 60.0+ |
+| **GenAiPromptTemplate** | Prompt template for LLM interactions | 60.0+ |
+| **LightningTypeBundle** | Custom Lightning types for action I/O | 62.0+ |
+| **AiAuthoringBundle** | Agent Script blueprint | 65.0+ |
 
 ### Metadata Hierarchy
 
@@ -138,13 +162,20 @@ Since we control both packages and they're in the same repo/Dev Hub, sharing the
 - **You CAN list a free extension** that depends on a free base package
 - **License gating:** The extension can check for Agentforce licenses at runtime and gracefully degrade if not present (since Agentforce requires specific Salesforce licenses/permission sets)
 
+### Free Listing Policy — Important Detail
+
+Salesforce's policy states: a free app must be genuinely free and fully functional with no hidden paywalls. A "free" listing **cannot require the customer to purchase another application from the same partner**. Since both the base Alex app and this extension are free, this is not a problem — both are genuinely free.
+
+If you later wanted to charge for the extension, it would become "freemium" and require a Salesforce commercial agreement (15% PNR revenue share).
+
 ### Recommended Approach
 
-1. **List the Agentforce extension as a FREE AppExchange package**
-2. It declares a dependency on the base "Alex" package
-3. At runtime, Apex checks for Agentforce entitlements — if the org doesn't have Agentforce, the agent features simply don't activate
-4. This is a value-add for Alex users who happen to have Agentforce — zero friction
-5. If you ever want to monetize later, you can switch the listing to Freemium or Paid
+1. **List the Agentforce extension as a FREE package on both AppExchange and AgentExchange**
+2. **AgentExchange** is the better discovery channel — it's specifically for Agentforce customers
+3. The extension declares a dependency on the base "Alex" package
+4. Natural gating: the agent metadata (GenAiFunction, etc.) only works if the org has Agentforce — no custom license checks needed
+5. This is a value-add for Alex users who happen to have Agentforce — zero friction
+6. If you ever want to monetize later, you can switch the listing to Freemium or Paid
 
 ## 5. Project Structure — Restructuring Plan
 
@@ -297,3 +328,10 @@ The AGENTS.md says test classes should be in `force-app/main/default/classes/tes
 - [AppExchange Pricing & Monetization — MagicFuse](https://magicfuse.co/blog/appexchange-pricing-and-monetisation)
 - [2GP Two Packages One Namespace — Foglight Solutions](https://www.foglightsolutions.com/blog/2gp_multiple_packages/)
 - [Share Namespace with Multiple 2GP Packages](https://medium.com/@bobmatt3/salesforce-2gp-share-a-single-namespace-with-multiple-packages-cd5c6317384)
+- [AgentExchange Marketplace](https://agentexchange.salesforce.com/)
+- [AgentExchange Announcement — Salesforce](https://www.salesforce.com/news/press-releases/2025/03/04/agentexchange-announcement/)
+- [Salesforce Opens Agentforce 360 to ISVs — Salesforce Ben](https://www.salesforceben.com/salesforce-opens-agentforce-360-to-isvs-so-partners-can-build-and-distribute-ai-agents/)
+- [Agentforce 360 Features — Salesforce Developers Blog](https://developer.salesforce.com/blogs/2025/10/build-and-optimize-agents-with-new-agentforce-360-features)
+- [Free AppExchange Listing Policy — Aquiva Labs](https://aquivalabs.com/the-truth-about-free-appexchange-listings-a-guide-for-prospective-salesforce-isv-partners/)
+- [Agentforce Implementation for ISVs — CEPTES](https://ceptes.com/blogs/agentforce-implementation-for-isvs-harnessing-ai-to-transform-salesforce-apps/)
+- [Namespace Behavior in 2GP — Greytrix](https://www.greytrix.com/blogs/salesforce/2026/01/13/understanding-namespace-behavior-in-salesforce-second-generation-packaging-2gp/)
