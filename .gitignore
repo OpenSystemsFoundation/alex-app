@@ -86,3 +86,4 @@ playwright/.cache/
 # Playwright Traces
 trace.zip
 apex-test-results.json
+e2e/.auth/

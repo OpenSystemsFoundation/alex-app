@@ -2,11 +2,26 @@
 const { execSync } = require('child_process');
 
 /**
- * Helpers for interacting with Salesforce data via the SF CLI
+ * Helpers for querying Salesforce data via the SF CLI
  * during Playwright E2E tests.
  */
 
-const TARGET_ORG = 'e2e-test';
+const TARGET_ORG = process.env.SF_TARGET_ORG || 'e2e-test';
+
+/** Env passed to sf CLI — disables color output so JSON is clean */
+const SF_ENV = { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' };
+
+/**
+ * Shell-escape a string for use in a command passed to execSync.
+ * @param {string} str
+ * @returns {string}
+ */
+function shellQuote(str) {
+    if (process.platform === 'win32') {
+        return `"${str.replace(/"/g, '\\"')}"`;
+    }
+    return `'${str.replace(/'/g, "'\\''")}'`;
+}
 
 /**
  * Extract the first valid JSON object from CLI output that may contain
@@ -15,10 +30,37 @@ const TARGET_ORG = 'e2e-test';
  * @returns {object}
  */
 function parseJsonFromOutput(raw) {
-    const start = raw.indexOf('{');
-    if (start === -1) throw new Error(`No JSON found in output: ${raw}`);
-    const jsonStr = raw.substring(start);
-    return JSON.parse(jsonStr);
+    // Strip any ANSI escape codes
+    // eslint-disable-next-line no-control-regex
+    raw = raw.replace(/\x1B\[[0-9;]*m/g, '');
+
+    // Try each `{` position until JSON.parse succeeds
+    let pos = 0;
+    while (pos < raw.length) {
+        const start = raw.indexOf('{', pos);
+        if (start === -1) break;
+
+        let depth = 0;
+        let end = -1;
+        for (let i = start; i < raw.length; i++) {
+            if (raw[i] === '{') depth++;
+            else if (raw[i] === '}') {
+                depth--;
+                if (depth === 0) {
+                    end = i + 1;
+                    break;
+                }
+            }
+        }
+        if (end === -1) break;
+
+        try {
+            return JSON.parse(raw.substring(start, end));
+        } catch {
+            pos = start + 1;
+        }
+    }
+    throw new Error(`No valid JSON found in output: ${raw}`);
 }
 
 /**
@@ -28,8 +70,8 @@ function parseJsonFromOutput(raw) {
  */
 function sfQuery(query) {
     const raw = execSync(
-        `sf data query --query "${query}" --target-org ${TARGET_ORG} --json`,
-        { encoding: 'utf8', timeout: 30_000 }
+        `sf data query --query ${shellQuote(query)} --target-org ${TARGET_ORG} --json`,
+        { encoding: 'utf8', timeout: 30_000, env: SF_ENV }
     );
     const json = parseJsonFromOutput(raw);
     return json.result?.records || [];
@@ -37,35 +79,24 @@ function sfQuery(query) {
 
 /**
  * Update a record via SF CLI.
- * @param {string} sobject - e.g. 'OpenSF__Card__c'
+ * @param {string} sobject
  * @param {string} recordId
- * @param {string} values - e.g. 'OpenSF__Subject__c="Updated subject"'
+ * @param {string} values
  */
 function sfUpdate(sobject, recordId, values) {
     execSync(
-        `sf data update record --sobject ${sobject} --record-id ${recordId} --values "${values}" --target-org ${TARGET_ORG} --json`,
-        { encoding: 'utf8', timeout: 30_000 }
+        `sf data update record --sobject ${sobject} --record-id ${recordId} --values ${shellQuote(values)} --target-org ${TARGET_ORG} --json`,
+        { encoding: 'utf8', timeout: 30_000, env: SF_ENV }
     );
 }
 
 /**
- * Create a record via SF CLI and return its Id.
- * @param {string} sobject
- * @param {string} values - e.g. 'Name="Card-001" OpenSF__Column__c=a01...'
- * @returns {string} record Id
- */
-function sfCreate(sobject, values) {
-    const raw = execSync(
-        `sf data create record --sobject ${sobject} --values "${values}" --target-org ${TARGET_ORG} --json`,
-        { encoding: 'utf8', timeout: 30_000 }
-    );
-    const json = parseJsonFromOutput(raw);
-    return json.result?.id || '';
-}
-
-/**
- * Get the Board Id and column Ids for the sample board.
- * @returns {{ boardId: string, columns: Array<{Id: string, header: string}> }}
+ * Get the most recent Board and its columns + cards from the scratch org.
+ * @returns {{
+ *   boardId: string,
+ *   columns: Array<{Id: string, header: string}>,
+ *   cards: Array<{Id: string, Name: string, Subject: string, ColumnId: string}>
+ * }}
  */
 function getSampleBoardData() {
     const boards = sfQuery(
@@ -74,8 +105,13 @@ function getSampleBoardData() {
     if (!boards.length) throw new Error('No board found in scratch org');
 
     const boardId = boards[0].Id;
+
     const columns = sfQuery(
         `SELECT Id, OpenSF__ColumnHeader__c FROM OpenSF__Column__c WHERE OpenSF__Board__c = '${boardId}' ORDER BY OpenSF__LexoRankPosition__c`
+    );
+
+    const cards = sfQuery(
+        `SELECT Id, Name, OpenSF__Subject__c, OpenSF__Column__c FROM OpenSF__Card__c WHERE OpenSF__Column__r.OpenSF__Board__c = '${boardId}' ORDER BY OpenSF__LexoRankPosition__c LIMIT 10`
     );
 
     return {
@@ -83,30 +119,18 @@ function getSampleBoardData() {
         columns: columns.map((c) => ({
             Id: c.Id,
             header: c.OpenSF__ColumnHeader__c
+        })),
+        cards: cards.map((c) => ({
+            Id: c.Id,
+            Name: c.Name,
+            Subject: c.OpenSF__Subject__c,
+            ColumnId: c.OpenSF__Column__c
         }))
     };
-}
-
-/**
- * Create test cards in a given column and return their Ids.
- * @param {string} columnId
- * @param {string[]} names
- * @returns {string[]} card Ids
- */
-function createTestCards(columnId, names) {
-    return names.map((name, i) => {
-        const position = `0|h${String(i + 1).padStart(5, '0')}:`;
-        return sfCreate(
-            'OpenSF__Card__c',
-            `Name="${name}" OpenSF__Column__c=${columnId} OpenSF__Subject__c="${name} subject" OpenSF__LexoRankPosition__c="${position}"`
-        );
-    });
 }
 
 module.exports = {
     sfQuery,
     sfUpdate,
-    sfCreate,
-    getSampleBoardData,
-    createTestCards
+    getSampleBoardData
 };
