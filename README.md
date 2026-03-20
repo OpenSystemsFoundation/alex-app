@@ -6,7 +6,10 @@
   **A modern, real-time collaborative Kanban board built with Lightning Web Components**
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-  [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-v64.0-blue.svg)](https://developer.salesforce.com)
+  [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-v66.0-blue.svg)](https://developer.salesforce.com)
+  [![Test](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/test.yml/badge.svg)](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/test.yml)
+  [![Apex Tests](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/apex-tests.yml/badge.svg)](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/apex-tests.yml)
+  [![Security Scan](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/security-scan.yml/badge.svg)](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/security-scan.yml)
 </div>
 
 ## 📋 Overview
@@ -241,6 +244,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - Built by [Open Systems Foundation](https://github.com/OpenSystemsFoundation)
+- Development assisted by [Claude](https://claude.ai) (Anthropic) — AI pair programming for architecture, implementation, and testing
 - Inspired by modern Kanban methodology
 - Powered by Salesforce Platform
 
