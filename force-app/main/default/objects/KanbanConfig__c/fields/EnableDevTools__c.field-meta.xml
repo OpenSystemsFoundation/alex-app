@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>EnableDevTools__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+    >When enabled, activates the Redux DevTools layer (action history, time-travel, undo/redo, Chrome console bridge). Disabled by default — do NOT enable in production as it exposes internal state to the browser console.</description>
+    <inlineHelpText
+    >Enable Redux DevTools for debugging (disable in production)</inlineHelpText>
+    <label>Enable DevTools</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

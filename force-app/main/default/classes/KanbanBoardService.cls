@@ -229,6 +229,7 @@ public with sharing class KanbanBoardService {
         OpenSF__KanbanConfig__c cfg = OpenSF__KanbanConfig__c.getInstance();
         if (cfg != null) {
             result.showDebugInfo = cfg.OpenSF__ShowDebugInfo__c == true;
+            result.enableDevTools = cfg.OpenSF__EnableDevTools__c == true;
         }
         return result;
     }

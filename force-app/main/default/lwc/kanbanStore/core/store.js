@@ -191,17 +191,6 @@ class KanbanStore {
     }
 
     /**
-     * Apply a state snapshot directly (used by time-travel / undo / redo).
-     * Bypasses the reducer — the state is already computed.
-     * @param {Object} state - State snapshot to apply
-     */
-    _applyState(state) {
-        this._state = { ...state };
-        this._lastDragPosition = null;
-        this._notifySubscribers();
-    }
-
-    /**
      * Reset store to initial state
      */
     reset() {
@@ -209,27 +198,55 @@ class KanbanStore {
         this._lastDragPosition = null;
         this._notifySubscribers();
     }
+
+    /**
+     * Hot-plug DevTools into an already-running store.
+     * Called when the EnableDevTools__c custom setting is true.
+     * Rebuilds the middleware chain to include the recorder,
+     * installs the Chrome console bridge, and exposes _applyState
+     * for time-travel. Safe to call multiple times (no-ops after first).
+     */
+    enableDevTools() {
+        if (this.devTools) return; // already enabled
+
+        const recorder = createDevToolsRecorder();
+        this.devTools = recorder;
+
+        // Rebuild middleware chain with devtools inserted
+        this._middlewares.push(createDevToolsMiddleware(recorder));
+        this._dispatchChain = this._buildDispatchChain();
+
+        // Install Chrome console bridge
+        installDevToolsBridge(this, recorder);
+    }
+
+    /**
+     * Apply a state snapshot directly (used by time-travel / undo / redo).
+     * Only functional when DevTools are enabled.
+     * @param {Object} state - State snapshot to apply
+     */
+    _applyState(state) {
+        if (!this.devTools) return; // no-op when devtools disabled
+        this._state = { ...state };
+        this._lastDragPosition = null;
+        this._notifySubscribers();
+    }
 }
 
 /**
- * Create a new store instance with middleware
+ * Create a new store instance with middleware.
+ * DevTools are OFF by default — call store.enableDevTools() when
+ * the EnableDevTools__c custom setting is true.
+ *
  * @param {Object} options - Configuration options
  * @param {boolean} options.enableLogging - Enable action logging
- * @param {boolean} options.enableDevTools - Enable DevTools (history, time-travel, undo/redo)
  * @returns {KanbanStore} New store instance
  */
 export const createStore = (options = {}) => {
     const middlewares = [];
-    let recorder = null;
 
     // Add thunk middleware (always enabled — must be first to intercept functions)
     middlewares.push(createThunkMiddleware);
-
-    // Add devtools middleware (records actions for time-travel/undo/redo)
-    if (options.enableDevTools !== false) {
-        recorder = createDevToolsRecorder();
-        middlewares.push(createDevToolsMiddleware(recorder));
-    }
 
     // Add logging middleware (optional)
     if (options.enableLogging) {
@@ -238,13 +255,8 @@ export const createStore = (options = {}) => {
 
     const store = new KanbanStore(middlewares);
 
-    // Expose the recorder on the store instance for programmatic access
-    store.devTools = recorder;
-
-    // Install the Chrome DevTools bridge (window.__KANBAN_DEVTOOLS__)
-    if (recorder) {
-        installDevToolsBridge(store, recorder);
-    }
+    // devTools starts as null — enabled later via store.enableDevTools()
+    store.devTools = null;
 
     return store;
 };

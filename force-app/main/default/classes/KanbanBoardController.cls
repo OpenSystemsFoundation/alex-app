@@ -512,6 +512,8 @@ public with sharing class KanbanBoardController {
     public class KanbanConfigResult {
         @AuraEnabled
         public Boolean showDebugInfo = false;
+        @AuraEnabled
+        public Boolean enableDevTools = false;
     }
 
     /**

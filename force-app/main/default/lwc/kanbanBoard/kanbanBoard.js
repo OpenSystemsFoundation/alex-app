@@ -74,6 +74,10 @@ export default class KanbanBoard extends LightningElement {
     get store() {
         if (!this._store) {
             this._store = createStore();
+            // Enable devtools if config already arrived (wire fired before connectedCallback)
+            if (this._enableDevTools) {
+                this._store.enableDevTools();
+            }
         }
         return this._store;
     }
@@ -174,6 +178,11 @@ export default class KanbanBoard extends LightningElement {
     wiredConfig({ data }) {
         if (data) {
             this._showDebugInfo = data.showDebugInfo === true;
+            this._enableDevTools = data.enableDevTools === true;
+            // Enable devtools if store already exists (wire fired after connectedCallback)
+            if (this._enableDevTools && this._store) {
+                this._store.enableDevTools();
+            }
         }
     }
 
