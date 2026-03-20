@@ -5,7 +5,8 @@
   
   **A modern, real-time collaborative Kanban board built with Lightning Web Components**
   
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+  [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE-MIT)
   [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-v66.0-blue.svg)](https://developer.salesforce.com)
   [![Test](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/test.yml/badge.svg)](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/test.yml)
   [![Apex Tests](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/apex-tests.yml/badge.svg)](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/apex-tests.yml)
@@ -239,7 +240,10 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is dual-licensed — you may use it under either license at your choice:
+
+- **Apache License 2.0** — See [LICENSE](LICENSE)
+- **MIT License** — See [LICENSE-MIT](LICENSE-MIT)
 
 ## 🙏 Acknowledgments
 
