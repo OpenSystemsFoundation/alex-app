@@ -1,0 +1,66 @@
+name: Scratch Org Test Drive
+
+on:
+    workflow_dispatch:
+        inputs:
+            duration:
+                description: 'Scratch org duration in days (1-30)'
+                type: number
+                default: 7
+            branch:
+                description: 'Branch to deploy (default: current)'
+                required: false
+
+jobs:
+    create-scratch:
+        name: Create & Deploy Scratch Org
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  ref: ${{ inputs.branch || github.ref }}
+
+            - name: Install Salesforce CLI
+              run: npm install -g @salesforce/cli
+
+            - name: Authenticate DevHub
+              run: |
+                  echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
+                  sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
+                  rm sfdx_auth.txt
+
+            - name: Create Scratch Org
+              run: |
+                  sf org create scratch \
+                    --definition-file config/project-scratch-def.json \
+                    --alias test-drive \
+                    --duration-days ${{ inputs.duration }} \
+                    --wait 10
+
+            - name: Deploy Source
+              run: sf project deploy start --target-org test-drive --ignore-conflicts
+
+            - name: Assign Permission Sets
+              run: sf org assign permset --name Alex_Admin --target-org test-drive
+
+            - name: Run Apex Tests
+              run: |
+                  sf apex run test --target-org test-drive --code-coverage --result-format human --wait 15 || true
+
+            - name: Generate Login URL
+              id: login
+              run: |
+                  LOGIN_URL=$(sf org open --target-org test-drive --url-only 2>&1)
+                  echo "::notice::Scratch Org Login URL (valid for ${{ inputs.duration }} days): $LOGIN_URL"
+                  echo "login_url=$LOGIN_URL" >> "$GITHUB_OUTPUT"
+
+            - name: Post Summary
+              run: |
+                  echo "## Scratch Org Ready" >> "$GITHUB_STEP_SUMMARY"
+                  echo "" >> "$GITHUB_STEP_SUMMARY"
+                  echo "**Branch:** \`${{ inputs.branch || github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+                  echo "**Duration:** ${{ inputs.duration }} days" >> "$GITHUB_STEP_SUMMARY"
+                  echo "" >> "$GITHUB_STEP_SUMMARY"
+                  echo "**Login URL:** ${{ steps.login.outputs.login_url }}" >> "$GITHUB_STEP_SUMMARY"
+                  echo "" >> "$GITHUB_STEP_SUMMARY"
+                  echo "> The login URL is a one-time use link. Bookmark your org after logging in." >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,81 @@
+name: Promote to GA Release
+
+on:
+    workflow_dispatch:
+        inputs:
+            version:
+                description: 'Version to promote (e.g. 2.0.0) — must have a beta already created'
+                required: true
+
+jobs:
+    promote:
+        name: Promote Managed Package to GA
+        runs-on: ubuntu-latest
+        environment: production
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install Salesforce CLI
+              run: npm install -g @salesforce/cli
+
+            - name: Authenticate DevHub
+              run: |
+                  echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
+                  sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
+                  rm sfdx_auth.txt
+
+            - name: Find package version ID
+              id: find_version
+              run: |
+                  # Find the latest build for this major.minor.patch version
+                  node -e "
+                    const child = require('child_process');
+                    const result = JSON.parse(child.execSync(
+                      'sf package version list --packages \"Alex - A Kanban App\" --json --verbose',
+                      {encoding:'utf8'}
+                    ));
+                    const [major, minor, patch] = '${{ inputs.version }}'.split('.').map(Number);
+                    const match = result.result
+                      .filter(v => v.MajorVersion === major && v.MinorVersion === minor && v.PatchVersion === patch)
+                      .filter(v => !v.IsReleased)
+                      .sort((a, b) => b.BuildNumber - a.BuildNumber)[0];
+                    if (!match) {
+                      console.error('No unreleased beta found for v${{ inputs.version }}');
+                      process.exit(1);
+                    }
+                    console.log('version_id=' + match.SubscriberPackageVersionId);
+                    console.log('version_full=' + major + '.' + minor + '.' + patch + '.' + match.BuildNumber);
+                  " >> "$GITHUB_OUTPUT"
+
+            - name: Promote Package Version
+              run: |
+                  sf package version promote \
+                    --package ${{ steps.find_version.outputs.version_id }} \
+                    --no-prompt
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: v${{ inputs.version }}
+                  name: 'Alex v${{ inputs.version }}'
+                  body: |
+                      **GA Release** — Alex v${{ inputs.version }}
+
+                      **Install URL:** https://login.salesforce.com/packaging/installPackage.apexp?p0=${{ steps.find_version.outputs.version_id }}
+                      **Package Version ID:** `${{ steps.find_version.outputs.version_id }}`
+
+                      ### Install in any Salesforce org:
+                      1. Log in to your org
+                      2. Navigate to: https://login.salesforce.com/packaging/installPackage.apexp?p0=${{ steps.find_version.outputs.version_id }}
+                      3. Select "Install for Admins Only" (recommended)
+                      4. Assign the `Alex_Admin` or `Alex_User` permission set
+
+                      This is a promoted, production-ready managed package version.
+                  prerelease: false
+
+            - name: Delete beta prerelease tag
+              run: |
+                  gh release delete "v${{ inputs.version }}-beta" --yes || true
+                  git push --delete origin "v${{ inputs.version }}-beta" || true
+              env:
+                  GH_TOKEN: ${{ github.token }}
