@@ -272,7 +272,10 @@ public with sharing class KanbanBoardSelector {
      * Search Users for assignment
      */
     public static List<User> searchUsers(String searchTerm) {
-        String searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+        String searchPattern =
+            '%' +
+            String.escapeSingleQuotes(searchTerm) +
+            '%';
         return [
             SELECT Id, Name, Email, SmallPhotoUrl
             FROM User
