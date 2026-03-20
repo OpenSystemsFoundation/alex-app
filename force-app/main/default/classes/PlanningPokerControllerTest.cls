@@ -142,38 +142,44 @@ private class PlanningPokerControllerTest {
     }
 
     @IsTest
-    static void testLeaveSession() {
+    static void testLeaveSessionDestroysEmpty() {
         PlanningPokerController.SessionDTO session = createTestSession();
+        String sessionId = session.id;
 
         Test.startTest();
-        PlanningPokerController.leaveSession(session.id);
+        PlanningPokerController.leaveSession(sessionId);
         Test.stopTest();
 
-        PlanningPokerController.SessionDTO updated = PlanningPokerController.getSession(
-            session.id
-        );
+        List<OpenSF__PokerSession__c> remaining = [
+            SELECT Id
+            FROM OpenSF__PokerSession__c
+            WHERE Id = :sessionId
+        ];
         System.assertEquals(
             0,
-            updated.participants.size(),
-            'No active participants after leaving'
+            remaining.size(),
+            'Session should be deleted when last participant leaves'
         );
     }
 
     @IsTest
     static void testCloseSession() {
         PlanningPokerController.SessionDTO session = createTestSession();
+        String sessionId = session.id;
 
         Test.startTest();
-        PlanningPokerController.closeSession(session.id);
+        PlanningPokerController.closeSession(sessionId);
         Test.stopTest();
 
-        PlanningPokerController.SessionDTO updated = PlanningPokerController.getSession(
-            session.id
-        );
+        List<OpenSF__PokerSession__c> remaining = [
+            SELECT Id
+            FROM OpenSF__PokerSession__c
+            WHERE Id = :sessionId
+        ];
         System.assertEquals(
-            'Closed',
-            updated.status,
-            'Session should be closed'
+            0,
+            remaining.size(),
+            'Session should be deleted when closed'
         );
     }
 

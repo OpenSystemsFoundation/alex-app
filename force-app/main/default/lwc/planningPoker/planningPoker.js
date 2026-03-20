@@ -598,6 +598,27 @@ export default class PlanningPoker extends LightningElement {
             return;
         }
 
+        // Session destroyed — go back to lobby
+        if (eventType === 'SESSION_CLOSED') {
+            this._unsubscribe();
+            this._stopTimer();
+            if (this._pollInterval) {
+                clearInterval(this._pollInterval);
+            }
+            this.session = null;
+            this.selectedVote = null;
+            this.currentView = 'lobby';
+            this.isCreatingNew = true;
+            this.selectedSessionId = null;
+            this._loadActiveSessions();
+            this._showToast(
+                'Session Ended',
+                'The session has been closed.',
+                'info'
+            );
+            return;
+        }
+
         // Ignore own events for most types (server already updated)
         if (senderId === this._currentUserId) {
             // Still refresh for reveal/clear as they affect session state

@@ -154,6 +154,8 @@ public with sharing class PlanningPokerController {
                 'PARTICIPANT_LEFT',
                 JSON.serialize(new Map<String, Object>{ 'userId' => userId })
             );
+
+            destroyIfEmpty(sessionId);
         }
     }
 
@@ -272,16 +274,12 @@ public with sharing class PlanningPokerController {
 
     @AuraEnabled
     public static void closeSession(String sessionId) {
-        OpenSF__PokerSession__c session = [
+        publishEvent(sessionId, 'SESSION_CLOSED', '{}');
+        delete [
             SELECT Id
             FROM OpenSF__PokerSession__c
             WHERE Id = :sessionId
-            LIMIT 1
         ];
-        session.OpenSF__Status__c = 'Closed';
-        update session;
-
-        publishEvent(sessionId, 'SESSION_CLOSED', '{}');
     }
 
     @AuraEnabled(cacheable=true)
@@ -325,6 +323,23 @@ public with sharing class PlanningPokerController {
             session.OpenSF__Status__c = 'Revealed';
             update session;
             publishEvent(sessionId, 'VOTES_REVEALED', '{}');
+        }
+    }
+
+    private static void destroyIfEmpty(String sessionId) {
+        Integer activeCount = [
+            SELECT COUNT()
+            FROM OpenSF__PokerParticipant__c
+            WHERE OpenSF__Session__c = :sessionId AND OpenSF__IsActive__c = TRUE
+        ];
+
+        if (activeCount == 0) {
+            publishEvent(sessionId, 'SESSION_CLOSED', '{}');
+            delete [
+                SELECT Id
+                FROM OpenSF__PokerSession__c
+                WHERE Id = :sessionId
+            ];
         }
     }
 
