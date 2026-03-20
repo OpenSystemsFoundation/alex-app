@@ -5,22 +5,15 @@
  * console for debugging. Uses multiple strategies to cross the
  * LockerService / LWS security boundary:
  *
- * 1. window.__KANBAN_DEVTOOLS__  (works in LWS — the default for new orgs)
- * 2. DOM command queue           (works in LockerService AND LWS)
- *    → Write a command to sessionStorage, the bridge polls and executes it,
- *      printing results to the real browser console.
+ * 1. window.__KANBAN_DEVTOOLS__  (works when not sandboxed)
+ * 2. DOM custom event bridge      (works in both LockerService AND LWS)
+ *    → Dispatch a CustomEvent on `document`, the bridge listens and executes
+ *      the command, printing results to the browser console.
  *
- * === Quick-start (LWS — most scratch orgs & new orgs) ===
+ * === Quick-start (Chrome DevTools console) ===
  *
- *   const dt = __KANBAN_DEVTOOLS__;
- *   dt.help();
+ *   document.dispatchEvent(new CustomEvent('__kdt_exec__', { detail: 'help' }));
  *
- * === Quick-start (LockerService fallback) ===
- *
- *   // Paste this one-liner in Chrome console to send commands:
- *   sessionStorage.setItem('__kdt_cmd__', 'history');
- *   // Result prints to console within ~500ms.
- *   //
  *   // Supported commands: state, history, stats, undo, redo,
  *   //   inspect:ID, diff:ID, jumpTo:ID, search:QUERY, export, clear, help
  *
@@ -33,7 +26,7 @@
  * @module devToolsBridge
  */
 
-const CMD_STORAGE_KEY = '__kdt_cmd__';
+const CMD_EVENT_TYPE = '__kdt_exec__';
 
 /**
  * Install the DevTools bridge.
@@ -45,8 +38,7 @@ const CMD_STORAGE_KEY = '__kdt_cmd__';
  */
 export const installDevToolsBridge = (store, recorder) => {
     let liveLogUnsub = null;
-    let cmdRecorderUnsub = null;
-    let storageHandler = null;
+    let domEventHandler = null;
 
     const bridge = {
         // ── State inspection ───────────────────────────────────────
@@ -288,8 +280,8 @@ export const installDevToolsBridge = (store, recorder) => {
             );
             console.groupEnd();
             console.log(
-                '\nLockerService fallback — paste in console:\n' +
-                    "  sessionStorage.setItem('__kdt_cmd__', 'history');\n" +
+                '\nConsole shortcut — paste in Chrome DevTools:\n' +
+                    "  document.dispatchEvent(new CustomEvent('__kdt_exec__', { detail: 'history' }));\n" +
                     '  // Commands: state, history, stats, undo, redo,\n' +
                     '  //   inspect:ID, diff:ID, jumpTo:ID, search:QUERY, export, clear, help'
             );
@@ -299,17 +291,16 @@ export const installDevToolsBridge = (store, recorder) => {
          * Destroy the bridge (stop polling, remove global reference).
          */
         destroy() {
-            if (cmdRecorderUnsub) {
-                cmdRecorderUnsub();
-                cmdRecorderUnsub = null;
-            }
-            if (storageHandler && typeof window !== 'undefined') {
+            if (domEventHandler && typeof document !== 'undefined') {
                 try {
-                    window.removeEventListener('storage', storageHandler);
+                    document.removeEventListener(
+                        CMD_EVENT_TYPE,
+                        domEventHandler
+                    );
                 } catch (_e) {
                     /* ignore */
                 }
-                storageHandler = null;
+                domEventHandler = null;
             }
             bridge.stopLiveLog();
             try {
@@ -331,45 +322,28 @@ export const installDevToolsBridge = (store, recorder) => {
         /* LockerService SecureWindow may reject the assignment */
     }
 
-    // ── Strategy 2: sessionStorage command queue (LockerService safe) ─
-    // The browser console and LWC code share the same sessionStorage
-    // origin, so this crosses the LockerService boundary reliably.
-    // We check for pending commands on two triggers:
-    //   a) Every store dispatch (via recorder subscription)
-    //   b) The 'storage' event (fires when sessionStorage is written
-    //      from another browsing context — in LockerService the console
-    //      qualifies as a separate context for this event)
-    const drainCommandQueue = () => {
-        try {
-            if (typeof sessionStorage === 'undefined') return;
-            const raw = sessionStorage.getItem(CMD_STORAGE_KEY);
-            if (!raw) return;
-            sessionStorage.removeItem(CMD_STORAGE_KEY);
-            executeCommand(bridge, raw);
-        } catch (_e) {
-            /* silently ignore */
-        }
-    };
-
+    // ── Strategy 2: DOM custom event bridge ────────────────────────────
+    // LWS sandboxes sessionStorage per namespace, so the old
+    // sessionStorage-based command queue cannot cross the boundary.
+    // The DOM *is* shared — custom events dispatched on `document` from
+    // the Chrome console (or an extension) are visible inside the LWC
+    // sandbox.  Usage from console:
+    //   document.dispatchEvent(new CustomEvent('__kdt_exec__', { detail: 'stats' }));
     try {
-        if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.removeItem(CMD_STORAGE_KEY);
-
-            // Check on every dispatched action
-            cmdRecorderUnsub = recorder.subscribe(drainCommandQueue);
-
-            // Check when sessionStorage changes (covers idle state)
-            if (typeof window !== 'undefined' && window.addEventListener) {
-                storageHandler = (event) => {
-                    if (event.key === CMD_STORAGE_KEY && event.newValue) {
-                        drainCommandQueue();
-                    }
-                };
-                window.addEventListener('storage', storageHandler);
-            }
+        if (typeof document !== 'undefined' && document.addEventListener) {
+            domEventHandler = (event) => {
+                const raw =
+                    event.detail && typeof event.detail === 'string'
+                        ? event.detail
+                        : null;
+                if (raw) {
+                    executeCommand(bridge, raw);
+                }
+            };
+            document.addEventListener(CMD_EVENT_TYPE, domEventHandler);
         }
     } catch (_e) {
-        /* sessionStorage unavailable — skip command queue */
+        /* DOM unavailable — skip event bridge */
     }
 
     // ── Announce ─────────────────────────────────────────────────────
@@ -378,8 +352,10 @@ export const installDevToolsBridge = (store, recorder) => {
         'background: #1a1a2e; color: #e94560; font-size: 14px; padding: 6px 12px; border-radius: 4px;'
     );
     console.log(
-        'Try: __KANBAN_DEVTOOLS__.help()  |  ' +
-            "LockerService fallback: sessionStorage.setItem('__kdt_cmd__', 'help')"
+        "Try: document.dispatchEvent(new CustomEvent('__kdt_exec__', { detail: 'help' }))"
+    );
+    console.log(
+        'Commands: state, history, stats, undo, redo, inspect:ID, diff:ID, search:QUERY'
     );
 
     return bridge;

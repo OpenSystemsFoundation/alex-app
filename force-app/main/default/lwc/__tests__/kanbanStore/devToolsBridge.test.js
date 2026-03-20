@@ -71,7 +71,6 @@ describe('devToolsBridge', () => {
         }
         jest.restoreAllMocks();
         delete window.__KANBAN_DEVTOOLS__;
-        sessionStorage.removeItem('__kdt_cmd__');
     });
 
     describe('installation', () => {
@@ -334,12 +333,15 @@ describe('devToolsBridge', () => {
         });
     });
 
-    describe('sessionStorage command queue', () => {
-        it('executes command from sessionStorage on recorder event', () => {
-            sessionStorage.setItem('__kdt_cmd__', 'stats');
-            // Trigger by recording a new action
-            recorder.record({ type: 'TRIGGER' }, {}, {});
-            // stats should have been called
+    describe('DOM custom event command bridge', () => {
+        const dispatch = (cmd) => {
+            document.dispatchEvent(
+                new CustomEvent('__kdt_exec__', { detail: cmd })
+            );
+        };
+
+        it('executes stats command', () => {
+            dispatch('stats');
             expect(console.group).toHaveBeenCalledWith(
                 expect.stringContaining('DevTools command: stats')
             );
@@ -347,62 +349,47 @@ describe('devToolsBridge', () => {
 
         it('executes inspect command with argument', () => {
             const h = recorder.getHistory();
-            sessionStorage.setItem('__kdt_cmd__', `inspect:${h[0].id}`);
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch(`inspect:${h[0].id}`);
             expect(console.group).toHaveBeenCalledWith(
                 expect.stringContaining('inspect')
             );
         });
 
         it('executes undo command', () => {
-            sessionStorage.setItem('__kdt_cmd__', 'undo');
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch('undo');
             expect(store._applyState).toHaveBeenCalled();
         });
 
-        it('executes redo command via storage event', () => {
-            bridge.undo(); // undo something first
+        it('executes redo command', () => {
+            bridge.undo();
             store._applyState.mockClear();
-            // Use the storage event handler to trigger drain without recording
-            // (recording would fork the timeline and destroy redo history)
-            sessionStorage.setItem('__kdt_cmd__', 'redo');
-            window.dispatchEvent(
-                new StorageEvent('storage', {
-                    key: '__kdt_cmd__',
-                    newValue: 'redo'
-                })
-            );
+            dispatch('redo');
             expect(store._applyState).toHaveBeenCalled();
         });
 
         it('executes search command', () => {
-            sessionStorage.setItem('__kdt_cmd__', 'search:MOVE');
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch('search:MOVE');
             expect(console.group).toHaveBeenCalledWith(
                 expect.stringContaining('search:MOVE')
             );
         });
 
         it('executes export command', () => {
-            sessionStorage.setItem('__kdt_cmd__', 'export');
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch('export');
             expect(console.log).toHaveBeenCalledWith(
                 expect.stringContaining('"type"')
             );
         });
 
         it('executes clear command', () => {
-            sessionStorage.setItem('__kdt_cmd__', 'clear');
-            recorder.record({ type: 'TRIGGER' }, {}, {});
-            // History should be cleared (only TRIGGER remains if recorded after clear)
+            dispatch('clear');
             expect(console.log).toHaveBeenCalledWith(
                 'DevTools history cleared'
             );
         });
 
         it('executes help command', () => {
-            sessionStorage.setItem('__kdt_cmd__', 'help');
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch('help');
             expect(console.group).toHaveBeenCalledWith(
                 'Kanban DevTools Commands'
             );
@@ -410,8 +397,7 @@ describe('devToolsBridge', () => {
 
         it('executes diff command', () => {
             const h = recorder.getHistory();
-            sessionStorage.setItem('__kdt_cmd__', `diff:${h[0].id}`);
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch(`diff:${h[0].id}`);
             expect(console.group).toHaveBeenCalledWith(
                 expect.stringContaining('Diff')
             );
@@ -419,72 +405,62 @@ describe('devToolsBridge', () => {
 
         it('executes jumpto command', () => {
             const h = recorder.getHistory();
-            sessionStorage.setItem('__kdt_cmd__', `jumpto:${h[0].id}`);
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch(`jumpto:${h[0].id}`);
             expect(store._applyState).toHaveBeenCalled();
         });
 
         it('executes state command', () => {
             console.table.mockClear();
-            sessionStorage.setItem('__kdt_cmd__', 'state');
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch('state');
             expect(console.table).toHaveBeenCalled();
         });
 
         it('executes history command', () => {
             console.table.mockClear();
-            sessionStorage.setItem('__kdt_cmd__', 'history');
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch('history');
             expect(console.table).toHaveBeenCalled();
         });
 
         it('executes livelog command', () => {
-            sessionStorage.setItem('__kdt_cmd__', 'livelog');
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch('livelog');
             expect(console.log).toHaveBeenCalledWith('Live action log started');
         });
 
         it('executes stoplive command', () => {
             bridge.startLiveLog();
-            sessionStorage.setItem('__kdt_cmd__', 'stoplive');
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch('stoplive');
             expect(console.log).toHaveBeenCalledWith('Live action log stopped');
         });
 
         it('executes pause command', () => {
-            sessionStorage.setItem('__kdt_cmd__', 'pause');
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch('pause');
             expect(console.log).toHaveBeenCalledWith(
                 'DevTools recording paused'
             );
         });
 
         it('executes resume command', () => {
-            sessionStorage.setItem('__kdt_cmd__', 'resume');
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch('resume');
             expect(console.log).toHaveBeenCalledWith(
                 'DevTools recording resumed'
             );
         });
 
         it('warns for unknown command', () => {
-            sessionStorage.setItem('__kdt_cmd__', 'bogus');
-            recorder.record({ type: 'TRIGGER' }, {}, {});
+            dispatch('bogus');
             expect(console.warn).toHaveBeenCalledWith(
                 expect.stringContaining('Unknown command')
             );
         });
 
-        it('removes command from sessionStorage after execution', () => {
-            sessionStorage.setItem('__kdt_cmd__', 'stats');
-            recorder.record({ type: 'TRIGGER' }, {}, {});
-            expect(sessionStorage.getItem('__kdt_cmd__')).toBeNull();
-        });
-
-        it('ignores empty sessionStorage', () => {
-            // No command set — should not throw
+        it('ignores events with non-string detail', () => {
             expect(() => {
-                recorder.record({ type: 'TRIGGER' }, {}, {});
+                document.dispatchEvent(
+                    new CustomEvent('__kdt_exec__', { detail: null })
+                );
+                document.dispatchEvent(
+                    new CustomEvent('__kdt_exec__', { detail: 42 })
+                );
             }).not.toThrow();
         });
     });

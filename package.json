@@ -38,6 +38,7 @@
         "@salesforce/eslint-plugin-aura": "^2.1.0",
         "@salesforce/eslint-plugin-lightning": "^1.0.1",
         "@salesforce/sfdx-lwc-jest": "^7.3.0",
+        "baseline-browser-mapping": "^2.10.9",
         "eslint": "^8.57.0",
         "eslint-plugin-import": "^2.25.4",
         "eslint-plugin-jest": "28.9.0",

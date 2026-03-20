@@ -227,7 +227,16 @@ class KanbanStore {
      */
     _applyState(state) {
         if (!this.devTools) return; // no-op when devtools disabled
-        this._state = { ...state };
+        this._state = {
+            ...state,
+            // Reset transient sync state so UI doesn't show stale
+            // "saving" indicators after time-travel / undo / redo.
+            pendingOperations: [],
+            syncState: 'idle',
+            isDragging: false,
+            dragState: null,
+            dragSource: null
+        };
         this._lastDragPosition = null;
         this._notifySubscribers();
     }

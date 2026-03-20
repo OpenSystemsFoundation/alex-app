@@ -195,52 +195,67 @@ undo() {
 
 So when a user moves a card to the wrong column, `undo()` skips past the 40 drag position updates and the sync operations, straight back to the state before the move.
 
-## The Chrome DevTools Bridge (The LockerService Workaround)
+The Kanban board also has dedicated undo/redo buttons in the toolbar with keyboard shortcuts: **Ctrl+Z / Ctrl+Y** on Windows/Linux, **Cmd+Z / Cmd+Shift+Z** on Mac. The buttons are visually disabled when there's nothing to undo or redo, and the tooltips show the platform-appropriate shortcut.
 
-Here's the thing about LockerService: browser extensions can't access your component's JavaScript context. But **your own code can write to `window`**, because it runs inside the same-origin sandbox.
+## The Chrome DevTools Bridge (The LWS Workaround)
 
-We attach a rich debugging API to `window.__KANBAN_DEVTOOLS__`:
+Here's what makes this hard: **Lightning Web Security (LWS) sandboxes each namespace into its own JavaScript realm.** That means:
+
+- **`window` is sandboxed.** Properties you set on `window` inside your LWC are invisible from the Chrome console. The console runs in the host page's realm, your code runs in the LWS sandbox. `window.__KANBAN_DEVTOOLS__` simply doesn't exist from the console's perspective.
+- **`sessionStorage` is sandboxed.** We tried a command-queue approach where the console writes a command to `sessionStorage` and the LWC polls for it. LWS gives each namespace its own isolated storage. The commands never cross.
+- **Browser extensions can't reach your store.** The Redux DevTools Chrome extension has no path into the sandbox.
+
+So how do you bridge the gap? **The DOM is shared.** Custom events dispatched on `document` from the Chrome console _are_ visible to event listeners registered inside the LWS sandbox. That's the key insight.
+
+We register a listener inside the LWC sandbox:
 
 ```javascript
-if (typeof window !== 'undefined') {
-    window.__KANBAN_DEVTOOLS__ = bridge;
-    console.log(
-        '%c Kanban DevTools enabled',
-        'background: #1a1a2e; color: #e94560; font-size: 14px;'
-    );
-}
+const CMD_EVENT_TYPE = '__kdt_exec__';
+
+document.addEventListener(CMD_EVENT_TYPE, (event) => {
+    const command = event.detail; // e.g. 'history', 'inspect:42'
+    executeCommand(bridge, command);
+});
 ```
 
-Open Chrome DevTools console on any Salesforce page running the Kanban board, and you get:
+From the Chrome console, you dispatch a `CustomEvent` with the command as the `detail` string:
 
-```
+```javascript
 // View state summary as a table
-__KANBAN_DEVTOOLS__.state()
+document.dispatchEvent(new CustomEvent('__kdt_exec__', { detail: 'state' }));
 
 // List every action that was dispatched
-__KANBAN_DEVTOOLS__.history()
+document.dispatchEvent(new CustomEvent('__kdt_exec__', { detail: 'history' }));
 
 // Inspect a specific action (full state snapshots + diff)
-__KANBAN_DEVTOOLS__.inspect(42)
+document.dispatchEvent(
+    new CustomEvent('__kdt_exec__', { detail: 'inspect:42' })
+);
 
 // Search actions by type
-__KANBAN_DEVTOOLS__.search('MOVE_CARD')
+document.dispatchEvent(
+    new CustomEvent('__kdt_exec__', { detail: 'search:MOVE_CARD' })
+);
 
-// Time-travel
-__KANBAN_DEVTOOLS__.jumpTo(15)
+// Time-travel to a specific point
+document.dispatchEvent(
+    new CustomEvent('__kdt_exec__', { detail: 'jumpTo:15' })
+);
 
 // Undo / Redo
-__KANBAN_DEVTOOLS__.undo()
-__KANBAN_DEVTOOLS__.redo()
+document.dispatchEvent(new CustomEvent('__kdt_exec__', { detail: 'undo' }));
+document.dispatchEvent(new CustomEvent('__kdt_exec__', { detail: 'redo' }));
 
 // Live action log (prints every action as it fires)
-__KANBAN_DEVTOOLS__.startLiveLog()
+document.dispatchEvent(new CustomEvent('__kdt_exec__', { detail: 'livelog' }));
 
 // Export full history as JSON
-copy(JSON.stringify(__KANBAN_DEVTOOLS__.export()))
+document.dispatchEvent(new CustomEvent('__kdt_exec__', { detail: 'export' }));
 ```
 
-18 commands. State inspection, action history, time-travel, undo/redo, diff viewing, live logging, search, export, replay sequences, stats. All from the Chrome console. No browser extension needed.
+The bridge parses the command string, executes it against the recorder, and prints results to the console using `console.log` and `console.table` — which _are_ visible across the boundary.
+
+16 commands: state, history, stats, inspect, diff, search, jumpTo, undo, redo, livelog, stoplive, pause, resume, export, clear, help. State inspection, action history, time-travel, undo/redo, diff viewing, live logging, search, export. All from the Chrome console. No browser extension needed.
 
 This is also a game-changer for **AI-assisted development with tools like Claude Code**. When Claude Code needs to debug state issues in a deployed Salesforce org, it can read the action history, inspect diffs, and understand exactly what happened — without relying on console.log statements scattered through the codebase.
 

@@ -91,49 +91,68 @@ public with sharing class LexoRank {
     }
 
     /**
-     * Calculate midpoint between two keys
+     * Calculate midpoint between two keys using numerical averaging.
+     * Treats keys as numbers in a base-75 system (ASCII '0' to 'z')
+     * and computes the exact average, maintaining DEFAULT_LENGTH.
      */
     private static String midpoint(String prev, String next) {
-        // Pad to same length
-        Integer maxLen = Math.max(prev.length(), next.length());
-        String paddedPrev = padRight(prev, maxLen);
-        String paddedNext = padRight(next, maxLen);
+        // Strip colon separators before calculation
+        prev = prev.replace(':', '');
+        next = next.replace(':', '');
 
-        List<Integer> prevChars = getCharCodes(paddedPrev);
-        List<Integer> nextChars = getCharCodes(paddedNext);
+        // Ensure minimum key length to prevent degenerate short keys
+        Integer len = Math.max(
+            Math.max(prev.length(), next.length()),
+            DEFAULT_LENGTH
+        );
+        prev = padRight(prev, len);
+        next = padRight(next, len);
 
+        Integer ZERO = getCharCode('0'); // ASCII 48
+        Integer BASE = getCharCode('z') - ZERO + 1; // 75
+
+        // Step 1: Add prev + next digit by digit (right to left)
+        List<Integer> sum = new List<Integer>();
+        for (Integer i = 0; i < len; i++) {
+            sum.add(0);
+        }
+
+        Integer carry = 0;
+        for (Integer i = len - 1; i >= 0; i--) {
+            Integer s =
+                (prev.charAt(i) - ZERO) +
+                (next.charAt(i) - ZERO) +
+                carry;
+            sum[i] = Math.mod(s, BASE);
+            carry = s / BASE;
+        }
+
+        // Step 2: Divide sum by 2 (left to right), propagating remainder
         List<Integer> result = new List<Integer>();
-        Boolean foundDiff = false;
-
-        for (Integer i = 0; i < maxLen; i++) {
-            Integer pChar = prevChars[i];
-            Integer nChar = nextChars[i];
-
-            if (!foundDiff) {
-                if (pChar == nChar) {
-                    result.add(pChar);
-                } else if (nChar - pChar > 1) {
-                    // Can fit a character in between
-                    Integer mid = (pChar + nChar) / 2;
-                    result.add(mid);
-                    foundDiff = true;
-                } else {
-                    // Adjacent characters, need to extend
-                    result.add(pChar);
-                    foundDiff = false; // Keep looking
-                }
-            } else {
-                // After finding difference, we can stop
-                break;
-            }
+        Integer remainder = carry;
+        for (Integer i = 0; i < len; i++) {
+            Integer dividend = remainder * BASE + sum[i];
+            result.add(dividend / 2);
+            remainder = Math.mod(dividend, 2);
         }
 
-        // If we never found a valid midpoint, append a character
-        if (!foundDiff || result.isEmpty()) {
-            result.add(getCharCode('m')); // Add middle character
+        // If remainder, extend by one digit to preserve precision
+        if (remainder > 0) {
+            result.add(BASE / 2);
         }
 
-        return buildString(result) + ':';
+        // Convert back to characters
+        String mid = '';
+        for (Integer i = 0; i < result.size(); i++) {
+            mid += String.fromCharArray(new List<Integer>{ result[i] + ZERO });
+        }
+
+        // Safety: if midpoint equals prev (extremely close values), extend
+        if (mid == prev) {
+            mid += String.fromCharArray(new List<Integer>{ getCharCode('m') });
+        }
+
+        return mid + ':';
     }
 
     /**
@@ -141,6 +160,7 @@ public with sharing class LexoRank {
      */
     private static String incrementKey(String key) {
         String cleanKey = key.replace(':', '');
+        cleanKey = padRight(cleanKey, DEFAULT_LENGTH);
         List<Integer> chars = getCharCodes(cleanKey);
 
         // Increment like a number with base-36
@@ -170,6 +190,7 @@ public with sharing class LexoRank {
      */
     private static String decrementKey(String key) {
         String cleanKey = key.replace(':', '');
+        cleanKey = padRight(cleanKey, DEFAULT_LENGTH);
         List<Integer> chars = getCharCodes(cleanKey);
 
         if (chars.isEmpty()) {
