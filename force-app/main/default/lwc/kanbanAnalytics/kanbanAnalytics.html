@@ -1,0 +1,114 @@
+<template>
+    <template lwc:if={isOpen}>
+        <section
+            role="dialog"
+            tabindex="-1"
+            aria-modal="true"
+            class="slds-modal slds-fade-in-open slds-modal_large"
+        >
+            <div class="slds-modal__container">
+                <div class="slds-modal__header">
+                    <button
+                        class="slds-button slds-button_icon slds-modal__close slds-button_icon-bare"
+                        title="Close"
+                        onclick={handleClose}
+                    >
+                        <lightning-icon
+                            icon-name="utility:close"
+                            alternative-text="Close"
+                            size="small"
+                        ></lightning-icon>
+                    </button>
+                    <h2 class="slds-modal__title">Board Analytics</h2>
+                </div>
+
+                <div class="slds-modal__content slds-var-p-around_medium">
+                    <!-- Tabs -->
+                    <div class="slds-tabs_default">
+                        <ul class="slds-tabs_default__nav" role="tablist">
+                            <li class={cycleTimeTabClass} role="presentation">
+                                <a role="tab" data-tab="cycletime" onclick={handleTabClick}>Cycle Time</a>
+                            </li>
+                            <li class={cfdTabClass} role="presentation">
+                                <a role="tab" data-tab="cfd" onclick={handleTabClick}>Cumulative Flow</a>
+                            </li>
+                        </ul>
+
+                        <!-- Cycle Time Tab -->
+                        <template lwc:if={isCycleTimeTab}>
+                            <div class="slds-tabs_default__content slds-show">
+                                <template lwc:if={isLoading}>
+                                    <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                                </template>
+                                <template lwc:elseif={hasCycleTimeData}>
+                                    <!-- Summary Stats -->
+                                    <div class="analytics-summary">
+                                        <div class="analytics-stat">
+                                            <span class="analytics-stat__label">Avg Cycle Time</span>
+                                            <span class="analytics-stat__value">{formattedAvgCycleTime}</span>
+                                        </div>
+                                        <div class="analytics-stat">
+                                            <span class="analytics-stat__label">Avg Lead Time</span>
+                                            <span class="analytics-stat__value">{formattedAvgLeadTime}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Time in Column Canvas Chart -->
+                                    <h3 class="slds-text-heading_small slds-var-m-top_medium slds-var-m-bottom_small">Average Time per Column</h3>
+                                    <div class="analytics-chart-wrapper">
+                                        <canvas class="column-time-canvas"></canvas>
+                                    </div>
+
+                                    <!-- Card Details Table -->
+                                    <h3 class="slds-text-heading_small slds-var-m-top_large slds-var-m-bottom_small">Card Details</h3>
+                                    <div class="analytics-table-wrapper">
+                                        <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-table_fixed-layout">
+                                            <thead>
+                                                <tr>
+                                                    <th>Card</th>
+                                                    <th>Type</th>
+                                                    <th>Cycle Time</th>
+                                                    <th>Lead Time</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <template for:each={cycleTimeData.cardDetails} for:item="card">
+                                                    <tr key={card.cardId}>
+                                                        <td class="slds-truncate">{card.cardName}</td>
+                                                        <td>{card.cardType}</td>
+                                                        <td>{card.formattedCycleTime}</td>
+                                                        <td>{card.formattedLeadTime}</td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </template>
+                                <template lwc:else>
+                                    <div class="slds-text-align_center slds-var-p-around_large slds-text-color_weak">
+                                        No cycle time data available yet. Move cards between columns to generate analytics.
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- CFD Tab -->
+                        <template lwc:if={isCfdTab}>
+                            <div class="slds-tabs_default__content slds-show">
+                                <c-kanban-cumulative-flow-diagram
+                                    store={store}
+                                    board-id={boardId}
+                                ></c-kanban-cumulative-flow-diagram>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick={handleClose}>Close</button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

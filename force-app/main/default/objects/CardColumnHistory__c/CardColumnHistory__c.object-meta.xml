@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Tracks the history of a card moving between columns for cycle time and lead time analytics.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>true</enableReports>
+    <enableSearch>false</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>ControlledByParent</externalSharingModel>
+    <label>Card Column History</label>
+    <nameField>
+        <displayFormat>CCH-{0}</displayFormat>
+        <startingNumber>1</startingNumber>
+        <label>History Name</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Card Column Histories</pluralLabel>
+    <sharingModel>ControlledByParent</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

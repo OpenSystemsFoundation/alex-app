@@ -1,0 +1,45 @@
+.analytics-summary {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1rem 0;
+    flex-wrap: wrap;
+}
+
+.analytics-stat {
+    display: flex;
+    flex-direction: column;
+    background: rgb(249, 250, 251);
+    border: 1px solid rgb(229, 231, 235);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    min-width: 150px;
+}
+
+.analytics-stat__label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: rgb(107, 114, 128);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.analytics-stat__value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: rgb(17, 24, 39);
+    margin-top: 0.25rem;
+}
+
+.analytics-chart-wrapper {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.analytics-table-wrapper {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.analytics-table-wrapper table {
+    font-size: 0.8125rem;
+}

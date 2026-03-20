@@ -168,10 +168,98 @@
                         ></lightning-icon>
                     </button>
                 </template>
+
+                <!-- Swimlane Selector -->
+                <div class="board-filter-separator"></div>
+                <select
+                    class="board-filter-select"
+                    onchange={handleSwimlaneChange}
+                    value={_swimlaneMode}
+                >
+                    <template
+                        for:each={swimlaneModeOptions}
+                        for:item="opt"
+                    >
+                        <option
+                            key={opt.value}
+                            value={opt.value}
+                        >
+                            {opt.label}
+                        </option>
+                    </template>
+                </select>
+
+                <!-- Analytics Button -->
+                <button
+                    class="filter-toggle"
+                    onclick={handleShowAnalytics}
+                    title="Board Analytics"
+                >
+                    <lightning-icon
+                        icon-name="utility:chart"
+                        size="xx-small"
+                    ></lightning-icon>
+                    Analytics
+                </button>
             </div>
 
             <div class="kanban-board-container slds-grid">
-                <!-- Kanban Board -->
+                <!-- Kanban Board (normal mode, no swimlanes) -->
+                <template lwc:if={hasSwimlanes}>
+                    <div class="kanban-board kanban-board--swimlanes slds-scrollable_x">
+                        <!-- Column Headers Row -->
+                        <div class="swimlane-header-row">
+                            <div class="swimlane-label-cell"></div>
+                            <template for:each={filteredColumns} for:item="column">
+                                <div key={column.Id} class="swimlane-col-header" style={column.columnStyle}>
+                                    <span class="slds-truncate">{column.columnHeader}</span>
+                                    <template lwc:if={column.hasWipLimit}>
+                                        <span class="wip-badge">{column.cardCount}/{column.wipLimit}</span>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                        <!-- Swimlane Rows -->
+                        <template for:each={swimlanes} for:item="lane">
+                            <div key={lane.key} class="swimlane-row">
+                                <div class="swimlane-label-cell">
+                                    <span class="swimlane-label">{lane.label}</span>
+                                    <span class="swimlane-count">{lane.totalCards}</span>
+                                </div>
+                                <template for:each={lane.columns} for:item="col">
+                                    <div key={col.laneKey} class="swimlane-cell"
+                                         data-column-id={col.Id}
+                                         ondragover={handleDragOver}
+                                         ondrop={handleDrop}>
+                                        <template for:each={col.cards} for:item="card">
+                                            <article
+                                                key={card.Id}
+                                                class="kanban-card"
+                                                data-card-id={card.Id}
+                                                data-column-id={col.Id}
+                                                draggable="true"
+                                                ondragstart={handleDragStart}
+                                                ondragend={handleDragEnd}
+                                                onclick={handleCardClick}
+                                                oncontextmenu={handleBoardCardContextMenu}
+                                                style={card.cardStyle}
+                                            >
+                                                <div class="kanban-card__body slds-text-body_small">
+                                                    <p class="slds-truncate">{card.subject}</p>
+                                                    <template lwc:if={card.hasStoryPoints}>
+                                                        <span class="swimlane-card-sp">{card.storyPoints}</span>
+                                                    </template>
+                                                </div>
+                                            </article>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <template lwc:else>
                 <div
                     class="kanban-board slds-grid slds-scrollable_x"
                 >
@@ -183,7 +271,7 @@
                             <!-- Kanban Column -->
                             <div
                                 key={column.Id}
-                                class="kanban-column slds-col slds-size_1-of-1@mobile slds-grid slds-grid_vertical"
+                                class={column.columnClass}
                                 data-column-id={column.Id}
                                 style={column.columnStyle}
                             >
@@ -211,6 +299,13 @@
                                             </a>
                                         </h2>
                                     </div>
+
+                                    <!-- WIP Limit Badge -->
+                                    <template lwc:if={column.hasWipLimit}>
+                                        <span class={column.wipBadgeClass}
+                                            >{column.cardCount}/{column.wipLimit}</span
+                                        >
+                                    </template>
 
                                     <!-- Add Card Button -->
                                     <div
@@ -483,6 +578,7 @@
                         </div>
                     </template>
                 </div>
+                </template>
 
                 <!-- Card Detail Panel (Board tab) -->
                 <template lwc:if={showCardDetail}>
@@ -565,6 +661,16 @@
             is-open={showSprintReports}
             onclose={handleSprintReportsClose}
         ></c-kanban-sprint-reports>
+    </template>
+
+    <!-- Analytics Modal -->
+    <template lwc:if={showAnalytics}>
+        <c-kanban-analytics
+            store={store}
+            board-id={recordId}
+            is-open={showAnalytics}
+            onclose={handleAnalyticsClose}
+        ></c-kanban-analytics>
     </template>
 
     <!-- Reusable Managers -->
