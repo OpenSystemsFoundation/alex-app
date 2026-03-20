@@ -31,6 +31,7 @@ export default class RetryManager {
         if (this.retryCount < RetryManager.MAX_RETRY_ATTEMPTS) {
             const retryDelay = RetryManager.BASE_RETRY_DELAY * this.retryCount;
 
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
             this.retryTimeout = setTimeout(() => {
                 if (this.onRetry) {
                     this.onRetry();
@@ -38,13 +39,12 @@ export default class RetryManager {
             }, retryDelay);
 
             return true;
-        } else {
-            // Max retries exceeded
-            if (this.onMaxRetriesExceeded) {
-                this.onMaxRetriesExceeded(error);
-            }
-            return false;
         }
+        // Max retries exceeded
+        if (this.onMaxRetriesExceeded) {
+            this.onMaxRetriesExceeded(error);
+        }
+        return false;
     }
 
     /**

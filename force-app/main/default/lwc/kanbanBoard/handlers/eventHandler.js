@@ -94,11 +94,10 @@ export default class EventHandler {
                 this.requestTracker?.hasPendingOperations(payload.Id)
             ) {
                 // This window has pending operations - defer applying until they complete
+                // eslint-disable-next-line @lwc/lwc/no-async-operation
                 setTimeout(() => {
                     if (!this.requestTracker.hasPendingOperations(payload.Id)) {
                         this._applyEvent(eventType, payload, store);
-                    } else {
-                        return true;
                     }
                 }, 500);
                 return false;
@@ -210,11 +209,14 @@ export default class EventHandler {
             case 'delete':
                 this._removeCard(payload.Id, store);
                 break;
+            default:
+                break;
         }
     }
 
     trackChange(cardId) {
         this.recentChanges.set(cardId, Date.now());
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
         setTimeout(
             () => this.recentChanges.delete(cardId),
             CHANGE_TRACKING_WINDOW

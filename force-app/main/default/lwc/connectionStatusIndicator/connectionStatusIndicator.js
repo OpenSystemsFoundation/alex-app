@@ -61,6 +61,7 @@ export default class ConnectionStatusIndicator extends LightningElement {
 
     _scheduleFadeAway() {
         this._clearFadeTimeout();
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
         this._savedFadeTimeout = setTimeout(() => {
             this._showSavedIndicator = false;
         }, 3000); // Fade away after 3 seconds

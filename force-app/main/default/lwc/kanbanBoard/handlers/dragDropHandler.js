@@ -49,6 +49,7 @@ export default class DragDropHandler {
 
         // Use requestAnimationFrame so the browser captures the clone
         // before we style the original as "dragging"
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
         requestAnimationFrame(() => {
             cardElement.classList.add('dragging');
         });

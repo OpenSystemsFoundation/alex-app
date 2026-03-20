@@ -64,7 +64,7 @@ export default class SubscriptionManager extends LightningElement {
             const response = await subscribe(
                 this.channelName,
                 -1,
-                (response) => {
+                (eventResponse) => {
                     this.healthMonitor.recordEvent();
 
                     if (this.subscriptionStatus !== 'connected') {
@@ -72,7 +72,7 @@ export default class SubscriptionManager extends LightningElement {
                         this.retryManager.reset();
                     }
 
-                    this._dispatchMessage(response);
+                    this._dispatchMessage(eventResponse);
                 }
             );
 

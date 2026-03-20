@@ -109,6 +109,7 @@ export default class BoardDataLoader {
             return; // Already polling
         }
 
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
         this.pollingInterval = setInterval(async () => {
             try {
                 await this.loadIncrementalUpdates();
