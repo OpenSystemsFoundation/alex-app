@@ -9,7 +9,7 @@ const { getSampleBoardData, sfUpdate } = require('./helpers/sf-data');
  *   SCRATCH_ORG_URL  – frontdoor.jsp login URL from `sf org open --json`
  *
  * The CI workflow creates a scratch org, deploys, and creates sample data
- * via CreateBoard.apex before running these tests.
+ * via CreateFilledKanbanBoard.apex before running these tests.
  * Tests use existing board data — no record creation needed.
  */
 
@@ -74,16 +74,15 @@ test.describe('Alex Kanban Board', () => {
     });
 
     test('cards appear on the board', async ({ page }) => {
-        test.skip(!cards?.length, 'No cards found in scratch org');
+        expect(cards.length).toBeGreaterThan(0);
         await goToBoard(page);
 
-        // Use article tag to avoid strict mode (both article and inner a have data-card-id)
         const card = page.locator(`article[data-card-id="${cards[0].Id}"]`);
         await expect(card).toBeVisible({ timeout: SF_TIMEOUT });
     });
 
     test('card links contain the record id', async ({ page }) => {
-        test.skip(!cards?.length, 'No cards found in scratch org');
+        expect(cards.length).toBeGreaterThan(0);
         await goToBoard(page);
 
         const cardLink = page.locator(`a[data-card-id="${cards[0].Id}"]`);
@@ -91,10 +90,8 @@ test.describe('Alex Kanban Board', () => {
     });
 
     test('drag card between columns', async ({ page }) => {
-        test.skip(
-            !cards?.length || columns?.length < 2,
-            'Need cards and at least 2 columns'
-        );
+        expect(cards.length).toBeGreaterThan(0);
+        expect(columns.length).toBeGreaterThanOrEqual(2);
         await goToBoard(page);
 
         // Wait for at least one card to render in the board
@@ -120,7 +117,10 @@ test.describe('Alex Kanban Board', () => {
                 break;
             }
         }
-        test.skip(sourceColIdx === -1, 'No cards found in any column');
+        expect(
+            sourceColIdx,
+            'Expected at least one non-last column to contain cards'
+        ).toBeGreaterThanOrEqual(0);
 
         // Target is the next column
         const targetIdx =
@@ -147,7 +147,7 @@ test.describe('Alex Kanban Board', () => {
     test('backend update reflects in browser after refresh', async ({
         page
     }) => {
-        test.skip(!cards?.length, 'No cards found in scratch org');
+        expect(cards.length).toBeGreaterThan(0);
         await goToBoard(page);
 
         const card = page.locator(`article[data-card-id="${cards[0].Id}"]`);
@@ -160,7 +160,6 @@ test.describe('Alex Kanban Board', () => {
             `OpenSF__Subject__c=${newSubject}`
         );
 
-        // Click the refresh icon button (last topbar icon btn that's not disabled)
         const refreshBtn = page.locator(
             'button.topbar-icon-btn:has(lightning-icon.slds-icon-utility-refresh)'
         );
@@ -187,7 +186,6 @@ test.describe('Alex Kanban Board', () => {
     test('add card button creates a new card', async ({ page }) => {
         await goToBoard(page);
 
-        // Count existing cards in the first column
         const firstColWrapper = page.locator(
             `.kanban-column__card-wrapper[data-column-id="${columns[0].Id}"]`
         );
@@ -199,14 +197,13 @@ test.describe('Alex Kanban Board', () => {
         const addButton = page.locator('.add-card-button').first();
         await addButton.click();
 
-        // A new card should appear in the column
         await expect(
             firstColWrapper.locator('article.kanban-card')
         ).toHaveCount(beforeCount + 1, { timeout: 15_000 });
     });
 
     test('search filter works', async ({ page }) => {
-        test.skip(!cards?.length, 'No cards found in scratch org');
+        expect(cards.length).toBeGreaterThan(0);
         await goToBoard(page);
 
         const searchInput = page.locator('.board-filter-search');
