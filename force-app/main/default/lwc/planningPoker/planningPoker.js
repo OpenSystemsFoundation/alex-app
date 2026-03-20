@@ -17,19 +17,47 @@ import getKanbanConfig from '@salesforce/apex/KanbanBoardController.getKanbanCon
 const VOTING_SYSTEMS = {
     Fibonacci: {
         label: 'Fibonacci (0, 1, 2, 3, 5, 8, 13, 21, ..)',
-        cards: ['0', '1', '2', '3', '5', '8', '13', '21', '34', '55', '?', '∞']
+        cards: [
+            '0',
+            '1',
+            '2',
+            '3',
+            '5',
+            '8',
+            '13',
+            '21',
+            '34',
+            '55',
+            '?',
+            '∞',
+            '☕'
+        ]
     },
     ModifiedFibonacci: {
         label: 'Modified Fibonacci (0, ½, 1, 2, 3, 5, 8, 13, 20, 40, ..)',
-        cards: ['0', '0.5', '1', '2', '3', '5', '8', '13', '20', '40', '?', '∞']
+        cards: [
+            '0',
+            '0.5',
+            '1',
+            '2',
+            '3',
+            '5',
+            '8',
+            '13',
+            '20',
+            '40',
+            '?',
+            '∞',
+            '☕'
+        ]
     },
     TShirt: {
         label: 'T-Shirt (XS, S, M, L, XL, XXL)',
-        cards: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '?']
+        cards: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '?', '☕']
     },
     PowersOf2: {
         label: 'Powers of 2 (0, 1, 2, 4, 8, 16, 32, 64)',
-        cards: ['0', '1', '2', '4', '8', '16', '32', '64', '?', '∞']
+        cards: ['0', '1', '2', '4', '8', '16', '32', '64', '?', '∞', '☕']
     }
 };
 
