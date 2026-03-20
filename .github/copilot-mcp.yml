@@ -1,0 +1,10 @@
+# MCP servers available to GitHub Copilot coding agent
+# Gives Copilot the ability to control a headless browser via Playwright
+
+servers:
+    playwright:
+        type: stdio
+        command: npx
+        args:
+            - '@anthropic-ai/mcp-server-playwright'
+            - '--headless'
