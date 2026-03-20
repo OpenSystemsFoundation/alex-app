@@ -38,7 +38,8 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Color__c,
                 OpenSF__Status__c,
                 OpenSF__CardCount__c,
-                OpenSF__Board__c
+                OpenSF__Board__c,
+                OpenSF__Category__c
             FROM OpenSF__Column__c
             WHERE OpenSF__Board__c = :boardId
             ORDER BY OpenSF__LexoRankPosition__c ASC NULLS LAST
@@ -165,7 +166,8 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Color__c,
                 OpenSF__Status__c,
                 OpenSF__CardCount__c,
-                OpenSF__Board__c
+                OpenSF__Board__c,
+                OpenSF__Category__c
             FROM OpenSF__Column__c
             WHERE Id = :columnId
             LIMIT 1

@@ -147,23 +147,115 @@ Salesforce Lightning Web Component (LWC) Kanban board application called "Alex" 
 
 ### What Was Built
 
+**Core Kanban:**
 - Redux-style store with middleware (thunk, logging)
-- Platform events for real-time multi-user sync (CardUpdateEvent, ColumnUpdateEvent)
+- Platform events for real-time multi-user sync (CardUpdateEvent, ColumnUpdateEvent, SprintUpdateEvent)
 - Echo prevention via clientRequestId tracking
 - Connection status indicator with graceful degradation (connected → polling → offline)
 - LexoRank positioning for efficient drag-and-drop
 - Selector pattern for Apex SOQL queries
-- DTO layer for clean data transfer
+- DTO layer for clean data transfer (BoardDTO, ColumnDTO, CardDTO, UserDTO, EpicDTO, SprintDTO, SprintCardDTO, SprintSnapshotDTO)
 - Request tracker for pending operation management
 - Health monitoring with polling fallback
 - Multi-window tracking (clientId per browser tab)
 - Sequence numbers for better event ordering
 - Comprehensive test suite (unit + e2e)
 
+**Sprint Management (recently implemented):**
+- Sprint lifecycle: Planning → Active → Completed
+- Sprint creation with auto-numbering (SP-{0000})
+- Sprint start with validation (single active sprint per board)
+- Sprint completion wizard with card disposition (move to backlog or next sprint)
+- SprintCard junction table with soft-delete (RemovedDate__c) and carry-over tracking
+- Story points tracking: per-card, per-sprint (total, completed, velocity)
+- Sprint header component with real-time progress bar and days-remaining indicator
+- SprintUpdateEvent__e platform events for multi-user sprint sync
+
+**Backlog Management (recently implemented):**
+- Full backlog view with search, filtering (priority, card type, refinement status)
+- Bulk selection and actions (add to sprint, set priority, delete)
+- Inline card creation for rapid entry
+- Drag-and-drop reordering with LexoRank
+- Right-click context menu (move to top/bottom, set priority, toggle refinement, move to sprint)
+- NeedsRefinement__c flag for refinement session filtering
+
+**Sprint Analytics (recently implemented):**
+- Burndown chart (Canvas-based, actual vs. ideal trend lines)
+- Velocity chart (bar chart with average velocity line)
+- Sprint summary table (historical sprint metrics)
+- SprintSnapshot__c daily snapshots for burndown data
+- SprintSnapshotScheduler for automated daily snapshots
+
+**Apex Service Layer (recently implemented):**
+- SprintService.cls — full sprint business logic
+- SprintSelector.cls — optimized sprint SOQL queries
+- SprintCardTriggerHandler.cls — junction record event publishing
+- KanbanCardService.cls — card CRUD and positioning
+- KanbanBoardService.cls — board operations
+
 ### What Still Needs Doing
 
-- Apex backend refactoring into service layer
-- See [docs/2026-03-18-roadmap-and-analysis.md](docs/2026-03-18-roadmap-and-analysis.md) for full roadmap
+- See the **Roadmap** section in the [README](README.md) for Now / Next / Future priorities
+- See [docs/2026-03-18-roadmap-and-analysis.md](docs/2026-03-18-roadmap-and-analysis.md) for detailed technical analysis
+
+## CI/CD Pipeline
+
+Full pipeline managed via GitHub Actions — no IDE required for releases, testing, or deployments.
+
+### Existing workflows
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `test.yml` | Push / PR | Lint, Prettier formatting, LWC Jest tests |
+| `apex-tests.yml` | Push to main / PR | Scratch org Apex tests with code coverage |
+| `security-scan.yml` | PR to main | Salesforce Code Analyzer + npm audit |
+
+### Planned workflows (see [docs/2026-03-20-cicd-release-plan.md](docs/2026-03-20-cicd-release-plan.md))
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `version-bump.yml` | PR merge to main | Auto-bump `sfdx-project.json` version based on conventional commit PR title |
+| `release-beta.yml` | Manual (main only) | Create managed beta package, post install URL as GitHub prerelease |
+| `promote-release.yml` | Manual + approval | Promote beta to GA, create production GitHub Release |
+| `scratch-org.yml` | Manual (any branch) | Spin up scratch org, deploy, get login URL |
+| `package-versions.yml` | Manual | List all package versions with status and install links |
+| `deploy-to-org.yml` | Manual | Deploy source to staging/UAT with optional tests and dry-run |
+| `run-apex-tests.yml` | Manual | Run Apex tests against scratch, staging, or UAT org |
+
+### Conventional commits (PR titles)
+
+Version bumps are driven by PR title prefixes:
+
+| Prefix | Bump | Example |
+|--------|------|---------|
+| `feat:` | Minor | `feat: add burndown chart` |
+| `feat!:` / `BREAKING CHANGE` | Major | `feat!: redesign data model` |
+| `fix:` / `perf:` / `refactor:` | Patch | `fix: card drag on mobile` |
+| `docs:` / `chore:` / `ci:` / `test:` / `style:` | None | `docs: update README` |
+
+### Release flow
+
+```
+Feature branch → PR (tests run) → Merge to main (version auto-bumps)
+  → Ready for beta?  → Manual: "Release Beta Package"
+  → Ready for GA?    → Manual: "Promote to GA Release" (requires approval)
+```
+
+### Secrets
+
+| Secret | Purpose | Status |
+|--------|---------|--------|
+| `SFDX_AUTH_URL` | DevHub authentication | Configured |
+| `STAGING_AUTH_URL` | Staging org auth (for deploy/test workflows) | Optional — add when needed |
+| `UAT_AUTH_URL` | UAT org auth (for deploy/test workflows) | Optional — add when needed |
+
+### Key decisions
+
+- **All releases are manual** — main can have bugs, and managed package creation is irreversible
+- **Beta before GA** — always create and test a beta before promoting
+- **`sfdx-project.json` is the version source of truth** — workflows read from and write back to it
+- **GitHub Environments for approval gating** — `production` environment requires reviewer approval for GA promotion
+- **`[skip ci]`** — version bump commits skip CI to avoid infinite loops
 
 ## Architecture Overview
 
@@ -188,13 +280,19 @@ kanbanCardDetail     → card detail modal
 ### Backend Layers
 
 ```
-KanbanBoardController.cls  → @AuraEnabled API endpoints (8 methods)
-KanbanBoardSelector.cls    → SOQL query abstraction
-KanbanBoardDTO.cls         → BoardDTO, ColumnDTO, CardDTO, UserDTO, EpicDTO
-CardTriggerHandler.cls     → publishes CardUpdateEvent__e platform events
-ColumnTriggerHandler.cls   → publishes ColumnUpdateEvent__e platform events
-LexoRank.cls               → fractional indexing for drag-and-drop ordering
-TriggerHandler.cls         → base class with recursion control
+KanbanBoardController.cls      → @AuraEnabled API endpoints (8 methods)
+KanbanBoardService.cls         → board business logic
+KanbanCardService.cls          → card CRUD and positioning
+SprintService.cls              → sprint lifecycle, velocity, snapshots
+KanbanBoardSelector.cls        → board/column/card SOQL queries
+SprintSelector.cls             → sprint/backlog SOQL queries
+KanbanBoardDTO.cls             → BoardDTO, ColumnDTO, CardDTO, UserDTO, EpicDTO, SprintDTO, SprintCardDTO, SprintSnapshotDTO
+CardTriggerHandler.cls         → publishes CardUpdateEvent__e platform events
+ColumnTriggerHandler.cls       → publishes ColumnUpdateEvent__e platform events
+SprintCardTriggerHandler.cls   → publishes SprintUpdateEvent__e platform events
+LexoRank.cls                   → fractional indexing for drag-and-drop ordering
+TriggerHandler.cls             → base class with recursion control
+SprintSnapshotScheduler.cls    → scheduled daily snapshot creation
 ```
 
 ### Real-time Data Flow

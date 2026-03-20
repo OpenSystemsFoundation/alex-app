@@ -5,8 +5,12 @@
   
   **A modern, real-time collaborative Kanban board built with Lightning Web Components**
   
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-  [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-v64.0-blue.svg)](https://developer.salesforce.com)
+  [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE-MIT)
+  [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-v66.0-blue.svg)](https://developer.salesforce.com)
+  [![Test](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/test.yml/badge.svg)](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/test.yml)
+  [![Apex Tests](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/apex-tests.yml/badge.svg)](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/apex-tests.yml)
+  [![Security Scan](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/security-scan.yml/badge.svg)](https://github.com/OpenSystemsFoundation/alex-app/actions/workflows/security-scan.yml)
 </div>
 
 ## 📋 Overview
@@ -236,11 +240,15 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is dual-licensed — you may use it under either license at your choice:
+
+- **Apache License 2.0** — See [LICENSE](LICENSE)
+- **MIT License** — See [LICENSE-MIT](LICENSE-MIT)
 
 ## 🙏 Acknowledgments
 
 - Built by [Open Systems Foundation](https://github.com/OpenSystemsFoundation)
+- Development assisted by [Claude](https://claude.ai) (Anthropic) — AI pair programming for architecture, implementation, and testing
 - Inspired by modern Kanban methodology
 - Powered by Salesforce Platform
 
@@ -251,12 +259,34 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🗺️ Roadmap
 
-- [ ] Enhanced filtering and search capabilities
-- [ ] Card templates and automation
-- [ ] Advanced analytics and reporting
-- [ ] Mobile app companion
-- [ ] Integration with Salesforce Flows
-- [ ] Custom field support for cards
+### Now
+
+- [ ] CI/CD release pipeline (GitHub Actions for beta/GA package creation)
+- [ ] WIP limits on columns (core Kanban methodology)
+- [ ] Cycle time & lead time analytics (how long cards spend in each column)
+
+### Next
+
+- [ ] Planning Poker — real-time estimation via platform events
+- [ ] Retrospectives — Start/Stop/Continue board with anonymous voting
+- [ ] Swimlanes — group cards by epic, assignee, priority, or card type
+- [ ] Cumulative flow diagram — visualize bottlenecks over time
+- [ ] Salesforce record linking — link cards to Cases, Opportunities, or any SObject
+- [ ] Auto-create cards from Cases (Flow-driven)
+- [ ] Bidirectional status sync between cards and linked records
+
+### Future
+
+- [ ] **Customer-facing boards via Experience Cloud** — let your customers see project progress in their community portal
+  - [ ] Board/column/card visibility controls (internal vs. customer-facing)
+  - [ ] Community-ready LWC component
+  - [ ] Internal vs. external comments on cards
+  - [ ] Customer notifications on card status changes
+- [ ] Approval gates on column transitions (Salesforce Approvals integration)
+- [ ] Agentforce integration — sprint planning assistant, retrospective summarizer, smart auto-assignment, natural language board queries
+- [ ] Salesforce Reports & Dashboards integration
+- [ ] Custom fields on cards
+- [ ] Mobile companion
 
 ---
 
