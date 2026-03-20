@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ActionItemCard__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Reference to the kanban Card created as an action item from this retro card</description>
+    <label>Action Item Card</label>
+    <referenceTo>Card__c</referenceTo>
+    <relationshipLabel>Retro Source Cards</relationshipLabel>
+    <relationshipName>RetroSourceCards</relationshipName>
+    <required>false</required>
+    <type>Lookup</type>
+</CustomField>
