@@ -22,7 +22,8 @@ public with sharing class PlanningPokerController {
                         OpenSF__Role__c,
                         OpenSF__Vote__c,
                         OpenSF__HasVoted__c,
-                        OpenSF__IsActive__c
+                        OpenSF__IsActive__c,
+                        OpenSF__Reaction__c
                     FROM OpenSF__Participants__r
                     WHERE OpenSF__IsActive__c = TRUE
                 )
@@ -227,6 +228,7 @@ public with sharing class PlanningPokerController {
         for (OpenSF__PokerParticipant__c p : participants) {
             p.OpenSF__Vote__c = null;
             p.OpenSF__HasVoted__c = false;
+            p.OpenSF__Reaction__c = null;
         }
         if (!participants.isEmpty()) {
             update participants;
@@ -270,6 +272,36 @@ public with sharing class PlanningPokerController {
             LIMIT 1
         ];
         return new SessionDTO(session);
+    }
+
+    @AuraEnabled
+    public static void setReaction(String sessionId, String reaction) {
+        String userId = UserInfo.getUserId();
+        List<OpenSF__PokerParticipant__c> participants = [
+            SELECT Id
+            FROM OpenSF__PokerParticipant__c
+            WHERE
+                OpenSF__Session__c = :sessionId
+                AND OpenSF__UserId__c = :userId
+            LIMIT 1
+        ];
+
+        if (!participants.isEmpty()) {
+            OpenSF__PokerParticipant__c p = participants[0];
+            p.OpenSF__Reaction__c = reaction;
+            update p;
+
+            publishEvent(
+                sessionId,
+                'REACTION',
+                JSON.serialize(
+                    new Map<String, Object>{
+                        'userId' => userId,
+                        'reaction' => reaction
+                    }
+                )
+            );
+        }
     }
 
     @AuraEnabled
@@ -420,6 +452,8 @@ public with sharing class PlanningPokerController {
         public Boolean hasVoted;
         @AuraEnabled
         public Boolean isActive;
+        @AuraEnabled
+        public String reaction;
 
         public ParticipantDTO(OpenSF__PokerParticipant__c p) {
             this.id = p.Id;
@@ -430,6 +464,7 @@ public with sharing class PlanningPokerController {
             this.vote = p.OpenSF__Vote__c;
             this.hasVoted = p.OpenSF__HasVoted__c;
             this.isActive = p.OpenSF__IsActive__c;
+            this.reaction = p.OpenSF__Reaction__c;
         }
     }
 }

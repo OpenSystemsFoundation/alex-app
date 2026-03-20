@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/Metadata">
+    <fullName>Reaction__c</fullName>
+    <label>Reaction</label>
+    <type>Text</type>
+    <length>10</length>
+    <required>false</required>
+</CustomField>

@@ -267,6 +267,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>PokerParticipant__c.Reaction__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Sprint__c.Board__c</field>
         <readable>true</readable>
     </fieldPermissions>

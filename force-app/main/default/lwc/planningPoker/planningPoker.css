@@ -152,6 +152,11 @@
     color: #706e6b;
 }
 
+.reaction-badge {
+    font-size: 1.125rem;
+    margin-left: 0.25rem;
+}
+
 .participant-vote {
     display: inline-flex;
     align-items: center;

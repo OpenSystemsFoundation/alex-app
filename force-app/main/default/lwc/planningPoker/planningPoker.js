@@ -10,6 +10,7 @@ import revealVotes from '@salesforce/apex/PlanningPokerController.revealVotes';
 import clearVotes from '@salesforce/apex/PlanningPokerController.clearVotes';
 import getSession from '@salesforce/apex/PlanningPokerController.getSession';
 import closeSession from '@salesforce/apex/PlanningPokerController.closeSession';
+import setReaction from '@salesforce/apex/PlanningPokerController.setReaction';
 import getCurrentUserId from '@salesforce/apex/PlanningPokerController.getCurrentUserId';
 import getKanbanConfig from '@salesforce/apex/KanbanBoardController.getKanbanConfig';
 
@@ -83,9 +84,6 @@ export default class PlanningPoker extends LightningElement {
     @track timerActive = false;
     @track showTimerModal = false;
     @track timerInput = 60;
-
-    // Results state
-    @track reactions = [];
 
     // Debug
     @track debugMode = false;
@@ -482,18 +480,22 @@ export default class PlanningPoker extends LightningElement {
             const result = await clearVotes({ sessionId: this.session.id });
             this.session = result;
             this.selectedVote = null;
-            this.reactions = [];
         } catch (error) {
             this._showError('Failed to clear votes', error);
         }
     }
 
-    handleReaction(event) {
+    async handleReaction(event) {
         const reaction = event.currentTarget.dataset.value;
-        this.reactions = [
-            ...this.reactions,
-            { value: reaction, key: Date.now() }
-        ];
+        try {
+            await setReaction({
+                sessionId: this.session.id,
+                reaction
+            });
+            await this._refreshSession();
+        } catch (error) {
+            this._showError('Failed to set reaction', error);
+        }
     }
 
     // --- Timer ---
