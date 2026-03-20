@@ -111,6 +111,7 @@ export default class PlanningPoker extends LightningElement {
     @track timerSeconds = 0;
     @track timerActive = false;
     @track showTimerModal = false;
+    @track showHelp = false;
     @track timerInput = 60;
 
     // Debug
@@ -390,6 +391,10 @@ export default class PlanningPoker extends LightningElement {
 
     toggleAdvancedSettings() {
         this.showAdvancedSettings = !this.showAdvancedSettings;
+    }
+
+    toggleHelp() {
+        this.showHelp = !this.showHelp;
     }
 
     handleRefreshSessions() {

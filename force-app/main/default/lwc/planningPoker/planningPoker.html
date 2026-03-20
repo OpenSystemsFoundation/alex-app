@@ -416,8 +416,16 @@
                     ></lightning-icon>
                     <span
                         class="slds-text-heading_small poker-title"
-                        >POKER SIZING</span
+                        >UNCERTAINTY ESTIMATION</span
                     >
+                    <lightning-button-icon
+                        icon-name="utility:info"
+                        alternative-text="What is this?"
+                        onclick={toggleHelp}
+                        size="small"
+                        class="slds-m-left_x-small"
+                        variant="bare"
+                    ></lightning-button-icon>
                 </div>
                 <div
                     class="slds-grid slds-grid_vertical-align-center slds-gutters_x-small"
@@ -462,6 +470,76 @@
                     ></lightning-button-icon>
                 </div>
             </div>
+
+            <!-- Help Section -->
+            <template lwc:if={showHelp}>
+                <div
+                    class="help-section slds-box slds-theme_info slds-m-around_small"
+                >
+                    <div
+                        class="slds-grid slds-grid_align-spread slds-grid_vertical-align-start"
+                    >
+                        <div>
+                            <p
+                                class="slds-text-heading_small slds-m-bottom_x-small"
+                            >
+                                Estimation is not about time
+                                — it's about scoping under
+                                uncertainty.
+                            </p>
+                            <p
+                                class="slds-m-bottom_x-small"
+                            >
+                                When you vote, consider:
+                            </p>
+                            <ul class="slds-list_dotted">
+                                <li>
+                                    <strong
+                                        >Uncertainty</strong
+                                    >
+                                    — How much information
+                                    is missing from this
+                                    story?
+                                </li>
+                                <li>
+                                    <strong
+                                        >Complexity</strong
+                                    >
+                                    — How many interacting
+                                    parts are involved?
+                                </li>
+                                <li>
+                                    <strong>Effort</strong>
+                                    — What does it take to
+                                    get this done?
+                                </li>
+                                <li>
+                                    <strong
+                                        >Time
+                                        estimate</strong
+                                    >
+                                    — Roughly how long will
+                                    it take?
+                                </li>
+                                <li>
+                                    <strong
+                                        >Assumptions</strong
+                                    >
+                                    — What are we assuming
+                                    that may not be true?
+                                </li>
+                            </ul>
+                        </div>
+                        <lightning-button-icon
+                            icon-name="utility:close"
+                            alternative-text="Close help"
+                            onclick={toggleHelp}
+                            size="small"
+                            variant="bare-inverse"
+                        ></lightning-button-icon>
+                    </div>
+                </div>
+            </template>
 
             <div class="slds-grid slds-gutters">
                 <!-- Main Content Area -->
