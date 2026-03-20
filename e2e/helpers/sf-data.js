@@ -9,6 +9,19 @@ const { execSync } = require('child_process');
 const TARGET_ORG = 'e2e-test';
 
 /**
+ * Extract the first valid JSON object from CLI output that may contain
+ * warnings, banners, or other non-JSON text before/after the JSON.
+ * @param {string} raw
+ * @returns {object}
+ */
+function parseJsonFromOutput(raw) {
+    const start = raw.indexOf('{');
+    if (start === -1) throw new Error(`No JSON found in output: ${raw}`);
+    const jsonStr = raw.substring(start);
+    return JSON.parse(jsonStr);
+}
+
+/**
  * Run an SOQL query and return the records array.
  * @param {string} query
  * @returns {object[]}
@@ -18,7 +31,7 @@ function sfQuery(query) {
         `sf data query --query "${query}" --target-org ${TARGET_ORG} --json`,
         { encoding: 'utf8', timeout: 30_000 }
     );
-    const json = JSON.parse(raw);
+    const json = parseJsonFromOutput(raw);
     return json.result?.records || [];
 }
 
@@ -46,7 +59,7 @@ function sfCreate(sobject, values) {
         `sf data create record --sobject ${sobject} --values "${values}" --target-org ${TARGET_ORG} --json`,
         { encoding: 'utf8', timeout: 30_000 }
     );
-    const json = JSON.parse(raw);
+    const json = parseJsonFromOutput(raw);
     return json.result?.id || '';
 }
 
