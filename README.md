@@ -259,12 +259,34 @@ This project is dual-licensed — you may use it under either license at your ch
 
 ## 🗺️ Roadmap
 
-- [ ] Enhanced filtering and search capabilities
-- [ ] Card templates and automation
-- [ ] Advanced analytics and reporting
-- [ ] Mobile app companion
-- [ ] Integration with Salesforce Flows
-- [ ] Custom field support for cards
+### Now
+
+- [ ] CI/CD release pipeline (GitHub Actions for beta/GA package creation)
+- [ ] WIP limits on columns (core Kanban methodology)
+- [ ] Cycle time & lead time analytics (how long cards spend in each column)
+
+### Next
+
+- [ ] Planning Poker — real-time estimation via platform events
+- [ ] Retrospectives — Start/Stop/Continue board with anonymous voting
+- [ ] Swimlanes — group cards by epic, assignee, priority, or card type
+- [ ] Cumulative flow diagram — visualize bottlenecks over time
+- [ ] Salesforce record linking — link cards to Cases, Opportunities, or any SObject
+- [ ] Auto-create cards from Cases (Flow-driven)
+- [ ] Bidirectional status sync between cards and linked records
+
+### Future
+
+- [ ] **Customer-facing boards via Experience Cloud** — let your customers see project progress in their community portal
+  - [ ] Board/column/card visibility controls (internal vs. customer-facing)
+  - [ ] Community-ready LWC component
+  - [ ] Internal vs. external comments on cards
+  - [ ] Customer notifications on card status changes
+- [ ] Approval gates on column transitions (Salesforce Approvals integration)
+- [ ] Agentforce integration — sprint planning assistant, retrospective summarizer, smart auto-assignment, natural language board queries
+- [ ] Salesforce Reports & Dashboards integration
+- [ ] Custom fields on cards
+- [ ] Mobile companion
 
 ---
 
