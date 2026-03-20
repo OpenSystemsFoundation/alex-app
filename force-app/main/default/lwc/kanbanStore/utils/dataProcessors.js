@@ -34,7 +34,8 @@ export const processColumnsData = (columns) => {
         cardCount: 0,
         cards: [],
         columnStyle: col.color ? `border-top: 4px solid ${col.color}` : '',
-        columnUrl: `/lightning/r/OpenSF__Column__c/${col.Id}/view`
+        columnUrl: `/lightning/r/OpenSF__Column__c/${col.Id}/view`,
+        isDone: col.category === 'Done'
     }));
 };
 

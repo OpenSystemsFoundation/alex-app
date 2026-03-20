@@ -83,6 +83,9 @@ public with sharing class KanbanCardService {
             )
             .getRecords();
 
+        // Auto-complete/un-complete sprint card based on column category
+        autoUpdateSprintCompletion(cardId, targetColumn);
+
         // Query updated card to get new sequence number
         OpenSF__Card__c updatedCard = [
             SELECT OpenSF__SequenceNumber__c, LastModifiedDate
@@ -427,5 +430,71 @@ public with sharing class KanbanCardService {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Auto-update sprint completion when a card moves to/from a Done-category column.
+     * When a card moves to a column with Category__c = 'Done', the active sprint
+     * junction record is marked as completed. When moved away from Done, it is
+     * un-completed. This drives the burndown chart with smooth, incremental progress
+     * instead of the Jira-style cliff when batches are released.
+     *
+     * @param cardId The card that was moved
+     * @param targetColumn The column the card was moved to
+     */
+    private static void autoUpdateSprintCompletion(
+        Id cardId,
+        OpenSF__Column__c targetColumn
+    ) {
+        Boolean isDoneColumn = targetColumn.OpenSF__Category__c == 'Done';
+
+        // Find active sprint junction for this card
+        List<OpenSF__SprintCard__c> junctions = [
+            SELECT
+                Id,
+                OpenSF__CompletedInSprint__c,
+                OpenSF__CompletedDate__c,
+                OpenSF__Sprint__r.OpenSF__Status__c
+            FROM OpenSF__SprintCard__c
+            WHERE
+                OpenSF__Card__c = :cardId
+                AND OpenSF__RemovedDate__c = NULL
+                AND OpenSF__Sprint__r.OpenSF__Status__c = 'Active'
+            LIMIT 1
+        ];
+
+        if (junctions.isEmpty()) {
+            return;
+        }
+
+        OpenSF__SprintCard__c junction = junctions[0];
+
+        if (isDoneColumn && !junction.OpenSF__CompletedInSprint__c) {
+            // Moving to Done — mark completed
+            junction.OpenSF__CompletedInSprint__c = true;
+            junction.OpenSF__CompletedDate__c = DateTime.now();
+            update Security.stripInaccessible(
+                    AccessType.UPDATABLE,
+                    new List<OpenSF__SprintCard__c>{ junction }
+                )
+                .getRecords();
+
+            SprintService.recalculateSprintPointsPublic(
+                junction.OpenSF__Sprint__c
+            );
+        } else if (!isDoneColumn && junction.OpenSF__CompletedInSprint__c) {
+            // Moving away from Done — un-complete
+            junction.OpenSF__CompletedInSprint__c = false;
+            junction.OpenSF__CompletedDate__c = null;
+            update Security.stripInaccessible(
+                    AccessType.UPDATABLE,
+                    new List<OpenSF__SprintCard__c>{ junction }
+                )
+                .getRecords();
+
+            SprintService.recalculateSprintPointsPublic(
+                junction.OpenSF__Sprint__c
+            );
+        }
     }
 }

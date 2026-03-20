@@ -434,6 +434,14 @@ public with sharing class SprintService {
     }
 
     /**
+     * Public wrapper for recalculating sprint points (called by KanbanCardService
+     * when auto-completing cards on move to Done-category columns)
+     */
+    public static void recalculateSprintPointsPublic(Id sprintId) {
+        recalculateSprintPoints(sprintId);
+    }
+
+    /**
      * Recalculate sprint total and completed points
      */
     private static void recalculateSprintPoints(Id sprintId) {

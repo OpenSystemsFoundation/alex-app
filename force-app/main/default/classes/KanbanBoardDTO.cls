@@ -64,6 +64,8 @@ public with sharing class KanbanBoardDTO {
         public Decimal cardCount;
         @AuraEnabled
         public Id boardId;
+        @AuraEnabled
+        public String category;
 
         public ColumnDTO(OpenSF__Column__c column) {
             this.Id = column.Id;
@@ -74,6 +76,7 @@ public with sharing class KanbanBoardDTO {
             this.status = column.OpenSF__Status__c;
             this.cardCount = column.OpenSF__CardCount__c;
             this.boardId = column.OpenSF__Board__c;
+            this.category = column.OpenSF__Category__c;
         }
     }
 
