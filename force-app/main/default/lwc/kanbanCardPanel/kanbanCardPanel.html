@@ -81,9 +81,28 @@
                                 <div
                                     class="slds-col slds-size_1-of-1 slds-var-m-top_small"
                                 >
+                                    <div
+                                        class="slds-grid slds-grid_align-spread slds-grid_vertical-align-end slds-var-m-bottom_xx-small"
+                                    >
+                                        <span
+                                            class="slds-form-element__label"
+                                            >Description</span
+                                        >
+                                        <template
+                                            lwc:if={showApplyTemplate}
+                                        >
+                                            <lightning-button
+                                                variant="base"
+                                                label="Apply Template"
+                                                icon-name="utility:paste"
+                                                onclick={handleApplyTemplate}
+                                                class="template-btn"
+                                            ></lightning-button>
+                                        </template>
+                                    </div>
                                     <lightning-input-field
                                         field-name={descriptionField.fieldName}
-                                        variant="label-stacked"
+                                        variant="label-hidden"
                                     ></lightning-input-field>
                                 </div>
                             </template>
