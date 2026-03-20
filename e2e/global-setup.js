@@ -1,17 +1,30 @@
 // @ts-check
 const { chromium } = require('@playwright/test');
+const { execSync } = require('child_process');
 const path = require('path');
 
 const STORAGE_STATE_PATH = path.join(__dirname, '.auth', 'storageState.json');
+const TARGET_ORG = process.env.SF_TARGET_ORG || 'e2e-test';
+const SF_ENV = { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' };
 
 /**
- * Global setup: authenticate once via the frontdoor URL and save
- * the session cookies so all tests can reuse them.
+ * Global setup:
+ * 1. Reset test data via Apex scripts (idempotent)
+ * 2. Authenticate once via frontdoor URL and save session cookies
  */
 async function globalSetup() {
     const loginUrl = process.env.SCRATCH_ORG_URL;
     if (!loginUrl) return;
 
+    // Reset test data — create a fresh filled board
+    console.log('[global-setup] Creating fresh E2E test data...');
+    execSync(
+        `sf apex run --file scripts/apex/CreateFilledKanbanBoard.apex --target-org ${TARGET_ORG}`,
+        { encoding: 'utf8', timeout: 60_000, env: SF_ENV, stdio: 'inherit' }
+    );
+
+    // Authenticate and save session
+    console.log('[global-setup] Authenticating via frontdoor...');
     const browser = await chromium.launch();
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -21,10 +34,7 @@ async function globalSetup() {
         timeout: 45_000
     });
 
-    // Wait for Salesforce to settle after frontdoor redirect
     await page.waitForTimeout(5000);
-
-    // Save the authenticated session
     await context.storageState({ path: STORAGE_STATE_PATH });
     await browser.close();
 }

@@ -9,6 +9,8 @@ module.exports = defineConfig({
     testIgnore: ['**/global-setup.js'],
     timeout: 60_000,
     retries: 1,
+    workers: 1,
+    fullyParallel: false,
     globalSetup: './e2e/global-setup.js',
     use: {
         headless: true,
