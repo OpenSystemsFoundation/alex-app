@@ -1,40 +1,37 @@
 public with sharing class PlanningPokerController {
+    // Centralized field lists to avoid missing-field SOQL errors
+    private static final String SESSION_FIELDS =
+        'Id, Name, OpenSF__SessionName__c, OpenSF__Status__c, ' +
+        'OpenSF__VotingSystem__c, OpenSF__AutoReveal__c, ' +
+        'OpenSF__AllowReactions__c, OpenSF__ShowClearPermission__c, ' +
+        'CreatedById, CreatedDate';
+
+    private static final String PARTICIPANT_FIELDS =
+        'Id, Name, OpenSF__UserId__c, OpenSF__Avatar__c, ' +
+        'OpenSF__Role__c, OpenSF__Vote__c, OpenSF__HasVoted__c, ' +
+        'OpenSF__IsActive__c, OpenSF__Reaction__c';
+
+    private static final String PARTICIPANT_SUBQUERY =
+        '(SELECT ' +
+        PARTICIPANT_FIELDS +
+        ' FROM OpenSF__Participants__r' +
+        ' WHERE OpenSF__IsActive__c = TRUE' +
+        ' ORDER BY CreatedDate ASC)';
+
     @AuraEnabled
     public static List<SessionDTO> getActiveSessions() {
-        List<OpenSF__PokerSession__c> sessions = [
-            SELECT
-                Id,
-                Name,
-                OpenSF__SessionName__c,
-                OpenSF__Status__c,
-                OpenSF__VotingSystem__c,
-                OpenSF__AutoReveal__c,
-                OpenSF__AllowReactions__c,
-                OpenSF__ShowClearPermission__c,
-                CreatedById,
-                CreatedDate,
-                (
-                    SELECT
-                        Id,
-                        Name,
-                        OpenSF__UserId__c,
-                        OpenSF__Avatar__c,
-                        OpenSF__Role__c,
-                        OpenSF__Vote__c,
-                        OpenSF__HasVoted__c,
-                        OpenSF__IsActive__c,
-                        OpenSF__Reaction__c
-                    FROM OpenSF__Participants__r
-                    WHERE OpenSF__IsActive__c = TRUE
-                )
-            FROM OpenSF__PokerSession__c
-            WHERE OpenSF__Status__c != 'Closed'
-            ORDER BY CreatedDate DESC
-            LIMIT 50
-        ];
+        String query =
+            'SELECT ' +
+            SESSION_FIELDS +
+            ', ' +
+            PARTICIPANT_SUBQUERY +
+            ' FROM OpenSF__PokerSession__c' +
+            ' WHERE OpenSF__Status__c != \'Closed\'' +
+            ' ORDER BY CreatedDate DESC' +
+            ' LIMIT 50';
 
         List<SessionDTO> result = new List<SessionDTO>();
-        for (OpenSF__PokerSession__c s : sessions) {
+        for (OpenSF__PokerSession__c s : Database.query(query)) {
             result.add(new SessionDTO(s));
         }
         return result;
@@ -90,7 +87,7 @@ public with sharing class PlanningPokerController {
         String userId = UserInfo.getUserId();
 
         List<OpenSF__PokerParticipant__c> existing = [
-            SELECT Id, OpenSF__IsActive__c
+            SELECT Id
             FROM OpenSF__PokerParticipant__c
             WHERE
                 OpenSF__Session__c = :sessionId
@@ -241,36 +238,16 @@ public with sharing class PlanningPokerController {
 
     @AuraEnabled
     public static SessionDTO getSession(String sessionId) {
-        OpenSF__PokerSession__c session = [
-            SELECT
-                Id,
-                Name,
-                OpenSF__SessionName__c,
-                OpenSF__Status__c,
-                OpenSF__VotingSystem__c,
-                OpenSF__AutoReveal__c,
-                OpenSF__AllowReactions__c,
-                OpenSF__ShowClearPermission__c,
-                CreatedById,
-                CreatedDate,
-                (
-                    SELECT
-                        Id,
-                        Name,
-                        OpenSF__UserId__c,
-                        OpenSF__Avatar__c,
-                        OpenSF__Role__c,
-                        OpenSF__Vote__c,
-                        OpenSF__HasVoted__c,
-                        OpenSF__IsActive__c
-                    FROM OpenSF__Participants__r
-                    WHERE OpenSF__IsActive__c = TRUE
-                    ORDER BY CreatedDate ASC
-                )
-            FROM OpenSF__PokerSession__c
-            WHERE Id = :sessionId
-            LIMIT 1
-        ];
+        String query =
+            'SELECT ' +
+            SESSION_FIELDS +
+            ', ' +
+            PARTICIPANT_SUBQUERY +
+            ' FROM OpenSF__PokerSession__c' +
+            ' WHERE Id = :sessionId' +
+            ' LIMIT 1';
+
+        OpenSF__PokerSession__c session = Database.query(query);
         return new SessionDTO(session);
     }
 
