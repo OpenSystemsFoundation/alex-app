@@ -43,6 +43,42 @@ describe('dataProcessors', () => {
 
             expect(result[0].columnStyle).toBe('');
         });
+
+        it('should set isDone for Done category columns', () => {
+            const columns = [{ Id: 'col1', Name: 'Done', category: 'Done' }];
+            const result = processColumnsData(columns);
+            expect(result[0].isDone).toBe(true);
+            expect(result[0].isReleased).toBe(false);
+            expect(result[0].isCompleted).toBe(true);
+        });
+
+        it('should set isReleased for Released category columns', () => {
+            const columns = [
+                { Id: 'col1', Name: 'Released', category: 'Released' }
+            ];
+            const result = processColumnsData(columns);
+            expect(result[0].isDone).toBe(false);
+            expect(result[0].isReleased).toBe(true);
+            expect(result[0].isCompleted).toBe(true);
+        });
+
+        it('should not set isCompleted for non-terminal columns', () => {
+            const columns = [
+                { Id: 'col1', Name: 'In Progress', category: 'InProgress' }
+            ];
+            const result = processColumnsData(columns);
+            expect(result[0].isDone).toBe(false);
+            expect(result[0].isReleased).toBe(false);
+            expect(result[0].isCompleted).toBe(false);
+        });
+
+        it('should handle columns without category', () => {
+            const columns = [{ Id: 'col1', Name: 'To Do' }];
+            const result = processColumnsData(columns);
+            expect(result[0].isDone).toBe(false);
+            expect(result[0].isReleased).toBe(false);
+            expect(result[0].isCompleted).toBe(false);
+        });
     });
 
     describe('processCardsData', () => {

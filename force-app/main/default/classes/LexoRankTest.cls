@@ -178,8 +178,6 @@ private class LexoRankTest {
 
     @isTest
     static void testMidpointMaintainsKeyLength() {
-        // This was the original bug: midpoint between full-length ranks
-        // produced 2-char keys like 0|he: instead of 0|he0000:
         String prev = '0|hd0000:';
         String next = '0|hf0000:';
         String middle = LexoRank.between(prev, next);
@@ -195,7 +193,6 @@ private class LexoRankTest {
         String rank1 = '0|h00000:';
         String rank2 = '0|hzzzzz:';
 
-        // Insert 20 cards between rank1 and rank2, always at the midpoint
         List<String> ranks = new List<String>{ rank1, rank2 };
         for (Integer i = 0; i < 20; i++) {
             Integer insertIdx = ranks.size() / 2;
@@ -236,7 +233,6 @@ private class LexoRankTest {
     @isTest
     static void testConsecutiveInsertionsAtSameSpot() {
         // Simulate always inserting at position 1 (after first card)
-        // This is the worst case for key growth
         String first = '0|h00000:';
         String second = '0|h00001:';
 
@@ -247,15 +243,12 @@ private class LexoRankTest {
             assertValidRank(middle, 'consecutive insertion ' + i);
             System.assert(middle > prev, 'Should be after prev at step ' + i);
             System.assert(middle < next, 'Should be before next at step ' + i);
-            // Next insertion goes between prev and this new middle
             next = middle;
         }
     }
 
     @isTest
     static void testShortKeyInputsGetNormalized() {
-        // Even if existing data has short keys (from the old bug),
-        // new operations should produce full-length keys
         String shortPrev = '0|he:';
         String shortNext = '0|hf:';
         String result = LexoRank.between(shortPrev, shortNext);
@@ -285,7 +278,6 @@ private class LexoRankTest {
 
     @isTest
     static void testNoColonInKey() {
-        // Specifically test that colons from input keys don't leak into the result
         String prev = '0|hg0000:';
         String next = '0|hh0000:';
         String result = LexoRank.between(prev, next);

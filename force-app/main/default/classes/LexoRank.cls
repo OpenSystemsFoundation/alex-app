@@ -96,63 +96,52 @@ public with sharing class LexoRank {
      * and computes the exact average, maintaining DEFAULT_LENGTH.
      */
     private static String midpoint(String prev, String next) {
-        // Strip colon separators before calculation
-        prev = prev.replace(':', '');
-        next = next.replace(':', '');
+        // Strip trailing colon before calculation
+        String cleanPrev = prev.endsWith(':')
+            ? prev.substring(0, prev.length() - 1)
+            : prev;
+        String cleanNext = next.endsWith(':')
+            ? next.substring(0, next.length() - 1)
+            : next;
 
-        // Ensure minimum key length to prevent degenerate short keys
-        Integer len = Math.max(
-            Math.max(prev.length(), next.length()),
-            DEFAULT_LENGTH
-        );
-        prev = padRight(prev, len);
-        next = padRight(next, len);
+        // Pad to same length with min char
+        Integer maxLen = Math.max(cleanPrev.length(), cleanNext.length());
+        cleanPrev = padRight(cleanPrev, maxLen);
+        cleanNext = padRight(cleanNext, maxLen);
 
-        Integer ZERO = getCharCode('0'); // ASCII 48
-        Integer BASE = getCharCode('z') - ZERO + 1; // 75
+        Integer minCode = getCharCode('0');
+        Integer maxCode = getCharCode('z');
 
-        // Step 1: Add prev + next digit by digit (right to left)
-        List<Integer> sum = new List<Integer>();
-        for (Integer i = 0; i < len; i++) {
-            sum.add(0);
-        }
-
-        Integer carry = 0;
-        for (Integer i = len - 1; i >= 0; i--) {
-            Integer s =
-                (prev.charAt(i) - ZERO) +
-                (next.charAt(i) - ZERO) +
-                carry;
-            sum[i] = Math.mod(s, BASE);
-            carry = s / BASE;
-        }
-
-        // Step 2: Divide sum by 2 (left to right), propagating remainder
         List<Integer> result = new List<Integer>();
-        Integer remainder = carry;
-        for (Integer i = 0; i < len; i++) {
-            Integer dividend = remainder * BASE + sum[i];
-            result.add(dividend / 2);
-            remainder = Math.mod(dividend, 2);
+        Boolean useMaxForNext = false;
+
+        // Allow extra positions for precision extension
+        Integer lim = maxLen + 8;
+        for (Integer i = 0; i < lim; i++) {
+            Integer p = i < cleanPrev.length() ? cleanPrev.charAt(i) : minCode;
+            Integer n = useMaxForNext
+                ? maxCode
+                : (i < cleanNext.length() ? cleanNext.charAt(i) : minCode);
+
+            if (p == n) {
+                result.add(p);
+                continue;
+            }
+
+            Integer mid = (p + n) / 2;
+            if (mid > p) {
+                result.add(mid);
+                return buildString(result) + ':';
+            }
+
+            // Adjacent characters: take lower, use max bound going forward
+            result.add(p);
+            useMaxForNext = true;
         }
 
-        // If remainder, extend by one digit to preserve precision
-        if (remainder > 0) {
-            result.add(BASE / 2);
-        }
-
-        // Convert back to characters
-        String mid = '';
-        for (Integer i = 0; i < result.size(); i++) {
-            mid += String.fromCharArray(new List<Integer>{ result[i] + ZERO });
-        }
-
-        // Safety: if midpoint equals prev (extremely close values), extend
-        if (mid == prev) {
-            mid += String.fromCharArray(new List<Integer>{ getCharCode('m') });
-        }
-
-        return mid + ':';
+        // Safety fallback — should not normally be reached
+        result.add((minCode + maxCode) / 2);
+        return buildString(result) + ':';
     }
 
     /**
