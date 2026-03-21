@@ -22,37 +22,83 @@ sf project deploy start --target-org my-org --ignore-conflicts
 # Assign permission set (required for app access)
 sf org assign permset --name Alex_Admin --target-org my-org
 
+# Create sample board data
+sf apex run --file scripts/apex/CreateFilledKanbanBoard.apex --target-org my-org
+
 # Run Apex tests
 sf apex run test --target-org my-org --test-level RunLocalTests --result-format human --code-coverage
 
-# Get a login URL for browser testing
+# Get a login URL for browser testing (one-time use)
 sf org open --target-org my-org --url-only
-
-# Run anonymous Apex
-sf apex run --file scripts/apex/CreateBoard.apex --target-org my-org
 
 # Delete a scratch org
 sf org delete scratch --target-org my-org --no-prompt
 ```
 
-## Dynamic Testing with Playwright MCP
+## Interactive PR Testing with Playwright MCP
 
-You have a Playwright MCP server available. Use it to:
+You have a Playwright MCP server that gives you a headless Chromium browser. When reviewing or testing a PR that changes LWC components, use this flow:
 
-1. Get a scratch org login URL via `sf org open --target-org <alias> --url-only`
-2. Navigate to the login URL in the browser
-3. Navigate to the app at `/lightning/n/OpenSF__Alex`
-4. Interact with the kanban board — create cards, drag columns, verify UI state
+### 1. Set up a scratch org with the PR code
 
-## Testing Workflow
+```bash
+sf org create scratch --definition-file config/project-scratch-def.json --alias pr-test --duration-days 1 --wait 10
+sf project deploy start --target-org pr-test --ignore-conflicts
+sf org assign permset --name Alex_Admin --target-org pr-test
+sf apex run --file scripts/apex/CreateFilledKanbanBoard.apex --target-org pr-test
+```
 
-When making changes, follow this flow:
+### 2. Get a login URL and open the app in the browser
 
-1. **Deploy** your changes to a scratch org with `sf project deploy start`
-2. **Run Apex tests** with `sf apex run test` to verify server-side logic
-3. **Run LWC unit tests** with `npm run test:unit`
-4. **Run E2E tests** with the Playwright MCP browser to verify the UI works end-to-end
-5. **Report results** — summarize what passed/failed
+```bash
+sf org open --target-org pr-test --url-only
+```
+
+Use the Playwright MCP to navigate to the returned URL, then go to the board:
+
+- Login URL → authenticates the session
+- Navigate to `/lightning/r/OpenSF__Board__c/<boardId>/view` to see the kanban board
+- Or navigate to the Boards list at `/lightning/o/OpenSF__Board__c/list`
+
+### 3. Verify the UI based on what changed
+
+- **LWC template changes** → verify the component renders correctly, check layout
+- **CSS changes** → check visual appearance, spacing, colors
+- **JS logic changes** → interact with the board (click, drag, type) and verify behavior
+- **Apex changes** → verify data loads correctly, test CRUD operations via the UI
+
+### 4. Run the E2E test suite
+
+```bash
+SCRATCH_ORG_URL="<login-url>" npx playwright test --project=chromium --retries=0 --grep-invert="Visual Regression"
+```
+
+### 5. Clean up
+
+```bash
+sf org delete scratch --target-org pr-test --no-prompt
+```
+
+### 6. Report findings
+
+Comment on the PR with:
+
+- Screenshots of the UI (if relevant)
+- E2E test results
+- Any issues found
+
+## Key UI elements for testing
+
+The kanban board uses these data attributes for reliable selectors:
+
+- `data-card-id` — on card articles and card name links
+- `data-column-id` — on columns and column wrappers
+- `data-tab-id` — on tab buttons ("board", "backlog")
+- `.kanban-board-wrapper` — the main board container
+- `.kanban-column` — individual columns
+- `article.kanban-card` — card elements
+- `.board-filter-search` — search input
+- `.add-card-button` — add card buttons per column
 
 ## Namespace
 

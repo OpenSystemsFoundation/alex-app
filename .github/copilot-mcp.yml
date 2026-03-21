@@ -6,5 +6,5 @@ servers:
         type: stdio
         command: npx
         args:
-            - '@anthropic-ai/mcp-server-playwright'
+            - '@playwright/mcp@latest'
             - '--headless'
