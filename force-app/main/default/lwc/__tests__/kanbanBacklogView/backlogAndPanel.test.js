@@ -73,7 +73,6 @@ import {
     deleteBacklogCardsAsync as mockDeleteBacklogCardsAsync,
     reorderBacklogCardAsync as mockReorderBacklogCardAsync,
     moveCardsToSprintAsync as mockMoveCardsToSprintAsync,
-    updateCard as mockUpdateCard,
     updateCardAsync as mockUpdateCardAsync,
     deleteCardAsync as mockDeleteCardAsync
 } from 'c/kanbanStore';
