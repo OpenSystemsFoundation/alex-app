@@ -25,11 +25,30 @@ const { getSampleBoardData } = require('../helpers/sf-data');
 let cachedBoardData = null;
 let baseUrl = '';
 
+/**
+ * Authenticate a Salesforce session via frontdoor URL.
+ * Waits for all redirects to settle before returning.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} loginUrl
+ */
+async function sfLogin(page, loginUrl) {
+    await page.goto(loginUrl, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60_000
+    });
+
+    // Wait for SF redirect chain to settle (frontdoor → setup → lightning)
+    // Poll until URL stops changing
+    let lastUrl = '';
+    for (let i = 0; i < 10; i++) {
+        await page.waitForTimeout(2000);
+        const currentUrl = page.url();
+        if (currentUrl === lastUrl) break;
+        lastUrl = currentUrl;
+    }
+}
+
 const test = base.test.extend({
-    /**
-     * User A — admin user with their own browser context and board page.
-     * Authenticated via USER_A_LOGIN_URL (or SCRATCH_ORG_URL fallback).
-     */
     userA: async ({ browser }, use) => {
         const loginUrl =
             process.env.USER_A_LOGIN_URL || process.env.SCRATCH_ORG_URL;
@@ -37,49 +56,40 @@ const test = base.test.extend({
 
         const context = await browser.newContext();
         const page = await context.newPage();
-
-        await page.goto(loginUrl, {
-            waitUntil: 'domcontentloaded',
-            timeout: 45_000
-        });
-        await page.waitForTimeout(3000);
+        await sfLogin(page, loginUrl);
 
         const board = new BoardPage(page);
         await use({ page, board, context });
         await context.close();
     },
 
-    /**
-     * User B — standard user with their own browser context and board page.
-     * Authenticated via USER_B_LOGIN_URL.
-     */
     userB: async ({ browser }, use) => {
         const loginUrl = process.env.USER_B_LOGIN_URL;
         if (!loginUrl) throw new Error('USER_B_LOGIN_URL not set');
 
         const context = await browser.newContext();
         const page = await context.newPage();
-
-        await page.goto(loginUrl, {
-            waitUntil: 'domcontentloaded',
-            timeout: 45_000
-        });
-        await page.waitForTimeout(3000);
+        await sfLogin(page, loginUrl);
 
         const board = new BoardPage(page);
         await use({ page, board, context });
         await context.close();
     },
 
-    /**
-     * Board test data — shared between both users.
-     */
     boardData: async ({}, use) => {
         if (!cachedBoardData) {
             cachedBoardData = getSampleBoardData();
             const loginUrl =
                 process.env.USER_A_LOGIN_URL || process.env.SCRATCH_ORG_URL;
-            if (loginUrl) baseUrl = new URL(loginUrl).origin;
+            if (loginUrl) {
+                // Use the Lightning domain, not the setup domain
+                const parsed = new URL(loginUrl);
+                const host = parsed.hostname.replace(
+                    '.my.salesforce.com',
+                    '.scratch.lightning.force.com'
+                );
+                baseUrl = `${parsed.protocol}//${host}`;
+            }
         }
         await use({ ...cachedBoardData, baseUrl });
     }

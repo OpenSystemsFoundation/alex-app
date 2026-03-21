@@ -163,4 +163,22 @@ test.describe('Alex Kanban Board', () => {
             timeout: SF_TIMEOUT
         });
     });
+
+    test('board loads in Standard app (non-console)', async ({
+        boardPage,
+        boardData
+    }) => {
+        // Navigate via the Standard app URL instead of Console
+        await boardPage.goto(
+            `${boardData.baseUrl}/lightning/app/OpenSF__Alex/r/OpenSF__Board__c/${boardData.boardId}/view`
+        );
+        await boardPage.waitForComponent('.kanban-board-wrapper');
+
+        await expect(boardPage.boardWrapper).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
+        await expect(boardPage.columns.first()).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
+    });
 });

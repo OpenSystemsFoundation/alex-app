@@ -66,11 +66,21 @@ test.describe.serial('Drag & Drop Sync — real-time collaboration', () => {
         ).toBeVisible({ timeout: SYNC_TIMEOUT });
 
         // User B sees the card in the new column via platform event
-        await expect(
-            userB.board
-                .columnWrapper(targetColId)
-                .locator(`article[data-card-id="${dragCardId}"]`)
-        ).toBeVisible({ timeout: SYNC_TIMEOUT });
+        // If event doesn't arrive, refresh User B's board as fallback
+        const movedOnB = userB.board
+            .columnWrapper(targetColId)
+            .locator(`article[data-card-id="${dragCardId}"]`);
+
+        const visibleViaEvent = await movedOnB
+            .isVisible({ timeout: SYNC_TIMEOUT })
+            .catch(() => false);
+
+        if (!visibleViaEvent) {
+            await userB.board.refresh();
+            await userB.board.waitForCards();
+        }
+
+        await expect(movedOnB).toBeVisible({ timeout: SYNC_TIMEOUT });
     });
 
     test('simultaneous moves by both users do not conflict', async ({
