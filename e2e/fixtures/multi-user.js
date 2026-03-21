@@ -82,13 +82,7 @@ const test = base.test.extend({
             const loginUrl =
                 process.env.USER_A_LOGIN_URL || process.env.SCRATCH_ORG_URL;
             if (loginUrl) {
-                // Use the Lightning domain, not the setup domain
-                const parsed = new URL(loginUrl);
-                const host = parsed.hostname.replace(
-                    '.my.salesforce.com',
-                    '.scratch.lightning.force.com'
-                );
-                baseUrl = `${parsed.protocol}//${host}`;
+                baseUrl = new URL(loginUrl).origin;
             }
         }
         await use({ ...cachedBoardData, baseUrl });
