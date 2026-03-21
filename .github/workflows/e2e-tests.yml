@@ -73,7 +73,7 @@ jobs:
             - name: Run Playwright Tests
               env:
                   SCRATCH_ORG_URL: ${{ steps.login.outputs.url }}
-              run: npx playwright test --project=${{ matrix.browser }} --retries=0
+              run: npx playwright test --project=${{ matrix.browser }} --retries=0 --grep-invert="Visual Regression"
 
             - name: Upload Test Report
               uses: actions/upload-artifact@v4

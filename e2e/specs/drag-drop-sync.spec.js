@@ -9,7 +9,7 @@ const { test, expect } = require('../fixtures/multi-user');
 const SYNC_TIMEOUT = 30_000;
 const SF_TIMEOUT = 45_000;
 
-test.describe('Drag & Drop Sync — real-time collaboration', () => {
+test.describe.serial('Drag & Drop Sync — real-time collaboration', () => {
     test.beforeEach(async () => {
         if (!process.env.USER_A_LOGIN_URL || !process.env.USER_B_LOGIN_URL) {
             test.skip(true, 'Multi-user login URLs not set — skipping');

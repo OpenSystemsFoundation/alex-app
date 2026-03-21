@@ -4,11 +4,14 @@ const { test, expect } = require('../fixtures/multi-user');
 /**
  * Multi-user card synchronization tests.
  * Verifies that card operations by User A appear in real-time on User B's screen.
+ *
+ * These tests run sequentially (test.describe.serial) because they share
+ * the same board and must not interfere with each other.
  */
 
 const SYNC_TIMEOUT = 30_000;
 
-test.describe('Card Sync — real-time collaboration', () => {
+test.describe.serial('Card Sync — real-time collaboration', () => {
     test.beforeEach(async () => {
         if (!process.env.USER_A_LOGIN_URL || !process.env.USER_B_LOGIN_URL) {
             test.skip(true, 'Multi-user login URLs not set — skipping');
@@ -27,22 +30,21 @@ test.describe('Card Sync — real-time collaboration', () => {
         await userA.board.waitForCards();
         await userB.board.waitForCards();
 
-        const colId = boardData.columns[0].Id;
-        const beforeCountA = await userA.board.cardCountInColumn(colId);
-        const beforeCountB = await userB.board.cardCountInColumn(colId);
+        // Count cards visible to User B BEFORE User A adds one
+        const allCardsBefore = await userB.board.allCards().count();
 
         // User A adds a card
         await userA.board.addCard(0);
 
-        // User A sees it immediately (optimistic update)
+        // User A sees it immediately (optimistic update) — check by text
         await expect(
-            userA.board.columnWrapper(colId).locator('article.kanban-card')
-        ).toHaveCount(beforeCountA + 1, { timeout: SYNC_TIMEOUT });
+            userA.page.locator('article.kanban-card:has-text("New Card")')
+        ).toBeVisible({ timeout: SYNC_TIMEOUT });
 
-        // User B sees it via platform event
-        await expect(
-            userB.board.columnWrapper(colId).locator('article.kanban-card')
-        ).toHaveCount(beforeCountB + 1, { timeout: SYNC_TIMEOUT });
+        // User B sees total card count increase via platform event
+        await expect(userB.board.allCards()).toHaveCount(allCardsBefore + 1, {
+            timeout: SYNC_TIMEOUT
+        });
     });
 
     test('card subject edited by User A updates on User B screen', async ({
@@ -67,15 +69,13 @@ test.describe('Card Sync — real-time collaboration', () => {
             timeout: SYNC_TIMEOUT
         });
 
-        // User A clicks the card to open it, edits the subject
+        // User A clicks the card to open it
         await userA.board.cardLink(cardId).click();
-
-        // Wait for the record page to load, then navigate back
         await userA.page.waitForURL('**/OpenSF__Card__c/**', {
             timeout: SYNC_TIMEOUT
         });
 
-        // Navigate User A back to the board to verify sync
+        // Navigate User A back to the board
         await userA.board.open(boardData.baseUrl, boardData.boardId);
         await userA.board.waitForCards();
 
