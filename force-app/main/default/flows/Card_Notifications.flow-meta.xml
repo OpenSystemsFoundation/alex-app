@@ -7,6 +7,9 @@
         <locationY>0</locationY>
         <actionName>customNotificationAction</actionName>
         <actionType>customNotificationAction</actionType>
+        <faultConnector>
+            <targetReference>Silent_Notification_Fault</targetReference>
+        </faultConnector>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
         <inputParameters>
             <name>customNotifTypeId</name>
@@ -54,6 +57,9 @@
         <locationY>0</locationY>
         <actionName>customNotificationAction</actionName>
         <actionType>customNotificationAction</actionType>
+        <faultConnector>
+            <targetReference>Silent_Notification_Fault</targetReference>
+        </faultConnector>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
         <inputParameters>
             <name>customNotifTypeId</name>
@@ -88,8 +94,18 @@
         <nameSegment>customNotificationAction</nameSegment>
         <offset>0</offset>
     </actionCalls>
-    <apiVersion>64.0</apiVersion>
+    <apiVersion>66.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
+    <assignments>
+        <name>Silent_Notification_Fault</name>
+        <label>Silent Notification Fault Handler</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>recipientIds</assignToReference>
+            <operator>RemoveAll</operator>
+        </assignmentItems>
+    </assignments>
     <assignments>
         <name>Assign_Update_Recipients</name>
         <label>Assign Update Recipients</label>
@@ -249,12 +265,12 @@
             <targetReference>Get_Notification</targetReference>
         </connector>
         <filterFormula
-        >{!$Record.Column__r.Board__r.SalesforceNotifications__c} = true</filterFormula>
+        >NOT(ISBLANK({!$Record.Column__c})) &amp;&amp; {!$Record.Column__r.Board__r.SalesforceNotifications__c} = true &amp;&amp; $Setup.KanbanConfig__c.DisableFlowAutomation__c = false</filterFormula>
         <object>Card__c</object>
         <recordTriggerType>CreateAndUpdate</recordTriggerType>
         <triggerType>RecordAfterSave</triggerType>
     </start>
-    <status>Active</status>
+    <status>Draft</status>
     <textTemplates>
         <name>CreateNotificationBody</name>
         <isViewedAsPlainText>true</isViewedAsPlainText>

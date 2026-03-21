@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DisableFlowAutomation__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+    >When true, record-triggered flows (email notifications, SF notifications) are skipped. Used in Apex test context to prevent flow failures.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+    >Check to disable notification flows (for testing)</inlineHelpText>
+    <label>Disable Flow Automation</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>
