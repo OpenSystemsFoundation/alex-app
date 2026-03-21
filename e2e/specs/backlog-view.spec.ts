@@ -1,5 +1,4 @@
-// @ts-check
-const { test, expect } = require('../fixtures');
+import { test, expect } from '../fixtures';
 
 const SF_TIMEOUT = 45_000;
 

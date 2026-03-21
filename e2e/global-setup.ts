@@ -1,18 +1,26 @@
-// @ts-check
-const { chromium, firefox, webkit } = require('@playwright/test');
-const { execSync } = require('child_process');
-const path = require('path');
+import { chromium, firefox, webkit } from '@playwright/test';
+import { execSync } from 'child_process';
+import * as path from 'path';
 
-const STORAGE_STATE_PATH = path.join(__dirname, '.auth', 'storageState.json');
-const TARGET_ORG = process.env.SF_TARGET_ORG || 'e2e-test';
-const SF_ENV = { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' };
+export const STORAGE_STATE_PATH = path.join(
+    __dirname,
+    '.auth',
+    'storageState.json'
+);
+
+const TARGET_ORG: string = process.env.SF_TARGET_ORG || 'e2e-test';
+const SF_ENV: NodeJS.ProcessEnv = {
+    ...process.env,
+    NO_COLOR: '1',
+    FORCE_COLOR: '0'
+};
 
 /**
  * Global setup:
  * 1. Reset test data via Apex scripts (idempotent)
  * 2. Authenticate once via frontdoor URL and save session cookies
  */
-async function globalSetup() {
+async function globalSetup(): Promise<void> {
     const loginUrl = process.env.SCRATCH_ORG_URL;
     if (!loginUrl) return;
 
@@ -48,5 +56,4 @@ async function globalSetup() {
     await browser.close();
 }
 
-module.exports = globalSetup;
-module.exports.STORAGE_STATE_PATH = STORAGE_STATE_PATH;
+export default globalSetup;

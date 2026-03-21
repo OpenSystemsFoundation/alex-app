@@ -1,5 +1,4 @@
-// @ts-check
-const { test, expect } = require('../fixtures/multi-user');
+import { test, expect } from '../fixtures/multi-user';
 
 /**
  * Multi-user drag-and-drop synchronization tests.
@@ -98,7 +97,7 @@ test.describe.serial('Drag & Drop Sync — real-time collaboration', () => {
         await userB.board.waitForCards();
 
         // Find two different cards
-        const cardsInCol0 = [];
+        const cardsInCol0: Array<{ id: string | null; colIdx: number }> = [];
         for (let i = 0; i < boardData.columns.length - 2; i++) {
             const col = userA.board.columnWrapper(boardData.columns[i].Id);
             const cards = await col.locator('article.kanban-card').all();

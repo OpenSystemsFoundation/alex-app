@@ -1,5 +1,4 @@
-// @ts-check
-const { test, expect } = require('../fixtures/multi-user');
+import { test, expect } from '../fixtures/multi-user';
 
 /**
  * Multi-user card synchronization tests.

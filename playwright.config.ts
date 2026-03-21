@@ -1,14 +1,13 @@
-// @ts-check
-const { defineConfig } = require('@playwright/test');
-const path = require('path');
+import { defineConfig } from '@playwright/test';
+import * as path from 'path';
 
 const storageState = path.join(__dirname, 'e2e', '.auth', 'storageState.json');
 
-module.exports = defineConfig({
+export default defineConfig({
     testDir: './e2e/specs',
     timeout: 120_000,
     retries: 1,
-    globalSetup: './e2e/global-setup.js',
+    globalSetup: './e2e/global-setup.ts',
     snapshotPathTemplate:
         '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}{ext}',
     use: {

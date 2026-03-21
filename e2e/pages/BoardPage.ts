@@ -1,14 +1,23 @@
-// @ts-check
-const { expect } = require('@playwright/test');
-const { BasePage } = require('./BasePage');
+import { expect, type Page, type Locator } from '@playwright/test';
+import { BasePage } from './BasePage';
 
 /**
  * Page object for the Kanban Board record page.
  * Encapsulates all board-specific selectors and actions.
  */
-class BoardPage extends BasePage {
-    /** @param {import('@playwright/test').Page} page */
-    constructor(page) {
+export class BoardPage extends BasePage {
+    readonly boardWrapper: Locator;
+    readonly boardGrid: Locator;
+    readonly columns: Locator;
+    readonly boardTab: Locator;
+    readonly backlogTab: Locator;
+    readonly searchInput: Locator;
+    readonly refreshBtn: Locator;
+    readonly addCardButtons: Locator;
+    readonly priorityFilter: Locator;
+    readonly typeFilter: Locator;
+
+    constructor(page: Page) {
         super(page);
 
         // Board structure
@@ -36,74 +45,55 @@ class BoardPage extends BasePage {
 
     /**
      * Navigate to a specific board by ID.
-     * @param {string} baseUrl - Origin URL of the scratch org
-     * @param {string} boardId - Salesforce record ID
      */
-    async open(baseUrl, boardId) {
+    async open(baseUrl: string, boardId: string): Promise<void> {
         await this.goto(
             `${baseUrl}/lightning/r/OpenSF__Board__c/${boardId}/view`
         );
         await this.waitForComponent('.kanban-board-wrapper');
     }
 
-    /**
-     * Get a column wrapper by its Salesforce column ID.
-     * @param {string} columnId
-     */
-    columnWrapper(columnId) {
+    /** Get a column wrapper by its Salesforce column ID. */
+    columnWrapper(columnId: string): Locator {
         return this.page.locator(
             `.kanban-column__card-wrapper[data-column-id="${columnId}"]`
         );
     }
 
-    /**
-     * Get a card article element by its Salesforce record ID.
-     * @param {string} cardId
-     */
-    card(cardId) {
+    /** Get a card article element by its Salesforce record ID. */
+    card(cardId: string): Locator {
         return this.page.locator(`article[data-card-id="${cardId}"]`);
     }
 
-    /**
-     * Get a card's name link by its Salesforce record ID.
-     * @param {string} cardId
-     */
-    cardLink(cardId) {
+    /** Get a card's name link by its Salesforce record ID. */
+    cardLink(cardId: string): Locator {
         return this.page.locator(`a[data-card-id="${cardId}"]`);
     }
 
-    /**
-     * Get all card articles currently visible on the board.
-     */
-    allCards() {
+    /** Get all card articles currently visible on the board. */
+    allCards(): Locator {
         return this.page.locator('article.kanban-card');
     }
 
-    /**
-     * Get card count in a specific column.
-     * @param {string} columnId
-     */
-    async cardCountInColumn(columnId) {
+    /** Get card count in a specific column. */
+    async cardCountInColumn(columnId: string): Promise<number> {
         return this.columnWrapper(columnId)
             .locator('article.kanban-card')
             .count();
     }
 
-    /**
-     * Wait for at least one card to be visible on the board.
-     */
-    async waitForCards() {
+    /** Wait for at least one card to be visible on the board. */
+    async waitForCards(): Promise<void> {
         await this.allCards()
             .first()
             .waitFor({ state: 'visible', timeout: this.timeout });
     }
 
-    /**
-     * Drag a card to a target column.
-     * @param {string} cardId
-     * @param {string} targetColumnId
-     */
-    async dragCardToColumn(cardId, targetColumnId) {
+    /** Drag a card to a target column. */
+    async dragCardToColumn(
+        cardId: string,
+        targetColumnId: string
+    ): Promise<void> {
         const source = this.card(cardId);
         const target = this.columnWrapper(targetColumnId);
         await expect(source).toBeVisible({ timeout: this.timeout });
@@ -111,41 +101,33 @@ class BoardPage extends BasePage {
         await source.dragTo(target);
     }
 
-    /**
-     * Click the add card button for a specific column (by index).
-     * @param {number} columnIndex - 0-based column index
-     */
-    async addCard(columnIndex = 0) {
+    /** Click the add card button for a specific column (by index). */
+    async addCard(columnIndex: number = 0): Promise<void> {
         await this.addCardButtons.nth(columnIndex).click();
     }
 
-    /**
-     * Type into the search filter.
-     * @param {string} text
-     */
-    async search(text) {
+    /** Type into the search filter. */
+    async search(text: string): Promise<void> {
         await this.searchInput.fill(text);
     }
 
     /** Clear the search filter. */
-    async clearSearch() {
+    async clearSearch(): Promise<void> {
         await this.searchInput.fill('');
     }
 
     /** Click the refresh button. */
-    async refresh() {
+    async refresh(): Promise<void> {
         await this.refreshBtn.click();
     }
 
     /** Switch to the Board tab. */
-    async switchToBoardTab() {
+    async switchToBoardTab(): Promise<void> {
         await this.boardTab.click();
     }
 
     /** Switch to the Backlog tab. */
-    async switchToBacklogTab() {
+    async switchToBacklogTab(): Promise<void> {
         await this.backlogTab.click();
     }
 }
-
-module.exports = { BoardPage };

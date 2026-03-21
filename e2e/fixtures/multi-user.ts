@@ -1,7 +1,12 @@
-// @ts-check
-const base = require('@playwright/test');
-const { BoardPage } = require('../pages');
-const { getSampleBoardData } = require('../helpers/sf-data');
+import {
+    test as base,
+    expect,
+    type Page,
+    type BrowserContext
+} from '@playwright/test';
+import { BoardPage } from '../pages';
+import { getSampleBoardData, type BoardData } from '../helpers/sf-data';
+import type { BoardDataFixture } from './index';
 
 /**
  * Multi-user fixtures for real-time collaboration tests.
@@ -14,30 +19,39 @@ const { getSampleBoardData } = require('../helpers/sf-data');
  *   USER_B_LOGIN_URL - frontdoor.jsp URL for User B (standard user)
  *
  * Usage:
- *   const { test, expect } = require('../fixtures/multi-user');
+ *   import { test, expect } from '../fixtures/multi-user';
  *   test('sync test', async ({ userA, userB, boardData }) => {
  *       await userA.board.open(boardData.baseUrl, boardData.boardId);
  *       await userB.board.open(boardData.baseUrl, boardData.boardId);
  *   });
  */
 
-/** @type {import('../fixtures').BoardData | null} */
-let cachedBoardData = null;
-let baseUrl = '';
+export interface UserFixture {
+    page: Page;
+    board: BoardPage;
+    context: BrowserContext;
+}
+
+interface MultiUserFixtures {
+    userA: UserFixture;
+    userB: UserFixture;
+    boardData: BoardDataFixture;
+}
+
+let cachedBoardData: BoardData | null = null;
+let baseUrl: string = '';
 
 /**
  * Authenticate a Salesforce session via frontdoor URL.
  * Waits for all redirects to settle before returning.
- * @param {import('@playwright/test').Page} page
- * @param {string} loginUrl
  */
-async function sfLogin(page, loginUrl) {
+async function sfLogin(page: Page, loginUrl: string): Promise<void> {
     await page.goto(loginUrl, {
         waitUntil: 'domcontentloaded',
         timeout: 60_000
     });
 
-    // Wait for SF redirect chain to settle (frontdoor → setup → lightning)
+    // Wait for SF redirect chain to settle (frontdoor -> setup -> lightning)
     // Poll until URL stops changing
     let lastUrl = '';
     for (let i = 0; i < 10; i++) {
@@ -48,7 +62,7 @@ async function sfLogin(page, loginUrl) {
     }
 }
 
-const test = base.test.extend({
+export const test = base.extend<MultiUserFixtures>({
     userA: async ({ browser }, use) => {
         const loginUrl =
             process.env.USER_A_LOGIN_URL || process.env.SCRATCH_ORG_URL;
@@ -89,6 +103,4 @@ const test = base.test.extend({
     }
 });
 
-const { expect } = base;
-
-module.exports = { test, expect };
+export { expect };

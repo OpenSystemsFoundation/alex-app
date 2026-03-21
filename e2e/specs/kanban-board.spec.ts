@@ -1,6 +1,5 @@
-// @ts-check
-const { test, expect } = require('../fixtures');
-const { sfUpdate } = require('../helpers/sf-data');
+import { test, expect } from '../fixtures';
+import { sfUpdate } from '../helpers/sf-data';
 
 const SF_TIMEOUT = 45_000;
 

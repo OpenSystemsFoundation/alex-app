@@ -1,31 +1,31 @@
-// @ts-check
-const base = require('@playwright/test');
-const { BoardPage } = require('../pages');
-const { getSampleBoardData } = require('../helpers/sf-data');
+import { test as base, expect } from '@playwright/test';
+import { BoardPage } from '../pages';
+import { getSampleBoardData, type BoardData } from '../helpers/sf-data';
 
-/**
- * @typedef {Object} BoardData
- * @property {string} boardId
- * @property {Array<{Id: string, header: string}>} columns
- * @property {Array<{Id: string, Name: string, Subject: string, ColumnId: string}>} cards
- */
+export type { BoardData } from '../helpers/sf-data';
 
-/** @type {BoardData | null} */
-let cachedBoardData = null;
+export interface BoardDataFixture extends BoardData {
+    baseUrl: string;
+}
 
-/** @type {string} */
-let baseUrl = '';
+interface AlexFixtures {
+    boardPage: BoardPage;
+    boardData: BoardDataFixture;
+}
+
+let cachedBoardData: BoardData | null = null;
+let baseUrl: string = '';
 
 /**
  * Extended Playwright test with custom fixtures for the Alex app.
  *
  * Usage:
- *   const { test, expect } = require('../fixtures');
+ *   import { test, expect } from '../fixtures';
  *   test('my test', async ({ boardPage, boardData }) => { ... });
  */
-const test = base.test.extend({
+export const test = base.extend<AlexFixtures>({
     /**
-     * Board page object — pre-initialized with the Playwright page.
+     * Board page object -- pre-initialized with the Playwright page.
      * Does NOT navigate automatically; call boardPage.open() in your test.
      */
     boardPage: async ({ page }, use) => {
@@ -33,7 +33,7 @@ const test = base.test.extend({
     },
 
     /**
-     * Board test data — queried once from the scratch org and cached.
+     * Board test data -- queried once from the scratch org and cached.
      * Contains boardId, columns, and cards.
      * Also provides baseUrl for navigation.
      */
@@ -49,6 +49,4 @@ const test = base.test.extend({
     }
 });
 
-const { expect } = base;
-
-module.exports = { test, expect };
+export { expect };

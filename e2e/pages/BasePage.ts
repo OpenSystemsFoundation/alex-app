@@ -1,12 +1,14 @@
-// @ts-check
+import type { Page } from '@playwright/test';
 
 /**
  * Base page object for Salesforce Lightning pages.
  * Handles common patterns: slow loads, shadow DOM, dismissing dialogs.
  */
-class BasePage {
-    /** @param {import('@playwright/test').Page} page */
-    constructor(page) {
+export class BasePage {
+    protected readonly page: Page;
+    protected readonly timeout: number;
+
+    constructor(page: Page) {
         this.page = page;
         this.timeout = 45_000;
     }
@@ -14,9 +16,8 @@ class BasePage {
     /**
      * Navigate to a Lightning record page.
      * Uses domcontentloaded (SF never reaches networkidle).
-     * @param {string} url
      */
-    async goto(url) {
+    async goto(url: string): Promise<void> {
         await this.page.goto(url, {
             waitUntil: 'domcontentloaded',
             timeout: this.timeout
@@ -26,7 +27,7 @@ class BasePage {
     /**
      * Dismiss any blocking Salesforce dialogs (CSS errors, guidance panels).
      */
-    async dismissDialogs() {
+    async dismissDialogs(): Promise<void> {
         const errorDialog = this.page.locator(
             'div.auraErrorBox button:has-text("Cancel")'
         );
@@ -43,13 +44,10 @@ class BasePage {
     /**
      * Wait for a Lightning component to render inside shadow DOM.
      * Playwright CSS selectors pierce open shadow DOM by default.
-     * @param {string} selector
      */
-    async waitForComponent(selector) {
+    async waitForComponent(selector: string): Promise<void> {
         await this.page.waitForSelector(selector, {
             timeout: this.timeout
         });
     }
 }
-
-module.exports = { BasePage };
