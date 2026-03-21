@@ -9,6 +9,7 @@
             <column>RowCount</column>
         </chartSummaries>
         <chartSummaries>
+            <aggregate>Sum</aggregate>
             <axisBinding>y</axisBinding>
             <column>Card__c$StoryPoints__c</column>
         </chartSummaries>
@@ -36,9 +37,6 @@
     </columns>
     <columns>
         <field>Card__c$CardType__c</field>
-    </columns>
-    <columns>
-        <field>Card__c$Priority__c</field>
     </columns>
     <columns>
         <field>Card__c$Status__c</field>

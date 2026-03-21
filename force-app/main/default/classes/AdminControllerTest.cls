@@ -2,7 +2,7 @@
 private class AdminControllerTest {
     @TestSetup
     static void setup() {
-        TestSettings.enableTriggers();
+        TestSettings.reset();
     }
 
     @isTest

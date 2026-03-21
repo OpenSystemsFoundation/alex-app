@@ -13,9 +13,6 @@
         <field>Card__c$Priority__c</field>
     </columns>
     <columns>
-        <field>Card__c$Assignee__c</field>
-    </columns>
-    <columns>
         <field>Card__c$Status__c</field>
     </columns>
     <columns>

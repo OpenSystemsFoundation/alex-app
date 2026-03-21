@@ -13,7 +13,7 @@
         </itemInstances>
         <itemInstances>
             <componentInstance>
-                <componentName>OpenSF__adminManagement</componentName>
+                <componentName>adminManagement</componentName>
                 <identifier>adminManagement</identifier>
             </componentInstance>
         </itemInstances>
@@ -22,7 +22,7 @@
     </flexiPageRegions>
     <masterLabel>Admin Management</masterLabel>
     <template>
-        <name>flexipage:appHomeTemplateSingleColumn</name>
+        <name>flexipage:defaultAppHomeTemplate</name>
     </template>
     <type>AppPage</type>
 </FlexiPage>

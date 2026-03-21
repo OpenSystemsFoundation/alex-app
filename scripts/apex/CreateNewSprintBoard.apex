@@ -44,6 +44,14 @@ List<String> statuses = new List<String>{
     'Review',
     'Done'
 };
+List<String> categories = new List<String>{
+    'Backlog',
+    'To Do',
+    'In Progress',
+    'Testing',
+    'Review',
+    'Done'
+};
 
 List<OpenSF__Column__c> columns = new List<OpenSF__Column__c>();
 for (Integer i = 0; i < headers.size(); i++) {
@@ -52,6 +60,7 @@ for (Integer i = 0; i < headers.size(); i++) {
             OpenSF__Board__c = board.Id,
             OpenSF__ColumnHeader__c = headers[i],
             OpenSF__Status__c = statuses[i],
+            OpenSF__Category__c = categories[i],
             OpenSF__LexoRankPosition__c = generateLexorank(i, headers.size())
         )
     );

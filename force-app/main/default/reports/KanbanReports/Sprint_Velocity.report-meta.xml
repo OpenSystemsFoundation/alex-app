@@ -5,6 +5,7 @@
         <backgroundColor2>#FFFFFF</backgroundColor2>
         <backgroundFadeDir>Diagonal</backgroundFadeDir>
         <chartSummaries>
+            <aggregate>Average</aggregate>
             <axisBinding>y</axisBinding>
             <column>Sprint__c$Velocity__c</column>
         </chartSummaries>
@@ -41,6 +42,7 @@
         <field>Sprint__c$CompletedStoryPoints__c</field>
     </columns>
     <columns>
+        <aggregateTypes>Average</aggregateTypes>
         <field>Sprint__c$Velocity__c</field>
     </columns>
     <columns>
