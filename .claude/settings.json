@@ -1,5 +1,17 @@
 {
     "hooks": {
+        "SessionStart": [
+            {
+                "matcher": "startup",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/setup-sf-auth.sh",
+                        "statusMessage": "Authenticating Salesforce CLI..."
+                    }
+                ]
+            }
+        ],
         "PostToolUse": [
             {
                 "matcher": "Write|Edit",
