@@ -60,6 +60,8 @@ export {
     removeCardFromSprintAsync,
     moveCardToBacklogAsync,
     moveCardsToSprintAsync,
+    addCardsToBacklogSprintAsync,
+    removeCardFromBacklogSprintAsync,
     loadBurndownDataAsync,
     loadVelocityDataAsync
 } from './thunks/sprintThunks';

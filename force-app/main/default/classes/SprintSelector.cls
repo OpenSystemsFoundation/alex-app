@@ -260,6 +260,34 @@ public with sharing class SprintSelector {
     }
 
     /**
+     * Get SprintCards for Planning sprints on a Board (for backlog sprint management)
+     */
+    public static List<OpenSF__SprintCard__c> getPlanningSprintCardsByBoardId(
+        Id boardId
+    ) {
+        return [
+            SELECT
+                Id,
+                Name,
+                OpenSF__Sprint__c,
+                OpenSF__Card__c,
+                OpenSF__AddedDate__c,
+                OpenSF__RemovedDate__c,
+                OpenSF__StoryPointsAtAdd__c,
+                OpenSF__CompletedInSprint__c,
+                OpenSF__CompletedDate__c,
+                OpenSF__Position__c
+            FROM OpenSF__SprintCard__c
+            WHERE
+                OpenSF__Sprint__r.OpenSF__Board__c = :boardId
+                AND OpenSF__Sprint__r.OpenSF__Status__c = 'Planning'
+                AND OpenSF__RemovedDate__c = NULL
+            WITH USER_MODE
+            ORDER BY OpenSF__Position__c ASC NULLS LAST
+        ];
+    }
+
+    /**
      * Check if a card is already in a sprint
      */
     public static List<OpenSF__SprintCard__c> getActiveSprintCardsByCardIds(

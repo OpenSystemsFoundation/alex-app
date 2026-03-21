@@ -377,6 +377,15 @@ public with sharing class SprintService {
         KanbanCardService.backfillMissingPositions(backlogCards);
         data.backlogCards = KanbanBoardDTO.convertCards(backlogCards);
 
+        // Get planning sprint card associations for backlog grouping
+        List<OpenSF__SprintCard__c> planningJunctions = SprintSelector.getPlanningSprintCardsByBoardId(
+            boardId
+        );
+        data.planningSprintCards = new List<PlanningSprintCardDTO>();
+        for (OpenSF__SprintCard__c sc : planningJunctions) {
+            data.planningSprintCards.add(new PlanningSprintCardDTO(sc));
+        }
+
         return data;
     }
 
@@ -542,5 +551,28 @@ public with sharing class SprintService {
         public List<KanbanBoardDTO.SprintCardDTO> sprintCards;
         @AuraEnabled
         public List<KanbanBoardDTO.CardDTO> backlogCards;
+        @AuraEnabled
+        public List<PlanningSprintCardDTO> planningSprintCards;
+    }
+
+    /**
+     * Lightweight DTO for planning sprint card associations (card-to-sprint mapping)
+     */
+    public class PlanningSprintCardDTO {
+        @AuraEnabled
+        public Id sprintCardId;
+        @AuraEnabled
+        public Id sprintId;
+        @AuraEnabled
+        public Id cardId;
+        @AuraEnabled
+        public String position;
+
+        public PlanningSprintCardDTO(OpenSF__SprintCard__c sc) {
+            this.sprintCardId = sc.Id;
+            this.sprintId = sc.OpenSF__Sprint__c;
+            this.cardId = sc.OpenSF__Card__c;
+            this.position = sc.OpenSF__Position__c;
+        }
     }
 }

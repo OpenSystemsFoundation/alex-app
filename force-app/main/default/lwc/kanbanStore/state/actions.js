@@ -320,6 +320,25 @@ export const moveCardToBacklog = (cardId) => ({
 });
 
 // ===================================================================
+// Planning Sprint Card Action Creators
+// ===================================================================
+
+export const setPlanningSprintCards = (cards) => ({
+    type: types.SET_PLANNING_SPRINT_CARDS,
+    payload: cards
+});
+
+export const addPlanningSprintCard = (sprintCard) => ({
+    type: types.ADD_PLANNING_SPRINT_CARD,
+    payload: sprintCard
+});
+
+export const removePlanningSprintCard = (cardId, sprintId) => ({
+    type: types.REMOVE_PLANNING_SPRINT_CARD,
+    payload: { cardId, sprintId }
+});
+
+// ===================================================================
 // Backlog UI Action Creators
 // ===================================================================
 

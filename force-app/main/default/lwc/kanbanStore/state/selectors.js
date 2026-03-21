@@ -386,3 +386,27 @@ export const getUnrefinedBacklogCards = (state) => {
 export const isBacklogSyncing = (state) => {
     return state.backlogSyncing || false;
 };
+
+/**
+ * Get planning sprint cards (card-to-sprint associations for Planning sprints)
+ */
+export const getPlanningSprintCards = (state) => {
+    return state.planningSprintCards || [];
+};
+
+/**
+ * Get sprints with Planning status (for backlog sprint management)
+ */
+export const getPlanningSprints = (state) => {
+    return (state.sprints || []).filter((s) => s.status === 'Planning');
+};
+
+/**
+ * Get the sprint ID a backlog card belongs to (if any Planning sprint)
+ */
+export const getCardSprintId = (state, cardId) => {
+    const psc = (state.planningSprintCards || []).find(
+        (sc) => sc.cardId === cardId
+    );
+    return psc ? psc.sprintId : null;
+};
