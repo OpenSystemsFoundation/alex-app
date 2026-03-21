@@ -410,7 +410,7 @@ describe('EventHandler', () => {
                                 {
                                     Id: 'card1',
                                     subject: 'Old Card',
-                                    OpenSF__SequenceNumber__c: 5
+                                    sequenceNumber: 5
                                 }
                             ]
                         }
@@ -449,7 +449,7 @@ describe('EventHandler', () => {
                                 {
                                     Id: 'card1',
                                     subject: 'Current Card',
-                                    OpenSF__SequenceNumber__c: 10
+                                    sequenceNumber: 10
                                 }
                             ]
                         }
@@ -493,7 +493,7 @@ describe('EventHandler', () => {
                                 {
                                     Id: 'card1',
                                     subject: 'Current Card',
-                                    OpenSF__SequenceNumber__c: 7
+                                    sequenceNumber: 7
                                 }
                             ]
                         }
@@ -530,7 +530,7 @@ describe('EventHandler', () => {
                                 {
                                     Id: 'card1',
                                     subject: 'Old Card'
-                                    // No OpenSF__SequenceNumber__c
+                                    // No sequenceNumber
                                 }
                             ]
                         }
@@ -629,7 +629,7 @@ describe('EventHandler', () => {
                                 {
                                     Id: 'card1',
                                     subject: 'Version 2',
-                                    OpenSF__SequenceNumber__c: 2
+                                    sequenceNumber: 2
                                 }
                             ]
                         }

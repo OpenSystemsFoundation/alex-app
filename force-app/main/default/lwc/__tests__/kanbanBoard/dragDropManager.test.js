@@ -21,13 +21,13 @@ const createMockComponent = () => ({
         {
             Id: 'col1',
             cards: [
-                { Id: 'card1', OpenSF__Position__c: 'a' },
-                { Id: 'card2', OpenSF__Position__c: 'b' }
+                { Id: 'card1', position: 'a' },
+                { Id: 'card2', position: 'b' }
             ]
         },
         {
             Id: 'col2',
-            cards: [{ Id: 'card3', OpenSF__Position__c: 'a' }]
+            cards: [{ Id: 'card3', position: 'a' }]
         }
     ],
     store: {

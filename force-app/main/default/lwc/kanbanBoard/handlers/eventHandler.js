@@ -143,7 +143,7 @@ export default class EventHandler {
         for (const column of columns) {
             const card = column.cards?.find((c) => c.Id === cardId);
             if (card) {
-                const currentSequence = card.OpenSF__SequenceNumber__c;
+                const currentSequence = card.sequenceNumber;
 
                 if (currentSequence == null) {
                     // Card has no sequence - apply event
@@ -234,8 +234,7 @@ export default class EventHandler {
 
     _notifyActivity(eventType, payload) {
         if (this.activityCallback) {
-            const cardName =
-                payload.OpenSF__Subject__c || payload.Name || 'Card';
+            const cardName = payload.subject || payload.Name || 'Card';
             let message = '';
 
             switch (eventType) {

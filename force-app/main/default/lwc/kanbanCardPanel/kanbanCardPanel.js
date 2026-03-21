@@ -1,6 +1,6 @@
 import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import { updateCard, deleteCardAsync } from 'c/kanbanStore';
+import { updateCardAsync, deleteCardAsync } from 'c/kanbanStore';
 import getModalSettings from '@salesforce/apex/KanbanBoardController.getModalSettings';
 
 const FIELD_METADATA = {
@@ -16,6 +16,21 @@ const FIELD_METADATA = {
     OpenSF__StoryPoints__c: { fullWidth: false, isTextarea: false },
     OpenSF__Color__c: { fullWidth: false, isTextarea: false },
     OpenSF__NeedsRefinement__c: { fullWidth: false, isTextarea: false }
+};
+
+const FIELD_TO_DTO = {
+    OpenSF__Subject__c: 'subject',
+    OpenSF__Description__c: 'description',
+    OpenSF__Status__c: 'status',
+    OpenSF__CardType__c: 'cardType',
+    OpenSF__Priority__c: 'priority',
+    OpenSF__Epic__c: 'epicId',
+    OpenSF__Assignee__c: 'assigneeId',
+    OpenSF__PeerReviewer__c: 'peerReviewerId',
+    OpenSF__DueDate__c: 'dueDate',
+    OpenSF__StoryPoints__c: 'storyPoints',
+    OpenSF__Color__c: 'color',
+    OpenSF__NeedsRefinement__c: 'needsRefinement'
 };
 
 const DESCRIPTION_TEMPLATES = {
@@ -95,7 +110,6 @@ export default class KanbanCardPanel extends LightningElement {
     @track deleteConfirmState = false;
     @track panelWidth = 400;
 
-    _originalCard;
     _resizing = false;
     _deleteTimer;
     _boundHandleResize;
@@ -222,59 +236,48 @@ export default class KanbanCardPanel extends LightningElement {
         return this.deleteConfirmState ? 'destructive' : 'neutral';
     }
 
-    handleSave() {
+    async handleSave() {
         const inputFields = this.template.querySelectorAll(
             'lightning-input-field'
         );
-        const updatedFields = {};
+        const dtoUpdates = {};
         inputFields.forEach((field) => {
-            updatedFields[field.fieldName] = field.value;
+            const dtoKey = FIELD_TO_DTO[field.fieldName];
+            if (dtoKey) {
+                dtoUpdates[dtoKey] = field.value;
+            }
         });
 
-        this._originalCard = { ...this.card };
-
-        const optimisticCard = { ...this.card, ...updatedFields };
-        updateCard(this.store, optimisticCard);
-
-        const form = this.template.querySelector('lightning-record-edit-form');
-        if (form) {
-            form.submit();
+        try {
+            await this.store.dispatch(
+                updateCardAsync(this.card.Id, dtoUpdates)
+            );
+            this.dispatchEvent(
+                new CustomEvent('cardupdated', {
+                    detail: { cardId: this.card.Id }
+                })
+            );
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Success',
+                    message: 'Card updated successfully',
+                    variant: 'success'
+                })
+            );
+            this.handleClose();
+        } catch (error) {
+            const message =
+                error.body && error.body.message
+                    ? error.body.message
+                    : 'An error occurred while saving';
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error',
+                    message,
+                    variant: 'error'
+                })
+            );
         }
-    }
-
-    handleSuccess() {
-        this._originalCard = null;
-        this.dispatchEvent(
-            new CustomEvent('cardupdated', {
-                detail: { cardId: this.card.Id }
-            })
-        );
-        this.dispatchEvent(
-            new ShowToastEvent({
-                title: 'Success',
-                message: 'Card updated successfully',
-                variant: 'success'
-            })
-        );
-        this.handleClose();
-    }
-
-    handleError(event) {
-        if (this._originalCard) {
-            updateCard(this.store, this._originalCard);
-            this._originalCard = null;
-        }
-        const message =
-            event.detail && event.detail.message
-                ? event.detail.message
-                : 'An error occurred while saving';
-        this.dispatchEvent(
-            new ShowToastEvent({
-                title: 'Error',
-                message,
-                variant: 'error'
-            })
-        );
     }
 
     handleDelete() {

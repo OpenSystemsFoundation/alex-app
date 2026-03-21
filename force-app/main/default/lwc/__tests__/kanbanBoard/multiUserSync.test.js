@@ -44,7 +44,7 @@ const INITIAL_COLUMNS = [
                 columnId: 'col1',
                 position: '0|a:',
                 priority: 'High',
-                OpenSF__SequenceNumber__c: 1
+                sequenceNumber: 1
             },
             {
                 Id: 'card2',
@@ -52,7 +52,7 @@ const INITIAL_COLUMNS = [
                 columnId: 'col1',
                 position: '0|b:',
                 priority: 'Medium',
-                OpenSF__SequenceNumber__c: 1
+                sequenceNumber: 1
             }
         ],
         cardCount: 2
@@ -67,7 +67,7 @@ const INITIAL_COLUMNS = [
                 columnId: 'col2',
                 position: '0|a:',
                 priority: 'Low',
-                OpenSF__SequenceNumber__c: 1
+                sequenceNumber: 1
             }
         ],
         cardCount: 1
@@ -149,7 +149,7 @@ describe('Multi-User Realtime Sync', () => {
                 columnId: 'col1',
                 position: '0|c:',
                 priority: 'Low',
-                OpenSF__SequenceNumber__c: 1
+                sequenceNumber: 1
             };
 
             // User A adds card to their store optimistically
@@ -174,7 +174,7 @@ describe('Multi-User Realtime Sync', () => {
                 Id: 'card1',
                 subject: 'Updated Task 1',
                 columnId: 'col1',
-                OpenSF__SequenceNumber__c: 2
+                sequenceNumber: 2
             };
 
             const event = createPlatformEvent('update', updatePayload, null, 2);
@@ -200,7 +200,7 @@ describe('Multi-User Realtime Sync', () => {
                 Id: 'card1',
                 columnId: 'col2',
                 position: '0|b:',
-                OpenSF__SequenceNumber__c: 2
+                sequenceNumber: 2
             };
 
             const event = createPlatformEvent('move', movePayload, null, 2);
@@ -217,7 +217,7 @@ describe('Multi-User Realtime Sync', () => {
                 Id: 'card1',
                 columnId: 'col2',
                 position: '0|b:',
-                OpenSF__SequenceNumber__c: 2
+                sequenceNumber: 2
             };
 
             const event = createPlatformEvent('move', movePayload, null, 2);
@@ -240,7 +240,7 @@ describe('Multi-User Realtime Sync', () => {
                 columnId: 'col1',
                 position: '0|c:',
                 priority: 'High',
-                OpenSF__SequenceNumber__c: 1
+                sequenceNumber: 1
             };
             const cardB = {
                 Id: 'card-B',
@@ -248,7 +248,7 @@ describe('Multi-User Realtime Sync', () => {
                 columnId: 'col2',
                 position: '0|b:',
                 priority: 'Medium',
-                OpenSF__SequenceNumber__c: 1
+                sequenceNumber: 1
             };
 
             // Both events broadcast
@@ -270,7 +270,7 @@ describe('Multi-User Realtime Sync', () => {
                 Id: 'card1',
                 subject: 'Updated by A',
                 columnId: 'col1',
-                OpenSF__SequenceNumber__c: 2
+                sequenceNumber: 2
             };
             const eventA = createPlatformEvent('update', updateA, null, 2);
             broadcastEvent(eventA, allHandlers);
@@ -280,7 +280,7 @@ describe('Multi-User Realtime Sync', () => {
                 Id: 'card1',
                 priority: 'Critical',
                 columnId: 'col1',
-                OpenSF__SequenceNumber__c: 3
+                sequenceNumber: 3
             };
             const eventB = createPlatformEvent('update', updateB, null, 3);
             broadcastEvent(eventB, allHandlers);
@@ -298,7 +298,7 @@ describe('Multi-User Realtime Sync', () => {
                 Id: 'card1',
                 columnId: 'col2',
                 position: '0|b:',
-                OpenSF__SequenceNumber__c: 2
+                sequenceNumber: 2
             };
             const moveEvent = createPlatformEvent('move', movePayload, null, 2);
             broadcastEvent(moveEvent, allHandlers);
@@ -308,7 +308,7 @@ describe('Multi-User Realtime Sync', () => {
                 Id: 'card1',
                 description: 'Updated description',
                 columnId: 'col2', // now in col2
-                OpenSF__SequenceNumber__c: 3
+                sequenceNumber: 3
             };
             const updateEvent = createPlatformEvent(
                 'update',
@@ -333,7 +333,7 @@ describe('Multi-User Realtime Sync', () => {
                 subject: 'Rapid Card',
                 columnId: 'col1',
                 position: '0|d:',
-                OpenSF__SequenceNumber__c: 1
+                sequenceNumber: 1
             };
 
             // Create then delete
@@ -373,7 +373,7 @@ describe('Multi-User Realtime Sync', () => {
             // Server-confirmed card comes back with a sequence number
             const confirmedCard = {
                 ...optimisticCard,
-                OpenSF__SequenceNumber__c: 1
+                sequenceNumber: 1
             };
 
             // User A tracks a create request
@@ -422,7 +422,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'Should be ignored by A',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 2
+                    sequenceNumber: 2
                 },
                 null,
                 2
@@ -447,7 +447,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'Updated after window',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 2
+                    sequenceNumber: 2
                 },
                 null,
                 2
@@ -470,7 +470,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card2',
                     subject: 'Updated card2',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 2
+                    sequenceNumber: 2
                 },
                 null,
                 2
@@ -489,7 +489,7 @@ describe('Multi-User Realtime Sync', () => {
                 subject: 'Duplicate Test',
                 columnId: 'col1',
                 position: '0|d:',
-                OpenSF__SequenceNumber__c: 1
+                sequenceNumber: 1
             };
 
             const requestId = windowA.requestTracker.trackRequest(
@@ -535,7 +535,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'Seq 5 Update',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 5
+                    sequenceNumber: 5
                 },
                 null,
                 5
@@ -549,7 +549,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'Stale Seq 3',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 3
+                    sequenceNumber: 3
                 },
                 null,
                 3
@@ -568,7 +568,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'Seq 3',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 3
+                    sequenceNumber: 3
                 },
                 null,
                 3
@@ -585,7 +585,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'Seq 1 Late',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 1
+                    sequenceNumber: 1
                 },
                 null,
                 1
@@ -602,7 +602,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'Seq 5',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 5
+                    sequenceNumber: 5
                 },
                 null,
                 5
@@ -621,7 +621,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'Seq 10',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 10
+                    sequenceNumber: 10
                 },
                 null,
                 10
@@ -652,7 +652,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'Seq 2 Both',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 2
+                    sequenceNumber: 2
                 },
                 null,
                 2
@@ -666,7 +666,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'Stale for Both',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 1
+                    sequenceNumber: 1
                 },
                 null,
                 1
@@ -694,7 +694,7 @@ describe('Multi-User Realtime Sync', () => {
                     subject: 'Other Board Card',
                     columnId: 'other-col',
                     position: '0|a:',
-                    OpenSF__SequenceNumber__c: 1
+                    sequenceNumber: 1
                 },
                 null,
                 1
@@ -716,7 +716,7 @@ describe('Multi-User Realtime Sync', () => {
                     columnId: 'col1',
                     boardId: BOARD_ID,
                     position: '0|d:',
-                    OpenSF__SequenceNumber__c: 1
+                    sequenceNumber: 1
                 },
                 null,
                 1
@@ -740,7 +740,7 @@ describe('Multi-User Realtime Sync', () => {
                     subject: 'Wrong Board',
                     boardId: 'other-board-id',
                     position: '0|a:',
-                    OpenSF__SequenceNumber__c: 1
+                    sequenceNumber: 1
                 },
                 null,
                 1
@@ -763,7 +763,7 @@ describe('Multi-User Realtime Sync', () => {
                 {
                     Id: 'card1',
                     subject: 'Updated Without ColumnId',
-                    OpenSF__SequenceNumber__c: 2
+                    sequenceNumber: 2
                 },
                 null,
                 2
@@ -800,7 +800,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'Changed in Window 1',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 2
+                    sequenceNumber: 2
                 },
                 null,
                 2,
@@ -831,7 +831,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'Deferred Update',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 2
+                    sequenceNumber: 2
                 },
                 null,
                 2,
@@ -857,7 +857,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'From Other Window',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 2
+                    sequenceNumber: 2
                 },
                 null,
                 2,
@@ -885,7 +885,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     subject: 'Deferred Then Applied',
                     columnId: 'col1',
-                    OpenSF__SequenceNumber__c: 3
+                    sequenceNumber: 3
                 },
                 null,
                 3,
@@ -926,7 +926,7 @@ describe('Multi-User Realtime Sync', () => {
                         subject: `Card ${id}`,
                         columnId: 'col1',
                         position: `0|${String.fromCharCode(100 + i)}:`,
-                        OpenSF__SequenceNumber__c: 1
+                        sequenceNumber: 1
                     },
                     null,
                     1
@@ -966,7 +966,7 @@ describe('Multi-User Realtime Sync', () => {
                     Id: 'card1',
                     columnId: 'col3',
                     position: '0|a:',
-                    OpenSF__SequenceNumber__c: 2
+                    sequenceNumber: 2
                 },
                 null,
                 2
@@ -991,7 +991,7 @@ describe('Multi-User Realtime Sync', () => {
                         subject: 'Rapid 1',
                         columnId: 'col1',
                         position: '0|d:',
-                        OpenSF__SequenceNumber__c: 1
+                        sequenceNumber: 1
                     },
                     null,
                     1
@@ -1008,7 +1008,7 @@ describe('Multi-User Realtime Sync', () => {
                         subject: 'Rapid 2',
                         columnId: 'col2',
                         position: '0|b:',
-                        OpenSF__SequenceNumber__c: 1
+                        sequenceNumber: 1
                     },
                     null,
                     1
@@ -1024,7 +1024,7 @@ describe('Multi-User Realtime Sync', () => {
                         Id: 'card1',
                         subject: 'Rapid Update',
                         columnId: 'col1',
-                        OpenSF__SequenceNumber__c: 2
+                        sequenceNumber: 2
                     },
                     null,
                     2
@@ -1040,7 +1040,7 @@ describe('Multi-User Realtime Sync', () => {
                         Id: 'card2',
                         columnId: 'col2',
                         position: '0|c:',
-                        OpenSF__SequenceNumber__c: 2
+                        sequenceNumber: 2
                     },
                     null,
                     2
@@ -1071,7 +1071,7 @@ describe('Multi-User Realtime Sync', () => {
                         subject: 'Rapid 3',
                         columnId: 'col3',
                         position: '0|a:',
-                        OpenSF__SequenceNumber__c: 1
+                        sequenceNumber: 1
                     },
                     null,
                     1
@@ -1087,7 +1087,7 @@ describe('Multi-User Realtime Sync', () => {
                         Id: 'card-r1',
                         priority: 'Critical',
                         columnId: 'col1',
-                        OpenSF__SequenceNumber__c: 2
+                        sequenceNumber: 2
                     },
                     null,
                     2
@@ -1103,7 +1103,7 @@ describe('Multi-User Realtime Sync', () => {
                         Id: 'card-r2',
                         columnId: 'col3',
                         position: '0|b:',
-                        OpenSF__SequenceNumber__c: 2
+                        sequenceNumber: 2
                     },
                     null,
                     2
@@ -1119,7 +1119,7 @@ describe('Multi-User Realtime Sync', () => {
                         Id: 'card-r3',
                         subject: 'Rapid 3 Updated',
                         columnId: 'col3',
-                        OpenSF__SequenceNumber__c: 2
+                        sequenceNumber: 2
                     },
                     null,
                     2
@@ -1185,7 +1185,7 @@ describe('Multi-User Realtime Sync', () => {
                         subject: 'New 1',
                         columnId: 'col1',
                         position: '0|c:',
-                        OpenSF__SequenceNumber__c: 1
+                        sequenceNumber: 1
                     },
                     null,
                     1
@@ -1200,7 +1200,7 @@ describe('Multi-User Realtime Sync', () => {
                         subject: 'New 2',
                         columnId: 'col2',
                         position: '0|b:',
-                        OpenSF__SequenceNumber__c: 1
+                        sequenceNumber: 1
                     },
                     null,
                     1
@@ -1237,7 +1237,7 @@ describe('Multi-User Realtime Sync', () => {
                         Id: 'card1',
                         subject: 'Final 1',
                         columnId: 'col1',
-                        OpenSF__SequenceNumber__c: 2
+                        sequenceNumber: 2
                     },
                     null,
                     2
@@ -1248,7 +1248,7 @@ describe('Multi-User Realtime Sync', () => {
                         Id: 'card2',
                         columnId: 'col3',
                         position: '0|a:',
-                        OpenSF__SequenceNumber__c: 2
+                        sequenceNumber: 2
                     },
                     null,
                     2
@@ -1260,7 +1260,7 @@ describe('Multi-User Realtime Sync', () => {
                         subject: 'Convergence',
                         columnId: 'col2',
                         position: '0|b:',
-                        OpenSF__SequenceNumber__c: 1
+                        sequenceNumber: 1
                     },
                     null,
                     1
@@ -1306,10 +1306,10 @@ describe('Multi-User Realtime Sync', () => {
                 'create',
                 {
                     Id: 'card-activity',
-                    OpenSF__Subject__c: 'Activity Card',
+                    subject: 'Activity Card',
                     columnId: 'col1',
                     position: '0|d:',
-                    OpenSF__SequenceNumber__c: 1
+                    sequenceNumber: 1
                 },
                 null,
                 1,
@@ -1374,7 +1374,7 @@ describe('Multi-User Realtime Sync', () => {
                 subject: 'Once Only',
                 columnId: 'col1',
                 position: '0|e:',
-                OpenSF__SequenceNumber__c: 1
+                sequenceNumber: 1
             };
 
             const event = createPlatformEvent('create', card, null, 1);

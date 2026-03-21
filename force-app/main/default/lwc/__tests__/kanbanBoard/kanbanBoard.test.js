@@ -128,49 +128,49 @@ const MOCK_BOARD_DATA = {
     board: {
         Id: 'a00xx000000001',
         Name: 'Test Board',
-        OpenSF__Description__c: 'Test Description'
+        description: 'Test Description'
     },
     columns: [
         {
             Id: 'a01xx000000001',
             Name: 'To Do',
-            OpenSF__Position__c: 'a',
-            OpenSF__Board__c: 'a00xx000000001'
+            position: 'a',
+            boardId: 'a00xx000000001'
         },
         {
             Id: 'a01xx000000002',
             Name: 'In Progress',
-            OpenSF__Position__c: 'b',
-            OpenSF__Board__c: 'a00xx000000001'
+            position: 'b',
+            boardId: 'a00xx000000001'
         },
         {
             Id: 'a01xx000000003',
             Name: 'Done',
-            OpenSF__Position__c: 'c',
-            OpenSF__Board__c: 'a00xx000000001'
+            position: 'c',
+            boardId: 'a00xx000000001'
         }
     ],
     cards: [
         {
             Id: 'a02xx000000001',
             Name: 'Card 1',
-            OpenSF__Column__c: 'a01xx000000001',
-            OpenSF__Position__c: 'a',
-            OpenSF__Description__c: 'Description 1'
+            columnId: 'a01xx000000001',
+            position: 'a',
+            description: 'Description 1'
         },
         {
             Id: 'a02xx000000002',
             Name: 'Card 2',
-            OpenSF__Column__c: 'a01xx000000001',
-            OpenSF__Position__c: 'b',
-            OpenSF__Description__c: 'Description 2'
+            columnId: 'a01xx000000001',
+            position: 'b',
+            description: 'Description 2'
         },
         {
             Id: 'a02xx000000003',
             Name: 'Card 3',
-            OpenSF__Column__c: 'a01xx000000002',
-            OpenSF__Position__c: 'a',
-            OpenSF__Description__c: 'Description 3'
+            columnId: 'a01xx000000002',
+            position: 'a',
+            description: 'Description 3'
         }
     ]
 };

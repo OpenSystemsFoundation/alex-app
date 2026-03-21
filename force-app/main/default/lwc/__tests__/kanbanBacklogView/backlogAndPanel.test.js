@@ -26,6 +26,7 @@ jest.mock('c/kanbanStore', () => ({
     reorderBacklogCardAsync: jest.fn(() => jest.fn()),
     moveCardsToSprintAsync: jest.fn(() => jest.fn()),
     updateCard: jest.fn(),
+    updateCardAsync: jest.fn(() => jest.fn()),
     deleteCardAsync: jest.fn(() => jest.fn())
 }));
 
@@ -71,6 +72,7 @@ import {
     reorderBacklogCardAsync as mockReorderBacklogCardAsync,
     moveCardsToSprintAsync as mockMoveCardsToSprintAsync,
     updateCard as mockUpdateCard,
+    updateCardAsync as mockUpdateCardAsync,
     deleteCardAsync as mockDeleteCardAsync
 } from 'c/kanbanStore';
 
@@ -2114,119 +2116,92 @@ describe('c-kanban-card-panel', () => {
         });
     });
 
-    // ── handleSave, handleSuccess, handleError ──────────────────────
+    // ── handleSave ─────────────────────────────────────────────────
     describe('save and error handlers', () => {
-        it('handleSave collects input fields and calls updateCard', () => {
+        it('handleSave collects DTO fields and dispatches updateCardAsync', async () => {
             const handleSave = KanbanCardPanel.prototype.handleSave;
             const mockField = {
                 fieldName: 'OpenSF__Subject__c',
                 value: 'Updated'
             };
+            const store = createMockStore();
             const ctx = {
                 card: { Id: 'card1', Name: 'Test' },
-                store: createMockStore(),
-                _originalCard: null,
-                template: {
-                    querySelectorAll: jest.fn(() => [mockField]),
-                    querySelector: jest.fn(() => ({
-                        submit: jest.fn()
-                    }))
-                }
-            };
-
-            handleSave.call(ctx);
-
-            expect(mockUpdateCard).toHaveBeenCalled();
-            expect(ctx._originalCard).toEqual({
-                Id: 'card1',
-                Name: 'Test'
-            });
-            expect(ctx.template.querySelector).toHaveBeenCalledWith(
-                'lightning-record-edit-form'
-            );
-        });
-
-        it('handleSave handles no form gracefully', () => {
-            const handleSave = KanbanCardPanel.prototype.handleSave;
-            const ctx = {
-                card: { Id: 'card1' },
-                store: createMockStore(),
-                _originalCard: null,
-                template: {
-                    querySelectorAll: jest.fn(() => []),
-                    querySelector: jest.fn(() => null)
-                }
-            };
-
-            expect(() => handleSave.call(ctx)).not.toThrow();
-        });
-
-        it('handleSuccess clears original card and dispatches events', () => {
-            const handleSuccess = KanbanCardPanel.prototype.handleSuccess;
-            const ctx = {
-                card: { Id: 'card1' },
-                _originalCard: { Id: 'card1', Name: 'Old' },
+                store,
                 dispatchEvent: jest.fn(),
                 deleteConfirmState: false,
                 _deleteTimer: null,
-                handleClose: KanbanCardPanel.prototype.handleClose
+                handleClose: jest.fn(),
+                template: {
+                    querySelectorAll: jest.fn(() => [mockField])
+                }
             };
 
-            handleSuccess.call(ctx);
+            await handleSave.call(ctx);
 
-            expect(ctx._originalCard).toBeNull();
-            // dispatches cardupdated, ShowToastEvent, and close
-            expect(ctx.dispatchEvent).toHaveBeenCalledTimes(3);
+            expect(store.dispatch).toHaveBeenCalled();
+            expect(mockUpdateCardAsync).toHaveBeenCalledWith('card1', {
+                subject: 'Updated'
+            });
+            // dispatches cardupdated and ShowToastEvent
+            expect(ctx.dispatchEvent).toHaveBeenCalledTimes(2);
+            expect(ctx.handleClose).toHaveBeenCalled();
         });
 
-        it('handleError reverts to original card if set', () => {
-            const handleError = KanbanCardPanel.prototype.handleError;
-            const originalCard = { Id: 'card1', Name: 'Original' };
+        it('handleSave handles no fields gracefully', async () => {
+            const handleSave = KanbanCardPanel.prototype.handleSave;
+            const store = createMockStore();
             const ctx = {
-                _originalCard: { ...originalCard },
-                store: createMockStore(),
-                dispatchEvent: jest.fn()
+                card: { Id: 'card1' },
+                store,
+                dispatchEvent: jest.fn(),
+                deleteConfirmState: false,
+                _deleteTimer: null,
+                handleClose: jest.fn(),
+                template: {
+                    querySelectorAll: jest.fn(() => [])
+                }
             };
 
-            handleError.call(ctx, {
-                detail: { message: 'Save failed' }
-            });
+            await expect(handleSave.call(ctx)).resolves.not.toThrow();
+        });
 
-            expect(mockUpdateCard).toHaveBeenCalledWith(
-                ctx.store,
-                originalCard
+        it('handleSave shows error toast on failure', async () => {
+            const handleSave = KanbanCardPanel.prototype.handleSave;
+            const store = createMockStore();
+            store.dispatch = jest.fn(() =>
+                Promise.reject({ body: { message: 'Save failed' } })
             );
-            expect(ctx._originalCard).toBeNull();
+            const ctx = {
+                card: { Id: 'card1' },
+                store,
+                dispatchEvent: jest.fn(),
+                template: {
+                    querySelectorAll: jest.fn(() => [])
+                }
+            };
+
+            await handleSave.call(ctx);
+
             expect(ctx.dispatchEvent).toHaveBeenCalled();
         });
 
-        it('handleError uses default message when detail is missing', () => {
-            const handleError = KanbanCardPanel.prototype.handleError;
+        it('handleSave uses default error message when body is missing', async () => {
+            const handleSave = KanbanCardPanel.prototype.handleSave;
+            const store = createMockStore();
+            store.dispatch = jest.fn(() => Promise.reject({}));
             const ctx = {
-                _originalCard: null,
-                store: createMockStore(),
-                dispatchEvent: jest.fn()
+                card: { Id: 'card1' },
+                store,
+                dispatchEvent: jest.fn(),
+                template: {
+                    querySelectorAll: jest.fn(() => [])
+                }
             };
 
-            handleError.call(ctx, { detail: null });
+            await handleSave.call(ctx);
 
             expect(ctx.dispatchEvent).toHaveBeenCalled();
-        });
-
-        it('handleError does not revert when no original card', () => {
-            const handleError = KanbanCardPanel.prototype.handleError;
-            mockUpdateCard.mockClear();
-            const ctx = {
-                _originalCard: null,
-                store: createMockStore(),
-                dispatchEvent: jest.fn()
-            };
-
-            handleError.call(ctx, {
-                detail: { message: 'Oops' }
-            });
-
-            expect(mockUpdateCard).not.toHaveBeenCalled();
         });
     });
 
