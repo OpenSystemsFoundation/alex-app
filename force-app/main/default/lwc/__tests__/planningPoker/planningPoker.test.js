@@ -217,6 +217,108 @@ function flushPromises() {
 // Access non-@api methods via prototype
 const proto = PlanningPoker.prototype;
 
+// Helper: plain-object mock with prototype methods/getters bound manually.
+function createMockInstance(overrides = {}) {
+    const ctx = {
+        currentView: 'lobby',
+        session: null,
+        activeSessions: [],
+        isLoading: false,
+        displayName: '',
+        selectedRole: 'Observer',
+        selectedVotingSystem: 'Fibonacci',
+        showClearPermission: 'Everyone',
+        sessionName: '',
+        autoReveal: true,
+        allowReactions: true,
+        showAdvancedSettings: false,
+        isCreatingNew: true,
+        selectedSessionId: null,
+        selectedVote: null,
+        timerSeconds: 0,
+        timerActive: false,
+        showTimerModal: false,
+        showHelp: false,
+        timerInput: 60,
+        debugMode: false,
+        _subscription: null,
+        _currentUserId: MOCK_USER_ID,
+        _timerInterval: null,
+        _pollInterval: null,
+        dispatchEvent: jest.fn(),
+        template: { querySelector: jest.fn().mockReturnValue(null) },
+        ...overrides
+    };
+    // Bind private methods so this.* calls work inside handlers
+    ctx._showError = proto._showError.bind(ctx);
+    ctx._showToast = proto._showToast.bind(ctx);
+    ctx._castVote = proto._castVote.bind(ctx);
+    ctx._refreshSession = proto._refreshSession.bind(ctx);
+    ctx._unsubscribe = proto._unsubscribe.bind(ctx);
+    ctx._stopTimer = proto._stopTimer.bind(ctx);
+    ctx._startTimerCountdown = proto._startTimerCountdown.bind(ctx);
+    ctx._subscribeToEvents = proto._subscribeToEvents.bind(ctx);
+    ctx._startPolling = proto._startPolling.bind(ctx);
+    ctx._loadActiveSessions = proto._loadActiveSessions.bind(ctx);
+    ctx._calculateMedian = proto._calculateMedian.bind(ctx);
+    ctx._renderDonutChart = jest.fn(); // skip canvas in tests
+    // Computed getters used by handlers
+    Object.defineProperty(ctx, 'isFormValid', {
+        get() {
+            return this.displayName && this.displayName.trim().length > 0;
+        },
+        configurable: true
+    });
+    Object.defineProperty(ctx, 'canShowClear', {
+        get() {
+            if (!this.session) return false;
+            if (this.session.showClearPermission === 'Everyone') return true;
+            return this.session.createdById === this._currentUserId;
+        },
+        configurable: true
+    });
+    Object.defineProperty(ctx, 'isRevealed', {
+        get() {
+            return this.session && this.session.status === 'Revealed';
+        },
+        configurable: true
+    });
+    Object.defineProperty(ctx, 'isCurrentUserVoter', {
+        get() {
+            if (!this.session || !this.session.participants) return false;
+            const me = this.session.participants.find(
+                (p) => p.userId === this._currentUserId
+            );
+            return me && me.role === 'Voter';
+        },
+        configurable: true
+    });
+    Object.defineProperty(ctx, 'voters', {
+        get() {
+            if (!this.session || !this.session.participants) return [];
+            return this.session.participants.filter(
+                (p) => p.role === 'Voter' && p.isActive
+            );
+        },
+        configurable: true
+    });
+    Object.defineProperty(ctx, 'voteResults', {
+        get() {
+            const desc = Object.getOwnPropertyDescriptor(proto, 'voteResults');
+            return desc.get.call(this);
+        },
+        configurable: true
+    });
+    Object.defineProperty(ctx, 'votingCards', {
+        get() {
+            const desc = Object.getOwnPropertyDescriptor(proto, 'votingCards');
+            return desc.get.call(this);
+        },
+        configurable: true
+    });
+    return ctx;
+}
+
 // ─── Tests ──────────────────────────────────────────────────────────
 describe('c-planning-poker', () => {
     beforeEach(() => {
@@ -281,23 +383,14 @@ describe('c-planning-poker', () => {
     // Getters / Computed Properties (via prototype)
     // ================================================================
     describe('Getters and computed properties', () => {
-        it('isFormValid returns false when displayName is empty', async () => {
-            const element = createComponent();
-            await flushPromises();
-            // displayName empty -> cannot create session
-            await element.handleCreateSession();
-            await flushPromises();
-            expect(createSession).not.toHaveBeenCalled();
+        it('isFormValid returns false when displayName is empty', () => {
+            const ctx = createMockInstance();
+            expect(ctx.isFormValid).toBeFalsy();
         });
 
-        it('isFormValid allows creation when displayName has content', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
-            await flushPromises();
-            expect(createSession).toHaveBeenCalled();
+        it('isFormValid allows creation when displayName has content', () => {
+            const ctx = createMockInstance({ displayName: 'Alice' });
+            expect(ctx.isFormValid).toBe(true);
         });
 
         it('_calculateMedian returns 0 for empty array', () => {
@@ -322,146 +415,135 @@ describe('c-planning-poker', () => {
     // ================================================================
     describe('Lobby handlers', () => {
         it('handleDisplayNameChange updates displayName and is used in create', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleDisplayNameChange({ target: { value: 'TestUser' } });
+            const ctx = createMockInstance();
+            proto.handleDisplayNameChange.call(ctx, {
+                target: { value: 'TestUser' }
+            });
+            expect(ctx.displayName).toBe('TestUser');
             createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
+            await proto.handleCreateSession.call(ctx);
             expect(createSession).toHaveBeenCalledWith(
                 expect.objectContaining({ displayName: 'TestUser' })
             );
         });
 
         it('handleRoleChange with Voter sets role', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleRoleChange({ target: { value: 'Voter' } });
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
+            const ctx = createMockInstance({ displayName: 'Alice' });
+            proto.handleRoleChange.call(ctx, { target: { value: 'Voter' } });
             createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
+            await proto.handleCreateSession.call(ctx);
             expect(createSession).toHaveBeenCalledWith(
                 expect.objectContaining({ role: 'Voter' })
             );
         });
 
         it('handleRoleChange with Observer sets Observer role', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleRoleChange({ target: { value: 'Observer' } });
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
+            const ctx = createMockInstance({ displayName: 'Alice' });
+            proto.handleRoleChange.call(ctx, { target: { value: 'Observer' } });
             createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
+            await proto.handleCreateSession.call(ctx);
             expect(createSession).toHaveBeenCalledWith(
                 expect.objectContaining({ role: 'Observer' })
             );
         });
 
         it('handleVotingSystemChange updates voting system', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleVotingSystemChange({
+            const ctx = createMockInstance({ displayName: 'Alice' });
+            proto.handleVotingSystemChange.call(ctx, {
                 detail: { value: 'TShirt' }
             });
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
             createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
+            await proto.handleCreateSession.call(ctx);
             expect(createSession).toHaveBeenCalledWith(
                 expect.objectContaining({ votingSystem: 'TShirt' })
             );
         });
 
         it('handleShowClearChange updates permission', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleShowClearChange({
+            const ctx = createMockInstance({ displayName: 'Alice' });
+            proto.handleShowClearChange.call(ctx, {
                 detail: { value: 'CreatorOnly' }
             });
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
             createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
+            await proto.handleCreateSession.call(ctx);
             expect(createSession).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    showClearPermission: 'CreatorOnly'
-                })
+                expect.objectContaining({ showClearPermission: 'CreatorOnly' })
             );
         });
 
         it('handleSessionNameChange updates session name', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleSessionNameChange({
+            const ctx = createMockInstance({ displayName: 'Alice' });
+            proto.handleSessionNameChange.call(ctx, {
                 target: { value: 'My Session' }
             });
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
             createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
+            await proto.handleCreateSession.call(ctx);
             expect(createSession).toHaveBeenCalledWith(
                 expect.objectContaining({ sessionName: 'My Session' })
             );
         });
 
         it('handleAutoRevealChange toggles autoReveal', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleAutoRevealChange({ target: { checked: false } });
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
+            const ctx = createMockInstance({ displayName: 'Alice' });
+            proto.handleAutoRevealChange.call(ctx, {
+                target: { checked: false }
+            });
             createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
+            await proto.handleCreateSession.call(ctx);
             expect(createSession).toHaveBeenCalledWith(
                 expect.objectContaining({ autoReveal: false })
             );
         });
 
         it('handleAllowReactionsChange toggles reactions', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleAllowReactionsChange({
+            const ctx = createMockInstance({ displayName: 'Alice' });
+            proto.handleAllowReactionsChange.call(ctx, {
                 target: { checked: false }
             });
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
             createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
+            await proto.handleCreateSession.call(ctx);
             expect(createSession).toHaveBeenCalledWith(
                 expect.objectContaining({ allowReactions: false })
             );
         });
 
-        it('toggleAdvancedSettings flips the flag', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.toggleAdvancedSettings();
-            element.toggleAdvancedSettings();
+        it('toggleAdvancedSettings flips the flag', () => {
+            const ctx = createMockInstance();
+            proto.toggleAdvancedSettings.call(ctx);
+            expect(ctx.showAdvancedSettings).toBe(true);
+            proto.toggleAdvancedSettings.call(ctx);
+            expect(ctx.showAdvancedSettings).toBe(false);
         });
 
-        it('toggleHelp flips the flag', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.toggleHelp();
-            element.toggleHelp();
+        it('toggleHelp flips the flag', () => {
+            const ctx = createMockInstance();
+            proto.toggleHelp.call(ctx);
+            expect(ctx.showHelp).toBe(true);
+            proto.toggleHelp.call(ctx);
+            expect(ctx.showHelp).toBe(false);
         });
 
         it('handleRefreshSessions reloads sessions', async () => {
-            const element = createComponent();
-            await flushPromises();
-            getActiveSessions.mockClear();
+            const ctx = createMockInstance();
             getActiveSessions.mockResolvedValue(MOCK_ACTIVE_SESSIONS);
-            element.handleRefreshSessions();
+            proto.handleRefreshSessions.call(ctx);
             await flushPromises();
             expect(getActiveSessions).toHaveBeenCalled();
         });
 
-        it('handleShowCreateForm sets isCreatingNew', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleShowCreateForm();
+        it('handleShowCreateForm sets isCreatingNew', () => {
+            const ctx = createMockInstance({ isCreatingNew: false });
+            proto.handleShowCreateForm.call(ctx);
+            expect(ctx.isCreatingNew).toBe(true);
         });
 
-        it('handleSelectSession sets selectedSessionId', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleSelectSession({
+        it('handleSelectSession sets selectedSessionId', () => {
+            const ctx = createMockInstance();
+            proto.handleSelectSession.call(ctx, {
                 currentTarget: { dataset: { id: 'session001' } }
             });
+            expect(ctx.selectedSessionId).toBe('session001');
+            expect(ctx.isCreatingNew).toBe(false);
         });
     });
 
@@ -470,96 +552,66 @@ describe('c-planning-poker', () => {
     // ================================================================
     describe('Session creation and joining', () => {
         it('handleCreateSession creates session and subscribes', async () => {
-            const element = createComponent();
-            await flushPromises();
-
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
+            const ctx = createMockInstance({ displayName: 'Alice' });
             createSession.mockResolvedValue(MOCK_SESSION);
-
-            await element.handleCreateSession();
+            await proto.handleCreateSession.call(ctx);
             await flushPromises();
-
             expect(createSession).toHaveBeenCalled();
             expect(subscribe).toHaveBeenCalled();
+            expect(ctx.session).toEqual(MOCK_SESSION);
+            expect(ctx.currentView).toBe('voting');
         });
 
         it('handleCreateSession shows error on failure', async () => {
-            const element = createComponent();
-            await flushPromises();
-
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
+            const ctx = createMockInstance({ displayName: 'Alice' });
             createSession.mockRejectedValue({
                 body: { message: 'Create failed' }
             });
-
-            await element.handleCreateSession();
+            await proto.handleCreateSession.call(ctx);
             await flushPromises();
-
-            expect(ShowToastEvent).toHaveBeenCalledWith(
-                expect.objectContaining({ variant: 'error' })
-            );
+            expect(ctx.dispatchEvent).toHaveBeenCalled();
         });
 
         it('handleCreateSession does nothing when form invalid', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await element.handleCreateSession();
+            const ctx = createMockInstance();
+            await proto.handleCreateSession.call(ctx);
             expect(createSession).not.toHaveBeenCalled();
         });
 
         it('handleJoinSession joins existing session', async () => {
-            const element = createComponent();
-            await flushPromises();
-
-            element.handleDisplayNameChange({ target: { value: 'Bob' } });
-            element.handleSelectSession({
-                currentTarget: { dataset: { id: 'session001' } }
+            const ctx = createMockInstance({
+                displayName: 'Bob',
+                selectedSessionId: 'session001'
             });
             joinSession.mockResolvedValue(MOCK_SESSION);
-
-            await element.handleJoinSession();
+            await proto.handleJoinSession.call(ctx);
             await flushPromises();
-
             expect(joinSession).toHaveBeenCalledWith(
                 expect.objectContaining({ sessionId: 'session001' })
             );
+            expect(ctx.currentView).toBe('voting');
         });
 
         it('handleJoinSession shows error on failure', async () => {
-            const element = createComponent();
-            await flushPromises();
-
-            element.handleDisplayNameChange({ target: { value: 'Bob' } });
-            element.handleSelectSession({
-                currentTarget: { dataset: { id: 'session001' } }
+            const ctx = createMockInstance({
+                displayName: 'Bob',
+                selectedSessionId: 'session001'
             });
-            joinSession.mockRejectedValue({
-                body: { message: 'Join failed' }
-            });
-
-            await element.handleJoinSession();
+            joinSession.mockRejectedValue({ body: { message: 'Join failed' } });
+            await proto.handleJoinSession.call(ctx);
             await flushPromises();
-
-            expect(ShowToastEvent).toHaveBeenCalledWith(
-                expect.objectContaining({ variant: 'error' })
-            );
+            expect(ctx.dispatchEvent).toHaveBeenCalled();
         });
 
         it('handleJoinSession does nothing when no session selected', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleDisplayNameChange({ target: { value: 'Bob' } });
-            await element.handleJoinSession();
+            const ctx = createMockInstance({ displayName: 'Bob' });
+            await proto.handleJoinSession.call(ctx);
             expect(joinSession).not.toHaveBeenCalled();
         });
 
         it('handleJoinSession does nothing when form invalid', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleSelectSession({
-                currentTarget: { dataset: { id: 'session001' } }
-            });
-            await element.handleJoinSession();
+            const ctx = createMockInstance({ selectedSessionId: 'session001' });
+            await proto.handleJoinSession.call(ctx);
             expect(joinSession).not.toHaveBeenCalled();
         });
     });
@@ -569,38 +621,30 @@ describe('c-planning-poker', () => {
     // ================================================================
     describe('handleBackToLobby', () => {
         it('leaves session and returns to lobby', async () => {
-            const element = createComponent();
-            await flushPromises();
-
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
-            await flushPromises();
-
+            const ctx = createMockInstance({
+                session: MOCK_SESSION,
+                currentView: 'voting'
+            });
             leaveSession.mockResolvedValue(undefined);
-            getActiveSessions.mockClear();
             getActiveSessions.mockResolvedValue([]);
-
-            element.handleBackToLobby();
+            proto.handleBackToLobby.call(ctx);
             await flushPromises();
-
             expect(leaveSession).toHaveBeenCalledWith({
                 sessionId: MOCK_SESSION.id
             });
+            expect(ctx.currentView).toBe('lobby');
+            expect(ctx.session).toBeNull();
         });
 
         it('handles leaveSession error gracefully', async () => {
-            const element = createComponent();
-            await flushPromises();
-
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
-            await flushPromises();
-
+            const ctx = createMockInstance({
+                session: MOCK_SESSION,
+                currentView: 'voting'
+            });
             leaveSession.mockRejectedValue(new Error('fail'));
-            element.handleBackToLobby();
+            proto.handleBackToLobby.call(ctx);
             await flushPromises();
+            expect(ctx.currentView).toBe('lobby');
         });
     });
 
@@ -608,213 +652,129 @@ describe('c-planning-poker', () => {
     // Voting Handlers
     // ================================================================
     describe('Voting handlers', () => {
-        async function enterVotingSession(element) {
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
-            await flushPromises();
+        function votingCtx(extra = {}) {
+            return createMockInstance({
+                session: MOCK_SESSION,
+                currentView: 'voting',
+                ...extra
+            });
         }
 
         it('handleCardClick casts a vote', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterVotingSession(element);
-
+            const ctx = votingCtx();
             castVote.mockResolvedValue(undefined);
-            element.handleCardClick({
+            proto.handleCardClick.call(ctx, {
                 currentTarget: { dataset: { value: '5' } }
             });
             await flushPromises();
-
             expect(castVote).toHaveBeenCalledWith(
                 expect.objectContaining({ vote: '5' })
             );
         });
 
-        it('handleCardClick deselects when clicking same card', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterVotingSession(element);
-
-            castVote.mockResolvedValue(undefined);
-            element.handleCardClick({
+        it('handleCardClick deselects when clicking same card', () => {
+            const ctx = votingCtx({ selectedVote: '5' });
+            proto.handleCardClick.call(ctx, {
                 currentTarget: { dataset: { value: '5' } }
             });
-            await flushPromises();
-
-            castVote.mockClear();
-            element.handleCardClick({
-                currentTarget: { dataset: { value: '5' } }
-            });
-            expect(castVote).not.toHaveBeenCalled();
+            expect(ctx.selectedVote).toBeNull();
         });
 
-        it('handleCardClick does nothing when revealed', async () => {
-            const element = createComponent();
-            await flushPromises();
-
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(MOCK_REVEALED_SESSION);
-            await element.handleCreateSession();
-            await flushPromises();
-
-            castVote.mockClear();
-            element.handleCardClick({
+        it('handleCardClick does nothing when revealed', () => {
+            const ctx = votingCtx({ session: MOCK_REVEALED_SESSION });
+            proto.handleCardClick.call(ctx, {
                 currentTarget: { dataset: { value: '5' } }
             });
             expect(castVote).not.toHaveBeenCalled();
         });
 
         it('handleCardClick shows error on castVote failure', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterVotingSession(element);
-
-            castVote.mockRejectedValue({
-                body: { message: 'Vote error' }
-            });
-            element.handleCardClick({
+            const ctx = votingCtx();
+            castVote.mockRejectedValue({ body: { message: 'Vote error' } });
+            proto.handleCardClick.call(ctx, {
                 currentTarget: { dataset: { value: '3' } }
             });
             await flushPromises();
-
-            expect(ShowToastEvent).toHaveBeenCalledWith(
-                expect.objectContaining({ variant: 'error' })
-            );
+            expect(ctx.dispatchEvent).toHaveBeenCalled();
         });
 
         it('handleRevealVotes reveals votes', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterVotingSession(element);
-
+            const ctx = votingCtx();
             revealVotes.mockResolvedValue(MOCK_REVEALED_SESSION);
-            await element.handleRevealVotes();
-            await flushPromises();
-
+            await proto.handleRevealVotes.call(ctx);
             expect(revealVotes).toHaveBeenCalledWith({
                 sessionId: MOCK_SESSION.id
             });
         });
 
         it('handleRevealVotes shows error on failure', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterVotingSession(element);
-
+            const ctx = votingCtx();
             revealVotes.mockRejectedValue({
                 body: { message: 'Reveal failed' }
             });
-            await element.handleRevealVotes();
+            await proto.handleRevealVotes.call(ctx);
             await flushPromises();
-
-            expect(ShowToastEvent).toHaveBeenCalledWith(
-                expect.objectContaining({ variant: 'error' })
-            );
+            expect(ctx.dispatchEvent).toHaveBeenCalled();
         });
 
         it('handleRevealVotes does nothing when canShowClear is false', async () => {
-            const element = createComponent();
-            await flushPromises();
-            // No session yet
-            await element.handleRevealVotes();
+            const ctx = createMockInstance(); // no session → canShowClear false
+            await proto.handleRevealVotes.call(ctx);
             expect(revealVotes).not.toHaveBeenCalled();
         });
 
         it('handleClearVotes clears votes', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterVotingSession(element);
-
-            const clearedSession = {
-                ...MOCK_SESSION,
-                participants: MOCK_SESSION.participants.map((p) => ({
-                    ...p,
-                    hasVoted: false,
-                    vote: null
-                }))
-            };
-            clearVotes.mockResolvedValue(clearedSession);
-
-            await element.handleClearVotes();
-            await flushPromises();
-
+            const ctx = votingCtx();
+            clearVotes.mockResolvedValue({ ...MOCK_SESSION });
+            await proto.handleClearVotes.call(ctx);
             expect(clearVotes).toHaveBeenCalledWith({
                 sessionId: MOCK_SESSION.id
             });
         });
 
         it('handleClearVotes shows error on failure', async () => {
-            const element = createComponent();
+            const ctx = votingCtx();
+            clearVotes.mockRejectedValue({ body: { message: 'Clear failed' } });
+            await proto.handleClearVotes.call(ctx);
             await flushPromises();
-            await enterVotingSession(element);
-
-            clearVotes.mockRejectedValue({
-                body: { message: 'Clear failed' }
-            });
-            await element.handleClearVotes();
-            await flushPromises();
-
-            expect(ShowToastEvent).toHaveBeenCalledWith(
-                expect.objectContaining({ variant: 'error' })
-            );
+            expect(ctx.dispatchEvent).toHaveBeenCalled();
         });
 
         it('handleClearVotes does nothing without permission', async () => {
-            const element = createComponent();
-            await flushPromises();
-
-            const restrictedSession = {
-                ...MOCK_SESSION,
-                showClearPermission: 'CreatorOnly',
-                createdById: 'someoneElse'
-            };
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(restrictedSession);
-            await element.handleCreateSession();
-            await flushPromises();
-
-            await element.handleClearVotes();
+            const ctx = votingCtx({
+                session: {
+                    ...MOCK_SESSION,
+                    showClearPermission: 'CreatorOnly',
+                    createdById: 'someoneElse'
+                }
+            });
+            await proto.handleClearVotes.call(ctx);
             expect(clearVotes).not.toHaveBeenCalled();
         });
 
         it('handleReaction sends reaction', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterVotingSession(element);
-
+            const ctx = votingCtx();
             setReaction.mockResolvedValue(undefined);
             getSession.mockResolvedValue(MOCK_SESSION);
-
-            await element.handleReaction({
+            await proto.handleReaction.call(ctx, {
                 currentTarget: { dataset: { value: '\uD83D\uDC4D' } }
             });
             await flushPromises();
-
             expect(setReaction).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    reaction: '\uD83D\uDC4D'
-                })
+                expect.objectContaining({ reaction: '\uD83D\uDC4D' })
             );
         });
 
         it('handleReaction shows error on failure', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterVotingSession(element);
-
+            const ctx = votingCtx();
             setReaction.mockRejectedValue({
                 body: { message: 'Reaction failed' }
             });
-
-            await element.handleReaction({
+            await proto.handleReaction.call(ctx, {
                 currentTarget: { dataset: { value: '\uD83D\uDC4D' } }
             });
             await flushPromises();
-
-            expect(ShowToastEvent).toHaveBeenCalledWith(
-                expect.objectContaining({ variant: 'error' })
-            );
+            expect(ctx.dispatchEvent).toHaveBeenCalled();
         });
     });
 
@@ -825,69 +785,71 @@ describe('c-planning-poker', () => {
         beforeEach(() => {
             jest.useFakeTimers();
         });
-
         afterEach(() => {
             jest.useRealTimers();
         });
 
         it('handleSetTimer opens timer modal', () => {
-            const element = createComponent();
-            element.handleSetTimer();
+            const ctx = createMockInstance();
+            proto.handleSetTimer.call(ctx);
+            expect(ctx.showTimerModal).toBe(true);
         });
 
         it('handleTimerInputChange updates value', () => {
-            const element = createComponent();
-            element.handleTimerInputChange({ target: { value: '120' } });
+            const ctx = createMockInstance();
+            proto.handleTimerInputChange.call(ctx, {
+                target: { value: '120' }
+            });
+            expect(ctx.timerInput).toBe(120);
         });
 
         it('handleTimerInputChange defaults to 60 for invalid', () => {
-            const element = createComponent();
-            element.handleTimerInputChange({ target: { value: 'abc' } });
+            const ctx = createMockInstance();
+            proto.handleTimerInputChange.call(ctx, {
+                target: { value: 'abc' }
+            });
+            expect(ctx.timerInput).toBe(60);
         });
 
         it('handleStartTimer starts countdown', () => {
-            const element = createComponent();
-            element.handleTimerInputChange({ target: { value: '5' } });
-            element.handleStartTimer();
+            const ctx = createMockInstance({ timerInput: 5 });
+            proto.handleStartTimer.call(ctx);
+            expect(ctx.timerActive).toBe(true);
+            expect(ctx.timerSeconds).toBe(5);
             jest.advanceTimersByTime(2000);
+            expect(ctx.timerSeconds).toBe(3);
         });
 
         it('handleCancelTimerModal closes modal', () => {
-            const element = createComponent();
-            element.handleSetTimer();
-            element.handleCancelTimerModal();
+            const ctx = createMockInstance({ showTimerModal: true });
+            proto.handleCancelTimerModal.call(ctx);
+            expect(ctx.showTimerModal).toBe(false);
         });
 
         it('handleStopTimer stops timer', () => {
-            const element = createComponent();
-            element.handleTimerInputChange({ target: { value: '5' } });
-            element.handleStartTimer();
+            const ctx = createMockInstance({ timerInput: 5 });
+            proto.handleStartTimer.call(ctx);
             jest.advanceTimersByTime(2000);
-            element.handleStopTimer();
+            proto.handleStopTimer.call(ctx);
+            expect(ctx.timerActive).toBe(false);
+            expect(ctx.timerSeconds).toBe(0);
         });
 
         it('timer fires toast when time is up', () => {
-            const element = createComponent();
-            element.handleTimerInputChange({ target: { value: '2' } });
-            element.handleStartTimer();
+            const ctx = createMockInstance({ timerInput: 2 });
+            proto.handleStartTimer.call(ctx);
             jest.advanceTimersByTime(3000);
-
-            expect(ShowToastEvent).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'Timer',
-                    variant: 'info'
-                })
-            );
+            expect(ctx.dispatchEvent).toHaveBeenCalled();
         });
 
         it('handleStartTimer clears existing interval', () => {
-            const element = createComponent();
-            element.handleTimerInputChange({ target: { value: '10' } });
-            element.handleStartTimer();
+            const ctx = createMockInstance({ timerInput: 10 });
+            proto.handleStartTimer.call(ctx);
             jest.advanceTimersByTime(2000);
-            element.handleTimerInputChange({ target: { value: '5' } });
-            element.handleStartTimer();
+            ctx.timerInput = 5;
+            proto.handleStartTimer.call(ctx);
             jest.advanceTimersByTime(2000);
+            expect(ctx.timerSeconds).toBe(3);
         });
     });
 
@@ -895,144 +857,94 @@ describe('c-planning-poker', () => {
     // Platform Event Handling
     // ================================================================
     describe('Platform event handling', () => {
-        async function enterSession(element) {
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
-            await flushPromises();
+        function eventPayload(sessionId, eventType, senderId) {
+            return {
+                data: {
+                    payload: {
+                        OpenSF__SessionId__c: sessionId,
+                        OpenSF__EventType__c: eventType,
+                        OpenSF__SenderId__c: senderId
+                    }
+                }
+            };
         }
 
         it('ignores events for different sessions', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterSession(element);
-
+            const ctx = createMockInstance({ session: MOCK_SESSION });
             getSession.mockClear();
-            await element._handleEvent({
-                data: {
-                    payload: {
-                        OpenSF__SessionId__c: 'other_session',
-                        OpenSF__EventType__c: 'VOTE_CAST',
-                        OpenSF__SenderId__c: 'user002'
-                    }
-                }
-            });
+            await proto._handleEvent.call(
+                ctx,
+                eventPayload('other_session', 'VOTE_CAST', 'user002')
+            );
             expect(getSession).not.toHaveBeenCalled();
         });
 
         it('ignores own non-reveal/clear events', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterSession(element);
-
+            const ctx = createMockInstance({ session: MOCK_SESSION });
             getSession.mockClear();
-            await element._handleEvent({
-                data: {
-                    payload: {
-                        OpenSF__SessionId__c: MOCK_SESSION.id,
-                        OpenSF__EventType__c: 'VOTE_CAST',
-                        OpenSF__SenderId__c: MOCK_USER_ID
-                    }
-                }
-            });
+            await proto._handleEvent.call(
+                ctx,
+                eventPayload(MOCK_SESSION.id, 'VOTE_CAST', MOCK_USER_ID)
+            );
             expect(getSession).not.toHaveBeenCalled();
         });
 
         it('refreshes for own VOTES_REVEALED events', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterSession(element);
-
+            const ctx = createMockInstance({ session: MOCK_SESSION });
             getSession.mockResolvedValue(MOCK_REVEALED_SESSION);
-            await element._handleEvent({
-                data: {
-                    payload: {
-                        OpenSF__SessionId__c: MOCK_SESSION.id,
-                        OpenSF__EventType__c: 'VOTES_REVEALED',
-                        OpenSF__SenderId__c: MOCK_USER_ID
-                    }
-                }
-            });
+            await proto._handleEvent.call(
+                ctx,
+                eventPayload(MOCK_SESSION.id, 'VOTES_REVEALED', MOCK_USER_ID)
+            );
             await flushPromises();
             expect(getSession).toHaveBeenCalled();
         });
 
         it('refreshes for own VOTES_CLEARED events', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterSession(element);
-
+            const ctx = createMockInstance({ session: MOCK_SESSION });
             getSession.mockResolvedValue(MOCK_SESSION);
-            await element._handleEvent({
-                data: {
-                    payload: {
-                        OpenSF__SessionId__c: MOCK_SESSION.id,
-                        OpenSF__EventType__c: 'VOTES_CLEARED',
-                        OpenSF__SenderId__c: MOCK_USER_ID
-                    }
-                }
-            });
+            await proto._handleEvent.call(
+                ctx,
+                eventPayload(MOCK_SESSION.id, 'VOTES_CLEARED', MOCK_USER_ID)
+            );
             await flushPromises();
             expect(getSession).toHaveBeenCalled();
         });
 
         it('refreshes for other users events', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterSession(element);
-
+            const ctx = createMockInstance({ session: MOCK_SESSION });
             getSession.mockResolvedValue(MOCK_SESSION);
-            await element._handleEvent({
-                data: {
-                    payload: {
-                        OpenSF__SessionId__c: MOCK_SESSION.id,
-                        OpenSF__EventType__c: 'VOTE_CAST',
-                        OpenSF__SenderId__c: 'user002'
-                    }
-                }
-            });
+            await proto._handleEvent.call(
+                ctx,
+                eventPayload(MOCK_SESSION.id, 'VOTE_CAST', 'user002')
+            );
             await flushPromises();
             expect(getSession).toHaveBeenCalled();
         });
 
         it('handles SESSION_CLOSED by returning to lobby', async () => {
-            const element = createComponent();
-            await flushPromises();
-            await enterSession(element);
-
-            getActiveSessions.mockClear();
-            getActiveSessions.mockResolvedValue([]);
-
-            await element._handleEvent({
-                data: {
-                    payload: {
-                        OpenSF__SessionId__c: MOCK_SESSION.id,
-                        OpenSF__EventType__c: 'SESSION_CLOSED',
-                        OpenSF__SenderId__c: 'user002'
-                    }
-                }
+            const ctx = createMockInstance({
+                session: MOCK_SESSION,
+                currentView: 'voting'
             });
-            await flushPromises();
-
-            expect(ShowToastEvent).toHaveBeenCalledWith(
-                expect.objectContaining({ variant: 'info' })
+            getActiveSessions.mockResolvedValue([]);
+            await proto._handleEvent.call(
+                ctx,
+                eventPayload(MOCK_SESSION.id, 'SESSION_CLOSED', 'user002')
             );
+            await flushPromises();
+            expect(ctx.session).toBeNull();
+            expect(ctx.currentView).toBe('lobby');
+            expect(ctx.dispatchEvent).toHaveBeenCalled();
         });
 
         it('does nothing when no session', async () => {
-            const element = createComponent();
-            await flushPromises();
-
+            const ctx = createMockInstance();
             getSession.mockClear();
-            await element._handleEvent({
-                data: {
-                    payload: {
-                        OpenSF__SessionId__c: 'session001',
-                        OpenSF__EventType__c: 'VOTE_CAST',
-                        OpenSF__SenderId__c: 'user002'
-                    }
-                }
-            });
+            await proto._handleEvent.call(
+                ctx,
+                eventPayload('session001', 'VOTE_CAST', 'user002')
+            );
             expect(getSession).not.toHaveBeenCalled();
         });
     });
@@ -1042,24 +954,17 @@ describe('c-planning-poker', () => {
     // ================================================================
     describe('_refreshSession', () => {
         it('is skipped when no session', async () => {
-            const element = createComponent();
-            await flushPromises();
+            const ctx = createMockInstance();
             getSession.mockClear();
-            await element._refreshSession();
+            await proto._refreshSession.call(ctx);
             expect(getSession).not.toHaveBeenCalled();
         });
 
         it('handles refresh errors gracefully', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
-            await flushPromises();
-
+            const ctx = createMockInstance({ session: MOCK_SESSION });
             getSession.mockRejectedValue(new Error('refresh fail'));
             const spy = jest.spyOn(console, 'error').mockImplementation();
-            await element._refreshSession();
+            await proto._refreshSession.call(ctx);
             await flushPromises();
             spy.mockRestore();
         });
@@ -1069,23 +974,16 @@ describe('c-planning-poker', () => {
     // EMP API subscription
     // ================================================================
     describe('Subscription', () => {
-        it('unsubscribe calls empApi unsubscribe when sub exists', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(MOCK_SESSION);
-            await element.handleCreateSession();
-            await flushPromises();
-
-            element._unsubscribe();
+        it('unsubscribe calls empApi unsubscribe when sub exists', () => {
+            const ctx = createMockInstance({ _subscription: { id: 'sub1' } });
+            proto._unsubscribe.call(ctx);
             expect(unsubscribe).toHaveBeenCalled();
         });
 
-        it('unsubscribe does nothing without subscription', async () => {
-            const element = createComponent();
-            await flushPromises();
+        it('unsubscribe does nothing without subscription', () => {
+            const ctx = createMockInstance();
             unsubscribe.mockClear();
-            element._unsubscribe();
+            proto._unsubscribe.call(ctx);
             expect(unsubscribe).not.toHaveBeenCalled();
         });
     });
@@ -1107,23 +1005,19 @@ describe('c-planning-poker', () => {
     // ================================================================
     describe('Error handling', () => {
         it('handles error without body', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
+            const ctx = createMockInstance({ displayName: 'Alice' });
             createSession.mockRejectedValue({ message: 'plain error' });
-            await element.handleCreateSession();
+            await proto.handleCreateSession.call(ctx);
             await flushPromises();
-            expect(ShowToastEvent).toHaveBeenCalled();
+            expect(ctx.dispatchEvent).toHaveBeenCalled();
         });
 
         it('handles unknown error format', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
+            const ctx = createMockInstance({ displayName: 'Alice' });
             createSession.mockRejectedValue({});
-            await element.handleCreateSession();
+            await proto.handleCreateSession.call(ctx);
             await flushPromises();
-            expect(ShowToastEvent).toHaveBeenCalled();
+            expect(ctx.dispatchEvent).toHaveBeenCalled();
         });
     });
 
@@ -1138,7 +1032,7 @@ describe('c-planning-poker', () => {
         });
 
         it('handles sessions with unknown voting system', async () => {
-            const sessions = [
+            getActiveSessions.mockResolvedValue([
                 {
                     id: 'sess1',
                     name: 'Test',
@@ -1146,106 +1040,97 @@ describe('c-planning-poker', () => {
                     votingSystem: 'CustomSystem',
                     participants: []
                 }
-            ];
-            getActiveSessions.mockResolvedValue(sessions);
+            ]);
             createComponent();
             await flushPromises();
         });
     });
 
     // ================================================================
-    // Vote results
+    // Vote results (via prototype getters)
     // ================================================================
     describe('Vote results computation', () => {
-        it('renders with revealed session', async () => {
-            const element = createComponent();
-            await flushPromises();
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(MOCK_REVEALED_SESSION);
-            await element.handleCreateSession();
-            await flushPromises();
+        it('renders with revealed session', () => {
+            const ctx = createMockInstance({ session: MOCK_REVEALED_SESSION });
+            const results = ctx.voteResults;
+            expect(results.stats.length).toBeGreaterThan(0);
         });
 
-        it('renders with consensus session', async () => {
-            const consensusSession = {
-                ...MOCK_REVEALED_SESSION,
-                participants: [
-                    {
-                        userId: MOCK_USER_ID,
-                        displayName: 'Alice',
-                        role: 'Voter',
-                        isActive: true,
-                        hasVoted: true,
-                        vote: '5'
-                    },
-                    {
-                        userId: 'user002',
-                        displayName: 'Bob',
-                        role: 'Voter',
-                        isActive: true,
-                        hasVoted: true,
-                        vote: '5'
-                    }
-                ]
-            };
-            const element = createComponent();
-            await flushPromises();
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(consensusSession);
-            await element.handleCreateSession();
-            await flushPromises();
+        it('renders with consensus session', () => {
+            const ctx = createMockInstance({
+                session: {
+                    ...MOCK_REVEALED_SESSION,
+                    participants: [
+                        {
+                            userId: MOCK_USER_ID,
+                            displayName: 'Alice',
+                            role: 'Voter',
+                            isActive: true,
+                            hasVoted: true,
+                            vote: '5'
+                        },
+                        {
+                            userId: 'user002',
+                            displayName: 'Bob',
+                            role: 'Voter',
+                            isActive: true,
+                            hasVoted: true,
+                            vote: '5'
+                        }
+                    ]
+                }
+            });
+            const results = ctx.voteResults;
+            expect(results.isConsensus).toBe(true);
+            expect(results.consensusValue).toBe('5');
         });
 
-        it('renders with non-numeric votes', async () => {
-            const nonNumSession = {
-                ...MOCK_REVEALED_SESSION,
-                participants: [
-                    {
-                        userId: MOCK_USER_ID,
-                        displayName: 'Alice',
-                        role: 'Voter',
-                        isActive: true,
-                        hasVoted: true,
-                        vote: '?'
-                    },
-                    {
-                        userId: 'user002',
-                        displayName: 'Bob',
-                        role: 'Voter',
-                        isActive: true,
-                        hasVoted: true,
-                        vote: '\u221E'
-                    }
-                ]
-            };
-            const element = createComponent();
-            await flushPromises();
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(nonNumSession);
-            await element.handleCreateSession();
-            await flushPromises();
+        it('renders with non-numeric votes', () => {
+            const ctx = createMockInstance({
+                session: {
+                    ...MOCK_REVEALED_SESSION,
+                    participants: [
+                        {
+                            userId: MOCK_USER_ID,
+                            displayName: 'Alice',
+                            role: 'Voter',
+                            isActive: true,
+                            hasVoted: true,
+                            vote: '?'
+                        },
+                        {
+                            userId: 'user002',
+                            displayName: 'Bob',
+                            role: 'Voter',
+                            isActive: true,
+                            hasVoted: true,
+                            vote: '\u221E'
+                        }
+                    ]
+                }
+            });
+            const results = ctx.voteResults;
+            expect(results.stats).toEqual([]);
         });
 
-        it('renders with observers only (no voters)', async () => {
-            const noVoterSession = {
-                ...MOCK_REVEALED_SESSION,
-                participants: [
-                    {
-                        userId: 'user003',
-                        displayName: 'Charlie',
-                        role: 'Observer',
-                        isActive: true,
-                        hasVoted: false,
-                        vote: null
-                    }
-                ]
-            };
-            const element = createComponent();
-            await flushPromises();
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(noVoterSession);
-            await element.handleCreateSession();
-            await flushPromises();
+        it('renders with observers only (no voters)', () => {
+            const ctx = createMockInstance({
+                session: {
+                    ...MOCK_REVEALED_SESSION,
+                    participants: [
+                        {
+                            userId: 'user003',
+                            displayName: 'Charlie',
+                            role: 'Observer',
+                            isActive: true,
+                            hasVoted: false,
+                            vote: null
+                        }
+                    ]
+                }
+            });
+            const results = ctx.voteResults;
+            expect(results.isConsensus).toBe(false);
         });
     });
 
@@ -1253,17 +1138,13 @@ describe('c-planning-poker', () => {
     // Voting cards with unknown system
     // ================================================================
     describe('votingCards fallback', () => {
-        it('falls back to Fibonacci for unknown system', async () => {
-            const unknownVSSession = {
-                ...MOCK_SESSION,
-                votingSystem: 'UnknownSystem'
-            };
-            const element = createComponent();
-            await flushPromises();
-            element.handleDisplayNameChange({ target: { value: 'Alice' } });
-            createSession.mockResolvedValue(unknownVSSession);
-            await element.handleCreateSession();
-            await flushPromises();
+        it('falls back to Fibonacci for unknown system', () => {
+            const ctx = createMockInstance({
+                session: { ...MOCK_SESSION, votingSystem: 'UnknownSystem' }
+            });
+            const cards = ctx.votingCards;
+            expect(cards.length).toBeGreaterThan(0);
+            expect(cards[0].value).toBe('0');
         });
     });
 

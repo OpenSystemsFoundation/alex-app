@@ -160,14 +160,15 @@ function flushPromises() {
 }
 
 // Helper to create a mock context object that mimics the component instance
-// for calling prototype methods
+// for calling prototype methods.  Includes derived getters/methods so that
+// prototype calls like this.retroStatus or this._showToast work correctly.
 function createMockInstance(overrides = {}) {
     const mockToastManager = {
         showError: jest.fn(),
         showSuccess: jest.fn(),
         showInfo: jest.fn()
     };
-    return {
+    const ctx = {
         recordId: 'retro001',
         _retro: MOCK_RETRO,
         _cards: [...MOCK_CARDS],
@@ -196,6 +197,40 @@ function createMockInstance(overrides = {}) {
         dispatchEvent: jest.fn(),
         ...overrides
     };
+    // Bind prototype methods so this._showToast / this._enrichCard work
+    ctx._showToast = proto._showToast.bind(ctx);
+    ctx._enrichCard = proto._enrichCard.bind(ctx);
+    // Add derived getter helpers used by other getters/methods
+    Object.defineProperty(ctx, 'retroStatus', {
+        get() {
+            return this._retro?.status || 'Draft';
+        },
+        configurable: true
+    });
+    Object.defineProperty(ctx, 'isFacilitator', {
+        get() {
+            return true;
+        },
+        configurable: true
+    });
+    Object.defineProperty(ctx, 'showAuthors', {
+        get() {
+            if (!this._retro) return false;
+            return this._retro.showAlways || this._retro.revealed;
+        },
+        configurable: true
+    });
+    Object.defineProperty(ctx, 'templateConfig', {
+        get() {
+            const desc = Object.getOwnPropertyDescriptor(
+                proto,
+                'templateConfig'
+            );
+            return desc.get.call(this);
+        },
+        configurable: true
+    });
+    return ctx;
 }
 
 // ─── Tests ──────────────────────────────────────────────────────────
