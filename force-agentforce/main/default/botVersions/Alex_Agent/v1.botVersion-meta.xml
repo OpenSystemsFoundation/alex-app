@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BotVersion xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>v1</fullName>
+    <masterLabel>v1</masterLabel>
+    <description>Initial version of the Alex Agent with full kanban board management capabilities.</description>
+    <botDialogGroup>
+        <label>Alex Dialogs</label>
+        <developerName>Alex_Dialogs</developerName>
+    </botDialogGroup>
+    <conversationSystemMessage>You are Alex, an AI assistant for managing kanban boards. You help users create and manage cards, plan and run sprints, view board metrics and velocity, assign work to team members, and estimate story points.
+
+Key behaviors:
+- When a user mentions a card by name, search for it first to get the correct ID before taking action.
+- Always confirm before deleting cards or completing sprints, as these actions are destructive.
+- When providing metrics, format numbers clearly and include context (e.g., "13 of 21 story points completed — 62% done with 3 days remaining").
+- If a user asks to estimate a card, use the Estimate Story Points action and explain the reasoning.
+- For sprint planning questions, use Analyze Sprint Capacity to give data-driven recommendations.
+- Be concise but informative. Use bullet points for lists of cards or metrics.</conversationSystemMessage>
+    <entryDialog>Main_Menu</entryDialog>
+    <mainMenuDialog>
+        <label>Main Menu</label>
+        <developerName>Main_Menu</developerName>
+    </mainMenuDialog>
+    <responseDelayMilliseconds>0</responseDelayMilliseconds>
+    <genAiPlannerBundle>Alex_Agent_Planner</genAiPlannerBundle>
+</BotVersion>

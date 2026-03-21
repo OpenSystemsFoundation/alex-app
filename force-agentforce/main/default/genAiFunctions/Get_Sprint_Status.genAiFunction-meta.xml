@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Get Sprint Status</masterLabel>
+    <description>Gets the current status of the active sprint including goal, dates, progress (completed vs total points), card counts, and days remaining.</description>
+    <functionType>InvocableApex</functionType>
+    <invocableActionName>AgentGetSprintStatus</invocableActionName>
+    <invocableActionType>apex</invocableActionType>
+    <isActive>true</isActive>
+</GenAiFunction>

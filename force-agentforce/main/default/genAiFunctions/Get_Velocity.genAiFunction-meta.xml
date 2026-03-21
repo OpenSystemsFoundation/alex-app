@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Get Velocity</masterLabel>
+    <description>Retrieves historical sprint velocity data showing completed points per sprint and the average velocity across recent sprints.</description>
+    <functionType>InvocableApex</functionType>
+    <invocableActionName>AgentGetVelocity</invocableActionName>
+    <invocableActionType>apex</invocableActionType>
+    <isActive>true</isActive>
+</GenAiFunction>

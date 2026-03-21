@@ -16,7 +16,7 @@
             "versionName": "ver 1.0",
             "versionNumber": "1.0.0.NEXT",
             "versionDescription": "Agentforce AI agent extension for Alex Kanban — sprint planning assistant, retrospective summarizer, smart auto-assignment, natural language board queries.",
-            "definitionFile": "config/default-project-scratch-def.json",
+            "definitionFile": "config/agentforce-project-scratch-def.json",
             "dependencies": [
                 {
                     "package": "Alex - A Kanban App",

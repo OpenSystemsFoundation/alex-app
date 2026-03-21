@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Estimate Story Points</masterLabel>
+    <description>Analyzes a card's subject, description, type, and priority to suggest a story point estimate with a confidence level and reasoning.</description>
+    <functionType>InvocableApex</functionType>
+    <invocableActionName>AgentEstimateStoryPoints</invocableActionName>
+    <invocableActionType>apex</invocableActionType>
+    <isActive>true</isActive>
+</GenAiFunction>

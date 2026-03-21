@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AiAuthoringBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Sprint Planning Script</masterLabel>
+    <description>Guided agent script that helps users right-size a sprint by analyzing velocity history, reviewing the backlog, and recommending which cards to include.</description>
+    <steps>
+        <step>
+            <name>Gather_Context</name>
+            <label>Gather Context</label>
+            <description>Ask the user which board they want to plan a sprint for and the proposed sprint duration.</description>
+            <stepType>UserInput</stepType>
+            <instructions>Ask the user: "Which board would you like to plan a sprint for? And how long should the sprint be (in days)? The default is 14 days (2 weeks)." Collect the board ID or board name, and the sprint duration in days.</instructions>
+            <nextStep>Analyze_Capacity</nextStep>
+        </step>
+        <step>
+            <name>Analyze_Capacity</name>
+            <label>Analyze Capacity</label>
+            <description>Run the Analyze Sprint Capacity action to get velocity data and capacity recommendations.</description>
+            <stepType>Action</stepType>
+            <actionName>Analyze_Sprint_Capacity</actionName>
+            <instructions>Use the board ID and proposed sprint days from the previous step. Present the results to the user: average velocity, suggested point capacity, and whether the backlog is under/over/right-sized. Format the historical velocity as a brief table.</instructions>
+            <nextStep>Review_Backlog</nextStep>
+        </step>
+        <step>
+            <name>Review_Backlog</name>
+            <label>Review Backlog</label>
+            <description>Show the backlog cards so the user can select which ones to include.</description>
+            <stepType>Action</stepType>
+            <actionName>Get_Backlog</actionName>
+            <instructions>Retrieve the backlog for the board. Present the cards in a numbered list showing: subject, type, priority, story points, and assignee. Highlight any cards that need refinement. Show a running total of story points and compare it to the suggested capacity. Ask the user which cards they want to include in the sprint (by number or name), or if they want to include all cards up to the capacity limit.</instructions>
+            <nextStep>Estimate_Unpointed</nextStep>
+        </step>
+        <step>
+            <name>Estimate_Unpointed</name>
+            <label>Estimate Unpointed Cards</label>
+            <description>For any selected cards without story points, offer to estimate them.</description>
+            <stepType>Action</stepType>
+            <actionName>Estimate_Story_Points</actionName>
+            <instructions>Check if any of the selected cards have no story points. For each unpointed card, run the Estimate Story Points action and present the estimate with confidence level and reasoning. Ask the user if they want to accept the estimates and update the cards. If they accept, use Update Card to set the story points. Recalculate the sprint total after updates.</instructions>
+            <nextStep>Confirm_Sprint</nextStep>
+        </step>
+        <step>
+            <name>Confirm_Sprint</name>
+            <label>Confirm Sprint</label>
+            <description>Show the final sprint plan and ask for confirmation to create it.</description>
+            <stepType>UserInput</stepType>
+            <instructions>Present a sprint summary:
+- Total story points vs. suggested capacity
+- Number of cards
+- Assessment: Under Capacity / Right-Sized / Over Capacity
+- List of included cards with points
+
+Ask the user to confirm they want to create the sprint with these cards. Also ask for the sprint goal, start date, and end date if not already provided.</instructions>
+            <nextStep>Create_And_Populate</nextStep>
+        </step>
+        <step>
+            <name>Create_And_Populate</name>
+            <label>Create and Populate Sprint</label>
+            <description>Create the sprint and add the selected cards to it.</description>
+            <stepType>Action</stepType>
+            <actionName>Create_Sprint</actionName>
+            <instructions>Create the sprint with the confirmed goal, start date, and end date. Then use Add Cards to Sprint to add all the selected cards. Present the final result: sprint name, goal, dates, total points, and card count. Ask if the user wants to start the sprint now or leave it in Planning status for further adjustments.</instructions>
+            <nextStep>Optional_Start</nextStep>
+        </step>
+        <step>
+            <name>Optional_Start</name>
+            <label>Optional Start</label>
+            <description>Optionally start the sprint if the user confirms.</description>
+            <stepType>Action</stepType>
+            <actionName>Start_Sprint</actionName>
+            <instructions>If the user wants to start the sprint, use Start Sprint. Confirm the sprint is now active and show the total story points committed. If they prefer to keep it in Planning, acknowledge and let them know they can start it later.</instructions>
+        </step>
+    </steps>
+    <entryStep>Gather_Context</entryStep>
+</AiAuthoringBundle>

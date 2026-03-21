@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Remove Card from Sprint</masterLabel>
+    <description>Removes a card from a sprint. The card returns to the backlog. Sprint points are recalculated.</description>
+    <functionType>InvocableApex</functionType>
+    <invocableActionName>AgentRemoveCardFromSprint</invocableActionName>
+    <invocableActionType>apex</invocableActionType>
+    <isActive>true</isActive>
+</GenAiFunction>

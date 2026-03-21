@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Get Backlog</masterLabel>
+    <description>Retrieves backlog cards for the board that are not in the active sprint. Can filter to show only cards needing refinement.</description>
+    <functionType>InvocableApex</functionType>
+    <invocableActionName>AgentGetBacklog</invocableActionName>
+    <invocableActionType>apex</invocableActionType>
+    <isActive>true</isActive>
+</GenAiFunction>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Create Sprint</masterLabel>
+    <description>Creates a new sprint for the board with a goal, start date, and end date. The sprint starts in Planning status.</description>
+    <functionType>InvocableApex</functionType>
+    <invocableActionName>AgentCreateSprint</invocableActionName>
+    <invocableActionType>apex</invocableActionType>
+    <isActive>true</isActive>
+</GenAiFunction>
