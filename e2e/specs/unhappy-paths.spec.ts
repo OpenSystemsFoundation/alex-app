@@ -1,7 +1,5 @@
 import { test, expect } from '../fixtures';
 import {
-    sfUpdate,
-    sfQuery,
     sfApexRun,
     createIsolatedRetro,
     type RetroData
@@ -97,7 +95,9 @@ test.describe('Unhappy Paths — Breaking the Board', () => {
         await boardPage.page.waitForTimeout(3000);
 
         // Board should still be functional
-        await expect(boardPage.boardWrapper).toBeVisible({ timeout: SF_TIMEOUT });
+        await expect(boardPage.boardWrapper).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
     });
 
     test('rapid filter toggling does not break the board', async ({
@@ -369,7 +369,9 @@ test.describe('Unhappy Paths — Breaking the Board', () => {
 
         // Board should still render
         await boardPage.page.waitForTimeout(1000);
-        await expect(boardPage.boardWrapper).toBeVisible({ timeout: SF_TIMEOUT });
+        await expect(boardPage.boardWrapper).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
         expect(await boardPage.allCards().count()).toBeGreaterThan(0);
     });
 });
@@ -452,9 +454,7 @@ test.describe('Unhappy Paths — Planning Poker Edge Cases', () => {
         const createBtn = boardPage.page.locator(
             'opensf-planning-poker button.create-session-btn'
         );
-        if (
-            await createBtn.isVisible({ timeout: 5_000 }).catch(() => false)
-        ) {
+        if (await createBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
             await createBtn.click();
             await boardPage.page.waitForTimeout(3000);
         }
@@ -706,13 +706,9 @@ test.describe('Unhappy Paths — Admin Panel Edge Cases', () => {
         if (hasConfirm) {
             await expect(confirmModal).toBeVisible();
             // Cancel to not actually delete
-            const cancelBtn = confirmModal.locator(
-                'button:has-text("Cancel")'
-            );
+            const cancelBtn = confirmModal.locator('button:has-text("Cancel")');
             if (
-                await cancelBtn
-                    .isVisible({ timeout: 5_000 })
-                    .catch(() => false)
+                await cancelBtn.isVisible({ timeout: 5_000 }).catch(() => false)
             ) {
                 await cancelBtn.click();
             }

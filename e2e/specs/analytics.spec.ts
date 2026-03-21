@@ -1,7 +1,5 @@
 import { test, expect } from '../fixtures';
 
-const SF_TIMEOUT = 45_000;
-
 /**
  * Analytics & Cumulative Flow Diagram — E2E tests.
  *
@@ -208,9 +206,7 @@ test.describe('Analytics & Visualization', () => {
         await boardPage.waitForCards();
 
         // Find swimlane select and change to "Priority"
-        const swimlaneSelect = boardPage.page.locator(
-            'select.swimlane-select'
-        );
+        const swimlaneSelect = boardPage.page.locator('select.swimlane-select');
         const hasSwimlane = await swimlaneSelect
             .isVisible({ timeout: 10_000 })
             .catch(() => false);
