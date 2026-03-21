@@ -234,8 +234,7 @@ export default class EventHandler {
 
     _notifyActivity(eventType, payload) {
         if (this.activityCallback) {
-            const cardName =
-                payload.subject || payload.Name || 'Card';
+            const cardName = payload.subject || payload.Name || 'Card';
             let message = '';
 
             switch (eventType) {
