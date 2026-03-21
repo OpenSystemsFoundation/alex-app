@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test';
  * Handles common patterns: slow loads, shadow DOM, dismissing dialogs.
  */
 export class BasePage {
-    protected readonly page: Page;
+    readonly page: Page;
     protected readonly timeout: number;
 
     constructor(page: Page) {

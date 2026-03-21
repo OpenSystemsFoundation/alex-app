@@ -105,6 +105,7 @@ export function sfUpdate(
 
 /**
  * Get the most recent Board and its columns + cards from the scratch org.
+ * @deprecated Use createIsolatedBoard() for deterministic test data.
  */
 export function getSampleBoardData(): BoardData {
     const boards = sfQuery(
@@ -113,13 +114,19 @@ export function getSampleBoardData(): BoardData {
     if (!boards.length) throw new Error('No board found in scratch org');
 
     const boardId = boards[0].Id as string;
+    return queryBoardData(boardId);
+}
 
+/**
+ * Query full board data (columns + cards) for a given board ID.
+ */
+function queryBoardData(boardId: string): BoardData {
     const columns = sfQuery(
         `SELECT Id, OpenSF__ColumnHeader__c FROM OpenSF__Column__c WHERE OpenSF__Board__c = '${boardId}' ORDER BY OpenSF__LexoRankPosition__c`
     );
 
     const cards = sfQuery(
-        `SELECT Id, Name, OpenSF__Subject__c, OpenSF__Column__c FROM OpenSF__Card__c WHERE OpenSF__Column__r.OpenSF__Board__c = '${boardId}' ORDER BY OpenSF__LexoRankPosition__c LIMIT 10`
+        `SELECT Id, Name, OpenSF__Subject__c, OpenSF__Column__c FROM OpenSF__Card__c WHERE OpenSF__Column__r.OpenSF__Board__c = '${boardId}' ORDER BY OpenSF__LexoRankPosition__c LIMIT 20`
     );
 
     return {
@@ -135,4 +142,122 @@ export function getSampleBoardData(): BoardData {
             ColumnId: c.OpenSF__Column__c as string
         }))
     };
+}
+
+/**
+ * Run anonymous Apex code via the SF CLI.
+ * Returns the raw stdout (debug log) from the execution.
+ */
+export function sfApexRun(code: string): string {
+    const raw = execSync(`sf apex run --target-org ${TARGET_ORG} --json`, {
+        input: code,
+        encoding: 'utf8',
+        timeout: 60_000,
+        env: SF_ENV
+    });
+    return raw;
+}
+
+/**
+ * Create an isolated board with 6 columns and 3 cards per column.
+ * Each call creates a completely fresh board — no shared state between tests.
+ *
+ * @param label Optional suffix for the board name (for debugging)
+ * @returns BoardData with the new board's IDs
+ */
+export function createIsolatedBoard(label: string = 'E2E'): BoardData {
+    const boardName = `${label}-${Date.now()}`;
+
+    // Anonymous Apex that creates a board, 6 columns, and cards.
+    // TestFactory is @isTest so we create data inline.
+    const apex = `
+OpenSF__Board__c board = new OpenSF__Board__c(
+    Name = '${boardName}',
+    OpenSF__Status__c = 'Published',
+    OpenSF__Type__c = 'Project',
+    OpenSF__Active__c = true,
+    OpenSF__EmailNotifications__c = false,
+    OpenSF__SalesforceNotifications__c = false
+);
+insert board;
+
+List<String> headers = new List<String>{
+    'Backlog', 'To Do', 'In Progress', 'Testing', 'Review', 'Done'
+};
+List<String> categories = new List<String>{
+    null, 'To Do', 'In Progress', null, null, 'Done'
+};
+
+// Generate evenly spaced LexoRank positions
+List<OpenSF__Column__c> cols = new List<OpenSF__Column__c>();
+String chars = '0123456789abcdefghijklmnopqrstuvwxyz';
+for (Integer i = 0; i < headers.size(); i++) {
+    Integer inc = (Integer)(Math.pow(36, 5) / (headers.size() + 1));
+    Integer val = inc * (i + 1);
+    String pos = '';
+    Integer tmp = val;
+    for (Integer j = 0; j < 5; j++) {
+        pos = chars.substring(Math.mod(tmp, 36), Math.mod(tmp, 36) + 1) + pos;
+        tmp = tmp / 36;
+    }
+    OpenSF__Column__c col = new OpenSF__Column__c(
+        OpenSF__Board__c = board.Id,
+        OpenSF__ColumnHeader__c = headers[i],
+        OpenSF__Status__c = headers[i],
+        OpenSF__LexoRankPosition__c = '0|h' + pos + ':'
+    );
+    if (categories[i] != null) {
+        col.OpenSF__Category__c = categories[i];
+    }
+    cols.add(col);
+}
+insert cols;
+
+// Create 3 cards per column with varied types and priorities
+List<String> types = new List<String>{'Story', 'Bug', 'Task'};
+List<String> priorities = new List<String>{'High', 'Medium', 'Low'};
+List<OpenSF__Card__c> cards = new List<OpenSF__Card__c>();
+
+OpenSF.TriggerHandler.bypass('ColumnTriggerHandler');
+for (Integer ci = 0; ci < cols.size(); ci++) {
+    for (Integer j = 0; j < 3; j++) {
+        Integer inc2 = (Integer)(Math.pow(36, 5) / 4);
+        Integer val2 = inc2 * (j + 1);
+        String cpos = '';
+        Integer tmp2 = val2;
+        for (Integer k = 0; k < 5; k++) {
+            cpos = chars.substring(Math.mod(tmp2, 36), Math.mod(tmp2, 36) + 1) + cpos;
+            tmp2 = tmp2 / 36;
+        }
+        cards.add(new OpenSF__Card__c(
+            OpenSF__Column__c = cols[ci].Id,
+            OpenSF__Board__c = board.Id,
+            OpenSF__Subject__c = headers[ci] + ' Card ' + (j + 1),
+            OpenSF__Status__c = headers[ci],
+            OpenSF__CardType__c = types[Math.mod(j, 3)],
+            OpenSF__Priority__c = priorities[Math.mod(j, 3)],
+            OpenSF__StoryPoints__c = (j + 1) * 2,
+            OpenSF__LexoRankPosition__c = '0|h' + cpos + ':',
+            OpenSF__SequenceNumber__c = 1
+        ));
+    }
+}
+insert cards;
+OpenSF.TriggerHandler.clearBypass('ColumnTriggerHandler');
+
+System.debug('E2E_BOARD_ID:' + board.Id);
+`;
+
+    const output = sfApexRun(apex);
+
+    // Parse the board ID from the debug log
+    const match = output.match(/E2E_BOARD_ID:([a-zA-Z0-9]{15,18})/);
+    if (!match) {
+        throw new Error(
+            `Failed to parse board ID from Apex output: ${output.substring(0, 500)}`
+        );
+    }
+
+    const boardId = match[1];
+    return queryBoardData(boardId);
 }

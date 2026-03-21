@@ -1,6 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { BoardPage } from '../pages';
-import { getSampleBoardData, type BoardData } from '../helpers/sf-data';
+import { createIsolatedBoard, type BoardData } from '../helpers/sf-data';
 
 export type { BoardData } from '../helpers/sf-data';
 
@@ -13,11 +13,14 @@ interface AlexFixtures {
     boardData: BoardDataFixture;
 }
 
-let cachedBoardData: BoardData | null = null;
+let workerBoardData: BoardData | null = null;
 let baseUrl: string = '';
 
 /**
  * Extended Playwright test with custom fixtures for the Alex app.
+ *
+ * boardData creates an isolated board per worker via SF CLI Apex.
+ * This ensures deterministic test data without cross-test interference.
  *
  * Usage:
  *   import { test, expect } from '../fixtures';
@@ -33,19 +36,18 @@ export const test = base.extend<AlexFixtures>({
     },
 
     /**
-     * Board test data -- queried once from the scratch org and cached.
-     * Contains boardId, columns, and cards.
-     * Also provides baseUrl for navigation.
+     * Board test data -- created once per worker via anonymous Apex.
+     * Each Playwright worker gets its own isolated board.
      */
     boardData: async ({}, use) => {
-        if (!cachedBoardData) {
-            cachedBoardData = getSampleBoardData();
+        if (!workerBoardData) {
+            workerBoardData = createIsolatedBoard('e2e');
             const loginUrl = process.env.SCRATCH_ORG_URL || '';
             if (loginUrl) {
                 baseUrl = new URL(loginUrl).origin;
             }
         }
-        await use({ ...cachedBoardData, baseUrl });
+        await use({ ...workerBoardData, baseUrl });
     }
 });
 

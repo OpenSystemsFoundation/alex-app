@@ -5,25 +5,18 @@ import {
     type BrowserContext
 } from '@playwright/test';
 import { BoardPage } from '../pages';
-import { getSampleBoardData, type BoardData } from '../helpers/sf-data';
+import { createIsolatedBoard } from '../helpers/sf-data';
 import type { BoardDataFixture } from './index';
 
 /**
  * Multi-user fixtures for real-time collaboration tests.
  *
- * Provides two independent browser contexts (User A and User B),
- * each with their own authenticated Salesforce session and BoardPage.
+ * Each test gets its own isolated board created via SF CLI Apex.
+ * This eliminates shared state and serial dependencies between tests.
  *
  * Required env vars:
  *   USER_A_LOGIN_URL - frontdoor.jsp URL for User A (admin)
  *   USER_B_LOGIN_URL - frontdoor.jsp URL for User B (standard user)
- *
- * Usage:
- *   import { test, expect } from '../fixtures/multi-user';
- *   test('sync test', async ({ userA, userB, boardData }) => {
- *       await userA.board.open(boardData.baseUrl, boardData.boardId);
- *       await userB.board.open(boardData.baseUrl, boardData.boardId);
- *   });
  */
 
 export interface UserFixture {
@@ -37,9 +30,6 @@ interface MultiUserFixtures {
     userB: UserFixture;
     boardData: BoardDataFixture;
 }
-
-let cachedBoardData: BoardData | null = null;
-let baseUrl: string = '';
 
 /**
  * Authenticate a Salesforce session via frontdoor URL.
@@ -91,15 +81,12 @@ export const test = base.extend<MultiUserFixtures>({
     },
 
     boardData: async ({}, use) => {
-        if (!cachedBoardData) {
-            cachedBoardData = getSampleBoardData();
-            const loginUrl =
-                process.env.USER_A_LOGIN_URL || process.env.SCRATCH_ORG_URL;
-            if (loginUrl) {
-                baseUrl = new URL(loginUrl).origin;
-            }
-        }
-        await use({ ...cachedBoardData, baseUrl });
+        // Each test gets a completely fresh board — no shared state
+        const data = createIsolatedBoard('multi-user');
+        const loginUrl =
+            process.env.USER_A_LOGIN_URL || process.env.SCRATCH_ORG_URL;
+        const baseUrl = loginUrl ? new URL(loginUrl).origin : '';
+        await use({ ...data, baseUrl });
     }
 });
 
