@@ -20,7 +20,7 @@ async function globalSetup() {
     console.log('[global-setup] Creating fresh E2E test data...');
     execSync(
         `sf apex run --file scripts/apex/CreateFilledKanbanBoard.apex --target-org ${TARGET_ORG}`,
-        { encoding: 'utf8', timeout: 60_000, env: SF_ENV, stdio: 'inherit' }
+        { encoding: 'utf8', timeout: 60_000, env: SF_ENV, stdio: 'pipe' }
     );
 
     // Authenticate and save session — use whichever browser is installed

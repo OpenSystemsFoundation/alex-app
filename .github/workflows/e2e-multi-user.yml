@@ -63,6 +63,10 @@ jobs:
                     --target-org e2e-test \
                     --on-behalf-of e2e-user2
 
+            - name: Generate Password for User B
+              run: |
+                  sf org generate password --target-org e2e-test --on-behalf-of e2e-user2
+
             - name: Create Test Data
               run: |
                   sf apex run --file scripts/apex/CreateFilledKanbanBoard.apex --target-org e2e-test

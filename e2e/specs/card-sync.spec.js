@@ -28,6 +28,7 @@ test.describe('Card Sync — real-time collaboration', () => {
         await userB.board.waitForCards();
 
         const colId = boardData.columns[0].Id;
+        const beforeCountA = await userA.board.cardCountInColumn(colId);
         const beforeCountB = await userB.board.cardCountInColumn(colId);
 
         // User A adds a card
@@ -36,7 +37,7 @@ test.describe('Card Sync — real-time collaboration', () => {
         // User A sees it immediately (optimistic update)
         await expect(
             userA.board.columnWrapper(colId).locator('article.kanban-card')
-        ).toHaveCount(beforeCountB + 1, { timeout: SYNC_TIMEOUT });
+        ).toHaveCount(beforeCountA + 1, { timeout: SYNC_TIMEOUT });
 
         // User B sees it via platform event
         await expect(
