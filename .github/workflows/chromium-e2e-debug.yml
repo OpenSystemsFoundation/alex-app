@@ -7,7 +7,9 @@ on:
         paths:
             - 'e2e/**'
             - 'force-app/**'
+            - '.github/workflows/e2e-*.yml'
             - '.github/workflows/chromium-e2e-debug.yml'
+            - '.github/actions/setup-e2e-org/**'
             - 'playwright.config.ts'
     workflow_dispatch:
         inputs:
@@ -18,243 +20,202 @@ on:
                 description: 'Enable Playwright debug traces for all tests'
                 type: boolean
                 default: false
-            shards:
-                description: 'Number of parallel shards (scratch orgs)'
-                type: choice
-                options: ['1', '2', '3', '4']
-                default: '4'
+
+# Cancel in-progress runs on same branch (only keep latest push)
+concurrency:
+    group: e2e-debug-${{ github.ref }}
+    cancel-in-progress: true
 
 jobs:
-    e2e-shard:
-        name: 'Shard ${{ matrix.shard }}/${{ strategy.job-total }}'
-        runs-on: ubuntu-latest
-        timeout-minutes: 25
-        strategy:
-            fail-fast: false
-            matrix:
-                shard: [1, 2, 3, 4]
+    # ─── Feature-scoped parallel suites ──────────────────────────────
+    # Each suite gets its own scratch org for full isolation.
+    # Specs are grouped by feature area for focused data setup.
 
-        steps:
-            - uses: actions/checkout@v4
+    board-core:
+        name: '🏗️ Board Core'
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: board-core
+            specs: 'kanban-board.spec.ts board-filters.spec.ts card-panel.spec.ts board-toolbar.spec.ts'
+            create-retro-data: false
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
 
-            - uses: actions/setup-node@v4
-              with:
-                  node-version: '22'
+    backlog-sprint:
+        name: '📋 Backlog & Sprint'
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: backlog-sprint
+            specs: 'backlog-view.spec.ts sprint-management.spec.ts'
+            create-retro-data: false
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
 
-            - name: Install dependencies
-              run: npm ci
+    admin:
+        name: '⚙️ Admin Panel'
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: admin
+            specs: 'admin-management.spec.ts'
+            create-retro-data: false
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
 
-            - name: Install Salesforce CLI
-              run: npm install -g @salesforce/cli
+    retro-analytics:
+        name: '📊 Retro & Analytics'
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: retro-analytics
+            specs: 'analytics.spec.ts retrospective.spec.ts'
+            create-retro-data: true
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
 
-            - name: Install Playwright Chromium
-              run: npx playwright install --with-deps chromium
+    planning-poker:
+        name: '🃏 Planning Poker'
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: planning-poker
+            specs: 'planning-poker.spec.ts'
+            create-retro-data: false
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
 
-            - name: Authenticate DevHub
-              run: |
-                  echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
-                  sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
-                  rm sfdx_auth.txt
+    unhappy-paths:
+        name: '💥 Unhappy Paths'
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: unhappy-paths
+            specs: 'unhappy-paths.spec.ts'
+            create-retro-data: true
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
 
-            - name: Create Scratch Org
-              run: |
-                  sf org create scratch \
-                    --definition-file config/project-scratch-def.json \
-                    --alias e2e-shard-${{ matrix.shard }} \
-                    --duration-days 1 \
-                    --wait 15
+    multi-user:
+        name: '👥 Multi-User Sync'
+        uses: ./.github/workflows/e2e-multi-user.yml
+        secrets: inherit
+        with:
+            suite-name: multi-user
+            specs: 'card-sync.spec.ts drag-drop-sync.spec.ts'
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
 
-            - name: Deploy Source
-              run: sf project deploy start --target-org e2e-shard-${{ matrix.shard }} --ignore-conflicts
-
-            - name: Assign Permission Sets
-              run: sf org assign permset --name Alex_Admin --target-org e2e-shard-${{ matrix.shard }}
-
-            - name: Create Sample Data
-              run: |
-                  sf apex run --file scripts/apex/CreateFilledKanbanBoard.apex --target-org e2e-shard-${{ matrix.shard }}
-
-            - name: Create Retrospective Data
-              run: |
-                  sf apex run --target-org e2e-shard-${{ matrix.shard }} <<'APEX'
-                  OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c ORDER BY CreatedDate DESC LIMIT 1];
-                  OpenSF__Retrospective__c retro = new OpenSF__Retrospective__c(
-                      OpenSF__Status__c = 'Active',
-                      OpenSF__Template__c = 'Start_Stop_Continue',
-                      OpenSF__MaxVotesPerUser__c = 5,
-                      OpenSF__Board__c = board.Id
-                  );
-                  insert retro;
-                  System.debug('E2E_RETRO_ID:' + retro.Id);
-                  APEX
-
-            - name: Get Login URL
-              id: login
-              run: |
-                  LOGIN_URL=$(sf org open --target-org e2e-shard-${{ matrix.shard }} --json 2>/dev/null | node -e "
-                    let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
-                      const j=JSON.parse(d);
-                      console.log(j.result.url);
-                    });
-                  ")
-                  echo "url=$LOGIN_URL" >> "$GITHUB_OUTPUT"
-
-            - name: Run Playwright Tests (Shard ${{ matrix.shard }}/4)
-              id: playwright
-              env:
-                  SCRATCH_ORG_URL: ${{ steps.login.outputs.url }}
-                  SF_TARGET_ORG: e2e-shard-${{ matrix.shard }}
-              run: |
-                  set +e
-                  GREP_ARG=""
-                  if [ -n "${{ inputs.grep }}" ]; then
-                    GREP_ARG="--grep=\"${{ inputs.grep }}\""
-                  fi
-                  TRACE_ARG=""
-                  if [ "${{ inputs.debug }}" = "true" ]; then
-                    TRACE_ARG="--trace on"
-                  fi
-
-                  npx playwright test \
-                    --project=chromium \
-                    --retries=1 \
-                    --workers=2 \
-                    --reporter=list \
-                    --shard=${{ matrix.shard }}/4 \
-                    $GREP_ARG $TRACE_ARG \
-                    2>&1 | tee /tmp/playwright-output.txt
-                  echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
-
-            - name: Upload shard output
-              if: always()
-              uses: actions/upload-artifact@v4
-              with:
-                  name: shard-output-${{ matrix.shard }}
-                  path: /tmp/playwright-output.txt
-                  retention-days: 1
-
-            - name: Upload Test Report
-              uses: actions/upload-artifact@v4
-              if: always()
-              with:
-                  name: playwright-report-shard-${{ matrix.shard }}
-                  path: playwright-report/
-                  retention-days: 7
-
-            - name: Upload Traces
-              uses: actions/upload-artifact@v4
-              if: failure()
-              with:
-                  name: playwright-traces-shard-${{ matrix.shard }}
-                  path: test-results/
-                  retention-days: 7
-
-            - name: Delete Scratch Org
-              if: always()
-              run: sf org delete scratch --target-org e2e-shard-${{ matrix.shard }} --no-prompt || true
-
+    # ─── Results Collector ───────────────────────────────────────────
     collect-results:
-        name: Collect Results
+        name: '📝 Collect Results'
         runs-on: ubuntu-latest
-        needs: e2e-shard
+        needs:
+            - board-core
+            - backlog-sprint
+            - admin
+            - retro-analytics
+            - planning-poker
+            - unhappy-paths
+            - multi-user
         if: always()
         timeout-minutes: 5
 
         steps:
-            - name: Download all shard outputs
+            - name: Download all suite outputs
               uses: actions/download-artifact@v4
               with:
-                  pattern: shard-output-*
-                  path: shard-outputs
+                  pattern: e2e-output-*
+                  path: suite-outputs
 
-            - name: Merge results
-              id: merge
-              run: |
-                  echo "## Shard Results" > /tmp/merged-output.txt
-                  echo "" >> /tmp/merged-output.txt
-
-                  TOTAL_PASSED=0
-                  TOTAL_FAILED=0
-                  TOTAL_SKIPPED=0
-                  TOTAL_FLAKY=0
-                  ALL_PASSED=true
-
-                  for shard in 1 2 3 4; do
-                    FILE="shard-outputs/shard-output-${shard}/playwright-output.txt"
-                    if [ -f "$FILE" ]; then
-                      echo "### Shard ${shard}/4" >> /tmp/merged-output.txt
-                      echo '```' >> /tmp/merged-output.txt
-                      # Extract last 60 lines (summary area) to keep comment size manageable
-                      tail -60 "$FILE" >> /tmp/merged-output.txt
-                      echo '```' >> /tmp/merged-output.txt
-                      echo "" >> /tmp/merged-output.txt
-
-                      # Parse counts from output
-                      PASSED=$(grep -oP '\d+ passed' "$FILE" | tail -1 | grep -oP '\d+' || echo 0)
-                      FAILED=$(grep -oP '\d+ failed' "$FILE" | tail -1 | grep -oP '\d+' || echo 0)
-                      SKIPPED=$(grep -oP '\d+ skipped' "$FILE" | tail -1 | grep -oP '\d+' || echo 0)
-                      FLAKY=$(grep -oP '\d+ flaky' "$FILE" | tail -1 | grep -oP '\d+' || echo 0)
-
-                      TOTAL_PASSED=$((TOTAL_PASSED + PASSED))
-                      TOTAL_FAILED=$((TOTAL_FAILED + FAILED))
-                      TOTAL_SKIPPED=$((TOTAL_SKIPPED + SKIPPED))
-                      TOTAL_FLAKY=$((TOTAL_FLAKY + FLAKY))
-
-                      if [ "$FAILED" -gt 0 ]; then
-                        ALL_PASSED=false
-                      fi
-                    else
-                      echo "### Shard ${shard}/4 — ⚠️ No output (org creation may have failed)" >> /tmp/merged-output.txt
-                      echo "" >> /tmp/merged-output.txt
-                      ALL_PASSED=false
-                    fi
-                  done
-
-                  SUMMARY="**${TOTAL_PASSED} passed** | **${TOTAL_FAILED} failed** | **${TOTAL_SKIPPED} skipped** | **${TOTAL_FLAKY} flaky**"
-                  echo "summary=$SUMMARY" >> "$GITHUB_OUTPUT"
-
-                  if [ "$ALL_PASSED" = true ]; then
-                    echo "status=✅" >> "$GITHUB_OUTPUT"
-                  else
-                    echo "status=❌" >> "$GITHUB_OUTPUT"
-                  fi
-
-            - name: Post Results as Commit Comment
-              if: github.event_name == 'push'
+            - name: Merge results and post comment
               uses: actions/github-script@v7
+              if: github.event_name == 'push'
               with:
                   script: |
                       const fs = require('fs');
-                      const merged = fs.existsSync('/tmp/merged-output.txt')
-                        ? fs.readFileSync('/tmp/merged-output.txt', 'utf8')
-                        : 'No output captured';
-                      const maxLen = 60000;
-                      const truncated = merged.length > maxLen
-                        ? '…truncated…\n' + merged.slice(-maxLen)
-                        : merged;
-                      const status = '${{ steps.merge.outputs.status }}';
-                      const summary = '${{ steps.merge.outputs.summary }}';
+                      const path = require('path');
+
+                      const suites = [
+                        'board-core', 'backlog-sprint', 'admin',
+                        'retro-analytics', 'planning-poker',
+                        'unhappy-paths', 'multi-user'
+                      ];
+
+                      let totalPassed = 0, totalFailed = 0, totalSkipped = 0, totalFlaky = 0;
+                      let allPassed = true;
+                      let body = '';
+
+                      for (const suite of suites) {
+                        const file = path.join('suite-outputs', `e2e-output-${suite}`, 'playwright-output.txt');
+                        if (fs.existsSync(file)) {
+                          const output = fs.readFileSync(file, 'utf8');
+                          const lines = output.split('\n');
+                          const tail = lines.slice(-50).join('\n');
+
+                          const passedM = output.match(/(\d+) passed/);
+                          const failedM = output.match(/(\d+) failed/);
+                          const skippedM = output.match(/(\d+) skipped/);
+                          const flakyM = output.match(/(\d+) flaky/);
+
+                          const p = passedM ? parseInt(passedM[1]) : 0;
+                          const f = failedM ? parseInt(failedM[1]) : 0;
+                          const s = skippedM ? parseInt(skippedM[1]) : 0;
+                          const fl = flakyM ? parseInt(flakyM[1]) : 0;
+
+                          totalPassed += p; totalFailed += f;
+                          totalSkipped += s; totalFlaky += fl;
+                          if (f > 0) allPassed = false;
+
+                          const icon = f > 0 ? '❌' : '✅';
+                          body += `### ${icon} ${suite} — ${p} passed, ${f} failed, ${s} skipped\n`;
+                          body += `<details><summary>Output</summary>\n\n\`\`\`\n${tail}\n\`\`\`\n\n</details>\n\n`;
+                        } else {
+                          body += `### ⚠️ ${suite} — No output (may have been skipped or failed to start)\n\n`;
+                          allPassed = false;
+                        }
+                      }
+
+                      const status = allPassed ? '✅' : '❌';
                       const sha = context.sha.substring(0, 7);
-                      const body = `### ${status} Chromium E2E Debug — \`${sha}\` (4 shards)\n\n${summary}\n\n<details><summary>Per-shard output (click to expand)</summary>\n\n${truncated}\n\n</details>`;
+                      const summary = `**${totalPassed} passed** | **${totalFailed} failed** | **${totalSkipped} skipped** | **${totalFlaky} flaky**`;
+                      const comment = `### ${status} E2E Debug — \`${sha}\` (7 feature suites)\n\n${summary}\n\n${body}`;
+
+                      const maxLen = 65000;
+                      const truncated = comment.length > maxLen
+                        ? comment.slice(0, maxLen) + '\n\n…truncated…'
+                        : comment;
 
                       await github.rest.repos.createCommitComment({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
                         commit_sha: context.sha,
-                        body,
+                        body: truncated,
                       });
 
             - name: Post Workflow Summary
               if: always()
               run: |
-                  STATUS="${{ steps.merge.outputs.status }}"
-                  SUMMARY="${{ steps.merge.outputs.summary }}"
-                  echo "## ${STATUS} Chromium E2E Debug — 4 Shards" >> "$GITHUB_STEP_SUMMARY"
+                  echo "## E2E Debug Results — 7 Feature Suites" >> "$GITHUB_STEP_SUMMARY"
                   echo "" >> "$GITHUB_STEP_SUMMARY"
-                  echo "${SUMMARY}" >> "$GITHUB_STEP_SUMMARY"
-                  echo "" >> "$GITHUB_STEP_SUMMARY"
-                  cat /tmp/merged-output.txt >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+                  for suite in board-core backlog-sprint admin retro-analytics planning-poker unhappy-paths multi-user; do
+                    FILE="suite-outputs/e2e-output-${suite}/playwright-output.txt"
+                    if [ -f "$FILE" ]; then
+                      SUMMARY=$(tail -3 "$FILE" | head -1)
+                      echo "### ${suite}: ${SUMMARY}" >> "$GITHUB_STEP_SUMMARY"
+                    else
+                      echo "### ${suite}: ⚠️ No output" >> "$GITHUB_STEP_SUMMARY"
+                    fi
+                  done
 
-            - name: Fail if any shard failed
-              if: needs.e2e-shard.result == 'failure'
+            - name: Fail if any suite failed
+              if: |
+                  needs.board-core.result == 'failure' ||
+                  needs.backlog-sprint.result == 'failure' ||
+                  needs.admin.result == 'failure' ||
+                  needs.retro-analytics.result == 'failure' ||
+                  needs.planning-poker.result == 'failure' ||
+                  needs.unhappy-paths.result == 'failure' ||
+                  needs.multi-user.result == 'failure'
               run: exit 1
