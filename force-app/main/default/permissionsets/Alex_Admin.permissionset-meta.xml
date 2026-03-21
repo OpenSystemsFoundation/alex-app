@@ -9,6 +9,10 @@
         <visible>true</visible>
     </applicationVisibilities>
     <classAccesses>
+        <apexClass>AdminController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>KanbanBoardController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -399,6 +403,10 @@
         <object>Column__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
+    <tabSettings>
+        <tab>Admin_Management</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
     <tabSettings>
         <tab>Board__c</tab>
         <visibility>Visible</visibility>

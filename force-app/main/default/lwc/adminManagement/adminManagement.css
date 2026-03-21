@@ -1,0 +1,250 @@
+/* Admin Container */
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* Header */
+.admin-header {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: var(--slds-g-color-neutral-base-95, #f3f3f3);
+    border-radius: 0.5rem;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-text h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.header-text p {
+    margin: 0.25rem 0 0;
+}
+
+/* Onboarding Banner */
+.onboarding-banner {
+    margin-bottom: 1rem;
+}
+
+.onboarding-content {
+    padding: 0.5rem 1rem 1rem;
+}
+
+.onboarding-actions {
+    padding: 0.5rem 0;
+}
+
+/* Section Content */
+.section-content {
+    padding: 1rem 0;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+/* Boards Grid */
+.boards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1rem;
+}
+
+.board-card {
+    min-width: 0;
+}
+
+.board-name {
+    font-weight: 600;
+}
+
+.board-description {
+    color: var(--slds-g-color-neutral-base-30, #706e6b);
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.board-details {
+    padding: 0 1rem 1rem;
+}
+
+.board-meta {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+    color: var(--slds-g-color-neutral-base-30, #706e6b);
+}
+
+.board-actions-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Badge */
+.badge-active {
+    --slds-c-badge-color-background: var(
+        --slds-g-color-success-base-40,
+        #2e844a
+    );
+    --slds-c-badge-text-color: white;
+}
+
+/* Column Controls */
+.column-controls {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.board-select {
+    min-width: 250px;
+}
+
+/* Column List - Drag and Drop */
+.columns-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.column-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: white;
+    border: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+    border-radius: 0.375rem;
+    cursor: grab;
+    transition:
+        box-shadow 0.15s ease,
+        border-color 0.15s ease,
+        opacity 0.15s ease;
+}
+
+.column-item:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-color: var(--slds-g-color-border-base-2, #c9c9c9);
+}
+
+.column-item.dragging {
+    opacity: 0.4;
+}
+
+.column-item.drag-over {
+    border-color: var(--slds-g-color-brand-base-60, #0070d2);
+    border-width: 2px;
+    box-shadow: 0 0 0 1px var(--slds-g-color-brand-base-60, #0070d2);
+}
+
+.column-drag-handle {
+    cursor: grab;
+    color: var(--slds-g-color-neutral-base-50, #aeaeae);
+    flex-shrink: 0;
+}
+
+.column-color-indicator {
+    width: 4px;
+    height: 2rem;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.column-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.column-header-text {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.column-category {
+    font-size: 0.75rem;
+    color: var(--slds-g-color-neutral-base-30, #706e6b);
+}
+
+.column-card-count {
+    flex-shrink: 0;
+}
+
+.column-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.empty-state h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+/* Settings Section */
+.settings-section {
+    padding: 0.5rem 1rem;
+}
+
+.permission-sets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.permission-set-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--slds-g-color-neutral-base-95, #f3f3f3);
+    border-radius: 0.375rem;
+}
+
+.permission-set-item p {
+    margin: 0.25rem 0 0;
+    font-size: 0.8125rem;
+}
+
+.about-info p {
+    margin: 0.25rem 0;
+}
+
+/* Navigation */
+.admin-nav {
+    margin-top: 0.5rem;
+}
