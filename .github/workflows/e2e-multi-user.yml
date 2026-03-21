@@ -94,7 +94,8 @@ jobs:
                   SCRATCH_ORG_URL: ${{ steps.login.outputs.user_a_url }}
               run: |
                   npx playwright test --project=chromium \
-                    --grep="real-time collaboration"
+                    --grep="real-time collaboration" \
+                    --retries=0
 
             - name: Upload Test Report
               uses: actions/upload-artifact@v4

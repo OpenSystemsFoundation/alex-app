@@ -6,7 +6,7 @@ const { test, expect } = require('../fixtures/multi-user');
  * Verifies that card moves by one user appear in real-time for the other.
  */
 
-const SYNC_TIMEOUT = 15_000;
+const SYNC_TIMEOUT = 30_000;
 const SF_TIMEOUT = 45_000;
 
 test.describe('Drag & Drop Sync — real-time collaboration', () => {

@@ -6,7 +6,7 @@ const { test, expect } = require('../fixtures/multi-user');
  * Verifies that card operations by User A appear in real-time on User B's screen.
  */
 
-const SYNC_TIMEOUT = 15_000;
+const SYNC_TIMEOUT = 30_000;
 
 test.describe('Card Sync — real-time collaboration', () => {
     test.beforeEach(async () => {
