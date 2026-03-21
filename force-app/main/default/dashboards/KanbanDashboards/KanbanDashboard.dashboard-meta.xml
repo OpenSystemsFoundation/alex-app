@@ -49,6 +49,7 @@
                 <showPicturesOnCharts>false</showPicturesOnCharts>
                 <showValues>false</showValues>
                 <sortBy>RowLabelAscending</sortBy>
+                <sortLegendValues>false</sortLegendValues>
                 <useReportChart>true</useReportChart>
             </dashboardComponent>
             <rowIndex>0</rowIndex>
@@ -65,7 +66,7 @@
                     <axisBinding>y</axisBinding>
                     <column>Board__c.Columns__r.Cards__r$StoryPoints__c</column>
                 </chartSummary>
-                <componentType>ColumnStacked</componentType>
+                <componentType>Column</componentType>
                 <dashboardFilterColumns>
                     <column>Board__c.Columns__r.Cards__r$CreatedDate</column>
                 </dashboardFilterColumns>
@@ -76,24 +77,19 @@
                 <enableHover>false</enableHover>
                 <expandOthers>false</expandOthers>
                 <groupingColumn>Board__c$Name</groupingColumn>
-                <groupingColumn
-                >Board__c.Columns__r$ColumnHeader__c</groupingColumn>
                 <groupingSortProperties>
                     <groupingSorts>
                         <groupingLevel>g1</groupingLevel>
                         <sortOrder>a</sortOrder>
                     </groupingSorts>
-                    <groupingSorts>
-                        <groupingLevel>g2</groupingLevel>
-                        <sortOrder>a</sortOrder>
-                    </groupingSorts>
                 </groupingSortProperties>
-                <header>Story Points per Status</header>
-                <legendPosition>Right</legendPosition>
+                <header>Board Overview</header>
+                <legendPosition>Bottom</legendPosition>
                 <report>KanbanReports/Alex_Board_Overview</report>
                 <showPercentage>false</showPercentage>
-                <showValues>false</showValues>
+                <showValues>true</showValues>
                 <sortBy>RowLabelAscending</sortBy>
+                <sortLegendValues>true</sortLegendValues>
                 <useReportChart>false</useReportChart>
             </dashboardComponent>
             <rowIndex>7</rowIndex>
@@ -102,10 +98,7 @@
         <numberOfColumns>12</numberOfColumns>
         <rowHeight>36</rowHeight>
     </dashboardGridLayout>
-    <dashboardType>SpecifiedUser</dashboardType>
     <isGridLayout>true</isGridLayout>
-    <owner>test-3yhyqosk9iel@example.com</owner>
-    <runningUser>test-3yhyqosk9iel@example.com</runningUser>
     <textColor>#000000</textColor>
     <title>Kanban Dashboard</title>
     <titleColor>#000000</titleColor>
