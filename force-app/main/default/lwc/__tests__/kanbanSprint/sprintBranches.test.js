@@ -3,7 +3,7 @@
  * Targets uncovered branches: dateRange edge cases, daysRemaining getters,
  * sprintOptions, averageVelocity, chart drawing, renderedCallback paths
  */
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 
 jest.mock('c/kanbanStore', () => ({
     selectors: {

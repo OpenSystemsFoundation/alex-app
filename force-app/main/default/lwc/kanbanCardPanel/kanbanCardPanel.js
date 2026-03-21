@@ -33,6 +33,69 @@ const FIELD_TO_DTO = {
     OpenSF__NeedsRefinement__c: 'needsRefinement'
 };
 
+const DESCRIPTION_TEMPLATES = {
+    Story: [
+        '<h2>User Story</h2>',
+        '<p><strong>As a</strong> [type of user],</p>',
+        '<p><strong>I want</strong> [goal/desire],</p>',
+        '<p><strong>So that</strong> [benefit/value].</p>',
+        '<h2>Acceptance Criteria</h2>',
+        '<ul><li>Given … When … Then …</li></ul>',
+        '<h2>Notes</h2>',
+        '<p></p>'
+    ].join('\n'),
+    Bug: [
+        '<h2>Bug Report</h2>',
+        '<p><strong>Severity:</strong> </p>',
+        '<h2>Steps to Reproduce</h2>',
+        '<ol><li></li></ol>',
+        '<h2>Expected Behavior</h2>',
+        '<p></p>',
+        '<h2>Actual Behavior</h2>',
+        '<p></p>',
+        '<h2>Environment</h2>',
+        '<p></p>'
+    ].join('\n'),
+    Improvement: [
+        '<h2>Improvement</h2>',
+        '<p><strong>Current behavior:</strong> </p>',
+        '<p><strong>Proposed change:</strong> </p>',
+        '<h2>Motivation</h2>',
+        '<p></p>',
+        '<h2>Acceptance Criteria</h2>',
+        '<ul><li></li></ul>'
+    ].join('\n'),
+    Spike: [
+        '<h2>Spike / Research</h2>',
+        '<p><strong>Timebox:</strong> </p>',
+        '<h2>Questions to Answer</h2>',
+        '<ul><li></li></ul>',
+        '<h2>Approach</h2>',
+        '<p></p>',
+        '<h2>Findings</h2>',
+        '<p></p>'
+    ].join('\n'),
+    Task: [
+        '<h2>Task</h2>',
+        '<p><strong>Objective:</strong> </p>',
+        '<h2>Steps</h2>',
+        '<ul><li></li></ul>',
+        '<h2>Done When</h2>',
+        '<p></p>'
+    ].join('\n'),
+    Epic: [
+        '<h2>Epic</h2>',
+        '<p><strong>Vision:</strong> </p>',
+        '<h2>Goals</h2>',
+        '<ul><li></li></ul>',
+        '<h2>Scope</h2>',
+        '<p><strong>In scope:</strong> </p>',
+        '<p><strong>Out of scope:</strong> </p>',
+        '<h2>Success Metrics</h2>',
+        '<p></p>'
+    ].join('\n')
+};
+
 const MIN_PANEL_WIDTH = 300;
 const MAX_PANEL_WIDTH = 800;
 const DELETE_CONFIRM_TIMEOUT = 3000;
@@ -126,6 +189,43 @@ export default class KanbanCardPanel extends LightningElement {
         return this.formFields.filter(
             (f) => f.fieldName !== 'OpenSF__Description__c'
         );
+    }
+
+    get cardType() {
+        return this.card?.OpenSF__CardType__c || null;
+    }
+
+    get hasTemplate() {
+        return !!this.cardType && !!DESCRIPTION_TEMPLATES[this.cardType];
+    }
+
+    get descriptionIsEmpty() {
+        const desc = this.card?.OpenSF__Description__c;
+        if (!desc) {
+            return true;
+        }
+        const stripped = desc.replace(/<[^>]*>/g, '').trim();
+        return stripped.length === 0;
+    }
+
+    get showApplyTemplate() {
+        return this.hasTemplate && this.descriptionField;
+    }
+
+    handleApplyTemplate() {
+        if (!this.hasTemplate) {
+            return;
+        }
+        const template = DESCRIPTION_TEMPLATES[this.cardType];
+        const descInput = this.template.querySelectorAll(
+            'lightning-input-field'
+        );
+        for (const field of descInput) {
+            if (field.fieldName === 'OpenSF__Description__c') {
+                field.value = template;
+                break;
+            }
+        }
     }
 
     get deleteButtonLabel() {

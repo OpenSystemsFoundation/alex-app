@@ -26,7 +26,10 @@
         "create:sample": "sf apex run --file scripts/apex/CreateBoard.apex",
         "create:testdata": "node scripts/create-test-data.js",
         "validate": "sf project deploy validate --source-dir force-app/main/default",
-        "alexadmin": "sf org assign permset --name Alex_Admin"
+        "alexadmin": "sf org assign permset --name Alex_Admin",
+        "test:e2e": "npx playwright test",
+        "test:e2e:headed": "npx playwright test --headed",
+        "test:e2e:report": "npx playwright show-report"
     },
     "devDependencies": {
         "@lwc/eslint-plugin-lwc": "^2.2.0",
@@ -45,6 +48,7 @@
         "husky": "9.1.7",
         "lint-staged": "^15.1.0",
         "prettier": "^3.3.3",
+        "@playwright/test": "^1.50.0",
         "prettier-plugin-apex": "2.1.5"
     },
     "lint-staged": {

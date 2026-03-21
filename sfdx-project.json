@@ -2,7 +2,7 @@
     "packageDirectories": [
         {
             "versionName": "ver 2.0",
-            "versionNumber": "2.0.0.NEXT",
+            "versionNumber": "2.0.1.NEXT",
             "ancestorVersion": "HIGHEST",
             "path": "force-app",
             "default": true,
@@ -28,6 +28,8 @@
         "Alex - A Kanban App@1.2.0-1": "04tWV00000039wPYAQ"
     },
     "apexTestAccess": {
-        "permissionSets": ["Alex_Admin"]
+        "permissionSets": [
+            "Alex_Admin"
+        ]
     }
 }
