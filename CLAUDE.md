@@ -18,8 +18,17 @@ If you create new custom objects, custom fields, platform events, or any metadat
 
 ## CLI Usage
 
-Use `powershell.exe -Command "sf ..."` to run Salesforce CLI commands. The bash shell cannot resolve the `sf` path directly on this Windows machine.
+Use `sf` directly to run Salesforce CLI commands. The SF CLI is available at `/opt/node22/bin/sf`.
+
+For scratch org operations, set `SFDX_DISABLE_DNS_CHECK=true` if DNS resolution fails in CI or cloud environments.
 
 ## Code Style
 
 - prettier-plugin-apex pinned to v2.1.5 (v2.2.6 breaks SOQL formatting and test class visibility)
+
+## Type Safety
+
+- Apex: Use `KanbanEnums` for all status values, event types, and column categories — never raw string literals
+- Apex: Use `CardUpdateRequest.fromMap()` to convert `Map<String, Object>` to typed requests in service methods
+- LWC: Add JSDoc `@type` annotations to `@api` properties and `@typedef` for event payloads
+- E2E: TypeScript strict mode enabled via `e2e/tsconfig.json` — run `npm run type-check:e2e` to validate

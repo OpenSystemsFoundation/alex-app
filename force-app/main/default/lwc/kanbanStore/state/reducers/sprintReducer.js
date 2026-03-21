@@ -37,6 +37,36 @@ export const sprintReducer = (state, action) => {
                 sprintCards: action.payload || []
             };
 
+        case types.SET_PLANNING_SPRINT_CARDS:
+            return {
+                ...state,
+                planningSprintCards: action.payload || []
+            };
+
+        case types.ADD_PLANNING_SPRINT_CARD:
+            return {
+                ...state,
+                planningSprintCards: [
+                    ...state.planningSprintCards,
+                    action.payload
+                ]
+            };
+
+        case types.REMOVE_PLANNING_SPRINT_CARD: {
+            const { cardId: removeCardId, sprintId: removeSprintId } =
+                action.payload;
+            return {
+                ...state,
+                planningSprintCards: state.planningSprintCards.filter(
+                    (sc) =>
+                        !(
+                            sc.cardId === removeCardId &&
+                            sc.sprintId === removeSprintId
+                        )
+                )
+            };
+        }
+
         default:
             return state;
     }

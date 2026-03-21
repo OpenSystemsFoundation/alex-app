@@ -1,7 +1,18 @@
 import { LightningElement, api, track } from 'lwc';
 
+/**
+ * @typedef {Object} MenuItem
+ * @property {string} label - Display text
+ * @property {string} value - Action identifier
+ * @property {string} [icon] - SLDS icon name
+ * @property {boolean} [dividerBefore] - Show divider above this item
+ * @property {boolean} [disabled] - Whether the item is disabled
+ * @property {MenuItem[]} [submenu] - Nested submenu items
+ */
+
 export default class KanbanContextMenu extends LightningElement {
-    @api menuItems = []; // Array of { label, value, icon, dividerBefore, disabled, submenu: [{ label, value }] }
+    /** @type {MenuItem[]} Menu items to render */
+    @api menuItems = [];
     @track isVisible = false;
     @track posX = 0;
     @track posY = 0;

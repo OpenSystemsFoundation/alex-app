@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DoneCardRetentionDays__c</fullName>
+    <defaultValue>7</defaultValue>
+    <description
+    >Number of days to show completed cards in Done columns before auto-hiding them. Only applies to non-Sprint boards.</description>
+    <externalId>false</externalId>
+    <label>Done Card Retention Days</label>
+    <precision>3</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

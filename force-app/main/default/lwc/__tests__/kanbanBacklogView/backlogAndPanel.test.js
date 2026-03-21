@@ -10,7 +10,9 @@ jest.mock('c/kanbanStore', () => ({
         getActiveSprint: jest.fn(() => null),
         isSprintBoard: jest.fn(() => false),
         getBoardId: jest.fn(() => 'board1'),
-        isBacklogSyncing: jest.fn(() => false)
+        isBacklogSyncing: jest.fn(() => false),
+        getPlanningSprints: jest.fn(() => []),
+        getPlanningSprintCards: jest.fn(() => [])
     },
     setSelectedBacklogCards: jest.fn((ids) => ({
         type: 'SET_SELECTED',
@@ -25,6 +27,10 @@ jest.mock('c/kanbanStore', () => ({
     deleteBacklogCardsAsync: jest.fn(() => jest.fn()),
     reorderBacklogCardAsync: jest.fn(() => jest.fn()),
     moveCardsToSprintAsync: jest.fn(() => jest.fn()),
+    moveCardAsync: jest.fn(() => jest.fn()),
+    addCardsToBacklogSprintAsync: jest.fn(() => jest.fn()),
+    removeCardFromBacklogSprintAsync: jest.fn(() => jest.fn()),
+    createSprintAsync: jest.fn(() => jest.fn()),
     updateCard: jest.fn(),
     updateCardAsync: jest.fn(() => jest.fn()),
     deleteCardAsync: jest.fn(() => jest.fn())
@@ -71,7 +77,9 @@ import {
     deleteBacklogCardsAsync as mockDeleteBacklogCardsAsync,
     reorderBacklogCardAsync as mockReorderBacklogCardAsync,
     moveCardsToSprintAsync as mockMoveCardsToSprintAsync,
-    updateCard as mockUpdateCard,
+    moveCardAsync as mockMoveCardAsync,
+    addCardsToBacklogSprintAsync as mockAddCardsToBacklogSprintAsync,
+    removeCardFromBacklogSprintAsync as mockRemoveCardFromBacklogSprintAsync,
     updateCardAsync as mockUpdateCardAsync,
     deleteCardAsync as mockDeleteCardAsync
 } from 'c/kanbanStore';
@@ -1206,7 +1214,7 @@ describe('c-kanban-backlog-view', () => {
 
         it('handleContextMenuSelect moveBottom dispatches reorder to last', async () => {
             mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
-            createBacklogView();
+            createBacklogView({ backlogCards: SAMPLE_CARDS });
             await flushPromises();
 
             const row = element.shadowRoot.querySelector(
@@ -1327,7 +1335,10 @@ describe('c-kanban-backlog-view', () => {
             );
             contextMenu.dispatchEvent(
                 new CustomEvent('select', {
-                    detail: { value: 'moveToSprint' }
+                    detail: {
+                        value: 'moveToSprint',
+                        subValue: 'active:sprint1'
+                    }
                 })
             );
             await flushPromises();
@@ -1608,6 +1619,474 @@ describe('c-kanban-backlog-view', () => {
             const unsubscribe = mockStore.subscribe.mock.results[0].value;
             document.body.removeChild(element);
             expect(unsubscribe).toHaveBeenCalled();
+        });
+    });
+
+    // ── Backlog section header ─────────────────────────────────────
+    describe('backlog section header', () => {
+        it('renders a Backlog header for the ungrouped section', async () => {
+            mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
+            mockSelectors.getPlanningSprintCards.mockReturnValue([]);
+            createBacklogView();
+            await flushPromises();
+
+            const backlogHeader = element.shadowRoot.querySelector(
+                '.backlog-header-row'
+            );
+            expect(backlogHeader).not.toBeNull();
+            expect(backlogHeader.textContent).toContain('Backlog');
+            const strong = backlogHeader.querySelector('strong');
+            expect(strong).not.toBeNull();
+            expect(strong.textContent).toBe('Backlog');
+        });
+
+        it('shows card count and story points in the backlog header', async () => {
+            mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
+            mockSelectors.getPlanningSprintCards.mockReturnValue([]);
+            createBacklogView();
+            await flushPromises();
+
+            const backlogHeader = element.shadowRoot.querySelector(
+                '.backlog-header-row'
+            );
+            const stats = backlogHeader.querySelector('.sprint-header__stats');
+            expect(stats).not.toBeNull();
+            // 3 cards, 5+3+2 = 10 points
+            expect(stats.textContent).toContain('3');
+            expect(stats.textContent).toContain('10');
+        });
+
+        it('clicking the backlog header collapses and expands the section', async () => {
+            mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
+            mockSelectors.getPlanningSprintCards.mockReturnValue([]);
+            createBacklogView();
+            await flushPromises();
+
+            // Cards should be visible initially
+            let dataRows = element.shadowRoot.querySelectorAll(
+                '.backlog-row:not(.backlog-row--header)'
+            );
+            expect(dataRows.length).toBe(3);
+
+            // Click to collapse
+            const backlogHeader = element.shadowRoot.querySelector(
+                '.backlog-header-row'
+            );
+            backlogHeader.click();
+            await flushPromises();
+
+            // Cards should be hidden
+            dataRows = element.shadowRoot.querySelectorAll(
+                '.backlog-row:not(.backlog-row--header)'
+            );
+            expect(dataRows.length).toBe(0);
+
+            // Click again to expand
+            const backlogHeaderAfter = element.shadowRoot.querySelector(
+                '.backlog-header-row'
+            );
+            backlogHeaderAfter.click();
+            await flushPromises();
+
+            // Cards should be visible again
+            dataRows = element.shadowRoot.querySelectorAll(
+                '.backlog-row:not(.backlog-row--header)'
+            );
+            expect(dataRows.length).toBe(3);
+        });
+    });
+
+    // ── Context menu: move to column ───────────────────────────────
+    describe('context menu - move to column', () => {
+        it('shows Move to Column submenu when activeSprint and columns exist', async () => {
+            mockSelectors.getActiveSprint.mockReturnValue({
+                Id: 'sprint1',
+                Name: 'Sprint 1'
+            });
+            mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
+            createBacklogView({
+                columns: [
+                    {
+                        Id: 'col1',
+                        columnHeader: 'To Do',
+                        Name: 'col1',
+                        cards: []
+                    },
+                    {
+                        Id: 'col2',
+                        columnHeader: 'In Progress',
+                        Name: 'col2',
+                        cards: []
+                    }
+                ]
+            });
+            await flushPromises();
+
+            const contextMenu = element.shadowRoot.querySelector(
+                'c-kanban-context-menu'
+            );
+            const items = contextMenu.menuItems;
+            const moveToColumnItem = items.find(
+                (i) => i.value === 'moveToColumn'
+            );
+            expect(moveToColumnItem).toBeDefined();
+            expect(moveToColumnItem.submenu).toHaveLength(2);
+            expect(moveToColumnItem.submenu[0].label).toBe('To Do');
+            expect(moveToColumnItem.submenu[1].label).toBe('In Progress');
+        });
+
+        it('selecting a column dispatches moveCardAsync', async () => {
+            mockSelectors.getActiveSprint.mockReturnValue({
+                Id: 'sprint1',
+                Name: 'Sprint 1'
+            });
+            mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
+            createBacklogView({
+                columns: [
+                    {
+                        Id: 'col1',
+                        columnHeader: 'To Do',
+                        Name: 'col1',
+                        cards: []
+                    },
+                    {
+                        Id: 'col2',
+                        columnHeader: 'In Progress',
+                        Name: 'col2',
+                        cards: []
+                    }
+                ]
+            });
+            await flushPromises();
+
+            // Right-click to set context card
+            const row = element.shadowRoot.querySelector(
+                '.backlog-row:not(.backlog-row--header)'
+            );
+            row.dispatchEvent(
+                new MouseEvent('contextmenu', {
+                    clientX: 100,
+                    clientY: 100,
+                    bubbles: true
+                })
+            );
+            await flushPromises();
+
+            // Select moveToColumn with a target column
+            const contextMenu = element.shadowRoot.querySelector(
+                'c-kanban-context-menu'
+            );
+            contextMenu.dispatchEvent(
+                new CustomEvent('select', {
+                    detail: { value: 'moveToColumn', subValue: 'col2' }
+                })
+            );
+            await flushPromises();
+
+            expect(mockMoveCardsToSprintAsync).toHaveBeenCalledWith('sprint1', [
+                'card1'
+            ]);
+            expect(mockMoveCardAsync).toHaveBeenCalledWith('card1', 'col2', 0);
+        });
+
+        it('on backlog card in a sprint, first removes from sprint then moves to column', async () => {
+            mockSelectors.getActiveSprint.mockReturnValue({
+                Id: 'activeSprint1',
+                Name: 'Sprint 1'
+            });
+            mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
+            mockSelectors.getPlanningSprints.mockReturnValue([
+                {
+                    Id: 'planSprint1',
+                    Name: 'SP-001',
+                    sprintNumber: 1
+                }
+            ]);
+            mockSelectors.getPlanningSprintCards.mockReturnValue([
+                { sprintId: 'planSprint1', cardId: 'card1' }
+            ]);
+            createBacklogView({
+                columns: [
+                    {
+                        Id: 'col1',
+                        columnHeader: 'To Do',
+                        Name: 'col1',
+                        cards: []
+                    }
+                ]
+            });
+            await flushPromises();
+
+            // Right-click on the card that is in a planning sprint
+            const rows = element.shadowRoot.querySelectorAll(
+                '.backlog-row:not(.backlog-row--header)'
+            );
+            // card1 is in planSprint1 section — find the row with data-sprint-id
+            let sprintRow = null;
+            rows.forEach((r) => {
+                if (
+                    r.dataset.cardId === 'card1' &&
+                    r.dataset.sprintId === 'planSprint1'
+                ) {
+                    sprintRow = r;
+                }
+            });
+            // If sections rendered, the card should be in the sprint section
+            const targetRow = sprintRow || rows[0];
+            targetRow.dispatchEvent(
+                new MouseEvent('contextmenu', {
+                    clientX: 100,
+                    clientY: 100,
+                    bubbles: true
+                })
+            );
+            await flushPromises();
+
+            const contextMenu = element.shadowRoot.querySelector(
+                'c-kanban-context-menu'
+            );
+            contextMenu.dispatchEvent(
+                new CustomEvent('select', {
+                    detail: { value: 'moveToColumn', subValue: 'col1' }
+                })
+            );
+            await flushPromises();
+
+            // Should remove from planning sprint first, then move to active sprint + column
+            expect(mockMoveCardsToSprintAsync).toHaveBeenCalledWith(
+                'activeSprint1',
+                ['card1']
+            );
+            expect(mockMoveCardAsync).toHaveBeenCalledWith('card1', 'col1', 0);
+        });
+    });
+
+    // ── Cross-section drag and drop ────────────────────────────────
+    describe('cross-section drag and drop', () => {
+        let origRAF;
+
+        beforeEach(() => {
+            origRAF = window.requestAnimationFrame;
+            window.requestAnimationFrame = jest.fn(() => 0);
+        });
+
+        afterEach(() => {
+            window.requestAnimationFrame = origRAF;
+        });
+
+        it('dragging card from backlog onto sprint header adds card to sprint', async () => {
+            mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
+            mockSelectors.getPlanningSprints.mockReturnValue([
+                { Id: 'sprint1', Name: 'SP-001', sprintNumber: 1 }
+            ]);
+            mockSelectors.getPlanningSprintCards.mockReturnValue([]);
+            createBacklogView({ backlogCards: SAMPLE_CARDS });
+            await flushPromises();
+
+            // Find the first ungrouped card row (data-sprint-id is null)
+            const allRows = Array.from(
+                element.shadowRoot.querySelectorAll(
+                    '.backlog-row:not(.backlog-row--header)'
+                )
+            );
+            const sourceRow =
+                allRows.find(
+                    (r) => !r.dataset.sprintId || r.dataset.sprintId === 'null'
+                ) || allRows[0];
+
+            // Dragstart on the ungrouped card
+            const mockDataTransfer = {
+                effectAllowed: '',
+                dropEffect: '',
+                setData: jest.fn()
+            };
+            sourceRow.dispatchEvent(
+                Object.assign(new CustomEvent('dragstart', { bubbles: true }), {
+                    dataTransfer: mockDataTransfer
+                })
+            );
+            await flushPromises();
+
+            // Find the sprint header row
+            const sprintHeader = element.shadowRoot.querySelector(
+                '.sprint-header-row[data-sprint-id="sprint1"]'
+            );
+            expect(sprintHeader).not.toBeNull();
+
+            // Dragover the sprint header
+            const dragOverEvent = new MouseEvent('dragover', {
+                bubbles: true,
+                cancelable: true
+            });
+            Object.defineProperty(dragOverEvent, 'dataTransfer', {
+                value: { dropEffect: '' }
+            });
+            sprintHeader.dispatchEvent(dragOverEvent);
+            await flushPromises();
+
+            // Drop on the sprint header
+            const dropEvent = Object.assign(
+                new CustomEvent('drop', {
+                    bubbles: true,
+                    cancelable: true
+                }),
+                { dataTransfer: mockDataTransfer }
+            );
+            sprintHeader.dispatchEvent(dropEvent);
+            await flushPromises();
+
+            expect(mockAddCardsToBacklogSprintAsync).toHaveBeenCalledWith(
+                'sprint1',
+                ['card1']
+            );
+        });
+
+        it('dragging card from sprint onto backlog header removes from sprint', async () => {
+            mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
+            mockSelectors.getPlanningSprints.mockReturnValue([
+                { Id: 'sprint1', Name: 'SP-001', sprintNumber: 1 }
+            ]);
+            mockSelectors.getPlanningSprintCards.mockReturnValue([
+                { sprintId: 'sprint1', cardId: 'card1' }
+            ]);
+            createBacklogView({ backlogCards: SAMPLE_CARDS });
+            await flushPromises();
+
+            // Find the card row that belongs to sprint1
+            const allRows = element.shadowRoot.querySelectorAll(
+                '.backlog-row:not(.backlog-row--header)'
+            );
+            let sprintRow = null;
+            allRows.forEach((r) => {
+                if (
+                    r.dataset.cardId === 'card1' &&
+                    r.dataset.sprintId === 'sprint1'
+                ) {
+                    sprintRow = r;
+                }
+            });
+            expect(sprintRow).not.toBeNull();
+
+            // Dragstart on the sprint card
+            const mockDataTransfer = {
+                effectAllowed: '',
+                dropEffect: '',
+                setData: jest.fn()
+            };
+            sprintRow.dispatchEvent(
+                Object.assign(new CustomEvent('dragstart', { bubbles: true }), {
+                    dataTransfer: mockDataTransfer
+                })
+            );
+            await flushPromises();
+
+            // Find the backlog header row
+            const backlogHeader = element.shadowRoot.querySelector(
+                '.backlog-header-row[data-sprint-id="ungrouped"]'
+            );
+            expect(backlogHeader).not.toBeNull();
+
+            // Dragover the backlog header
+            const dragOverEvent = new MouseEvent('dragover', {
+                bubbles: true,
+                cancelable: true
+            });
+            Object.defineProperty(dragOverEvent, 'dataTransfer', {
+                value: { dropEffect: '' }
+            });
+            backlogHeader.dispatchEvent(dragOverEvent);
+            await flushPromises();
+
+            // Drop on the backlog header
+            const dropEvent = Object.assign(
+                new CustomEvent('drop', {
+                    bubbles: true,
+                    cancelable: true
+                }),
+                { dataTransfer: mockDataTransfer }
+            );
+            backlogHeader.dispatchEvent(dropEvent);
+            await flushPromises();
+
+            expect(mockRemoveCardFromBacklogSprintAsync).toHaveBeenCalledWith(
+                'sprint1',
+                'card1'
+            );
+        });
+
+        it('dragging card onto card in different section triggers cross-section move', async () => {
+            mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
+            mockSelectors.getPlanningSprints.mockReturnValue([
+                { Id: 'sprint1', Name: 'SP-001', sprintNumber: 1 }
+            ]);
+            mockSelectors.getPlanningSprintCards.mockReturnValue([
+                { sprintId: 'sprint1', cardId: 'card1' }
+            ]);
+            mockStore = createMockStore({ backlogCards: SAMPLE_CARDS });
+            element = createElement('c-kanban-backlog-view', {
+                is: KanbanBacklogView
+            });
+            element.store = mockStore;
+            document.body.appendChild(element);
+            await flushPromises();
+
+            // Find the sprint card row (card1 in sprint1)
+            const allRows = element.shadowRoot.querySelectorAll(
+                '.backlog-row:not(.backlog-row--header)'
+            );
+            let sprintRow = null;
+            let ungroupedRow = null;
+            allRows.forEach((r) => {
+                if (
+                    r.dataset.cardId === 'card1' &&
+                    r.dataset.sprintId === 'sprint1'
+                ) {
+                    sprintRow = r;
+                }
+                if (
+                    r.dataset.cardId === 'card2' &&
+                    (!r.dataset.sprintId || r.dataset.sprintId === 'null')
+                ) {
+                    ungroupedRow = r;
+                }
+            });
+            expect(sprintRow).not.toBeNull();
+            expect(ungroupedRow).not.toBeNull();
+
+            // Dragstart on the sprint card
+            const mockDataTransfer = {
+                effectAllowed: '',
+                dropEffect: '',
+                setData: jest.fn()
+            };
+            sprintRow.dispatchEvent(
+                Object.assign(new CustomEvent('dragstart', { bubbles: true }), {
+                    dataTransfer: mockDataTransfer
+                })
+            );
+            await flushPromises();
+
+            // Drop directly on the ungrouped card without dragover.
+            // This means _dragTargetIndex stays null, so handleDrop
+            // will perform the cross-section move and then return early
+            // at the `if (targetIndex == null) return` guard — avoiding
+            // the reorder step that reads event.currentTarget (which
+            // jsdom nulls out after the async _moveCardBetweenSections).
+            const dropEvent = Object.assign(
+                new CustomEvent('drop', {
+                    bubbles: true,
+                    cancelable: true
+                }),
+                { dataTransfer: mockDataTransfer }
+            );
+            ungroupedRow.dispatchEvent(dropEvent);
+            await flushPromises();
+
+            // Should remove from sprint (cross-section move)
+            expect(mockRemoveCardFromBacklogSprintAsync).toHaveBeenCalledWith(
+                'sprint1',
+                'card1'
+            );
         });
     });
 });

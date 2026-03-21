@@ -1,0 +1,747 @@
+<template>
+    <!-- LOBBY VIEW -->
+    <template lwc:if={isLobby}>
+        <div class="lobby-container">
+            <!-- Refresh + Active Sessions List -->
+            <div
+                class="slds-grid slds-grid_align-end slds-m-bottom_small"
+            >
+                <lightning-button-icon
+                    icon-name="utility:refresh"
+                    alternative-text="Refresh sessions"
+                    onclick={handleRefreshSessions}
+                    variant="border-filled"
+                ></lightning-button-icon>
+            </div>
+            <template lwc:if={hasActiveSessions}>
+                <lightning-card
+                    title="Join an existing session"
+                >
+                    <div
+                        class="sessions-list slds-p-horizontal_medium slds-p-bottom_medium"
+                    >
+                        <template
+                            for:each={activeSessions}
+                            for:item="sess"
+                        >
+                            <div
+                                key={sess.id}
+                                class="session-item slds-box slds-m-bottom_x-small"
+                                data-id={sess.id}
+                                onclick={handleSelectSession}
+                            >
+                                <div
+                                    class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center"
+                                >
+                                    <div>
+                                        <p
+                                            class="slds-text-heading_small"
+                                        >
+                                            {sess.displayLabel}
+                                        </p>
+                                        <p
+                                            class="slds-text-body_small slds-text-color_weak"
+                                        >
+                                            {sess.votingSystemLabel}
+                                            &bull;
+                                            {sess.participantCount}
+                                            participant(s)
+                                        </p>
+                                    </div>
+                                    <template
+                                        lwc:if={sess.isSelected}
+                                    >
+                                        <lightning-icon
+                                            icon-name="utility:check"
+                                            size="small"
+                                            variant="success"
+                                        ></lightning-icon>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <div
+                        class="slds-p-horizontal_medium slds-p-bottom_medium"
+                    >
+                        <template
+                            lwc:if={selectedSessionId}
+                        >
+                            <div class="join-form">
+                                <div
+                                    class="slds-grid slds-gutters slds-wrap"
+                                >
+                                    <div
+                                        class="slds-col slds-size_1-of-1 slds-m-bottom_small"
+                                    >
+                                        <lightning-input
+                                            label="Choose your display name:"
+                                            value={displayName}
+                                            onchange={handleDisplayNameChange}
+                                            required
+                                        ></lightning-input>
+                                    </div>
+                                    <div
+                                        class="slds-col slds-size_1-of-1 slds-m-bottom_small"
+                                    >
+                                        <fieldset
+                                            class="slds-form-element"
+                                        >
+                                            <legend
+                                                class="slds-form-element__legend slds-form-element__label"
+                                            >
+                                                Choose your
+                                                role:
+                                            </legend>
+                                            <div
+                                                class="slds-form-element__control"
+                                            >
+                                                <div
+                                                    class="slds-radio_button-group"
+                                                >
+                                                    <span
+                                                        class="slds-button slds-radio_button"
+                                                    >
+                                                        <input
+                                                            type="radio"
+                                                            name="joinRole"
+                                                            id="joinObserver"
+                                                            value="Observer"
+                                                            checked
+                                                            onchange={handleRoleChange}
+                                                        />
+                                                        <label
+                                                            class="slds-radio_button__label"
+                                                            for="joinObserver"
+                                                        >
+                                                            <span
+                                                                class="slds-radio_faux"
+                                                                >Observe
+                                                                or
+                                                                moderate
+                                                                without
+                                                                voting</span
+                                                            >
+                                                        </label>
+                                                    </span>
+                                                    <span
+                                                        class="slds-button slds-radio_button"
+                                                    >
+                                                        <input
+                                                            type="radio"
+                                                            name="joinRole"
+                                                            id="joinVoter"
+                                                            value="Voter"
+                                                            onchange={handleRoleChange}
+                                                        />
+                                                        <label
+                                                            class="slds-radio_button__label"
+                                                            for="joinVoter"
+                                                        >
+                                                            <span
+                                                                class="slds-radio_faux"
+                                                                >Vote
+                                                                and
+                                                                estimate
+                                                                stories</span
+                                                            >
+                                                        </label>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </fieldset>
+                                    </div>
+                                </div>
+                                <div
+                                    class="slds-m-top_medium slds-grid slds-grid_align-center slds-gutters"
+                                >
+                                    <div class="slds-col">
+                                        <lightning-button
+                                            label="Cancel"
+                                            onclick={handleShowCreateForm}
+                                            class="slds-m-right_small"
+                                        ></lightning-button>
+                                    </div>
+                                    <div class="slds-col">
+                                        <lightning-button
+                                            variant="brand"
+                                            label="Join Session"
+                                            onclick={handleJoinSession}
+                                            disabled={isLoading}
+                                        ></lightning-button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </lightning-card>
+                <div
+                    class="slds-m-vertical_medium slds-text-align_center"
+                >
+                    <p class="slds-text-color_weak">
+                        — or —
+                    </p>
+                </div>
+            </template>
+
+            <!-- Create New Session -->
+            <lightning-card title="Create new session">
+                <div
+                    class="slds-p-horizontal_medium slds-p-bottom_medium"
+                >
+                    <!-- Display Name -->
+                    <div class="slds-m-bottom_small">
+                        <lightning-input
+                            label="Choose your display name:"
+                            value={displayName}
+                            onchange={handleDisplayNameChange}
+                            required
+                        ></lightning-input>
+                    </div>
+
+                    <!-- Role -->
+                    <div class="slds-m-bottom_small">
+                        <fieldset class="slds-form-element">
+                            <legend
+                                class="slds-form-element__legend slds-form-element__label"
+                            >
+                                Choose your role:
+                            </legend>
+                            <div
+                                class="slds-form-element__control"
+                            >
+                                <div
+                                    class="slds-radio_button-group"
+                                >
+                                    <span
+                                        class="slds-button slds-radio_button"
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="createRole"
+                                            id="createObserver"
+                                            value="Observer"
+                                            checked
+                                            onchange={handleRoleChange}
+                                        />
+                                        <label
+                                            class="slds-radio_button__label"
+                                            for="createObserver"
+                                        >
+                                            <span
+                                                class="slds-radio_faux"
+                                                >Observe or
+                                                moderate
+                                                without
+                                                voting</span
+                                            >
+                                        </label>
+                                    </span>
+                                    <span
+                                        class="slds-button slds-radio_button"
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="createRole"
+                                            id="createVoter"
+                                            value="Voter"
+                                            onchange={handleRoleChange}
+                                        />
+                                        <label
+                                            class="slds-radio_button__label"
+                                            for="createVoter"
+                                        >
+                                            <span
+                                                class="slds-radio_faux"
+                                                >Vote and
+                                                estimate
+                                                stories</span
+                                            >
+                                        </label>
+                                    </span>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <!-- Voting System -->
+                    <div class="slds-m-bottom_small">
+                        <lightning-combobox
+                            label="Choose the estimation scale:"
+                            value={selectedVotingSystem}
+                            options={votingSystemOptions}
+                            onchange={handleVotingSystemChange}
+                        ></lightning-combobox>
+                    </div>
+
+                    <!-- Show/Clear Permission -->
+                    <div class="slds-m-bottom_small">
+                        <lightning-combobox
+                            label="Choose who can show / clear votes:"
+                            value={showClearPermission}
+                            options={showClearOptions}
+                            onchange={handleShowClearChange}
+                        ></lightning-combobox>
+                    </div>
+
+                    <!-- Advanced Settings -->
+                    <div
+                        class="slds-text-align_center slds-m-vertical_small"
+                    >
+                        <button
+                            class="slds-button slds-button_reset advanced-toggle"
+                            onclick={toggleAdvancedSettings}
+                        >
+                            <template
+                                lwc:if={showAdvancedSettings}
+                            >
+                                Hide advanced settings
+                                <lightning-icon
+                                    icon-name="utility:chevronup"
+                                    size="xx-small"
+                                    class="slds-m-left_xx-small"
+                                ></lightning-icon>
+                            </template>
+                            <template lwc:else>
+                                Show advanced settings
+                                <lightning-icon
+                                    icon-name="utility:chevrondown"
+                                    size="xx-small"
+                                    class="slds-m-left_xx-small"
+                                ></lightning-icon>
+                            </template>
+                        </button>
+                    </div>
+
+                    <template lwc:if={showAdvancedSettings}>
+                        <div class="slds-m-bottom_small">
+                            <lightning-input
+                                label="(Optional) Name your session:"
+                                value={sessionName}
+                                onchange={handleSessionNameChange}
+                            ></lightning-input>
+                        </div>
+                        <div class="slds-m-bottom_x-small">
+                            <lightning-input
+                                type="checkbox"
+                                label="Auto reveal votes after everyone voted"
+                                checked={autoReveal}
+                                onchange={handleAutoRevealChange}
+                            ></lightning-input>
+                        </div>
+                        <div class="slds-m-bottom_small">
+                            <lightning-input
+                                type="checkbox"
+                                label="Allow reactions after votes are revealed"
+                                checked={allowReactions}
+                                onchange={handleAllowReactionsChange}
+                            ></lightning-input>
+                        </div>
+                    </template>
+
+                    <!-- Action Buttons -->
+                    <div
+                        class="slds-m-top_medium slds-grid slds-grid_align-center slds-gutters"
+                    >
+                        <div
+                            class="slds-col slds-size_1-of-2"
+                        >
+                            <lightning-button
+                                label="Cancel"
+                                onclick={handleBackToLobby}
+                                class="full-width-btn"
+                            ></lightning-button>
+                        </div>
+                        <div
+                            class="slds-col slds-size_1-of-2"
+                        >
+                            <lightning-button
+                                variant="brand"
+                                label="Create"
+                                onclick={handleCreateSession}
+                                disabled={isLoading}
+                                class="full-width-btn"
+                            ></lightning-button>
+                        </div>
+                    </div>
+                </div>
+            </lightning-card>
+        </div>
+    </template>
+
+    <!-- SESSION VIEW (Voting + Results) -->
+    <template lwc:if={isSessionView}>
+        <div class="session-container">
+            <!-- Header -->
+            <div
+                class="session-header slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-p-around_small"
+            >
+                <div
+                    class="slds-grid slds-grid_vertical-align-center"
+                >
+                    <lightning-icon
+                        icon-name="standard:calibration"
+                        size="small"
+                        class="slds-m-right_small"
+                    ></lightning-icon>
+                    <span
+                        class="slds-text-heading_small session-title"
+                        >UNCERTAINTY ESTIMATION</span
+                    >
+                    <lightning-button-icon
+                        icon-name="utility:info"
+                        alternative-text="What is this?"
+                        onclick={toggleHelp}
+                        size="small"
+                        class="slds-m-left_x-small"
+                        variant="bare"
+                    ></lightning-button-icon>
+                </div>
+                <div
+                    class="slds-grid slds-grid_vertical-align-center slds-gutters_x-small"
+                >
+                    <lightning-button
+                        label="Set Timer"
+                        icon-name="utility:clock"
+                        onclick={handleSetTimer}
+                        variant="neutral"
+                    ></lightning-button>
+                    <template lwc:if={showTimer}>
+                        <span
+                            class="timer-display slds-m-horizontal_small"
+                            >{timerDisplay}</span
+                        >
+                        <lightning-button-icon
+                            icon-name="utility:close"
+                            alternative-text="Stop timer"
+                            onclick={handleStopTimer}
+                            size="small"
+                        ></lightning-button-icon>
+                    </template>
+                    <template lwc:if={canShowClear}>
+                        <lightning-button
+                            label="Clear votes"
+                            onclick={handleClearVotes}
+                            variant="neutral"
+                            disabled={isVoting}
+                        ></lightning-button>
+                        <lightning-button
+                            label="Reveal votes"
+                            onclick={handleRevealVotes}
+                            variant="neutral"
+                            disabled={isRevealed}
+                        ></lightning-button>
+                    </template>
+                    <lightning-button-icon
+                        icon-name="utility:close"
+                        alternative-text="Leave session"
+                        onclick={handleBackToLobby}
+                        size="medium"
+                    ></lightning-button-icon>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <template lwc:if={showHelp}>
+                <div
+                    class="help-section slds-box slds-theme_info slds-m-around_small"
+                >
+                    <div
+                        class="slds-grid slds-grid_align-spread slds-grid_vertical-align-start"
+                    >
+                        <div>
+                            <p
+                                class="slds-text-heading_small slds-m-bottom_x-small"
+                            >
+                                Estimation is not about time
+                                — it's about scoping under
+                                uncertainty.
+                            </p>
+                            <p
+                                class="slds-m-bottom_x-small"
+                            >
+                                When you vote, consider:
+                            </p>
+                            <ul class="slds-list_dotted">
+                                <li>
+                                    <strong
+                                        >Uncertainty</strong
+                                    >
+                                    — How much information
+                                    is missing from this
+                                    story?
+                                </li>
+                                <li>
+                                    <strong
+                                        >Complexity</strong
+                                    >
+                                    — How many interacting
+                                    parts are involved?
+                                </li>
+                                <li>
+                                    <strong>Effort</strong>
+                                    — What does it take to
+                                    get this done?
+                                </li>
+                                <li>
+                                    <strong
+                                        >Time
+                                        estimate</strong
+                                    >
+                                    — Roughly how long will
+                                    it take?
+                                </li>
+                                <li>
+                                    <strong
+                                        >Assumptions</strong
+                                    >
+                                    — What are we assuming
+                                    that may not be true?
+                                </li>
+                            </ul>
+                        </div>
+                        <lightning-button-icon
+                            icon-name="utility:close"
+                            alternative-text="Close help"
+                            onclick={toggleHelp}
+                            size="small"
+                            variant="bare-inverse"
+                        ></lightning-button-icon>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Participants Strip (horizontal, above voting) -->
+            <div
+                class="participants-strip slds-p-horizontal_medium slds-p-vertical_x-small"
+            >
+                <template
+                    for:each={participants}
+                    for:item="p"
+                >
+                    <div
+                        key={p.id}
+                        class="participant-chip"
+                    >
+                        <span class="participant-initial"
+                            >{p.initial}</span
+                        >
+                        <span class="participant-name"
+                            >{p.displayName}</span
+                        >
+                        <template lwc:if={p.showVote}>
+                            <span class={p.voteClass}
+                                >{p.displayVote}</span
+                            >
+                        </template>
+                        <template lwc:elseif={p.hasVoted}>
+                            <span
+                                class="chip-badge voted-badge"
+                                >Voted</span
+                            >
+                        </template>
+                        <template lwc:elseif={p.role}>
+                            <span
+                                class="chip-badge observer-badge"
+                                >{p.statusLabel}</span
+                            >
+                        </template>
+                        <template lwc:if={p.reaction}>
+                            <span class="reaction-badge"
+                                >{p.reaction}</span
+                            >
+                        </template>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Main Content (full width) -->
+            <div class="slds-p-around_medium">
+                <!-- Voting Cards -->
+                <template lwc:if={isVoting}>
+                    <div class="voting-section">
+                        <template
+                            lwc:if={isCurrentUserVoter}
+                        >
+                            <h3
+                                class="slds-text-heading_small slds-m-bottom_small"
+                            >
+                                Cast your vote
+                            </h3>
+                        </template>
+                        <template lwc:else>
+                            <h3
+                                class="slds-text-heading_small slds-m-bottom_small"
+                            >
+                                Waiting for votes...
+                            </h3>
+                        </template>
+                        <div class="estimate-grid">
+                            <template
+                                for:each={votingCards}
+                                for:item="card"
+                            >
+                                <button
+                                    key={card.value}
+                                    class={card.cssClass}
+                                    data-value={card.value}
+                                    onclick={handleCardClick}
+                                    disabled={isRevealed}
+                                >
+                                    {card.label}
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Results -->
+                <template lwc:if={isRevealed}>
+                    <div class="results-section">
+                        <h3
+                            class="slds-text-heading_small slds-m-bottom_small"
+                        >
+                            Results
+                        </h3>
+                        <div
+                            class="slds-grid slds-wrap slds-grid_vertical-align-start slds-gutters"
+                        >
+                            <div
+                                class="slds-col slds-size_1-of-2 slds-medium-size_1-of-3"
+                            >
+                                <canvas
+                                    class="donut-chart"
+                                    width="220"
+                                    height="220"
+                                ></canvas>
+                            </div>
+                            <div
+                                class="slds-col slds-size_1-of-2 slds-medium-size_2-of-3"
+                            >
+                                <!-- Stats -->
+                                <div class="stats-list">
+                                    <template
+                                        for:each={voteResults.stats}
+                                        for:item="stat"
+                                    >
+                                        <div
+                                            key={stat.label}
+                                            class="stat-row slds-grid slds-grid_align-spread slds-p-vertical_xx-small"
+                                        >
+                                            <span
+                                                class="slds-text-color_weak"
+                                            >
+                                                {stat.label}
+                                            </span>
+                                            <span
+                                                class="stat-value"
+                                                >{stat.value}</span
+                                            >
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <!-- Consensus -->
+                                <template
+                                    lwc:if={voteResults.isConsensus}
+                                >
+                                    <div
+                                        class="consensus-badge slds-m-top_small"
+                                    >
+                                        Hurray! Full
+                                        consensus!
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Reactions -->
+                        <template
+                            lwc:if={session.allowReactions}
+                        >
+                            <div
+                                class="reactions-bar slds-m-top_medium"
+                            >
+                                <template
+                                    for:each={reactionButtons}
+                                    for:item="r"
+                                >
+                                    <button
+                                        key={r.value}
+                                        class="reaction-btn"
+                                        data-value={r.value}
+                                        onclick={handleReaction}
+                                    >
+                                        {r.label}
+                                    </button>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <!-- Timer Modal -->
+    <template lwc:if={showTimerModal}>
+        <section class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <div class="slds-modal__header">
+                    <h2 class="slds-modal__title">
+                        Set Timer
+                    </h2>
+                </div>
+                <div
+                    class="slds-modal__content slds-p-around_medium"
+                >
+                    <lightning-input
+                        type="number"
+                        label="Timer duration (seconds)"
+                        value={timerInput}
+                        onchange={handleTimerInputChange}
+                        min="10"
+                        max="600"
+                    ></lightning-input>
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning-button
+                        label="Cancel"
+                        onclick={handleCancelTimerModal}
+                    ></lightning-button>
+                    <lightning-button
+                        variant="brand"
+                        label="Start"
+                        onclick={handleStartTimer}
+                        class="slds-m-left_small"
+                    ></lightning-button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Loading Spinner -->
+    <template lwc:if={isLoading}>
+        <lightning-spinner
+            alternative-text="Loading"
+            size="medium"
+        ></lightning-spinner>
+    </template>
+
+    <!-- Debug Panel -->
+    <template lwc:if={debugMode}>
+        <div class="debug-panel">
+            <h4>Debug Info</h4>
+            <p>User ID: {debugInfo.userId}</p>
+            <p>Session ID: {debugInfo.sessionId}</p>
+            <p>Status: {debugInfo.sessionStatus}</p>
+            <p>
+                Participants: {debugInfo.participantCount}
+            </p>
+            <p>Voters: {debugInfo.voterCount}</p>
+            <p>Subscribed: {debugInfo.subscribed}</p>
+            <p>View: {debugInfo.view}</p>
+        </div>
+    </template>
+</template>

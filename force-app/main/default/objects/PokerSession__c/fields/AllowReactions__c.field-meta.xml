@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AllowReactions__c</fullName>
+    <defaultValue>true</defaultValue>
+    <description>Allow emoji reactions after votes are revealed.</description>
+    <label>Allow Reactions</label>
+    <type>Checkbox</type>
+</CustomField>

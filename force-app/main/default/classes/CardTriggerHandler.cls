@@ -22,26 +22,50 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
     protected override void afterInsert() {
         this.newCards = (List<OpenSF__Card__c>) this.newList;
         updateColumnCounts(this.newCards, null);
-        publishCardEvents(this.newCards, 'create');
+        trackColumnHistory(this.newCards, null);
+        publishCardEvents(
+            this.newCards,
+            KanbanEnums.cardEventTypeValue(
+                KanbanEnums.CardEventType.CARD_CREATE
+            )
+        );
     }
 
     protected override void afterUpdate() {
         this.newCards = (List<OpenSF__Card__c>) this.newList;
         this.oldCardMap = (Map<Id, OpenSF__Card__c>) this.oldMap;
         updateColumnCounts(this.newCards, this.oldCardMap);
-        publishCardEvents(this.newCards, 'update');
+        trackColumnHistory(this.newCards, this.oldCardMap);
+        publishCardEvents(
+            this.newCards,
+            KanbanEnums.cardEventTypeValue(
+                KanbanEnums.CardEventType.CARD_UPDATE
+            )
+        );
+        syncStatusToLinkedRecords(this.newCards, this.oldCardMap);
     }
 
     protected override void afterDelete() {
         this.oldCards = (List<OpenSF__Card__c>) this.oldList;
         updateColumnCounts(null, null, this.oldCards);
-        publishCardEvents(this.oldCards, 'delete');
+        closeColumnHistory(this.oldCards);
+        publishCardEvents(
+            this.oldCards,
+            KanbanEnums.cardEventTypeValue(
+                KanbanEnums.CardEventType.CARD_DELETE
+            )
+        );
     }
 
     protected override void afterUndelete() {
         this.newCards = (List<OpenSF__Card__c>) this.newList;
         updateColumnCounts(this.newCards, null);
-        publishCardEvents(this.newCards, 'undelete');
+        publishCardEvents(
+            this.newCards,
+            KanbanEnums.cardEventTypeValue(
+                KanbanEnums.CardEventType.CARD_UNDELETE
+            )
+        );
     }
 
     /**
@@ -86,6 +110,104 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
     }
 
     /**
+     * Track column transitions for cycle time analytics.
+     * On insert: creates a new history entry if the card has a column.
+     * On update: if column changed, closes the old entry and opens a new one.
+     */
+    private void trackColumnHistory(
+        List<OpenSF__Card__c> newCards,
+        Map<Id, OpenSF__Card__c> oldCardMap
+    ) {
+        List<OpenSF__CardColumnHistory__c> toInsert = new List<OpenSF__CardColumnHistory__c>();
+        List<OpenSF__CardColumnHistory__c> toUpdate = new List<OpenSF__CardColumnHistory__c>();
+        Set<Id> cardsNeedingClose = new Set<Id>();
+
+        DateTime now = DateTime.now();
+
+        for (OpenSF__Card__c card : newCards) {
+            Id oldColumnId = (oldCardMap != null &&
+                oldCardMap.containsKey(card.Id))
+                ? oldCardMap.get(card.Id).OpenSF__Column__c
+                : null;
+
+            Boolean isInsert = (oldCardMap == null);
+            Boolean columnChanged =
+                !isInsert && (oldColumnId != card.OpenSF__Column__c);
+
+            // Close the old entry if column changed
+            if (columnChanged && oldColumnId != null) {
+                cardsNeedingClose.add(card.Id);
+            }
+
+            // Open a new entry for the new column
+            if ((isInsert || columnChanged) && card.OpenSF__Column__c != null) {
+                toInsert.add(
+                    new OpenSF__CardColumnHistory__c(
+                        OpenSF__Card__c = card.Id,
+                        OpenSF__Column__c = card.OpenSF__Column__c,
+                        OpenSF__Board__c = card.OpenSF__Board__c,
+                        OpenSF__EnteredAt__c = now
+                    )
+                );
+            }
+        }
+
+        // Close open history entries for cards that moved
+        if (!cardsNeedingClose.isEmpty()) {
+            List<OpenSF__CardColumnHistory__c> openEntries = [
+                SELECT Id, OpenSF__EnteredAt__c
+                FROM OpenSF__CardColumnHistory__c
+                WHERE
+                    OpenSF__Card__c IN :cardsNeedingClose
+                    AND OpenSF__ExitedAt__c = NULL
+            ];
+            for (OpenSF__CardColumnHistory__c entry : openEntries) {
+                entry.OpenSF__ExitedAt__c = now;
+                Long ms = now.getTime() - entry.OpenSF__EnteredAt__c.getTime();
+                entry.OpenSF__DurationMinutes__c = ms / 60000.0;
+                toUpdate.add(entry);
+            }
+        }
+
+        if (!toUpdate.isEmpty()) {
+            update Security.stripInaccessible(AccessType.UPDATABLE, toUpdate)
+                .getRecords();
+        }
+        if (!toInsert.isEmpty()) {
+            insert Security.stripInaccessible(AccessType.CREATABLE, toInsert)
+                .getRecords();
+        }
+    }
+
+    /**
+     * Close open column history entries when cards are deleted
+     */
+    private void closeColumnHistory(List<OpenSF__Card__c> deletedCards) {
+        Set<Id> cardIds = new Set<Id>();
+        for (OpenSF__Card__c card : deletedCards) {
+            cardIds.add(card.Id);
+        }
+        if (cardIds.isEmpty())
+            return;
+
+        DateTime now = DateTime.now();
+        List<OpenSF__CardColumnHistory__c> openEntries = [
+            SELECT Id, OpenSF__EnteredAt__c
+            FROM OpenSF__CardColumnHistory__c
+            WHERE OpenSF__Card__c IN :cardIds AND OpenSF__ExitedAt__c = NULL
+        ];
+        for (OpenSF__CardColumnHistory__c entry : openEntries) {
+            entry.OpenSF__ExitedAt__c = now;
+            Long ms = now.getTime() - entry.OpenSF__EnteredAt__c.getTime();
+            entry.OpenSF__DurationMinutes__c = ms / 60000.0;
+        }
+        if (!openEntries.isEmpty()) {
+            update Security.stripInaccessible(AccessType.UPDATABLE, openEntries)
+                .getRecords();
+        }
+    }
+
+    /**
      * Publish platform events for card changes
      */
     private void publishCardEvents(
@@ -102,7 +224,12 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
 
         // Query cards with all relationships for complete DTO data
         Map<Id, OpenSF__Card__c> fullCardMap = new Map<Id, OpenSF__Card__c>();
-        if (eventType != 'delete') {
+        if (
+            eventType !=
+            KanbanEnums.cardEventTypeValue(
+                KanbanEnums.CardEventType.CARD_DELETE
+            )
+        ) {
             fullCardMap = new Map<Id, OpenSF__Card__c>(
                 KanbanBoardSelector.getCardsByIds(new List<Id>(cardIds))
             );
@@ -113,7 +240,12 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
             try {
                 String jsonPayload;
 
-                if (eventType == 'delete') {
+                if (
+                    eventType ==
+                    KanbanEnums.cardEventTypeValue(
+                        KanbanEnums.CardEventType.CARD_DELETE
+                    )
+                ) {
                     // For delete, create minimal payload from old data
                     jsonPayload = createDeletePayload(card);
                 } else {
@@ -188,6 +320,28 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
      * Update column card counts
      * Handles insert, update (column changes), delete, and undelete scenarios
      */
+    /**
+     * Sync card status changes to linked records (card → record direction)
+     * Only triggers when card status actually changed
+     */
+    private void syncStatusToLinkedRecords(
+        List<OpenSF__Card__c> newCards,
+        Map<Id, OpenSF__Card__c> oldCardMap
+    ) {
+        for (OpenSF__Card__c newCard : newCards) {
+            OpenSF__Card__c oldCard = oldCardMap.get(newCard.Id);
+            if (
+                newCard.OpenSF__Status__c != oldCard.OpenSF__Status__c &&
+                newCard.OpenSF__Status__c != null
+            ) {
+                RecordLinkingService.syncCardStatusToLinkedRecords(
+                    newCard.Id,
+                    newCard.OpenSF__Status__c
+                );
+            }
+        }
+    }
+
     private void updateColumnCounts(
         List<OpenSF__Card__c> newCards,
         Map<Id, OpenSF__Card__c> oldCardMap

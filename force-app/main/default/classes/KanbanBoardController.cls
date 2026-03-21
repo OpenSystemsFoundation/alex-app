@@ -430,6 +430,121 @@ public with sharing class KanbanBoardController {
         }
     }
 
+    // =========================================================================
+    // Analytics Methods
+    // =========================================================================
+
+    /**
+     * Get cycle time analytics for a board
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.CycleTimeResult getCycleTimeAnalytics(
+        Id boardId,
+        Integer daysBack
+    ) {
+        try {
+            return AnalyticsService.getCycleTimeAnalytics(boardId, daysBack);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading cycle time analytics: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Get cumulative flow data for a board
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.CumulativeFlowDataPoint> getCumulativeFlowData(
+        Id boardId,
+        Integer daysBack
+    ) {
+        try {
+            return AnalyticsService.getCumulativeFlowData(boardId, daysBack);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading cumulative flow data: ' + e.getMessage()
+            );
+        }
+    }
+
+    // =========================================================================
+    // Record Linking Methods
+    // =========================================================================
+
+    /**
+     * Get linked records for a card
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.LinkedRecordDTO> getLinkedRecords(
+        Id cardId
+    ) {
+        try {
+            return RecordLinkingService.getLinkedRecords(cardId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading linked records: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Link a Salesforce record to a card
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.LinkedRecordDTO linkRecord(
+        Id cardId,
+        String recordId,
+        String sObjectType,
+        Boolean syncEnabled,
+        String statusMapping
+    ) {
+        try {
+            return RecordLinkingService.linkRecord(
+                cardId,
+                recordId,
+                sObjectType,
+                syncEnabled,
+                statusMapping
+            );
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error linking record: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Unlink a record from a card
+     */
+    @AuraEnabled
+    public static void unlinkRecord(Id linkedRecordId) {
+        try {
+            RecordLinkingService.unlinkRecord(linkedRecordId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error unlinking record: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Search for Salesforce records to link
+     */
+    @AuraEnabled
+    public static List<RecordLinkingService.RecordSearchResult> searchRecordsToLink(
+        String searchTerm,
+        String sObjectType
+    ) {
+        try {
+            return RecordLinkingService.searchRecords(searchTerm, sObjectType);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error searching records: ' + e.getMessage()
+            );
+        }
+    }
+
     /**
      * Wrapper classes (kept here since they're @AuraEnabled)
      */
@@ -442,6 +557,8 @@ public with sharing class KanbanBoardController {
         public List<KanbanBoardDTO.CardDTO> cards;
         @AuraEnabled
         public Map<String, String> cardTypeIcons;
+        @AuraEnabled
+        public List<KanbanBoardDTO.CardCustomFieldDTO> customFieldConfigs;
     }
 
     public class CardMoveResult {

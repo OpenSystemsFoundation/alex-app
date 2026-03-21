@@ -43,5 +43,26 @@
                 description="Fixed height (e.g., 600px). Leave blank for dynamic height that adapts to viewport."
             />
         </targetConfig>
+        <targetConfig targets="lightningCommunity__Default">
+            <property
+                name="recordId"
+                type="String"
+                label="Board Record ID"
+                description="The ID of the Board record to display. Default value requires Object Page for Board."
+                default="{!recordId}"
+            />
+            <property
+                name="height"
+                type="String"
+                label="Height (Optional)"
+                description="Fixed height (e.g., 600px). Leave blank for dynamic height that adapts to viewport."
+            />
+            <property
+                name="experienceCloud"
+                type="Boolean"
+                label="Experience Cloud Mode"
+                description="Enable Experience Cloud mode. Requires creating Object Pages for Board, Column, Card, and Sprint with default Base URL."
+            />
+        </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>

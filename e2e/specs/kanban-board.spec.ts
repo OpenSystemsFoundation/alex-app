@@ -64,11 +64,12 @@ test.describe('Alex Kanban Board', () => {
             );
             if (count > 0) {
                 sourceColIdx = i;
-                dragCardId = await boardPage
-                    .columnWrapper(boardData.columns[i].Id)
-                    .locator('article.kanban-card')
-                    .first()
-                    .getAttribute('data-card-id');
+                dragCardId =
+                    (await boardPage
+                        .columnWrapper(boardData.columns[i].Id)
+                        .locator('article.kanban-card')
+                        .first()
+                        .getAttribute('data-card-id')) ?? '';
                 break;
             }
         }

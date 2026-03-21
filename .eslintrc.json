@@ -1,0 +1,31 @@
+{
+    "root": true,
+    "extends": ["@salesforce/eslint-config-lwc/recommended"],
+    "plugins": ["jest", "import"],
+    "rules": {
+        "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+        "no-implicit-globals": "error",
+        "consistent-return": "error",
+        "no-shadow": "error",
+        "prefer-const": "error",
+        "no-var": "error",
+        "eqeqeq": ["error", "always"],
+        "no-param-reassign": ["error", { "props": false }],
+        "import/no-duplicates": "error"
+    },
+    "overrides": [
+        {
+            "files": ["**/__tests__/**/*.js", "**/*.test.js"],
+            "env": {
+                "jest": true
+            },
+            "plugins": ["jest"],
+            "rules": {
+                "jest/no-disabled-tests": "warn",
+                "jest/no-focused-tests": "error",
+                "jest/valid-expect": "error",
+                "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
+            }
+        }
+    ]
+}

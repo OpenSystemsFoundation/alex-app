@@ -62,6 +62,17 @@
                     </template>
                 </span>
             </div>
+            <template lwc:if={isSprintBoard}>
+                <div class="slds-col slds-no-flex">
+                    <lightning-button
+                        label="New Sprint"
+                        icon-name="utility:date_input"
+                        onclick={handleToggleCreateSprintForm}
+                        variant="neutral"
+                        class="slds-var-m-right_xx-small"
+                    ></lightning-button>
+                </div>
+            </template>
             <div class="slds-col slds-no-flex">
                 <lightning-button
                     label="New Card"
@@ -113,6 +124,47 @@
             </div>
         </template>
 
+        <!-- Create Sprint Form -->
+        <template lwc:if={showCreateSprintForm}>
+            <div
+                class="backlog-view__create-form slds-grid slds-grid_vertical-align-center slds-gutters_xx-small slds-var-p-horizontal_small slds-var-p-vertical_x-small"
+            >
+                <div
+                    class="slds-col slds-no-flex slds-var-m-right_x-small"
+                >
+                    <lightning-icon
+                        icon-name="utility:sprint"
+                        size="x-small"
+                        alternative-text="Sprint"
+                    ></lightning-icon>
+                </div>
+                <div class="slds-col slds-grow">
+                    <lightning-input
+                        label="Sprint goal"
+                        value={newSprintGoal}
+                        onchange={handleNewSprintGoalChange}
+                        onkeydown={handleCreateSprintKeyDown}
+                        placeholder="Sprint goal (optional)"
+                        variant="label-hidden"
+                        class="create-sprint-input"
+                    ></lightning-input>
+                </div>
+                <div class="slds-col slds-no-flex">
+                    <lightning-button
+                        label="Create Sprint"
+                        variant="brand"
+                        onclick={handleCreateSprint}
+                    ></lightning-button>
+                </div>
+                <div class="slds-col slds-no-flex">
+                    <lightning-button
+                        label="Cancel"
+                        onclick={handleCancelCreateSprint}
+                    ></lightning-button>
+                </div>
+            </div>
+        </template>
+
         <!-- Create Card Form -->
         <template lwc:if={showCreateForm}>
             <div
@@ -148,7 +200,7 @@
 
         <!-- Card List Table -->
         <div class="backlog-view__table">
-            <template lwc:if={hasCards}>
+            <template lwc:if={hasContent}>
                 <!-- Table Header -->
                 <div
                     class="backlog-row backlog-row--header slds-grid slds-grid_vertical-align-center"
@@ -217,152 +269,260 @@
                     </template>
                 </div>
 
-                <!-- Table Body -->
+                <!-- Sections (sprint sections + ungrouped) -->
                 <template
-                    for:each={backlogCards}
-                    for:item="card"
+                    for:each={backlogSections}
+                    for:item="section"
                 >
                     <div
-                        key={card.Id}
-                        class="backlog-row slds-grid slds-grid_vertical-align-center"
-                        data-card-id={card.Id}
-                        data-index={card.__index}
-                        style={card.rowStyle}
-                        draggable="true"
-                        ondragstart={handleDragStart}
-                        ondragover={handleDragOver}
-                        ondragend={handleDragEnd}
-                        ondrop={handleDrop}
-                        onclick={handleRowClick}
-                        oncontextmenu={handleContextMenu}
+                        key={section.key}
+                        class="backlog-section"
                     >
-                        <!-- Drag Handle -->
-                        <div
-                            class="backlog-cell backlog-cell--drag"
+                        <!-- Sprint Section Header -->
+                        <template
+                            lwc:if={section.isSprintSection}
                         >
-                            <lightning-icon
-                                icon-name="utility:drag_and_drop"
-                                size="xx-small"
-                                alternative-text="Drag"
-                            ></lightning-icon>
-                        </div>
-
-                        <!-- Checkbox -->
-                        <div
-                            class="backlog-cell backlog-cell--checkbox"
-                        >
-                            <lightning-input
-                                type="checkbox"
-                                data-card-id={card.Id}
-                                checked={card.isSelected}
-                                onchange={handleCardSelect}
-                                variant="label-hidden"
-                                label="Select"
-                            ></lightning-input>
-                        </div>
-
-                        <!-- Refinement Toggle -->
-                        <div
-                            class="backlog-cell backlog-cell--refinement"
-                        >
-                            <button
-                                class="refinement-toggle slds-button slds-button_icon slds-button_icon-x-small"
-                                data-card-id={card.Id}
-                                onclick={handleRefinementToggle}
-                                title="Toggle Refinement"
-                            >
-                                <lightning-icon
-                                    icon-name={card.refinementIcon}
-                                    size="xx-small"
-                                    alternative-text="Refinement"
-                                    class={card.refinementClass}
-                                ></lightning-icon>
-                            </button>
-                        </div>
-
-                        <!-- Name -->
-                        <div
-                            class="backlog-cell backlog-cell--name"
-                        >
-                            <a
-                                href={card.recordUrl}
-                                data-card-id={card.Id}
-                                onclick={handleCardNameClick}
-                                onauxclick={handleCardNameMiddleClick}
-                                class="slds-text-link"
-                                >{card.Name}</a
-                            >
-                        </div>
-
-                        <!-- Subject -->
-                        <div
-                            class="backlog-cell backlog-cell--subject slds-truncate"
-                            title={card.subject}
-                        >
-                            {card.subject}
-                        </div>
-
-                        <!-- Type -->
-                        <div
-                            class="backlog-cell backlog-cell--type"
-                        >
-                            <template
-                                lwc:if={card.cardType}
-                            >
-                                <span
-                                    class="slds-badge slds-badge_inverse"
-                                    >{card.cardType}</span
-                                >
-                            </template>
-                        </div>
-
-                        <!-- Priority -->
-                        <div
-                            class="backlog-cell backlog-cell--priority"
-                        >
-                            <template
-                                lwc:if={card.priority}
-                            >
-                                <span
-                                    class={card.priorityBadgeClass}
-                                    >{card.priority}</span
-                                >
-                            </template>
-                        </div>
-
-                        <!-- Points -->
-                        <div
-                            class="backlog-cell backlog-cell--points"
-                        >
-                            {card.storyPoints}
-                        </div>
-
-                        <!-- Assignee -->
-                        <div
-                            class="backlog-cell backlog-cell--assignee slds-truncate"
-                        >
-                            <template
-                                lwc:if={card.assignee}
-                            >
-                                {card.assignee.name}
-                            </template>
-                        </div>
-
-                        <!-- Debug: LexoRank -->
-                        <template lwc:if={showDebugInfo}>
                             <div
-                                class="backlog-cell backlog-cell--debug slds-truncate"
-                                title={card.position}
+                                class="sprint-header-row slds-grid slds-grid_vertical-align-center"
+                                data-sprint-id={section.sprintId}
+                                onclick={handleSprintHeaderClick}
+                                ondragover={handleSectionHeaderDragOver}
+                                ondragleave={handleSectionHeaderDragLeave}
+                                ondrop={handleSectionHeaderDrop}
                             >
-                                <template
-                                    lwc:if={card.position}
+                                <div
+                                    class="sprint-header__chevron"
                                 >
-                                    {card.position}
-                                </template>
-                                <template lwc:else>
-                                    <em>null</em>
-                                </template>
+                                    <lightning-icon
+                                        icon-name={section.chevronIcon}
+                                        size="xx-small"
+                                        alternative-text="Toggle"
+                                    ></lightning-icon>
+                                </div>
+                                <div
+                                    class="sprint-header__label"
+                                >
+                                    <strong
+                                        >{section.sprintLabel}</strong
+                                    >
+                                    <template
+                                        lwc:if={section.hasGoal}
+                                    >
+                                        <span
+                                            class="sprint-header__goal"
+                                        >
+                                            &mdash;
+                                            {section.goal}</span
+                                        >
+                                    </template>
+                                </div>
+                                <div
+                                    class="sprint-header__stats slds-text-body_small"
+                                >
+                                    {section.cardCount}
+                                    cards &bull;
+                                    {section.totalPoints}
+                                    pts
+                                </div>
                             </div>
+                        </template>
+
+                        <!-- Backlog Section Header -->
+                        <template
+                            lwc:if={section.isBacklogSection}
+                        >
+                            <div
+                                class="sprint-header-row backlog-header-row slds-grid slds-grid_vertical-align-center"
+                                data-sprint-id="ungrouped"
+                                onclick={handleSprintHeaderClick}
+                                ondragover={handleSectionHeaderDragOver}
+                                ondragleave={handleSectionHeaderDragLeave}
+                                ondrop={handleSectionHeaderDrop}
+                            >
+                                <div
+                                    class="sprint-header__chevron"
+                                >
+                                    <lightning-icon
+                                        icon-name={section.chevronIcon}
+                                        size="xx-small"
+                                        alternative-text="Toggle"
+                                    ></lightning-icon>
+                                </div>
+                                <div
+                                    class="sprint-header__label"
+                                >
+                                    <strong>Backlog</strong>
+                                </div>
+                                <div
+                                    class="sprint-header__stats slds-text-body_small"
+                                >
+                                    {section.cardCount}
+                                    cards &bull;
+                                    {section.totalPoints}
+                                    pts
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Cards in section -->
+                        <template
+                            lwc:if={section.isExpanded}
+                        >
+                            <template
+                                for:each={section.cards}
+                                for:item="card"
+                            >
+                                <div
+                                    key={card.Id}
+                                    class="backlog-row slds-grid slds-grid_vertical-align-center"
+                                    data-card-id={card.Id}
+                                    data-index={card.__index}
+                                    data-sprint-id={card.__sprintId}
+                                    style={card.rowStyle}
+                                    draggable="true"
+                                    ondragstart={handleDragStart}
+                                    ondragover={handleDragOver}
+                                    ondragend={handleDragEnd}
+                                    ondrop={handleDrop}
+                                    onclick={handleRowClick}
+                                    oncontextmenu={handleContextMenu}
+                                >
+                                    <!-- Drag Handle -->
+                                    <div
+                                        class="backlog-cell backlog-cell--drag"
+                                    >
+                                        <lightning-icon
+                                            icon-name="utility:drag_and_drop"
+                                            size="xx-small"
+                                            alternative-text="Drag"
+                                        ></lightning-icon>
+                                    </div>
+
+                                    <!-- Checkbox -->
+                                    <div
+                                        class="backlog-cell backlog-cell--checkbox"
+                                    >
+                                        <lightning-input
+                                            type="checkbox"
+                                            data-card-id={card.Id}
+                                            checked={card.isSelected}
+                                            onchange={handleCardSelect}
+                                            variant="label-hidden"
+                                            label="Select"
+                                        ></lightning-input>
+                                    </div>
+
+                                    <!-- Refinement Toggle -->
+                                    <div
+                                        class="backlog-cell backlog-cell--refinement"
+                                    >
+                                        <button
+                                            class="refinement-toggle slds-button slds-button_icon slds-button_icon-x-small"
+                                            data-card-id={card.Id}
+                                            onclick={handleRefinementToggle}
+                                            title="Toggle Refinement"
+                                        >
+                                            <lightning-icon
+                                                icon-name={card.refinementIcon}
+                                                size="xx-small"
+                                                alternative-text="Refinement"
+                                                class={card.refinementClass}
+                                            ></lightning-icon>
+                                        </button>
+                                    </div>
+
+                                    <!-- Name -->
+                                    <div
+                                        class="backlog-cell backlog-cell--name"
+                                    >
+                                        <a
+                                            href={card.recordUrl}
+                                            data-card-id={card.Id}
+                                            onclick={handleCardNameClick}
+                                            onauxclick={handleCardNameMiddleClick}
+                                            class="slds-text-link"
+                                            >{card.Name}</a
+                                        >
+                                    </div>
+
+                                    <!-- Subject -->
+                                    <div
+                                        class="backlog-cell backlog-cell--subject slds-truncate"
+                                        title={card.subject}
+                                    >
+                                        {card.subject}
+                                    </div>
+
+                                    <!-- Type -->
+                                    <div
+                                        class="backlog-cell backlog-cell--type"
+                                    >
+                                        <template
+                                            lwc:if={card.cardType}
+                                        >
+                                            <span
+                                                class="slds-badge slds-badge_inverse"
+                                                >{card.cardType}</span
+                                            >
+                                        </template>
+                                    </div>
+
+                                    <!-- Priority -->
+                                    <div
+                                        class="backlog-cell backlog-cell--priority"
+                                    >
+                                        <template
+                                            lwc:if={card.priority}
+                                        >
+                                            <span
+                                                class={card.priorityBadgeClass}
+                                                >{card.priority}</span
+                                            >
+                                        </template>
+                                    </div>
+
+                                    <!-- Points -->
+                                    <div
+                                        class="backlog-cell backlog-cell--points"
+                                    >
+                                        {card.storyPoints}
+                                    </div>
+
+                                    <!-- Assignee -->
+                                    <div
+                                        class="backlog-cell backlog-cell--assignee slds-truncate"
+                                    >
+                                        <template
+                                            lwc:if={card.assignee}
+                                        >
+                                            {card.assignee.name}
+                                        </template>
+                                    </div>
+
+                                    <!-- Debug: LexoRank -->
+                                    <template
+                                        lwc:if={showDebugInfo}
+                                    >
+                                        <div
+                                            class="backlog-cell backlog-cell--debug slds-truncate"
+                                            title={card.position}
+                                        >
+                                            <template
+                                                lwc:if={card.position}
+                                            >
+                                                {card.position}
+                                            </template>
+                                            <template
+                                                lwc:else
+                                            >
+                                                <em
+                                                    >null</em
+                                                >
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
                         </template>
                     </div>
                 </template>

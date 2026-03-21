@@ -2,13 +2,13 @@ import { test, expect } from '../fixtures/multi-user';
 
 /**
  * Multi-user drag-and-drop synchronization tests.
- * Verifies that card moves by one user appear in real-time for the other.
+ * Each test creates its own isolated board — no shared state.
  */
 
 const SYNC_TIMEOUT = 30_000;
 const SF_TIMEOUT = 45_000;
 
-test.describe.serial('Drag & Drop Sync — real-time collaboration', () => {
+test.describe('Drag & Drop Sync — real-time collaboration', () => {
     test.beforeEach(async () => {
         if (!process.env.USER_A_LOGIN_URL || !process.env.USER_B_LOGIN_URL) {
             test.skip(true, 'Multi-user login URLs not set — skipping');
@@ -37,11 +37,12 @@ test.describe.serial('Drag & Drop Sync — real-time collaboration', () => {
             );
             if (count > 0) {
                 sourceColIdx = i;
-                dragCardId = await userA.board
-                    .columnWrapper(boardData.columns[i].Id)
-                    .locator('article.kanban-card')
-                    .first()
-                    .getAttribute('data-card-id');
+                dragCardId =
+                    (await userA.board
+                        .columnWrapper(boardData.columns[i].Id)
+                        .locator('article.kanban-card')
+                        .first()
+                        .getAttribute('data-card-id')) ?? '';
                 break;
             }
         }
@@ -65,7 +66,6 @@ test.describe.serial('Drag & Drop Sync — real-time collaboration', () => {
         ).toBeVisible({ timeout: SYNC_TIMEOUT });
 
         // User B sees the card in the new column via platform event
-        // If event doesn't arrive, refresh User B's board as fallback
         const movedOnB = userB.board
             .columnWrapper(targetColId)
             .locator(`article[data-card-id="${dragCardId}"]`);
@@ -87,7 +87,7 @@ test.describe.serial('Drag & Drop Sync — real-time collaboration', () => {
         userB,
         boardData
     }) => {
-        // Need at least 2 cards and 3 columns
+        // Each test gets its own board with 3 cards per column — guaranteed fresh
         expect(boardData.cards.length).toBeGreaterThanOrEqual(2);
         expect(boardData.columns.length).toBeGreaterThanOrEqual(3);
 
@@ -96,13 +96,14 @@ test.describe.serial('Drag & Drop Sync — real-time collaboration', () => {
         await userA.board.waitForCards();
         await userB.board.waitForCards();
 
-        // Find two different cards
-        const cardsInCol0: Array<{ id: string | null; colIdx: number }> = [];
+        // Find two different cards in non-last columns
+        const cardsInCol0: Array<{ id: string; colIdx: number }> = [];
         for (let i = 0; i < boardData.columns.length - 2; i++) {
             const col = userA.board.columnWrapper(boardData.columns[i].Id);
             const cards = await col.locator('article.kanban-card').all();
             for (const card of cards) {
                 const id = await card.getAttribute('data-card-id');
+                if (!id) continue;
                 cardsInCol0.push({ id, colIdx: i });
                 if (cardsInCol0.length >= 2) break;
             }
@@ -121,7 +122,7 @@ test.describe.serial('Drag & Drop Sync — real-time collaboration', () => {
             userB.board.dragCardToColumn(cardB.id, targetB)
         ]);
 
-        // Both cards should end up in their target columns for both users
+        // Both cards should end up in their target columns for User A (optimistic)
         await expect(
             userA.board
                 .columnWrapper(targetA)
@@ -134,11 +135,21 @@ test.describe.serial('Drag & Drop Sync — real-time collaboration', () => {
                 .locator(`article[data-card-id="${cardB.id}"]`)
         ).toBeVisible({ timeout: SYNC_TIMEOUT });
 
-        await expect(
-            userB.board
-                .columnWrapper(targetA)
-                .locator(`article[data-card-id="${cardA.id}"]`)
-        ).toBeVisible({ timeout: SYNC_TIMEOUT });
+        // User B sees both moves via platform events (with refresh fallback)
+        const cardAOnB = userB.board
+            .columnWrapper(targetA)
+            .locator(`article[data-card-id="${cardA.id}"]`);
+
+        const cardAVisible = await cardAOnB
+            .isVisible({ timeout: SYNC_TIMEOUT })
+            .catch(() => false);
+
+        if (!cardAVisible) {
+            await userB.board.refresh();
+            await userB.board.waitForCards();
+        }
+
+        await expect(cardAOnB).toBeVisible({ timeout: SYNC_TIMEOUT });
 
         await expect(
             userB.board

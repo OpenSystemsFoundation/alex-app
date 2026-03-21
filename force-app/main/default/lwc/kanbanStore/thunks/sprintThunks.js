@@ -24,7 +24,10 @@ import {
     removeBacklogCard,
     moveCardToBacklog,
     deleteCard,
-    addCard
+    addCard,
+    setPlanningSprintCards,
+    addPlanningSprintCard,
+    removePlanningSprintCard
 } from '../state/actions';
 import { findColumn } from '../state/selectors';
 import { calculateCardPosition } from '../utils/positionCalculator';
@@ -52,6 +55,9 @@ export const loadSprintDataAsync = (boardId) => {
             }
             if (data.backlogCards) {
                 dispatch(setBacklogCards(data.backlogCards));
+            }
+            if (data.planningSprintCards) {
+                dispatch(setPlanningSprintCards(data.planningSprintCards));
             }
 
             return { success: true, data };
@@ -241,6 +247,58 @@ export const moveCardToBacklogAsync = (sprintId, cardId) => {
             return { success: true };
         } catch (error) {
             console.error('Error moving card to backlog:', error);
+            throw error;
+        }
+    };
+};
+
+/**
+ * Add cards to a planning sprint in the backlog.
+ * Creates sprint junctions but keeps cards in the backlog (no column assignment).
+ * @param {string} sprintId - Planning Sprint ID
+ * @param {Array<string>} cardIds - Card IDs to add
+ * @returns {Function} Thunk function
+ */
+export const addCardsToBacklogSprintAsync = (sprintId, cardIds) => {
+    return async (dispatch) => {
+        try {
+            await addCardsToSprintApex({ sprintId, cardIds });
+
+            // Add planning sprint card associations to local state
+            for (const cardId of cardIds) {
+                dispatch(
+                    addPlanningSprintCard({
+                        sprintId,
+                        cardId,
+                        position: null
+                    })
+                );
+            }
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error adding cards to backlog sprint:', error);
+            throw error;
+        }
+    };
+};
+
+/**
+ * Remove a card from a planning sprint in the backlog.
+ * Removes the sprint junction but keeps the card in the backlog.
+ * @param {string} sprintId - Planning Sprint ID
+ * @param {string} cardId - Card ID to remove
+ * @returns {Function} Thunk function
+ */
+export const removeCardFromBacklogSprintAsync = (sprintId, cardId) => {
+    return async (dispatch) => {
+        try {
+            await removeCardFromSprintApex({ sprintId, cardId });
+            dispatch(removePlanningSprintCard(cardId, sprintId));
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error removing card from backlog sprint:', error);
             throw error;
         }
     };

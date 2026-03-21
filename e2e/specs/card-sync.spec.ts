@@ -2,15 +2,12 @@ import { test, expect } from '../fixtures/multi-user';
 
 /**
  * Multi-user card synchronization tests.
- * Verifies that card operations by User A appear in real-time on User B's screen.
- *
- * These tests run sequentially (test.describe.serial) because they share
- * the same board and must not interfere with each other.
+ * Each test creates its own isolated board — no shared state.
  */
 
 const SYNC_TIMEOUT = 30_000;
 
-test.describe.serial('Card Sync — real-time collaboration', () => {
+test.describe('Card Sync — real-time collaboration', () => {
     test.beforeEach(async () => {
         if (!process.env.USER_A_LOGIN_URL || !process.env.USER_B_LOGIN_URL) {
             test.skip(true, 'Multi-user login URLs not set — skipping');
@@ -29,34 +26,25 @@ test.describe.serial('Card Sync — real-time collaboration', () => {
         await userA.board.waitForCards();
         await userB.board.waitForCards();
 
-        // Count cards visible to User B BEFORE User A adds one
-        const allCardsBefore = await userB.board.allCards().count();
-
-        // User A adds a card
+        // User A adds a card to the first column
         await userA.board.addCard(0);
 
-        // User A sees it immediately (optimistic update) — check by text
+        // User A sees it immediately (optimistic update)
         await expect(
             userA.page.locator('article.kanban-card:has-text("New Card")')
         ).toBeVisible({ timeout: SYNC_TIMEOUT });
 
-        // User B sees the new card via platform event
-        // If event doesn't arrive, refresh as fallback
+        // User B sees the new card via platform event (with refresh fallback)
         const newCardOnB = userB.page.locator(
             'article.kanban-card:has-text("New Card")'
         );
-        const visibleViaEvent = await newCardOnB.isVisible().catch(() => false);
+        const visibleViaEvent = await newCardOnB
+            .isVisible({ timeout: SYNC_TIMEOUT })
+            .catch(() => false);
 
         if (!visibleViaEvent) {
-            // Wait for platform event delivery
-            await userB.page.waitForTimeout(5000);
-            const stillNotVisible = !(await newCardOnB
-                .isVisible()
-                .catch(() => false));
-            if (stillNotVisible) {
-                await userB.board.refresh();
-                await userB.board.waitForCards();
-            }
+            await userB.board.refresh();
+            await userB.board.waitForCards();
         }
 
         await expect(newCardOnB).toBeVisible({ timeout: SYNC_TIMEOUT });
@@ -84,7 +72,7 @@ test.describe.serial('Card Sync — real-time collaboration', () => {
             timeout: SYNC_TIMEOUT
         });
 
-        // User A clicks the card to open it
+        // User A clicks the card to open it (navigates away)
         await userA.board.cardLink(cardId).click();
         await userA.page.waitForURL('**/OpenSF__Card__c/**', {
             timeout: SYNC_TIMEOUT

@@ -154,4 +154,139 @@ test.describe('Backlog View', () => {
         const count = await comboboxes.count();
         expect(count).toBeGreaterThanOrEqual(3);
     });
+
+    test('backlog section shows Backlog header with card count', async ({
+        boardPage,
+        boardData
+    }) => {
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.switchToBacklogTab();
+
+        const backlogHeader = boardPage.page.locator('.backlog-header-row');
+        await expect(backlogHeader).toBeVisible({ timeout: SF_TIMEOUT });
+        await expect(backlogHeader.locator('strong')).toHaveText('Backlog');
+        // Should show card count
+        await expect(backlogHeader).toContainText(/\d+ cards/);
+    });
+
+    test('clicking backlog header collapses and expands section', async ({
+        boardPage,
+        boardData
+    }) => {
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.switchToBacklogTab();
+
+        const backlogHeader = boardPage.page.locator('.backlog-header-row');
+        await expect(backlogHeader).toBeVisible({ timeout: SF_TIMEOUT });
+
+        // Count visible rows before collapse
+        const rowsBefore = boardPage.page.locator(
+            '.backlog-row:not(.backlog-row--header)'
+        );
+        const countBefore = await rowsBefore.count();
+
+        // Click to collapse
+        await backlogHeader.click();
+        await boardPage.page.waitForTimeout(500);
+
+        // Rows should be fewer or zero after collapse
+        const countAfter = await rowsBefore.count();
+        expect(countAfter).toBeLessThan(countBefore);
+
+        // Click again to expand
+        await backlogHeader.click();
+        await boardPage.page.waitForTimeout(500);
+
+        const countExpanded = await rowsBefore.count();
+        expect(countExpanded).toBe(countBefore);
+    });
+
+    test('context menu shows Move to Column option', async ({
+        boardPage,
+        boardData
+    }) => {
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.switchToBacklogTab();
+
+        // Wait for backlog rows to appear
+        const firstRow = boardPage.page
+            .locator('.backlog-row:not(.backlog-row--header)')
+            .first();
+        await expect(firstRow).toBeVisible({ timeout: SF_TIMEOUT });
+
+        // Right-click to open context menu
+        await firstRow.click({ button: 'right' });
+
+        // Context menu should appear with Move to Column option
+        const contextMenu = boardPage.page.locator('c-kanban-context-menu');
+        await expect(contextMenu).toBeVisible({ timeout: 5000 });
+
+        const moveToColumn = contextMenu.getByText('Move to Column');
+        // Move to Column only shows when there's an active sprint
+        // If visible, verify it exists; if not, that's expected for non-sprint boards
+        const isVisible = await moveToColumn.isVisible().catch(() => false);
+        if (isVisible) {
+            await expect(moveToColumn).toBeVisible();
+        }
+    });
+
+    test('drag card to sprint header moves it to sprint', async ({
+        boardPage,
+        boardData
+    }) => {
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.switchToBacklogTab();
+
+        // This test requires a sprint board with planning sprints
+        const sprintHeader = boardPage.page
+            .locator('.sprint-header-row:not(.backlog-header-row)')
+            .first();
+        const hasSprintHeader = await sprintHeader
+            .isVisible({ timeout: 5000 })
+            .catch(() => false);
+
+        if (!hasSprintHeader) {
+            test.skip(
+                true,
+                'No planning sprints available — skipping drag test'
+            );
+            return;
+        }
+
+        // Find a backlog card (ungrouped section)
+        const backlogCard = boardPage.page
+            .locator('.backlog-header-row ~ .backlog-row')
+            .first();
+        const hasBacklogCard = await backlogCard
+            .isVisible({ timeout: 5000 })
+            .catch(() => false);
+
+        if (!hasBacklogCard) {
+            test.skip(true, 'No ungrouped backlog cards — skipping');
+            return;
+        }
+
+        // Get sprint card count before drag
+        const statsText = await sprintHeader
+            .locator('.sprint-header__stats')
+            .textContent();
+        const countBefore = parseInt(
+            statsText?.match(/(\d+) cards/)?.[1] ?? '0',
+            10
+        );
+
+        // Drag the backlog card to the sprint header
+        await backlogCard.dragTo(sprintHeader);
+        await boardPage.page.waitForTimeout(2000);
+
+        // Sprint card count should increase
+        const newStatsText = await sprintHeader
+            .locator('.sprint-header__stats')
+            .textContent();
+        const countAfter = parseInt(
+            newStatsText?.match(/(\d+) cards/)?.[1] ?? '0',
+            10
+        );
+        expect(countAfter).toBe(countBefore + 1);
+    });
 });

@@ -36,21 +36,23 @@
                 >{progressLabel}</span
             >
 
-            <!-- Actions -->
-            <span class="sprint-inline__divider"></span>
-            <lightning-button-icon
-                icon-name="utility:chart"
-                alternative-text="Reports"
-                title="Reports"
-                onclick={handleShowReports}
-                size="small"
-            ></lightning-button-icon>
-            <template lwc:if={canComplete}>
-                <lightning-button
-                    label="Complete"
-                    onclick={handleCompleteSprint}
-                    variant="brand"
-                ></lightning-button>
+            <!-- Actions (internal only) -->
+            <template lwc:if={isInternalMode}>
+                <span class="sprint-inline__divider"></span>
+                <lightning-button-icon
+                    icon-name="utility:chart"
+                    alternative-text="Reports"
+                    title="Reports"
+                    onclick={handleShowReports}
+                    size="small"
+                ></lightning-button-icon>
+                <template lwc:if={canComplete}>
+                    <lightning-button
+                        label="Complete"
+                        onclick={handleCompleteSprint}
+                        variant="brand"
+                    ></lightning-button>
+                </template>
             </template>
         </template>
         <template lwc:else>
@@ -58,12 +60,14 @@
             <span class="sprint-inline__empty"
                 >No active sprint</span
             >
-            <lightning-button
-                label="New Sprint"
-                icon-name="utility:add"
-                onclick={handleCreateSprint}
-                variant="brand"
-            ></lightning-button>
+            <template lwc:if={isInternalMode}>
+                <lightning-button
+                    label="New Sprint"
+                    icon-name="utility:add"
+                    onclick={handleCreateSprint}
+                    variant="brand"
+                ></lightning-button>
+            </template>
         </template>
     </div>
 </template>

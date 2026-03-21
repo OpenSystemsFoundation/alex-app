@@ -34,7 +34,7 @@ jest.mock(
     { virtual: true }
 );
 
-let mockStoreState = {
+const mockStoreState = {
     columns: [
         {
             Id: 'col1',
