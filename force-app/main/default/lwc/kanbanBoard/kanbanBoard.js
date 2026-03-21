@@ -103,6 +103,10 @@ export default class KanbanBoard extends LightningElement {
     @track _boardHideCompleted = false;
     _searchDebounceTimer = null;
 
+    // Mobile state
+    @track _mobileActiveColumnIndex = 0;
+    _touchStartX = null;
+
     // Sprint UI state
     @track showSprintModal = false;
     @track showSprintComplete = false;
@@ -168,48 +172,72 @@ export default class KanbanBoard extends LightningElement {
         const hideCompleted = this._boardHideCompleted;
         const hasFilter =
             search || priority !== 'All' || cardType !== 'All' || hideCompleted;
+        const activeIdx = this._mobileActiveColumnIndex;
 
-        if (!hasFilter) return cols;
+        const addMobileClass = (col, idx) => {
+            const isActive = idx === activeIdx;
+            const baseClass =
+                'kanban-column slds-col slds-grid slds-grid_vertical';
+            return {
+                ...col,
+                mobileColumnClass: isActive
+                    ? `${baseClass} mobile-column-active`
+                    : `${baseClass} mobile-column-hidden`
+            };
+        };
 
-        return cols
-            .filter((col) => !(hideCompleted && col.isCompleted))
-            .map((col) => {
-                const filtered = (col.cards || []).filter((card) => {
-                    // Hide cards with Done status
-                    if (hideCompleted && card.status === 'Done') {
-                        return false;
-                    }
+        if (!hasFilter) {
+            return cols.map((col, idx) => addMobileClass(col, idx));
+        }
 
-                    // Search: match subject, Name, cardType, assignee name
-                    if (search) {
-                        const haystack = [
-                            card.subject,
-                            card.Name,
-                            card.cardType,
-                            card.assignee?.name,
-                            card.status
-                        ]
-                            .filter(Boolean)
-                            .join(' ')
-                            .toLowerCase();
-                        if (!haystack.includes(search)) return false;
-                    }
+        return cols.map((col, idx) => {
+            // Hide Done and Released columns when toggle is on
+            if (hideCompleted && col.isCompleted) {
+                return addMobileClass(
+                    { ...col, cards: [], cardCount: 0, isHidden: true },
+                    idx
+                );
+            }
 
-                    // Priority filter
-                    if (priority !== 'All' && card.priority !== priority) {
-                        return false;
-                    }
+            const filtered = (col.cards || []).filter((card) => {
+                // Hide cards with Done status
+                if (hideCompleted && card.status === 'Done') {
+                    return false;
+                }
 
-                    // Card type filter
-                    if (cardType !== 'All' && card.cardType !== cardType) {
-                        return false;
-                    }
+                // Search: match subject, Name, cardType, assignee name
+                if (search) {
+                    const haystack = [
+                        card.subject,
+                        card.Name,
+                        card.cardType,
+                        card.assignee?.name,
+                        card.status
+                    ]
+                        .filter(Boolean)
+                        .join(' ')
+                        .toLowerCase();
+                    if (!haystack.includes(search)) return false;
+                }
 
-                    return true;
-                });
+                // Priority filter
+                if (priority !== 'All' && card.priority !== priority) {
+                    return false;
+                }
 
-                return { ...col, cards: filtered, cardCount: filtered.length };
+                // Card type filter
+                if (cardType !== 'All' && card.cardType !== cardType) {
+                    return false;
+                }
+
+                return true;
             });
+
+            return addMobileClass(
+                { ...col, cards: filtered, cardCount: filtered.length },
+                idx
+            );
+        });
     }
 
     get hasActiveFilters() {
@@ -1079,6 +1107,74 @@ export default class KanbanBoard extends LightningElement {
         const message = event.detail?.message;
         if (message && this.toastManager) {
             this.toastManager.showError('Backlog Error', message);
+        }
+    }
+
+    // =============================================================================
+    // Mobile Column Navigation
+    // =============================================================================
+
+    get mobileActiveColumnId() {
+        const cols = this.filteredColumns;
+        if (cols.length === 0) return null;
+        const idx = Math.min(this._mobileActiveColumnIndex, cols.length - 1);
+        return cols[idx]?.Id || null;
+    }
+
+    get mobileColumnCounter() {
+        const cols = this.filteredColumns;
+        if (cols.length === 0) return '';
+        const idx = Math.min(this._mobileActiveColumnIndex, cols.length - 1);
+        return `${idx + 1} / ${cols.length}`;
+    }
+
+    get isMobileFirstColumn() {
+        return this._mobileActiveColumnIndex <= 0;
+    }
+
+    get isMobileLastColumn() {
+        const cols = this.filteredColumns;
+        return this._mobileActiveColumnIndex >= cols.length - 1;
+    }
+
+    handleMobileColumnChange(event) {
+        const selectedId = event.target.value;
+        const cols = this.filteredColumns;
+        const idx = cols.findIndex((c) => c.Id === selectedId);
+        if (idx >= 0) {
+            this._mobileActiveColumnIndex = idx;
+        }
+    }
+
+    handleMobilePrevColumn() {
+        if (this._mobileActiveColumnIndex > 0) {
+            this._mobileActiveColumnIndex--;
+        }
+    }
+
+    handleMobileNextColumn() {
+        const cols = this.filteredColumns;
+        if (this._mobileActiveColumnIndex < cols.length - 1) {
+            this._mobileActiveColumnIndex++;
+        }
+    }
+
+    handleTouchStart(event) {
+        if (event.touches && event.touches.length === 1) {
+            this._touchStartX = event.touches[0].clientX;
+        }
+    }
+
+    handleTouchEnd(event) {
+        if (this._touchStartX === null || !event.changedTouches) return;
+        const deltaX = event.changedTouches[0].clientX - this._touchStartX;
+        this._touchStartX = null;
+
+        const SWIPE_THRESHOLD = 60;
+        if (deltaX > SWIPE_THRESHOLD) {
+            this.handleMobilePrevColumn();
+        } else if (deltaX < -SWIPE_THRESHOLD) {
+            this.handleMobileNextColumn();
         }
     }
 }

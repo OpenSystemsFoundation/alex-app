@@ -142,6 +142,13 @@
     margin-bottom: 0.25rem;
 }
 
+/* Section header drop indicator */
+.sprint-header-row.drag-indicator-header {
+    background: rgb(219, 234, 254);
+    outline: 2px solid rgb(37, 99, 235);
+    outline-offset: -2px;
+}
+
 /* Refinement highlight */
 .backlog-row.needs-refinement {
     border-left: 3px solid rgb(107, 114, 128);

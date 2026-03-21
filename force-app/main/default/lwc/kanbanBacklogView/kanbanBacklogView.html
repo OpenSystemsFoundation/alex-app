@@ -66,7 +66,7 @@
                 <div class="slds-col slds-no-flex">
                     <lightning-button
                         label="New Sprint"
-                        icon-name="utility:sprint"
+                        icon-name="utility:date_input"
                         onclick={handleToggleCreateSprintForm}
                         variant="neutral"
                         class="slds-var-m-right_xx-small"
@@ -286,6 +286,9 @@
                                 class="sprint-header-row slds-grid slds-grid_vertical-align-center"
                                 data-sprint-id={section.sprintId}
                                 onclick={handleSprintHeaderClick}
+                                ondragover={handleSectionHeaderDragOver}
+                                ondragleave={handleSectionHeaderDragLeave}
+                                ondrop={handleSectionHeaderDrop}
                             >
                                 <div
                                     class="sprint-header__chevron"
@@ -312,6 +315,43 @@
                                             {section.goal}</span
                                         >
                                     </template>
+                                </div>
+                                <div
+                                    class="sprint-header__stats slds-text-body_small"
+                                >
+                                    {section.cardCount}
+                                    cards &bull;
+                                    {section.totalPoints}
+                                    pts
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Backlog Section Header -->
+                        <template
+                            lwc:if={section.isBacklogSection}
+                        >
+                            <div
+                                class="sprint-header-row backlog-header-row slds-grid slds-grid_vertical-align-center"
+                                data-sprint-id="ungrouped"
+                                onclick={handleSprintHeaderClick}
+                                ondragover={handleSectionHeaderDragOver}
+                                ondragleave={handleSectionHeaderDragLeave}
+                                ondrop={handleSectionHeaderDrop}
+                            >
+                                <div
+                                    class="sprint-header__chevron"
+                                >
+                                    <lightning-icon
+                                        icon-name={section.chevronIcon}
+                                        size="xx-small"
+                                        alternative-text="Toggle"
+                                    ></lightning-icon>
+                                </div>
+                                <div
+                                    class="sprint-header__label"
+                                >
+                                    <strong>Backlog</strong>
                                 </div>
                                 <div
                                     class="sprint-header__stats slds-text-body_small"

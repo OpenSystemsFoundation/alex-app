@@ -31,8 +31,12 @@ export const loadBoardData = (boardId) => {
         try {
             const data = await getBoardData({ boardId });
 
-            // Dispatch board update
-            dispatch(setBoard(data.board));
+            // Attach custom field configs to board object for LWC access
+            const boardWithConfigs = {
+                ...data.board,
+                customFieldConfigs: data.customFieldConfigs || []
+            };
+            dispatch(setBoard(boardWithConfigs));
 
             // Cache icon map for all future enrichment calls
             setCardTypeIconMap(data.cardTypeIcons || null);

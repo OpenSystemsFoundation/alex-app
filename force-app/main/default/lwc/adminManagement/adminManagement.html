@@ -8,9 +8,14 @@
                     size="medium"
                 ></lightning-icon>
                 <div class="header-text">
-                    <h1 class="slds-text-heading_large">Admin Management</h1>
-                    <p class="slds-text-body_regular slds-text-color_weak">
-                        Configure boards, columns, and app settings
+                    <h1 class="slds-text-heading_large">
+                        Admin Management
+                    </h1>
+                    <p
+                        class="slds-text-body_regular slds-text-color_weak"
+                    >
+                        Configure boards, columns, and app
+                        settings
                     </p>
                 </div>
             </div>
@@ -30,7 +35,8 @@
                     </div>
                     <div class="onboarding-content">
                         <p class="slds-m-bottom_medium">
-                            Complete these steps to set up your workspace:
+                            Complete these steps to set up
+                            your workspace:
                         </p>
                         <lightning-progress-indicator
                             current-step={onboardingCurrentStep}
@@ -50,8 +56,12 @@
                                 value="users"
                             ></lightning-progress-step>
                         </lightning-progress-indicator>
-                        <div class="onboarding-actions slds-m-top_medium">
-                            <template lwc:if={showCreateFirstBoard}>
+                        <div
+                            class="onboarding-actions slds-m-top_medium"
+                        >
+                            <template
+                                lwc:if={showCreateFirstBoard}
+                            >
                                 <lightning-button
                                     variant="brand"
                                     label="Create Your First Board"
@@ -59,18 +69,33 @@
                                     icon-name="utility:add"
                                 ></lightning-button>
                             </template>
-                            <template lwc:if={showSetupColumns}>
-                                <p class="slds-text-body_regular slds-m-bottom_small">
-                                    Select a board below to configure its
-                                    columns.
+                            <template
+                                lwc:if={showSetupColumns}
+                            >
+                                <p
+                                    class="slds-text-body_regular slds-m-bottom_small"
+                                >
+                                    Select a board below to
+                                    configure its columns.
                                 </p>
                             </template>
-                            <template lwc:if={showAssignUsers}>
-                                <p class="slds-text-body_regular">
+                            <template
+                                lwc:if={showAssignUsers}
+                            >
+                                <p
+                                    class="slds-text-body_regular"
+                                >
                                     Assign the
-                                    <strong>Alex Admin</strong> or
-                                    <strong>Alex User</strong> permission sets
-                                    to your team members in Salesforce Setup.
+                                    <strong
+                                        >Alex Admin</strong
+                                    >
+                                    or
+                                    <strong
+                                        >Alex User</strong
+                                    >
+                                    permission sets to your
+                                    team members in
+                                    Salesforce Setup.
                                 </p>
                             </template>
                         </div>
@@ -91,7 +116,11 @@
                     <!-- Boards Section -->
                     <div class="section-content">
                         <div class="section-header">
-                            <h2 class="slds-text-heading_medium">Boards</h2>
+                            <h2
+                                class="slds-text-heading_medium"
+                            >
+                                Boards
+                            </h2>
                             <lightning-button
                                 variant="brand"
                                 label="New Board"
@@ -113,9 +142,14 @@
                                     for:each={boards}
                                     for:item="board"
                                 >
-                                    <div key={board.Id} class="board-card">
+                                    <div
+                                        key={board.Id}
+                                        class="board-card"
+                                    >
                                         <lightning-card>
-                                            <div slot="title">
+                                            <div
+                                                slot="title"
+                                            >
                                                 <span
                                                     class="board-name"
                                                     >{board.Name}</span
@@ -157,22 +191,30 @@
                                                     icon-name="utility:delete"
                                                 ></lightning-menu-item>
                                             </lightning-button-menu>
-                                            <div class="board-details">
+                                            <div
+                                                class="board-details"
+                                            >
                                                 <p
                                                     class="board-description"
                                                     lwc:if={board.description}
                                                 >
                                                     {board.description}
                                                 </p>
-                                                <div class="board-meta">
-                                                    <span class="meta-item">
+                                                <div
+                                                    class="board-meta"
+                                                >
+                                                    <span
+                                                        class="meta-item"
+                                                    >
                                                         <lightning-icon
                                                             icon-name="utility:layout"
                                                             size="xx-small"
                                                         ></lightning-icon>
                                                         {board.type}
                                                     </span>
-                                                    <span class="meta-item">
+                                                    <span
+                                                        class="meta-item"
+                                                    >
                                                         <lightning-icon
                                                             icon-name="utility:check"
                                                             size="xx-small"
@@ -204,11 +246,16 @@
                                     icon-name="standard:kanban"
                                     size="large"
                                 ></lightning-icon>
-                                <h3 class="slds-m-top_medium">
+                                <h3
+                                    class="slds-m-top_medium"
+                                >
                                     No Boards Yet
                                 </h3>
-                                <p class="slds-text-color_weak">
-                                    Create your first board to get started.
+                                <p
+                                    class="slds-text-color_weak"
+                                >
+                                    Create your first board
+                                    to get started.
                                 </p>
                                 <lightning-button
                                     variant="brand"
@@ -231,7 +278,9 @@
                     <!-- Column Manager Section -->
                     <div class="section-content">
                         <div class="section-header">
-                            <h2 class="slds-text-heading_medium">
+                            <h2
+                                class="slds-text-heading_medium"
+                            >
                                 Column Manager
                             </h2>
                             <div class="column-controls">
@@ -244,7 +293,9 @@
                                     variant="label-hidden"
                                     class="board-select"
                                 ></lightning-combobox>
-                                <template lwc:if={selectedBoardId}>
+                                <template
+                                    lwc:if={selectedBoardId}
+                                >
                                     <lightning-button
                                         variant="brand"
                                         label="Add Column"
@@ -266,7 +317,8 @@
                             <p
                                 class="slds-text-body_small slds-text-color_weak slds-m-bottom_small"
                             >
-                                Drag columns to reorder them. Changes are saved
+                                Drag columns to reorder
+                                them. Changes are saved
                                 automatically.
                             </p>
                             <div
@@ -288,7 +340,9 @@
                                         ondragend={handleColumnDragEnd}
                                         ondragenter={handleColumnDragEnter}
                                     >
-                                        <div class="column-drag-handle">
+                                        <div
+                                            class="column-drag-handle"
+                                        >
                                             <lightning-icon
                                                 icon-name="utility:drag_and_drop"
                                                 size="x-small"
@@ -299,8 +353,11 @@
                                             class="column-color-indicator"
                                             style={column.colorStyle}
                                         ></div>
-                                        <div class="column-info">
-                                            <span class="column-header-text"
+                                        <div
+                                            class="column-info"
+                                        >
+                                            <span
+                                                class="column-header-text"
                                                 >{column.columnHeader}</span
                                             >
                                             <span
@@ -309,12 +366,16 @@
                                                 >{column.category}</span
                                             >
                                         </div>
-                                        <div class="column-card-count">
+                                        <div
+                                            class="column-card-count"
+                                        >
                                             <lightning-badge
                                                 label={column.cardCountLabel}
                                             ></lightning-badge>
                                         </div>
-                                        <div class="column-actions">
+                                        <div
+                                            class="column-actions"
+                                        >
                                             <lightning-button-icon
                                                 icon-name="utility:edit"
                                                 alternative-text="Edit column"
@@ -337,17 +398,24 @@
                             </div>
                         </template>
 
-                        <template lwc:if={showNoColumnsMessage}>
+                        <template
+                            lwc:if={showNoColumnsMessage}
+                        >
                             <div class="empty-state">
                                 <lightning-icon
                                     icon-name="standard:column"
                                     size="large"
                                 ></lightning-icon>
-                                <h3 class="slds-m-top_medium">
+                                <h3
+                                    class="slds-m-top_medium"
+                                >
                                     No Columns Yet
                                 </h3>
-                                <p class="slds-text-color_weak">
-                                    Add columns to organize your board.
+                                <p
+                                    class="slds-text-color_weak"
+                                >
+                                    Add columns to organize
+                                    your board.
                                 </p>
                                 <lightning-button
                                     variant="brand"
@@ -359,18 +427,25 @@
                             </div>
                         </template>
 
-                        <template lwc:if={showSelectBoardMessage}>
+                        <template
+                            lwc:if={showSelectBoardMessage}
+                        >
                             <div class="empty-state">
                                 <lightning-icon
                                     icon-name="utility:info"
                                     size="large"
                                 ></lightning-icon>
-                                <h3 class="slds-m-top_medium">
+                                <h3
+                                    class="slds-m-top_medium"
+                                >
                                     Select a Board
                                 </h3>
-                                <p class="slds-text-color_weak">
-                                    Choose a board from the dropdown above to
-                                    manage its columns.
+                                <p
+                                    class="slds-text-color_weak"
+                                >
+                                    Choose a board from the
+                                    dropdown above to manage
+                                    its columns.
                                 </p>
                             </div>
                         </template>
@@ -385,54 +460,92 @@
                 >
                     <!-- Settings Section -->
                     <div class="section-content">
-                        <h2 class="slds-text-heading_medium slds-m-bottom_medium">
+                        <h2
+                            class="slds-text-heading_medium slds-m-bottom_medium"
+                        >
                             Global Settings
                         </h2>
 
-                        <lightning-card title="Permission Sets">
+                        <lightning-card
+                            title="Permission Sets"
+                        >
                             <div class="settings-section">
-                                <p class="slds-text-body_regular slds-m-bottom_small">
-                                    Manage user access by assigning permission
-                                    sets in Salesforce Setup.
+                                <p
+                                    class="slds-text-body_regular slds-m-bottom_small"
+                                >
+                                    Manage user access by
+                                    assigning permission
+                                    sets in Salesforce
+                                    Setup.
                                 </p>
-                                <div class="permission-sets-list">
-                                    <div class="permission-set-item">
+                                <div
+                                    class="permission-sets-list"
+                                >
+                                    <div
+                                        class="permission-set-item"
+                                    >
                                         <lightning-icon
                                             icon-name="utility:shield"
                                             size="small"
                                         ></lightning-icon>
                                         <div>
-                                            <strong>Alex Admin</strong>
-                                            <p class="slds-text-color_weak">
-                                                Full access to all objects,
-                                                boards, and admin features.
+                                            <strong
+                                                >Alex
+                                                Admin</strong
+                                            >
+                                            <p
+                                                class="slds-text-color_weak"
+                                            >
+                                                Full access
+                                                to all
+                                                objects,
+                                                boards, and
+                                                admin
+                                                features.
                                             </p>
                                         </div>
                                     </div>
-                                    <div class="permission-set-item">
+                                    <div
+                                        class="permission-set-item"
+                                    >
                                         <lightning-icon
                                             icon-name="utility:user"
                                             size="small"
                                         ></lightning-icon>
                                         <div>
-                                            <strong>Alex User</strong>
-                                            <p class="slds-text-color_weak">
-                                                Standard user access to boards
+                                            <strong
+                                                >Alex
+                                                User</strong
+                                            >
+                                            <p
+                                                class="slds-text-color_weak"
+                                            >
+                                                Standard
+                                                user access
+                                                to boards
                                                 and cards.
                                             </p>
                                         </div>
                                     </div>
-                                    <div class="permission-set-item">
+                                    <div
+                                        class="permission-set-item"
+                                    >
                                         <lightning-icon
                                             icon-name="utility:preview"
                                             size="small"
                                         ></lightning-icon>
                                         <div>
                                             <strong
-                                                >View Hidden Boards</strong
+                                                >View Hidden
+                                                Boards</strong
                                             >
-                                            <p class="slds-text-color_weak">
-                                                Allows viewing boards marked as
+                                            <p
+                                                class="slds-text-color_weak"
+                                            >
+                                                Allows
+                                                viewing
+                                                boards
+                                                marked as
                                                 hidden.
                                             </p>
                                         </div>
@@ -448,10 +561,15 @@
                             <div class="settings-section">
                                 <div class="about-info">
                                     <p>
-                                        <strong>Alex</strong> - Kanban Board
+                                        <strong
+                                            >Alex</strong
+                                        >
+                                        - Kanban Board
                                         Management
                                     </p>
-                                    <p class="slds-text-color_weak">
+                                    <p
+                                        class="slds-text-color_weak"
+                                    >
                                         Namespace: OpenSF
                                     </p>
                                 </div>
@@ -491,7 +609,9 @@
                             {boardModalTitle}
                         </h2>
                     </div>
-                    <div class="slds-modal__content slds-p-around_medium">
+                    <div
+                        class="slds-modal__content slds-p-around_medium"
+                    >
                         <lightning-input
                             label="Board Name"
                             value={boardForm.name}
@@ -540,7 +660,9 @@
                                 class="slds-m-top_small"
                             ></lightning-input>
                         </template>
-                        <template lwc:if={showDefaultColumnsOption}>
+                        <template
+                            lwc:if={showDefaultColumnsOption}
+                        >
                             <lightning-input
                                 type="checkbox"
                                 label="Create with default columns (To Do, In Progress, In Review, Done)"
@@ -565,7 +687,9 @@
                     </div>
                 </div>
             </section>
-            <div class="slds-backdrop slds-backdrop_open"></div>
+            <div
+                class="slds-backdrop slds-backdrop_open"
+            ></div>
         </template>
 
         <!-- Column Create/Edit Modal -->
@@ -597,7 +721,9 @@
                             {columnModalTitle}
                         </h2>
                     </div>
-                    <div class="slds-modal__content slds-p-around_medium">
+                    <div
+                        class="slds-modal__content slds-p-around_medium"
+                    >
                         <lightning-input
                             label="Column Header"
                             value={columnForm.columnHeader}
@@ -637,7 +763,9 @@
                     </div>
                 </div>
             </section>
-            <div class="slds-backdrop slds-backdrop_open"></div>
+            <div
+                class="slds-backdrop slds-backdrop_open"
+            ></div>
         </template>
 
         <!-- Delete Confirmation Modal -->
@@ -661,7 +789,9 @@
                             variant="inverse"
                         ></lightning-icon>
                     </button>
-                    <div class="slds-modal__header slds-theme_error">
+                    <div
+                        class="slds-modal__header slds-theme_error"
+                    >
                         <h2
                             id="delete-modal-heading"
                             class="slds-modal__title slds-hyphenate"
@@ -669,7 +799,9 @@
                             Confirm Delete
                         </h2>
                     </div>
-                    <div class="slds-modal__content slds-p-around_medium">
+                    <div
+                        class="slds-modal__content slds-p-around_medium"
+                    >
                         <p>{deleteMessage}</p>
                     </div>
                     <div class="slds-modal__footer">
@@ -687,7 +819,9 @@
                     </div>
                 </div>
             </section>
-            <div class="slds-backdrop slds-backdrop_open"></div>
+            <div
+                class="slds-backdrop slds-backdrop_open"
+            ></div>
         </template>
     </div>
 </template>

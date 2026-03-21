@@ -442,6 +442,8 @@ public with sharing class KanbanBoardController {
         public List<KanbanBoardDTO.CardDTO> cards;
         @AuraEnabled
         public Map<String, String> cardTypeIcons;
+        @AuraEnabled
+        public List<KanbanBoardDTO.CardCustomFieldDTO> customFieldConfigs;
     }
 
     public class CardMoveResult {

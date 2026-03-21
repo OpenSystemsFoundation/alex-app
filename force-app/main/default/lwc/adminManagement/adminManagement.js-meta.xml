@@ -3,7 +3,8 @@
     <apiVersion>64.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>Admin Management</masterLabel>
-    <description>Admin management page for configuring boards, columns, and app settings</description>
+    <description
+    >Admin management page for configuring boards, columns, and app settings</description>
     <targets>
         <target>lightning__AppPage</target>
     </targets>

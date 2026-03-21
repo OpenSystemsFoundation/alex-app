@@ -171,9 +171,58 @@
             </div>
 
             <div class="kanban-board-container slds-grid">
+                <!-- Mobile Column Selector -->
+                <div class="mobile-column-selector">
+                    <button
+                        class="mobile-nav-btn"
+                        onclick={handleMobilePrevColumn}
+                        disabled={isMobileFirstColumn}
+                    >
+                        <lightning-icon
+                            icon-name="utility:chevronleft"
+                            size="xx-small"
+                            alternative-text="Previous"
+                        ></lightning-icon>
+                    </button>
+                    <select
+                        class="mobile-column-select"
+                        onchange={handleMobileColumnChange}
+                        value={mobileActiveColumnId}
+                    >
+                        <template
+                            for:each={filteredColumns}
+                            for:item="col"
+                        >
+                            <option
+                                key={col.Id}
+                                value={col.Id}
+                            >
+                                {col.columnHeader}
+                                ({col.cardCount})
+                            </option>
+                        </template>
+                    </select>
+                    <button
+                        class="mobile-nav-btn"
+                        onclick={handleMobileNextColumn}
+                        disabled={isMobileLastColumn}
+                    >
+                        <lightning-icon
+                            icon-name="utility:chevronright"
+                            size="xx-small"
+                            alternative-text="Next"
+                        ></lightning-icon>
+                    </button>
+                    <span class="mobile-column-counter"
+                        >{mobileColumnCounter}</span
+                    >
+                </div>
+
                 <!-- Kanban Board -->
                 <div
                     class="kanban-board slds-grid slds-scrollable_x"
+                    ontouchstart={handleTouchStart}
+                    ontouchend={handleTouchEnd}
                 >
                     <template lwc:if={hasColumns}>
                         <template
@@ -183,7 +232,7 @@
                             <!-- Kanban Column -->
                             <div
                                 key={column.Id}
-                                class="kanban-column slds-col slds-size_1-of-1@mobile slds-grid slds-grid_vertical"
+                                class={column.mobileColumnClass}
                                 data-column-id={column.Id}
                                 style={column.columnStyle}
                             >
@@ -372,6 +421,32 @@
                                                         >
                                                             {card.subject}
                                                         </p>
+                                                    </template>
+
+                                                    <!-- Custom Fields -->
+                                                    <template
+                                                        lwc:if={card.hasCustomFields}
+                                                    >
+                                                        <div
+                                                            class="kanban-card__custom-fields"
+                                                        >
+                                                            <template
+                                                                for:each={card.customFieldEntries}
+                                                                for:item="cf"
+                                                            >
+                                                                <span
+                                                                    key={cf.key}
+                                                                    class="custom-field-pill"
+                                                                    title={cf.label}
+                                                                >
+                                                                    <span
+                                                                        class="custom-field-label"
+                                                                        >{cf.label}:</span
+                                                                    >
+                                                                    {cf.value}
+                                                                </span>
+                                                            </template>
+                                                        </div>
                                                     </template>
 
                                                     <!-- Card Icons -->

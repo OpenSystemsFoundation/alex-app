@@ -168,11 +168,7 @@ private class AdminControllerTest {
         );
         Test.stopTest();
 
-        System.assertNotEquals(
-            null,
-            result.position,
-            'Position should be set'
-        );
+        System.assertNotEquals(null, result.position, 'Position should be set');
     }
 
     @isTest

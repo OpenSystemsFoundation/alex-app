@@ -132,6 +132,8 @@ public with sharing class KanbanBoardDTO {
         public Decimal sequenceNumber;
         @AuraEnabled
         public Boolean needsRefinement;
+        @AuraEnabled
+        public Map<String, Object> customFields;
 
         public CardDTO(OpenSF__Card__c card) {
             this.Id = card.Id;
@@ -314,6 +316,29 @@ public with sharing class KanbanBoardDTO {
             this.completedPoints = snap.OpenSF__CompletedPoints__c;
             this.cardCount = snap.OpenSF__CardCount__c;
             this.completedCardCount = snap.OpenSF__CompletedCardCount__c;
+        }
+    }
+
+    /**
+     * Card Custom Field configuration DTO
+     */
+    public class CardCustomFieldDTO {
+        @AuraEnabled
+        public String fieldApiName;
+        @AuraEnabled
+        public String displayLabel;
+        @AuraEnabled
+        public String fieldType;
+        @AuraEnabled
+        public Decimal sortOrder;
+
+        public CardCustomFieldDTO(OpenSF__CardCustomField__mdt field) {
+            this.fieldApiName = field.OpenSF__FieldApiName__c;
+            this.displayLabel = String.isNotBlank(field.OpenSF__DisplayLabel__c)
+                ? field.OpenSF__DisplayLabel__c
+                : field.OpenSF__FieldApiName__c.replace('__c', '');
+            this.fieldType = field.OpenSF__FieldType__c;
+            this.sortOrder = field.OpenSF__SortOrder__c;
         }
     }
 

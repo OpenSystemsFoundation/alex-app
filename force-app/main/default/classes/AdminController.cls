@@ -182,10 +182,7 @@ public with sharing class AdminController {
         String nextPosition
     ) {
         try {
-            String position = LexoRank.between(
-                previousPosition,
-                nextPosition
-            );
+            String position = LexoRank.between(previousPosition, nextPosition);
 
             OpenSF__Column__c column = new OpenSF__Column__c(
                 OpenSF__Board__c = boardId,
@@ -400,10 +397,7 @@ public with sharing class AdminController {
                 position = newPosition;
             }
 
-            insert Security.stripInaccessible(
-                    AccessType.CREATABLE,
-                    columns
-                )
+            insert Security.stripInaccessible(AccessType.CREATABLE, columns)
                 .getRecords();
 
             // Re-query board

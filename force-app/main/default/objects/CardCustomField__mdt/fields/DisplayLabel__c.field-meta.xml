@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DisplayLabel__c</fullName>
+    <deprecated>false</deprecated>
+    <description
+    >Label to show on the card. If blank, the field label is used.</description>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <inlineHelpText>Custom label to display on cards (optional)</inlineHelpText>
+    <label>Display Label</label>
+    <length>100</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
