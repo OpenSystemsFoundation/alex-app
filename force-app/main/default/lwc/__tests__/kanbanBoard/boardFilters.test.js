@@ -2,7 +2,7 @@
  * Tests for board filter/search and other uncovered branches from merge.
  * Uses DOM event dispatch to trigger handlers (LWC methods are not public).
  */
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 import KanbanBoard from 'c/kanbanBoard';
 
 // Mock Apex

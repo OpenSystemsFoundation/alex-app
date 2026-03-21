@@ -1,4 +1,4 @@
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 
 // Mock the store module before importing components
 jest.mock('c/kanbanStore', () => {

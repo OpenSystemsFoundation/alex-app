@@ -2,7 +2,7 @@
  * Additional branch coverage for kanbanBoard.js — targets specific uncovered
  * branches in filter getters, event handlers, and helper initializers.
  */
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 import KanbanBoard from 'c/kanbanBoard';
 
 jest.mock(

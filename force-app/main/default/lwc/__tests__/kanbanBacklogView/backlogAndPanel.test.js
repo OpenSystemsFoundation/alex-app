@@ -1,4 +1,4 @@
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 
 // ─── Mock: c/kanbanStore ────────────────────────────────────────────
 jest.mock('c/kanbanStore', () => ({

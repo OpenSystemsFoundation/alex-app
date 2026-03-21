@@ -2,7 +2,7 @@
  * Targeted tests for uncovered handler functions and getters in kanbanBoard.js.
  * Covers: backlog handlers, panel navigate, drag handlers, tab getters, boardName.
  */
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 import KanbanBoard from 'c/kanbanBoard';
 
 jest.mock(
