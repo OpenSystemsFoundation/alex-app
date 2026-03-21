@@ -96,9 +96,8 @@ test.describe('Backlog View', () => {
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.switchToBacklogTab();
 
-        // "New Card" is a lightning-button with label="New Card" in the backlog toolbar
         const newCardButton = boardPage.page.locator(
-            'lightning-button[label="New Card"]'
+            'button:has-text("New Card")'
         );
         await expect(newCardButton).toBeVisible({ timeout: SF_TIMEOUT });
     });
