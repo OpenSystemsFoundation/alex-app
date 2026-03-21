@@ -9,6 +9,8 @@ module.exports = defineConfig({
     timeout: 120_000,
     retries: 1,
     globalSetup: './e2e/global-setup.js',
+    snapshotPathTemplate:
+        '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}{ext}',
     use: {
         headless: true,
         screenshot: 'only-on-failure',

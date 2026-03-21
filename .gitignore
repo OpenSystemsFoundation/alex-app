@@ -87,3 +87,4 @@ playwright/.cache/
 trace.zip
 apex-test-results.json
 e2e/.auth/
+e2e/specs/*-snapshots/
