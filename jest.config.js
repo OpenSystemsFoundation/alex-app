@@ -16,12 +16,7 @@ module.exports = {
     collectCoverageFrom: [
         'force-app/main/default/lwc/**/*.js',
         '!force-app/main/default/lwc/__tests__/**',
-        '!force-app/main/default/lwc/**/*.test.js',
-        // TODO: Add tests for these newly merged components
-        '!force-app/main/default/lwc/planningPoker/**',
-        '!force-app/main/default/lwc/retroBoard/**',
-        '!force-app/main/default/lwc/kanbanAnalytics/**',
-        '!force-app/main/default/lwc/kanbanCumulativeFlowDiagram/**'
+        '!force-app/main/default/lwc/**/*.test.js'
     ],
     coverageThreshold: {
         global: {
