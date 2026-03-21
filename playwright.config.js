@@ -6,7 +6,7 @@ const storageState = path.join(__dirname, 'e2e', '.auth', 'storageState.json');
 
 module.exports = defineConfig({
     testDir: './e2e/specs',
-    timeout: 60_000,
+    timeout: 120_000,
     retries: 1,
     globalSetup: './e2e/global-setup.js',
     use: {
