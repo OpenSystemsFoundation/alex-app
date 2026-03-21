@@ -121,6 +121,7 @@ public with sharing class SprintSelector {
                 OpenSF__Card__r.OpenSF__Locked__c,
                 OpenSF__Card__r.OpenSF__NeedsRefinement__c,
                 OpenSF__Card__r.OpenSF__SequenceNumber__c,
+                OpenSF__Card__r.OpenSF__DoneDate__c,
                 OpenSF__Card__r.LastModifiedDate,
                 OpenSF__Card__r.LastModifiedById
             FROM OpenSF__SprintCard__c
@@ -178,6 +179,7 @@ public with sharing class SprintSelector {
                 OpenSF__Locked__c,
                 OpenSF__NeedsRefinement__c,
                 OpenSF__SequenceNumber__c,
+                OpenSF__DoneDate__c,
                 LastModifiedDate,
                 LastModifiedById
             FROM OpenSF__Card__c

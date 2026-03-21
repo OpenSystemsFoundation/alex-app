@@ -52,18 +52,30 @@ List<String> categories = new List<String>{
     'Review',
     'Done'
 };
+List<String> colors = new List<String>{
+    '#747474',
+    '#1B96FF',
+    '#F39C12',
+    '#9B59B6',
+    '#06A59A',
+    '#2ECC71'
+};
+List<Integer> wipLimits = new List<Integer>{ null, 5, 3, 3, 2, null };
 
 List<OpenSF__Column__c> columns = new List<OpenSF__Column__c>();
 for (Integer i = 0; i < headers.size(); i++) {
-    columns.add(
-        new OpenSF__Column__c(
-            OpenSF__Board__c = board.Id,
-            OpenSF__ColumnHeader__c = headers[i],
-            OpenSF__Status__c = colStatuses[i],
-            OpenSF__Category__c = categories[i],
-            OpenSF__LexoRankPosition__c = generateLexorank(i, headers.size())
-        )
+    OpenSF__Column__c col = new OpenSF__Column__c(
+        OpenSF__Board__c = board.Id,
+        OpenSF__ColumnHeader__c = headers[i],
+        OpenSF__Status__c = colStatuses[i],
+        OpenSF__Category__c = categories[i],
+        OpenSF__Color__c = colors[i],
+        OpenSF__LexoRankPosition__c = generateLexorank(i, headers.size())
     );
+    if (wipLimits[i] != null) {
+        col.OpenSF__WipLimit__c = wipLimits[i];
+    }
+    columns.add(col);
 }
 insert columns;
 

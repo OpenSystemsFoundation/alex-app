@@ -4,7 +4,7 @@ private class RetrospectiveControllerTest {
     static void setup() {
         OpenSF__Board__c board = new OpenSF__Board__c(
             OpenSF__Active__c = true,
-            OpenSF__Status__c = 'Active',
+            OpenSF__Status__c = 'Published',
             OpenSF__Description__c = 'Test Board'
         );
         insert board;
