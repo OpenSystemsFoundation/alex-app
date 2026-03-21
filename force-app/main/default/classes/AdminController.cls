@@ -191,8 +191,7 @@ public with sharing class AdminController {
                 OpenSF__ColumnHeader__c = columnHeader,
                 OpenSF__Category__c = category,
                 OpenSF__Color__c = color,
-                OpenSF__LexoRankPosition__c = position,
-                OpenSF__Status__c = 'Active'
+                OpenSF__LexoRankPosition__c = position
             );
 
             List<OpenSF__Column__c> colsToInsert = Security.stripInaccessible(
@@ -248,6 +247,10 @@ public with sharing class AdminController {
                     new List<OpenSF__Column__c>{ column }
                 )
                 .getRecords();
+            // Re-apply Id field (stripped by Security.stripInaccessible)
+            for (OpenSF__Column__c c : colsToUpdate) {
+                c.Id = columnId;
+            }
             update colsToUpdate;
 
             OpenSF__Column__c updated = KanbanBoardSelector.getColumnById(
@@ -391,6 +394,12 @@ public with sharing class AdminController {
                 'In Progress',
                 'Done'
             };
+            List<String> statuses = new List<String>{
+                'To Do',
+                'In Progress',
+                'Review',
+                'Done'
+            };
 
             String position = null;
             for (Integer i = 0; i < headers.size(); i++) {
@@ -401,7 +410,7 @@ public with sharing class AdminController {
                         OpenSF__ColumnHeader__c = headers[i],
                         OpenSF__Category__c = categories[i],
                         OpenSF__LexoRankPosition__c = newPosition,
-                        OpenSF__Status__c = 'Active'
+                        OpenSF__Status__c = statuses[i]
                     )
                 );
                 position = newPosition;

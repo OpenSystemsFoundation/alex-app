@@ -94,7 +94,7 @@ private class AdminControllerTest {
             board.Id,
             'New Column',
             'To Do',
-            '#FF0000',
+            '#EA001E',
             null,
             null
         );
@@ -115,7 +115,7 @@ private class AdminControllerTest {
 
         Map<String, Object> updates = new Map<String, Object>{
             'columnHeader' => 'Updated Header',
-            'color' => '#00FF00'
+            'color' => '#2E844A'
         };
 
         Test.startTest();
