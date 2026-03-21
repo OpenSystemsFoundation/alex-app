@@ -95,7 +95,9 @@ jest.mock('c/kanbanStore', () => ({
         getSprintCards: jest.fn(() => []),
         isBacklogSyncing: jest.fn(() => false),
         getBacklogCards: jest.fn((s) => s.backlogCards || []),
-        getSelectedBacklogCards: jest.fn((s) => s.selectedBacklogCards || [])
+        getSelectedBacklogCards: jest.fn((s) => s.selectedBacklogCards || []),
+        getPlanningSprints: jest.fn(() => []),
+        getPlanningSprintCards: jest.fn(() => [])
     }
 }));
 

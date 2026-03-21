@@ -151,9 +151,7 @@ export default class KanbanBacklogView extends LightningElement {
         // Sprint sections (at top)
         for (const sprint of this.planningSprints) {
             const sprintCardIds = sprintCardMap.get(sprint.Id) || new Set();
-            const sprintCards = allCards.filter((c) =>
-                sprintCardIds.has(c.Id)
-            );
+            const sprintCards = allCards.filter((c) => sprintCardIds.has(c.Id));
             sprintCards.forEach((c) => cardsInSprints.add(c.Id));
 
             const isCollapsed = !!this._collapsedSprints[sprint.Id];
@@ -665,8 +663,7 @@ export default class KanbanBacklogView extends LightningElement {
         for (const sprint of this.planningSprints) {
             if (sprint.Id === cardSprintId) continue;
             sprintSubmenu.push({
-                label:
-                    sprint.Name || `Sprint ${sprint.sprintNumber || ''}`,
+                label: sprint.Name || `Sprint ${sprint.sprintNumber || ''}`,
                 value: sprint.Id
             });
         }
@@ -750,11 +747,7 @@ export default class KanbanBacklogView extends LightningElement {
             }
             case 'moveToSprint':
                 if (subValue) {
-                    await this._handleMoveToSprint(
-                        cardId,
-                        sprintId,
-                        subValue
-                    );
+                    await this._handleMoveToSprint(cardId, sprintId, subValue);
                 }
                 break;
             case 'removeFromSprint':

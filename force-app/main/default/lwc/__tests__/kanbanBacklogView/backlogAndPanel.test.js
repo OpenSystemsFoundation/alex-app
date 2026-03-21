@@ -10,7 +10,9 @@ jest.mock('c/kanbanStore', () => ({
         getActiveSprint: jest.fn(() => null),
         isSprintBoard: jest.fn(() => false),
         getBoardId: jest.fn(() => 'board1'),
-        isBacklogSyncing: jest.fn(() => false)
+        isBacklogSyncing: jest.fn(() => false),
+        getPlanningSprints: jest.fn(() => []),
+        getPlanningSprintCards: jest.fn(() => [])
     },
     setSelectedBacklogCards: jest.fn((ids) => ({
         type: 'SET_SELECTED',
@@ -1206,7 +1208,7 @@ describe('c-kanban-backlog-view', () => {
 
         it('handleContextMenuSelect moveBottom dispatches reorder to last', async () => {
             mockSelectors.getBacklogCards.mockReturnValue(SAMPLE_CARDS);
-            createBacklogView();
+            createBacklogView({ backlogCards: SAMPLE_CARDS });
             await flushPromises();
 
             const row = element.shadowRoot.querySelector(
@@ -1327,7 +1329,10 @@ describe('c-kanban-backlog-view', () => {
             );
             contextMenu.dispatchEvent(
                 new CustomEvent('select', {
-                    detail: { value: 'moveToSprint' }
+                    detail: {
+                        value: 'moveToSprint',
+                        subValue: 'active:sprint1'
+                    }
                 })
             );
             await flushPromises();

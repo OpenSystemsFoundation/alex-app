@@ -129,7 +129,9 @@
             <div
                 class="backlog-view__create-form slds-grid slds-grid_vertical-align-center slds-gutters_xx-small slds-var-p-horizontal_small slds-var-p-vertical_x-small"
             >
-                <div class="slds-col slds-no-flex slds-var-m-right_x-small">
+                <div
+                    class="slds-col slds-no-flex slds-var-m-right_x-small"
+                >
                     <lightning-icon
                         icon-name="utility:sprint"
                         size="x-small"
@@ -272,7 +274,10 @@
                     for:each={backlogSections}
                     for:item="section"
                 >
-                    <div key={section.key} class="backlog-section">
+                    <div
+                        key={section.key}
+                        class="backlog-section"
+                    >
                         <!-- Sprint Section Header -->
                         <template
                             lwc:if={section.isSprintSection}
@@ -470,7 +475,9 @@
                                             <template
                                                 lwc:else
                                             >
-                                                <em>null</em>
+                                                <em
+                                                    >null</em
+                                                >
                                             </template>
                                         </div>
                                     </template>
