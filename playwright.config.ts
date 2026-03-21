@@ -7,7 +7,7 @@ export default defineConfig({
     testDir: './e2e/specs',
     timeout: 120_000,
     retries: 1,
-    workers: process.env.CI ? 4 : undefined,
+    workers: process.env.CI ? 2 : undefined,
     fullyParallel: true,
     globalSetup: './e2e/global-setup.ts',
     snapshotPathTemplate:
