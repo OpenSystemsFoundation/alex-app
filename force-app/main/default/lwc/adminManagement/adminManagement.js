@@ -11,6 +11,10 @@ import updateColumn from '@salesforce/apex/AdminController.updateColumn';
 import deleteColumn from '@salesforce/apex/AdminController.deleteColumn';
 import reorderColumn from '@salesforce/apex/AdminController.reorderColumn';
 import getOnboardingStatus from '@salesforce/apex/AdminController.getOnboardingStatus';
+import getCardCustomFields from '@salesforce/apex/AdminController.getCardCustomFields';
+import saveCardCustomField from '@salesforce/apex/AdminController.saveCardCustomField';
+import deactivateCardCustomField from '@salesforce/apex/AdminController.deactivateCardCustomField';
+import getAvailableCardFields from '@salesforce/apex/AdminController.getAvailableCardFields';
 
 const BOARD_TYPE_OPTIONS = [
     { label: 'Project', value: 'Project' },
@@ -28,12 +32,31 @@ const COLUMN_CATEGORY_OPTIONS = [
     { label: 'Released', value: 'Released' }
 ];
 
+const FIELD_TYPE_OPTIONS = [
+    { label: 'Text', value: 'Text' },
+    { label: 'Number', value: 'Number' },
+    { label: 'Date', value: 'Date' },
+    { label: 'Checkbox', value: 'Checkbox' },
+    { label: 'Picklist', value: 'Picklist' },
+    { label: 'Currency', value: 'Currency' },
+    { label: 'Percent', value: 'Percent' },
+    { label: 'URL', value: 'Url' }
+];
+
 export default class AdminManagement extends LightningElement {
     @track boards = [];
     @track columns = [];
     @track onboardingStatus = {};
     @track boardForm = {};
     @track columnForm = {};
+
+    // Card custom fields state
+    @track cardFields = [];
+    @track availableCardFields = [];
+    @track cardFieldForm = {};
+    isLoadingCardFields = false;
+    showCardFieldModal = false;
+    isEditingCardField = false;
 
     activeTab = 'boards';
     selectedBoardId = '';
@@ -56,6 +79,7 @@ export default class AdminManagement extends LightningElement {
 
     boardTypeOptions = BOARD_TYPE_OPTIONS;
     columnCategoryOptions = COLUMN_CATEGORY_OPTIONS;
+    fieldTypeOptions = FIELD_TYPE_OPTIONS;
 
     connectedCallback() {
         this.loadData();
@@ -168,6 +192,9 @@ export default class AdminManagement extends LightningElement {
 
     handleTabChange(event) {
         this.activeTab = event.target.value;
+        if (this.activeTab === 'cardFields' && this.cardFields.length === 0) {
+            this.loadCardFields();
+        }
     }
 
     // =========================================================================
@@ -545,6 +572,17 @@ export default class AdminManagement extends LightningElement {
                 await deleteColumn({ columnId: this.deleteId });
                 this.showToast('Success', 'Column deleted', 'success');
                 await this.loadColumns();
+            } else if (this.deleteType === 'cardField') {
+                await deactivateCardCustomField({
+                    developerName: this.deleteId
+                });
+                this.showToast(
+                    'Success',
+                    'Card field deactivated. Changes may take a moment to deploy.',
+                    'success'
+                );
+                // eslint-disable-next-line @lwc/lwc/no-async-operation
+                setTimeout(() => this.loadCardFields(), 2000);
             }
             this.showDeleteModal = false;
         } catch (error) {
@@ -552,6 +590,154 @@ export default class AdminManagement extends LightningElement {
         } finally {
             this.isSaving = false;
         }
+    }
+
+    // =========================================================================
+    // Card Custom Field Operations
+    // =========================================================================
+
+    get hasCardFields() {
+        return !this.isLoadingCardFields && this.cardFields.length > 0;
+    }
+
+    get noCardFields() {
+        return !this.isLoadingCardFields && this.cardFields.length === 0;
+    }
+
+    get cardFieldModalTitle() {
+        return this.isEditingCardField ? 'Edit Card Field' : 'New Card Field';
+    }
+
+    get cardFieldModalSaveLabel() {
+        return this.isEditingCardField ? 'Save' : 'Create';
+    }
+
+    get cardFieldOptions() {
+        return this.availableCardFields.map((f) => ({
+            label: `${f.label} (${f.apiName})`,
+            value: f.apiName
+        }));
+    }
+
+    async loadCardFields() {
+        this.isLoadingCardFields = true;
+        try {
+            const [fields, available] = await Promise.all([
+                getCardCustomFields(),
+                getAvailableCardFields()
+            ]);
+            this.cardFields = fields.map((f) => ({
+                ...f,
+                statusLabel: f.active ? 'Active' : 'Inactive',
+                statusClass: f.active ? 'slds-badge badge-active' : 'slds-badge'
+            }));
+            this.availableCardFields = available;
+        } catch (error) {
+            this.showError('Error loading card fields', error);
+        } finally {
+            this.isLoadingCardFields = false;
+        }
+    }
+
+    handleNewCardField() {
+        this.isEditingCardField = false;
+        this.cardFieldForm = {
+            fieldApiName: '',
+            displayLabel: '',
+            fieldType: 'Text',
+            sortOrder: (this.cardFields.length + 1) * 10,
+            active: true
+        };
+        this.showCardFieldModal = true;
+    }
+
+    handleEditCardField(event) {
+        const devName = event.currentTarget.dataset.developerName;
+        const field = this.cardFields.find((f) => f.developerName === devName);
+        this.isEditingCardField = true;
+        this.cardFieldForm = {
+            developerName: field.developerName,
+            fieldApiName: field.fieldApiName,
+            displayLabel: field.displayLabel,
+            fieldType: field.fieldType,
+            sortOrder: field.sortOrder,
+            active: field.active
+        };
+        this.showCardFieldModal = true;
+    }
+
+    handleCardFieldFormChange(event) {
+        const field = event.target.dataset.field;
+        if (field === 'active') {
+            this.cardFieldForm = {
+                ...this.cardFieldForm,
+                [field]: event.target.checked
+            };
+        } else {
+            this.cardFieldForm = {
+                ...this.cardFieldForm,
+                [field]: event.detail?.value ?? event.target.value
+            };
+        }
+    }
+
+    handleCloseCardFieldModal() {
+        this.showCardFieldModal = false;
+    }
+
+    async handleSaveCardField() {
+        if (!this.cardFieldForm.fieldApiName) {
+            this.showToast('Error', 'Field API name is required', 'error');
+            return;
+        }
+
+        this.isSaving = true;
+        try {
+            // Generate developer name from field API name if creating new
+            const devName =
+                this.cardFieldForm.developerName ||
+                this.cardFieldForm.fieldApiName
+                    .replace('__c', '')
+                    .replace(/[^a-zA-Z0-9_]/g, '_');
+
+            await saveCardCustomField({
+                fieldConfig: {
+                    developerName: devName,
+                    masterLabel:
+                        this.cardFieldForm.displayLabel ||
+                        this.cardFieldForm.fieldApiName.replace('__c', ''),
+                    fieldApiName: this.cardFieldForm.fieldApiName,
+                    displayLabel: this.cardFieldForm.displayLabel,
+                    fieldType: this.cardFieldForm.fieldType,
+                    sortOrder: this.cardFieldForm.sortOrder,
+                    active: this.cardFieldForm.active
+                }
+            });
+
+            this.showToast(
+                'Success',
+                'Card field configuration saved. It may take a moment to deploy.',
+                'success'
+            );
+            this.showCardFieldModal = false;
+            // Reload after a short delay to allow metadata deployment
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            setTimeout(() => this.loadCardFields(), 2000);
+        } catch (error) {
+            this.showError('Error saving card field', error);
+        } finally {
+            this.isSaving = false;
+        }
+    }
+
+    async handleDeactivateCardField(event) {
+        const devName = event.currentTarget.dataset.developerName;
+        const field = this.cardFields.find((f) => f.developerName === devName);
+
+        this.deleteType = 'cardField';
+        this.deleteId = devName;
+        this.deleteMessage = `Are you sure you want to deactivate the card field "${field.displayLabel}"? It will no longer appear on cards.`;
+        this.showDeleteModal = true;
     }
 
     // =========================================================================

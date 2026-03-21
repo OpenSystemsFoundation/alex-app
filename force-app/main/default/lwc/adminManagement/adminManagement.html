@@ -453,6 +453,136 @@
                 </lightning-tab>
 
                 <lightning-tab
+                    label="Card Fields"
+                    value="cardFields"
+                    icon-name="standard:custom"
+                    onactive={handleTabChange}
+                >
+                    <!-- Card Fields Section -->
+                    <div class="section-content">
+                        <div class="section-header">
+                            <h2
+                                class="slds-text-heading_medium"
+                            >
+                                Card Custom Fields
+                            </h2>
+                            <lightning-button
+                                variant="brand"
+                                label="Add Field"
+                                onclick={handleNewCardField}
+                                icon-name="utility:add"
+                            ></lightning-button>
+                        </div>
+                        <p
+                            class="slds-text-body_small slds-text-color_weak slds-m-bottom_small"
+                        >
+                            Configure which fields appear on
+                            card bodies. Changes deploy via
+                            metadata and may take a moment
+                            to apply.
+                        </p>
+
+                        <template
+                            lwc:if={isLoadingCardFields}
+                        >
+                            <lightning-spinner
+                                alternative-text="Loading card fields"
+                                size="medium"
+                            ></lightning-spinner>
+                        </template>
+
+                        <template lwc:if={hasCardFields}>
+                            <div class="columns-list">
+                                <template
+                                    for:each={cardFields}
+                                    for:item="field"
+                                >
+                                    <div
+                                        key={field.developerName}
+                                        class="column-item"
+                                    >
+                                        <div
+                                            class="column-info"
+                                        >
+                                            <span
+                                                class="column-header-text"
+                                                >{field.displayLabel}</span
+                                            >
+                                            <span
+                                                class="column-category"
+                                                >{field.fieldApiName}
+                                                &bull;
+                                                {field.fieldType}
+                                                &bull;
+                                                Order:
+                                                {field.sortOrder}</span
+                                            >
+                                        </div>
+                                        <div
+                                            class="column-card-count"
+                                        >
+                                            <span
+                                                class={field.statusClass}
+                                                >{field.statusLabel}</span
+                                            >
+                                        </div>
+                                        <div
+                                            class="column-actions"
+                                        >
+                                            <lightning-button-icon
+                                                icon-name="utility:edit"
+                                                alternative-text="Edit field"
+                                                data-developer-name={field.developerName}
+                                                onclick={handleEditCardField}
+                                                variant="border"
+                                                size="small"
+                                            ></lightning-button-icon>
+                                            <lightning-button-icon
+                                                icon-name="utility:delete"
+                                                alternative-text="Deactivate field"
+                                                data-developer-name={field.developerName}
+                                                onclick={handleDeactivateCardField}
+                                                variant="border"
+                                                size="small"
+                                            ></lightning-button-icon>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <template lwc:if={noCardFields}>
+                            <div class="empty-state">
+                                <lightning-icon
+                                    icon-name="standard:custom"
+                                    size="large"
+                                ></lightning-icon>
+                                <h3
+                                    class="slds-m-top_medium"
+                                >
+                                    No Custom Fields
+                                    Configured
+                                </h3>
+                                <p
+                                    class="slds-text-color_weak"
+                                >
+                                    Add fields to display
+                                    additional information
+                                    on card bodies.
+                                </p>
+                                <lightning-button
+                                    variant="brand"
+                                    label="Add Field"
+                                    onclick={handleNewCardField}
+                                    icon-name="utility:add"
+                                    class="slds-m-top_medium"
+                                ></lightning-button>
+                            </div>
+                        </template>
+                    </div>
+                </lightning-tab>
+
+                <lightning-tab
                     label="Settings"
                     value="settings"
                     icon-name="standard:settings"
@@ -757,6 +887,100 @@
                             variant="brand"
                             label={columnModalSaveLabel}
                             onclick={handleSaveColumn}
+                            disabled={isSaving}
+                            class="slds-m-left_x-small"
+                        ></lightning-button>
+                    </div>
+                </div>
+            </section>
+            <div
+                class="slds-backdrop slds-backdrop_open"
+            ></div>
+        </template>
+
+        <!-- Card Field Create/Edit Modal -->
+        <template lwc:if={showCardFieldModal}>
+            <section
+                role="dialog"
+                tabindex="-1"
+                class="slds-modal slds-fade-in-open"
+                aria-modal="true"
+                aria-labelledby="card-field-modal-heading"
+            >
+                <div class="slds-modal__container">
+                    <button
+                        class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleCloseCardFieldModal}
+                    >
+                        <lightning-icon
+                            icon-name="utility:close"
+                            alternative-text="Close"
+                            size="small"
+                            variant="inverse"
+                        ></lightning-icon>
+                    </button>
+                    <div class="slds-modal__header">
+                        <h2
+                            id="card-field-modal-heading"
+                            class="slds-modal__title slds-hyphenate"
+                        >
+                            {cardFieldModalTitle}
+                        </h2>
+                    </div>
+                    <div
+                        class="slds-modal__content slds-p-around_medium"
+                    >
+                        <lightning-combobox
+                            label="Card Field"
+                            value={cardFieldForm.fieldApiName}
+                            options={cardFieldOptions}
+                            onchange={handleCardFieldFormChange}
+                            data-field="fieldApiName"
+                            required
+                            disabled={isEditingCardField}
+                        ></lightning-combobox>
+                        <lightning-input
+                            label="Display Label"
+                            value={cardFieldForm.displayLabel}
+                            onchange={handleCardFieldFormChange}
+                            data-field="displayLabel"
+                            placeholder="Leave blank to use field label"
+                            class="slds-m-top_small"
+                        ></lightning-input>
+                        <lightning-combobox
+                            label="Field Type"
+                            value={cardFieldForm.fieldType}
+                            options={fieldTypeOptions}
+                            onchange={handleCardFieldFormChange}
+                            data-field="fieldType"
+                            class="slds-m-top_small"
+                        ></lightning-combobox>
+                        <lightning-input
+                            type="number"
+                            label="Sort Order"
+                            value={cardFieldForm.sortOrder}
+                            onchange={handleCardFieldFormChange}
+                            data-field="sortOrder"
+                            class="slds-m-top_small"
+                        ></lightning-input>
+                        <lightning-input
+                            type="toggle"
+                            label="Active"
+                            checked={cardFieldForm.active}
+                            onchange={handleCardFieldFormChange}
+                            data-field="active"
+                            class="slds-m-top_small"
+                        ></lightning-input>
+                    </div>
+                    <div class="slds-modal__footer">
+                        <lightning-button
+                            label="Cancel"
+                            onclick={handleCloseCardFieldModal}
+                        ></lightning-button>
+                        <lightning-button
+                            variant="brand"
+                            label={cardFieldModalSaveLabel}
+                            onclick={handleSaveCardField}
                             disabled={isSaving}
                             class="slds-m-left_x-small"
                         ></lightning-button>

@@ -332,6 +332,9 @@ public with sharing class KanbanBoardDTO {
         @AuraEnabled
         public Decimal sortOrder;
 
+        public CardCustomFieldDTO() {
+        }
+
         public CardCustomFieldDTO(OpenSF__CardCustomField__mdt field) {
             this.fieldApiName = field.OpenSF__FieldApiName__c;
             this.displayLabel = String.isNotBlank(field.OpenSF__DisplayLabel__c)
