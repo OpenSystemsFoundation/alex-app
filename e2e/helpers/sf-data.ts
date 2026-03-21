@@ -165,6 +165,70 @@ export function sfApexRun(code: string): string {
  * @param label Optional suffix for the board name (for debugging)
  * @returns BoardData with the new board's IDs
  */
+export interface RetroData {
+    retroId: string;
+    boardId: string;
+    template: string;
+}
+
+/**
+ * Create an isolated retrospective linked to a board.
+ * Returns the retro ID for direct navigation.
+ */
+/**
+ * Enable dev tools (undo/redo, debug info) by upserting KanbanConfig__c custom setting.
+ */
+export function enableDevTools(): void {
+    sfApexRun(`
+OpenSF__KanbanConfig__c config = OpenSF__KanbanConfig__c.getOrgDefaults();
+config.OpenSF__EnableDevTools__c = true;
+config.OpenSF__ShowDebugInfo__c = true;
+upsert config;
+System.debug('E2E_DEV_TOOLS_ENABLED');
+`);
+}
+
+/**
+ * Disable dev tools by clearing KanbanConfig__c custom setting.
+ */
+export function disableDevTools(): void {
+    sfApexRun(`
+OpenSF__KanbanConfig__c config = OpenSF__KanbanConfig__c.getOrgDefaults();
+config.OpenSF__EnableDevTools__c = false;
+config.OpenSF__ShowDebugInfo__c = false;
+upsert config;
+`);
+}
+
+/**
+ * Create an isolated retrospective linked to a board.
+ * Returns the retro ID for direct navigation.
+ */
+export function createIsolatedRetro(boardId: string): RetroData {
+    const apex = `
+OpenSF__Retrospective__c retro = new OpenSF__Retrospective__c(
+    OpenSF__Status__c = 'Active',
+    OpenSF__Template__c = 'Start_Stop_Continue',
+    OpenSF__MaxVotesPerUser__c = 5,
+    OpenSF__Board__c = '${boardId}'
+);
+insert retro;
+System.debug('E2E_RETRO_ID:' + retro.Id);
+`;
+    const output = sfApexRun(apex);
+    const match = output.match(/E2E_RETRO_ID:([a-zA-Z0-9]{15,18})/);
+    if (!match) {
+        throw new Error(
+            `Failed to parse retro ID from Apex output: ${output.substring(0, 500)}`
+        );
+    }
+    return {
+        retroId: match[1],
+        boardId,
+        template: 'Start_Stop_Continue'
+    };
+}
+
 export function createIsolatedBoard(label: string = 'E2E'): BoardData {
     const boardName = `${label}-${Date.now()}`;
 

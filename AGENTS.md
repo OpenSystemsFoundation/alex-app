@@ -209,11 +209,14 @@ Full pipeline managed via GitHub Actions — no IDE required for releases, testi
 
 ### Existing workflows
 
-| Workflow            | Trigger           | Purpose                                   |
-| ------------------- | ----------------- | ----------------------------------------- |
-| `test.yml`          | Push / PR         | Lint, Prettier formatting, LWC Jest tests |
-| `apex-tests.yml`    | Push to main / PR | Scratch org Apex tests with code coverage |
-| `security-scan.yml` | PR to main        | Salesforce Code Analyzer + npm audit      |
+| Workflow                   | Trigger                    | Purpose                                                    |
+| -------------------------- | -------------------------- | ---------------------------------------------------------- |
+| `test.yml`                 | Push / PR                  | Lint, Prettier formatting, LWC Jest tests                  |
+| `apex-tests.yml`           | Push to main / PR          | Scratch org Apex tests with code coverage                  |
+| `security-scan.yml`        | PR to main                 | Salesforce Code Analyzer + npm audit                       |
+| `e2e-tests.yml`            | PR to main / manual        | Full E2E Playwright tests (chromium + firefox + webkit)    |
+| `chromium-e2e-debug.yml`   | Push to `claude/*` branches | Fast Chromium-only E2E debug loop — posts results as commit comments |
+| `scratch-org.yml`          | Manual / PR comment         | Create scratch org with sample data and login URL          |
 
 ### Planned workflows (see [docs/2026-03-20-cicd-release-plan.md](docs/2026-03-20-cicd-release-plan.md))
 
