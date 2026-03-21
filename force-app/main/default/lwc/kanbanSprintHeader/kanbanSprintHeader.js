@@ -3,6 +3,7 @@ import { selectors } from 'c/kanbanStore';
 
 export default class KanbanSprintHeader extends LightningElement {
     @api store;
+    @api experienceCloud = false;
     @track _storeState = null;
     _storeUnsubscribe = null;
 
@@ -104,7 +105,11 @@ export default class KanbanSprintHeader extends LightningElement {
     }
 
     get canComplete() {
-        return this.isActive;
+        return this.isActive && !this.experienceCloud;
+    }
+
+    get isInternalMode() {
+        return !this.experienceCloud;
     }
 
     // Event handlers

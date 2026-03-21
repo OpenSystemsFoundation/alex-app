@@ -35,6 +35,7 @@ export const processColumnsData = (columns) => {
         cards: [],
         columnStyle: col.color ? `border-top: 4px solid ${col.color}` : '',
         columnUrl: `/lightning/r/OpenSF__Column__c/${col.Id}/view`,
+        communityColumnUrl: `/column/${col.Id}`,
         isDone: col.category === 'Done',
         isReleased: col.category === 'Released',
         isCompleted: col.category === 'Done' || col.category === 'Released',
@@ -117,6 +118,7 @@ export const enrichCardData = (card, cardTypeIcons) => {
             card.storyPoints !== null && card.storyPoints !== undefined,
         cardStyle: card.color ? `border-left: 4px solid ${card.color}` : '',
         recordUrl: `/lightning/r/OpenSF__Card__c/${card.Id}/view`,
+        communityCardUrl: `/card/${card.Id}`,
         cardTypeIconName: iconName || null,
         customFieldEntries,
         hasCustomFields: customFieldEntries.length > 0
