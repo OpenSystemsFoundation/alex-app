@@ -61,29 +61,6 @@ const VOTING_SYSTEMS = {
     }
 };
 
-const AVATARS = [
-    '🐶',
-    '🐱',
-    '🐭',
-    '🐹',
-    '🐰',
-    '🦊',
-    '🐻',
-    '🐼',
-    '🐨',
-    '🐯',
-    '🦁',
-    '🐮',
-    '🐷',
-    '🐸',
-    '🐵',
-    '🐔',
-    '🐧',
-    '🐦',
-    '🦄',
-    '🐝'
-];
-
 const REACTIONS = ['👍', '🌷', '🍪', '🎉', '💄'];
 
 export default class PlanningPoker extends LightningElement {
@@ -95,7 +72,6 @@ export default class PlanningPoker extends LightningElement {
 
     // Lobby form state
     @track displayName = '';
-    @track selectedAvatar = '🐶';
     @track selectedRole = 'Observer';
     @track selectedVotingSystem = 'Fibonacci';
     @track showClearPermission = 'Everyone';
@@ -130,10 +106,6 @@ export default class PlanningPoker extends LightningElement {
         }));
     }
 
-    get avatarOptions() {
-        return AVATARS.map((a) => ({ label: a, value: a }));
-    }
-
     get reactionButtons() {
         return REACTIONS.map((r) => ({ label: r, value: r }));
     }
@@ -156,7 +128,8 @@ export default class PlanningPoker extends LightningElement {
             value: card,
             label: card === '0.5' ? '½' : card,
             cssClass:
-                'poker-card' + (this.selectedVote === card ? ' selected' : '')
+                'estimate-chip' +
+                (this.selectedVote === card ? ' selected' : '')
         }));
     }
 
@@ -176,8 +149,7 @@ export default class PlanningPoker extends LightningElement {
                 (p.hasVoted ? ' voted' : '') +
                 (p.role === 'Observer' ? ' observer' : ''),
             voteClass: 'participant-vote' + (p.vote ? ' has-value' : ''),
-            avatarDisplay:
-                p.avatar || p.displayName?.charAt(0)?.toUpperCase() || '?'
+            initial: p.displayName?.charAt(0)?.toUpperCase() || '?'
         }));
     }
 
@@ -308,7 +280,11 @@ export default class PlanningPoker extends LightningElement {
         if (!this.session) {
             return '';
         }
-        return this.session.sessionName || this.session.name || 'Poker Session';
+        return (
+            this.session.sessionName ||
+            this.session.name ||
+            'Estimation Session'
+        );
     }
 
     get timerDisplay() {
@@ -359,10 +335,6 @@ export default class PlanningPoker extends LightningElement {
 
     handleDisplayNameChange(event) {
         this.displayName = event.target.value;
-    }
-
-    handleAvatarChange(event) {
-        this.selectedAvatar = event.detail.value;
     }
 
     handleRoleChange(event) {
@@ -424,7 +396,7 @@ export default class PlanningPoker extends LightningElement {
                 autoReveal: this.autoReveal,
                 allowReactions: this.allowReactions,
                 displayName: this.displayName.trim(),
-                avatar: this.selectedAvatar,
+                avatar: '',
                 role: this.selectedRole === 'Observer' ? 'Observer' : 'Voter'
             });
             this.session = result;
@@ -447,7 +419,7 @@ export default class PlanningPoker extends LightningElement {
             const result = await joinSession({
                 sessionId: this.selectedSessionId,
                 displayName: this.displayName.trim(),
-                avatar: this.selectedAvatar,
+                avatar: '',
                 role: this.selectedRole === 'Observer' ? 'Observer' : 'Voter'
             });
             this.session = result;

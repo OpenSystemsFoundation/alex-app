@@ -74,30 +74,12 @@
                                     <div
                                         class="slds-col slds-size_1-of-1 slds-m-bottom_small"
                                     >
-                                        <div
-                                            class="slds-grid slds-gutters"
-                                        >
-                                            <div
-                                                class="slds-col slds-grow"
-                                            >
-                                                <lightning-input
-                                                    label="Choose your display name:"
-                                                    value={displayName}
-                                                    onchange={handleDisplayNameChange}
-                                                    required
-                                                ></lightning-input>
-                                            </div>
-                                            <div
-                                                class="slds-col slds-no-grow"
-                                            >
-                                                <lightning-combobox
-                                                    label="Avatar"
-                                                    value={selectedAvatar}
-                                                    options={avatarOptions}
-                                                    onchange={handleAvatarChange}
-                                                ></lightning-combobox>
-                                            </div>
-                                        </div>
+                                        <lightning-input
+                                            label="Choose your display name:"
+                                            value={displayName}
+                                            onchange={handleDisplayNameChange}
+                                            required
+                                        ></lightning-input>
                                     </div>
                                     <div
                                         class="slds-col slds-size_1-of-1 slds-m-bottom_small"
@@ -160,7 +142,7 @@
                                                                 class="slds-radio_faux"
                                                                 >Vote
                                                                 and
-                                                                size
+                                                                estimate
                                                                 stories</span
                                                             >
                                                         </label>
@@ -207,26 +189,14 @@
                 <div
                     class="slds-p-horizontal_medium slds-p-bottom_medium"
                 >
-                    <!-- Display Name + Avatar -->
-                    <div
-                        class="slds-grid slds-gutters slds-m-bottom_small"
-                    >
-                        <div class="slds-col slds-grow">
-                            <lightning-input
-                                label="Choose your display name:"
-                                value={displayName}
-                                onchange={handleDisplayNameChange}
-                                required
-                            ></lightning-input>
-                        </div>
-                        <div class="slds-col slds-no-grow">
-                            <lightning-combobox
-                                label="Avatar"
-                                value={selectedAvatar}
-                                options={avatarOptions}
-                                onchange={handleAvatarChange}
-                            ></lightning-combobox>
-                        </div>
+                    <!-- Display Name -->
+                    <div class="slds-m-bottom_small">
+                        <lightning-input
+                            label="Choose your display name:"
+                            value={displayName}
+                            onchange={handleDisplayNameChange}
+                            required
+                        ></lightning-input>
                     </div>
 
                     <!-- Role -->
@@ -284,7 +254,7 @@
                                             <span
                                                 class="slds-radio_faux"
                                                 >Vote and
-                                                size
+                                                estimate
                                                 stories</span
                                             >
                                         </label>
@@ -297,7 +267,7 @@
                     <!-- Voting System -->
                     <div class="slds-m-bottom_small">
                         <lightning-combobox
-                            label="Choose the voting system:"
+                            label="Choose the estimation scale:"
                             value={selectedVotingSystem}
                             options={votingSystemOptions}
                             onchange={handleVotingSystemChange}
@@ -404,18 +374,18 @@
         <div class="session-container">
             <!-- Header -->
             <div
-                class="poker-header slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-p-around_small"
+                class="session-header slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-p-around_small"
             >
                 <div
                     class="slds-grid slds-grid_vertical-align-center"
                 >
                     <lightning-icon
-                        icon-name="custom:custom68"
+                        icon-name="standard:calibration"
                         size="small"
                         class="slds-m-right_small"
                     ></lightning-icon>
                     <span
-                        class="slds-text-heading_small poker-title"
+                        class="slds-text-heading_small session-title"
                         >UNCERTAINTY ESTIMATION</span
                     >
                     <lightning-button-icon
@@ -541,210 +511,174 @@
                 </div>
             </template>
 
-            <div class="slds-grid slds-gutters">
-                <!-- Main Content Area -->
-                <div class="slds-col slds-size_8-of-12">
-                    <!-- Voting Cards -->
-                    <template lwc:if={isVoting}>
-                        <div
-                            class="voting-section slds-p-around_medium"
+            <!-- Participants Strip (horizontal, above voting) -->
+            <div
+                class="participants-strip slds-p-horizontal_medium slds-p-vertical_x-small"
+            >
+                <template
+                    for:each={participants}
+                    for:item="p"
+                >
+                    <div
+                        key={p.id}
+                        class="participant-chip"
+                    >
+                        <span class="participant-initial"
+                            >{p.initial}</span
                         >
-                            <template
-                                lwc:if={isCurrentUserVoter}
+                        <span class="participant-name"
+                            >{p.displayName}</span
+                        >
+                        <template lwc:if={p.showVote}>
+                            <span class={p.voteClass}
+                                >{p.displayVote}</span
                             >
-                                <h3
-                                    class="slds-text-heading_small slds-m-bottom_small"
-                                >
-                                    Cast your vote
-                                </h3>
-                            </template>
-                            <template lwc:else>
-                                <h3
-                                    class="slds-text-heading_small slds-m-bottom_small"
-                                >
-                                    Waiting for votes...
-                                </h3>
-                            </template>
-                            <div class="cards-grid">
-                                <template
-                                    for:each={votingCards}
-                                    for:item="card"
-                                >
-                                    <button
-                                        key={card.value}
-                                        class={card.cssClass}
-                                        data-value={card.value}
-                                        onclick={handleCardClick}
-                                        disabled={isRevealed}
-                                    >
-                                        {card.label}
-                                    </button>
-                                </template>
-                            </div>
-                        </div>
-                    </template>
+                        </template>
+                        <template lwc:elseif={p.hasVoted}>
+                            <span
+                                class="chip-badge voted-badge"
+                                >Voted</span
+                            >
+                        </template>
+                        <template lwc:elseif={p.role}>
+                            <span
+                                class="chip-badge observer-badge"
+                                >{p.statusLabel}</span
+                            >
+                        </template>
+                        <template lwc:if={p.reaction}>
+                            <span class="reaction-badge"
+                                >{p.reaction}</span
+                            >
+                        </template>
+                    </div>
+                </template>
+            </div>
 
-                    <!-- Results -->
-                    <template lwc:if={isRevealed}>
-                        <div
-                            class="results-section slds-p-around_medium"
+            <!-- Main Content (full width) -->
+            <div class="slds-p-around_medium">
+                <!-- Voting Cards -->
+                <template lwc:if={isVoting}>
+                    <div class="voting-section">
+                        <template
+                            lwc:if={isCurrentUserVoter}
                         >
                             <h3
                                 class="slds-text-heading_small slds-m-bottom_small"
                             >
-                                Results
+                                Cast your vote
                             </h3>
-                            <div
-                                class="slds-grid slds-grid_vertical-align-start slds-gutters"
+                        </template>
+                        <template lwc:else>
+                            <h3
+                                class="slds-text-heading_small slds-m-bottom_small"
                             >
-                                <div class="slds-col">
-                                    <canvas
-                                        class="donut-chart"
-                                        width="250"
-                                        height="250"
-                                    ></canvas>
-                                </div>
-                            </div>
-
-                            <!-- Reactions -->
+                                Waiting for votes...
+                            </h3>
+                        </template>
+                        <div class="estimate-grid">
                             <template
-                                lwc:if={session.allowReactions}
+                                for:each={votingCards}
+                                for:item="card"
                             >
-                                <div
-                                    class="reactions-bar slds-m-top_small"
+                                <button
+                                    key={card.value}
+                                    class={card.cssClass}
+                                    data-value={card.value}
+                                    onclick={handleCardClick}
+                                    disabled={isRevealed}
                                 >
+                                    {card.label}
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Results -->
+                <template lwc:if={isRevealed}>
+                    <div class="results-section">
+                        <h3
+                            class="slds-text-heading_small slds-m-bottom_small"
+                        >
+                            Results
+                        </h3>
+                        <div
+                            class="slds-grid slds-wrap slds-grid_vertical-align-start slds-gutters"
+                        >
+                            <div
+                                class="slds-col slds-size_1-of-2 slds-medium-size_1-of-3"
+                            >
+                                <canvas
+                                    class="donut-chart"
+                                    width="220"
+                                    height="220"
+                                ></canvas>
+                            </div>
+                            <div
+                                class="slds-col slds-size_1-of-2 slds-medium-size_2-of-3"
+                            >
+                                <!-- Stats -->
+                                <div class="stats-list">
                                     <template
-                                        for:each={reactionButtons}
-                                        for:item="r"
+                                        for:each={voteResults.stats}
+                                        for:item="stat"
                                     >
-                                        <button
-                                            key={r.value}
-                                            class="reaction-btn"
-                                            data-value={r.value}
-                                            onclick={handleReaction}
+                                        <div
+                                            key={stat.label}
+                                            class="stat-row slds-grid slds-grid_align-spread slds-p-vertical_xx-small"
                                         >
-                                            {r.label}
-                                        </button>
+                                            <span
+                                                class="slds-text-color_weak"
+                                            >
+                                                {stat.label}
+                                            </span>
+                                            <span
+                                                class="stat-value"
+                                                >{stat.value}</span
+                                            >
+                                        </div>
                                     </template>
                                 </div>
-                            </template>
 
-                            <!-- Consensus -->
-                            <template
-                                lwc:if={voteResults.isConsensus}
-                            >
-                                <div
-                                    class="consensus-badge slds-m-top_small"
-                                >
-                                    Hurray! Full consensus!
-                                </div>
-                            </template>
-
-                            <!-- Stats -->
-                            <div
-                                class="stats-list slds-m-top_small"
-                            >
+                                <!-- Consensus -->
                                 <template
-                                    for:each={voteResults.stats}
-                                    for:item="stat"
+                                    lwc:if={voteResults.isConsensus}
                                 >
                                     <div
-                                        key={stat.label}
-                                        class="stat-row slds-grid slds-grid_align-spread slds-p-vertical_xx-small"
+                                        class="consensus-badge slds-m-top_small"
                                     >
-                                        <span
-                                            class="slds-text-color_weak"
-                                        >
-                                            <lightning-icon
-                                                icon-name="utility:info_alt"
-                                                size="xx-small"
-                                                class="slds-m-right_xx-small"
-                                            ></lightning-icon>
-                                            {stat.label}
-                                        </span>
-                                        <span
-                                            class="stat-value"
-                                            >{stat.value}</span
-                                        >
+                                        Hurray! Full
+                                        consensus!
                                     </div>
                                 </template>
                             </div>
                         </div>
-                    </template>
-                </div>
 
-                <!-- Participants Panel -->
-                <div class="slds-col slds-size_4-of-12">
-                    <div
-                        class="participants-panel slds-p-around_medium"
-                    >
-                        <h3
-                            class="slds-text-heading_small slds-m-bottom_small"
-                        >
-                            Participants
-                        </h3>
+                        <!-- Reactions -->
                         <template
-                            for:each={participants}
-                            for:item="p"
+                            lwc:if={session.allowReactions}
                         >
                             <div
-                                key={p.id}
-                                class="participant-row slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-p-vertical_xx-small"
+                                class="reactions-bar slds-m-top_medium"
                             >
-                                <div
-                                    class="slds-grid slds-grid_vertical-align-center"
+                                <template
+                                    for:each={reactionButtons}
+                                    for:item="r"
                                 >
-                                    <span
-                                        class="participant-avatar"
-                                        >{p.avatarDisplay}</span
+                                    <button
+                                        key={r.value}
+                                        class="reaction-btn"
+                                        data-value={r.value}
+                                        onclick={handleReaction}
                                     >
-                                    <span
-                                        class="slds-m-left_x-small"
-                                        >{p.displayName}</span
-                                    >
-                                    <template
-                                        lwc:if={p.reaction}
-                                    >
-                                        <span
-                                            class="reaction-badge"
-                                            >{p.reaction}</span
-                                        >
-                                    </template>
-                                </div>
-                                <div>
-                                    <template
-                                        lwc:if={p.showVote}
-                                    >
-                                        <span
-                                            class={p.voteClass}
-                                            >{p.displayVote}</span
-                                        >
-                                    </template>
-                                    <template
-                                        lwc:elseif={p.hasVoted}
-                                    >
-                                        <span
-                                            class="participant-badge voted-badge"
-                                            >Voted</span
-                                        >
-                                    </template>
-                                    <template
-                                        lwc:elseif={p.role}
-                                    >
-                                        <span
-                                            class="participant-badge observer-badge"
-                                        >
-                                            <template
-                                                lwc:if={p.role}
-                                                >{p.statusLabel}</template
-                                            >
-                                        </span>
-                                    </template>
-                                </div>
+                                        {r.label}
+                                    </button>
+                                </template>
                             </div>
                         </template>
                     </div>
-                </div>
+                </template>
             </div>
         </div>
     </template>
