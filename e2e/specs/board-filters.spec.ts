@@ -26,8 +26,9 @@ test.describe('Board Filters', () => {
         const count = await visibleCards.count();
         expect(count).toBeGreaterThan(0);
 
+        // card.priority renders as "High" (title-case), not uppercase
         for (let i = 0; i < count; i++) {
-            await expect(visibleCards.nth(i)).toContainText('HIGH', {
+            await expect(visibleCards.nth(i)).toContainText('High', {
                 timeout: SF_TIMEOUT
             });
         }
@@ -54,7 +55,7 @@ test.describe('Board Filters', () => {
         expect(filteredCount).toBeLessThanOrEqual(allCardsBefore);
 
         // Reset to All Priorities
-        await boardPage.priorityFilter.selectOption('All Priorities');
+        await boardPage.priorityFilter.selectOption('All');
         await boardPage.page.waitForTimeout(500);
 
         const restoredCount = await boardPage.allCards().count();
@@ -104,8 +105,8 @@ test.describe('Board Filters', () => {
         const filteredCount = await boardPage.allCards().count();
         expect(filteredCount).toBeLessThanOrEqual(allCardsBefore);
 
-        // Reset to All Types
-        await boardPage.typeFilter.selectOption('All Types');
+        // Reset to All Types (value is 'All', not 'All Types')
+        await boardPage.typeFilter.selectOption('All');
         await boardPage.page.waitForTimeout(500);
 
         const restoredCount = await boardPage.allCards().count();
@@ -123,21 +124,29 @@ test.describe('Board Filters', () => {
         const hideDoneBtn = boardPage.page.locator('button.filter-toggle');
         await expect(hideDoneBtn).toBeVisible({ timeout: SF_TIMEOUT });
 
-        const columnsBefore = await boardPage.columns.count();
+        // Hide Done does not remove columns from DOM; it empties their cards
+        // and sets isHidden. Count total cards instead.
+        const cardsBefore = await boardPage.allCards().count();
 
-        // Click Hide Done — should hide the done column
+        // Click Hide Done — should hide cards in done-category columns
         await hideDoneBtn.click();
         await boardPage.page.waitForTimeout(500);
 
-        const columnsAfterHide = await boardPage.columns.count();
-        expect(columnsAfterHide).toBeLessThan(columnsBefore);
+        // The button should gain the active class
+        await expect(hideDoneBtn).toHaveClass(/filter-toggle--active/, {
+            timeout: SF_TIMEOUT
+        });
 
-        // Click again to show done column
+        const cardsAfterHide = await boardPage.allCards().count();
+        // Cards should be equal or fewer (fewer if there were cards in Done columns)
+        expect(cardsAfterHide).toBeLessThanOrEqual(cardsBefore);
+
+        // Click again to show done column cards
         await hideDoneBtn.click();
         await boardPage.page.waitForTimeout(500);
 
-        const columnsAfterShow = await boardPage.columns.count();
-        expect(columnsAfterShow).toBe(columnsBefore);
+        const cardsAfterShow = await boardPage.allCards().count();
+        expect(cardsAfterShow).toBe(cardsBefore);
     });
 
     test('combined filters - priority and type together', async ({
@@ -168,7 +177,8 @@ test.describe('Board Filters', () => {
         const visibleCards = boardPage.allCards();
         const count = await visibleCards.count();
         for (let i = 0; i < count; i++) {
-            await expect(visibleCards.nth(i)).toContainText('HIGH', {
+            // Priority renders as "High" (title-case)
+            await expect(visibleCards.nth(i)).toContainText('High', {
                 timeout: SF_TIMEOUT
             });
             await expect(visibleCards.nth(i)).toContainText('Story', {
@@ -195,11 +205,7 @@ test.describe('Board Filters', () => {
         expect(afterFilter).toBeLessThanOrEqual(allCardsBefore);
         expect(afterFilter).toBeGreaterThan(0);
 
-        // Now search for a specific card's subject within the filtered results
-        const storyCards = boardPage.allCards();
-        const firstStoryText = await storyCards.first().textContent();
-
-        // Pick a search term from the visible card text (first few chars of subject)
+        // Pick a search term from a known card's subject
         const searchCard = boardData.cards[boardData.cards.length - 1];
         await boardPage.search(searchCard.Subject);
         await boardPage.page.waitForTimeout(500);

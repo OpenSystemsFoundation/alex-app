@@ -32,7 +32,7 @@ export class BoardPage extends BasePage {
         // Toolbar
         this.searchInput = page.locator('.board-filter-search');
         this.refreshBtn = page.locator(
-            'button.topbar-icon-btn:has(lightning-icon.slds-icon-utility-refresh)'
+            'button.topbar-icon-btn[title="Refresh"]'
         );
         this.addCardButtons = page.locator('.add-card-button');
 
