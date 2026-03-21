@@ -16,8 +16,7 @@ module.exports = {
     collectCoverageFrom: [
         'force-app/main/default/lwc/**/*.js',
         '!force-app/main/default/lwc/__tests__/**',
-        '!force-app/main/default/lwc/**/*.test.js',
-        '!force-app/main/default/lwc/adminManagement/**'
+        '!force-app/main/default/lwc/**/*.test.js'
     ],
     coverageThreshold: {
         global: {

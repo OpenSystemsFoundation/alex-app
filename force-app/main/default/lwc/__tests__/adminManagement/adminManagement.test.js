@@ -1032,7 +1032,7 @@ describe('c-admin-management', () => {
                 element.shadowRoot,
                 'columns'
             );
-            columnsItems[0].click();
+            simulateBoardAction(columnsItems[0], 'columns', 'board1');
             await flushPromises();
 
             expect(getColumns).toHaveBeenCalledWith({
@@ -1951,7 +1951,7 @@ describe('c-admin-management', () => {
                 element.shadowRoot,
                 'edit'
             );
-            editItems[0].click();
+            simulateBoardAction(editItems[0], 'edit', 'board1');
             await flushPromises();
 
             const heading = element.shadowRoot.querySelector(
@@ -2034,7 +2034,7 @@ describe('c-admin-management', () => {
                 element.shadowRoot,
                 'edit'
             );
-            editItems[0].click();
+            simulateBoardAction(editItems[0], 'edit', 'board1');
             await flushPromises();
 
             allInputs = element.shadowRoot.querySelectorAll('lightning-input');

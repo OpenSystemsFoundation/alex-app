@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Template__c</fullName>
+    <label>Template</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Start_Stop_Continue</fullName>
+                <default>true</default>
+                <label>Start / Stop / Continue</label>
+            </value>
+            <value>
+                <fullName>Mad_Sad_Glad</fullName>
+                <default>false</default>
+                <label>Mad / Sad / Glad</label>
+            </value>
+            <value>
+                <fullName>Four_Ls</fullName>
+                <default>false</default>
+                <label>4Ls (Liked, Learned, Lacked, Longed For)</label>
+            </value>
+            <value>
+                <fullName>Went_Well_Improve</fullName>
+                <default>false</default>
+                <label>Went Well / To Improve / Action Items</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

@@ -17,7 +17,8 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Active__c,
                 OpenSF__EmailNotifications__c,
                 OpenSF__SalesforceNotifications__c,
-                OpenSF__ActiveSprint__c
+                OpenSF__ActiveSprint__c,
+                OpenSF__DoneCardRetentionDays__c
             FROM OpenSF__Board__c
             WHERE Id = :boardId
             WITH USER_MODE
@@ -78,6 +79,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Locked__c,
                 OpenSF__NeedsRefinement__c,
                 OpenSF__SequenceNumber__c,
+                OpenSF__DoneDate__c,
                 LastModifiedDate,
                 LastModifiedById
             FROM OpenSF__Card__c
@@ -116,6 +118,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Locked__c,
                 OpenSF__NeedsRefinement__c,
                 OpenSF__SequenceNumber__c,
+                OpenSF__DoneDate__c,
                 LastModifiedDate,
                 LastModifiedById
             FROM OpenSF__Card__c
@@ -149,6 +152,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Assignee__r.SmallPhotoUrl,
                 OpenSF__NeedsRefinement__c,
                 OpenSF__SequenceNumber__c,
+                OpenSF__DoneDate__c,
                 LastModifiedDate,
                 LastModifiedById
             FROM OpenSF__Card__c
@@ -222,6 +226,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Locked__c,
                 OpenSF__NeedsRefinement__c,
                 OpenSF__SequenceNumber__c,
+                OpenSF__DoneDate__c,
                 LastModifiedDate,
                 LastModifiedById
             FROM OpenSF__Card__c
@@ -259,6 +264,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Locked__c,
                 OpenSF__NeedsRefinement__c,
                 OpenSF__SequenceNumber__c,
+                OpenSF__DoneDate__c,
                 LastModifiedDate,
                 LastModifiedById
             FROM OpenSF__Card__c

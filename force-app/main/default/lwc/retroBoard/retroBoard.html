@@ -1,0 +1,507 @@
+<template>
+    <div class="retro-board-wrapper">
+        <!-- Header Bar -->
+        <div class="retro-header">
+            <div class="retro-header__left">
+                <h1 class="retro-header__title">
+                    <lightning-icon
+                        icon-name="standard:feedback"
+                        size="small"
+                        class="retro-header__icon"
+                    ></lightning-icon>
+                    <span>{retroName}</span>
+                </h1>
+                <template lwc:if={sprintName}>
+                    <span
+                        class="retro-header__sprint-badge"
+                    >
+                        <lightning-icon
+                            icon-name="utility:sprint"
+                            size="xx-small"
+                        ></lightning-icon>
+                        {sprintName}
+                    </span>
+                </template>
+                <span class={statusBadgeClass}
+                    >{retroStatus}</span
+                >
+            </div>
+            <div class="retro-header__right">
+                <!-- Votes remaining indicator -->
+                <template lwc:if={showVoteIndicator}>
+                    <span
+                        class="retro-header__votes-remaining"
+                    >
+                        <lightning-icon
+                            icon-name="utility:like"
+                            size="xx-small"
+                        ></lightning-icon>
+                        {votesRemainingLabel}
+                    </span>
+                </template>
+
+                <!-- Show Always Toggle -->
+                <template lwc:if={isFacilitator}>
+                    <button
+                        class={showAlwaysButtonClass}
+                        onclick={handleToggleShowAlways}
+                        title="Toggle author visibility"
+                    >
+                        <lightning-icon
+                            icon-name="utility:preview"
+                            size="xx-small"
+                        ></lightning-icon>
+                        Show Authors
+                    </button>
+                </template>
+
+                <!-- Reveal Authors Button -->
+                <template lwc:if={canReveal}>
+                    <button
+                        class="retro-action-btn retro-action-btn--reveal"
+                        onclick={handleRevealAuthors}
+                    >
+                        <lightning-icon
+                            icon-name="utility:unlock"
+                            size="xx-small"
+                        ></lightning-icon>
+                        Reveal Authors
+                    </button>
+                </template>
+
+                <!-- Status Controls -->
+                <template lwc:if={isFacilitator}>
+                    <template lwc:if={canAdvanceStatus}>
+                        <button
+                            class="retro-action-btn retro-action-btn--primary"
+                            onclick={handleAdvanceStatus}
+                        >
+                            {nextStatusLabel}
+                        </button>
+                    </template>
+                </template>
+
+                <!-- Connection Status -->
+                <c-connection-status-indicator
+                    config={connectionStatusConfig}
+                ></c-connection-status-indicator>
+
+                <button
+                    class={refreshButtonClass}
+                    title="Refresh"
+                    onclick={handleRefresh}
+                >
+                    <lightning-icon
+                        icon-name="utility:refresh"
+                        size="xx-small"
+                        alternative-text="Refresh"
+                    ></lightning-icon>
+                </button>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <template lwc:if={error}>
+            <div
+                class="retro-error slds-text-color_error slds-var-p-around_small"
+            >
+                <lightning-formatted-text
+                    value={error}
+                ></lightning-formatted-text>
+            </div>
+        </template>
+
+        <!-- Loading State -->
+        <template lwc:if={isLoading}>
+            <div class="retro-loading">
+                <lightning-spinner
+                    alternative-text="Loading"
+                    size="medium"
+                ></lightning-spinner>
+            </div>
+        </template>
+
+        <!-- Board Columns -->
+        <template lwc:if={hasData}>
+            <div class="retro-columns">
+                <template
+                    for:each={columnsWithCards}
+                    for:item="column"
+                >
+                    <div
+                        key={column.category}
+                        class="retro-column"
+                        style={column.columnStyle}
+                    >
+                        <!-- Column Header -->
+                        <div
+                            class="retro-column__header"
+                            style={column.headerStyle}
+                        >
+                            <h2 class="retro-column__title">
+                                <span
+                                    class="retro-column__icon"
+                                    >{column.icon}</span
+                                >
+                                {column.category}
+                            </h2>
+                            <span
+                                class="retro-column__count"
+                                >{column.cardCount}</span
+                            >
+                        </div>
+
+                        <!-- Add Card Form -->
+                        <div class="retro-column__add-form">
+                            <textarea
+                                class="retro-card-input"
+                                data-category={column.category}
+                                placeholder={column.placeholder}
+                                onkeydown={handleCardInputKeydown}
+                                rows="2"
+                            ></textarea>
+                            <button
+                                class="retro-add-btn"
+                                data-category={column.category}
+                                onclick={handleAddCard}
+                            >
+                                <lightning-icon
+                                    icon-name="utility:add"
+                                    size="xx-small"
+                                ></lightning-icon>
+                                Add
+                            </button>
+                        </div>
+
+                        <!-- Cards -->
+                        <div class="retro-column__cards">
+                            <template
+                                for:each={column.cards}
+                                for:item="card"
+                            >
+                                <article
+                                    key={card.Id}
+                                    class={card.cardClass}
+                                    data-card-id={card.Id}
+                                >
+                                    <!-- Card Text -->
+                                    <p
+                                        class="retro-card__text"
+                                    >
+                                        {card.text}
+                                    </p>
+
+                                    <!-- Card Footer -->
+                                    <div
+                                        class="retro-card__footer"
+                                    >
+                                        <!-- Author (conditionally shown) -->
+                                        <div
+                                            class="retro-card__author"
+                                        >
+                                            <template
+                                                lwc:if={card.showAuthor}
+                                            >
+                                                <template
+                                                    lwc:if={card.authorPhotoUrl}
+                                                >
+                                                    <span
+                                                        class="slds-avatar slds-avatar_circle slds-avatar_x-small"
+                                                    >
+                                                        <img
+                                                            src={card.authorPhotoUrl}
+                                                            alt={card.authorName}
+                                                        />
+                                                    </span>
+                                                </template>
+                                                <span
+                                                    class="retro-card__author-name"
+                                                    >{card.authorName}</span
+                                                >
+                                            </template>
+                                            <template
+                                                lwc:else
+                                            >
+                                                <span
+                                                    class="retro-card__anonymous"
+                                                >
+                                                    <lightning-icon
+                                                        icon-name="utility:user"
+                                                        size="xx-small"
+                                                    ></lightning-icon>
+                                                    Anonymous
+                                                </span>
+                                            </template>
+                                        </div>
+
+                                        <!-- Vote & Actions -->
+                                        <div
+                                            class="retro-card__actions"
+                                        >
+                                            <!-- Action Item indicator -->
+                                            <template
+                                                lwc:if={card.actionItemCardId}
+                                            >
+                                                <span
+                                                    class="retro-card__action-item-badge"
+                                                    title={card.actionItemCardName}
+                                                >
+                                                    <lightning-icon
+                                                        icon-name="utility:task"
+                                                        size="xx-small"
+                                                    ></lightning-icon>
+                                                    {card.actionItemCardName}
+                                                </span>
+                                            </template>
+
+                                            <!-- Create Action Item -->
+                                            <template
+                                                lwc:if={card.canCreateActionItem}
+                                            >
+                                                <button
+                                                    class="retro-card__action-btn"
+                                                    data-card-id={card.Id}
+                                                    onclick={handleOpenActionItemModal}
+                                                    title="Create action item"
+                                                >
+                                                    <lightning-icon
+                                                        icon-name="utility:new_task"
+                                                        size="xx-small"
+                                                    ></lightning-icon>
+                                                </button>
+                                            </template>
+
+                                            <!-- Delete (own cards only) -->
+                                            <template
+                                                lwc:if={card.canDelete}
+                                            >
+                                                <button
+                                                    class="retro-card__action-btn retro-card__action-btn--delete"
+                                                    data-card-id={card.Id}
+                                                    onclick={handleDeleteCard}
+                                                    title="Delete card"
+                                                >
+                                                    <lightning-icon
+                                                        icon-name="utility:delete"
+                                                        size="xx-small"
+                                                    ></lightning-icon>
+                                                </button>
+                                            </template>
+
+                                            <!-- Vote Button -->
+                                            <button
+                                                class={card.voteButtonClass}
+                                                data-card-id={card.Id}
+                                                onclick={handleToggleVote}
+                                                title="Vote"
+                                            >
+                                                <lightning-icon
+                                                    icon-name={card.voteIcon}
+                                                    size="xx-small"
+                                                ></lightning-icon>
+                                                <span
+                                                    class="retro-card__vote-count"
+                                                    >{card.voteCount}</span
+                                                >
+                                            </button>
+                                        </div>
+                                    </div>
+                                </article>
+                            </template>
+
+                            <!-- Empty column state -->
+                            <template
+                                lwc:if={column.isEmpty}
+                            >
+                                <div
+                                    class="retro-column__empty"
+                                >
+                                    <p>
+                                        No cards yet. Add
+                                        one above!
+                                    </p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+
+    <!-- Action Item Modal -->
+    <template lwc:if={showActionItemModal}>
+        <section
+            role="dialog"
+            tabindex="-1"
+            class="slds-modal slds-fade-in-open"
+        >
+            <div class="slds-modal__container">
+                <div class="slds-modal__header">
+                    <button
+                        class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleCloseActionItemModal}
+                    >
+                        <lightning-icon
+                            icon-name="utility:close"
+                            size="small"
+                            variant="inverse"
+                        ></lightning-icon>
+                    </button>
+                    <h2 class="slds-text-heading_medium">
+                        Create Action Item
+                    </h2>
+                </div>
+                <div
+                    class="slds-modal__content slds-var-p-around_medium"
+                >
+                    <p class="slds-var-m-bottom_small">
+                        <strong>Card text:</strong>
+                        {actionItemModalText}
+                    </p>
+
+                    <!-- Board Picker -->
+                    <div
+                        class="slds-form-element slds-var-m-bottom_small"
+                    >
+                        <label
+                            class="slds-form-element__label"
+                            >Target Board</label
+                        >
+                        <div
+                            class="slds-form-element__control"
+                        >
+                            <select
+                                class="slds-select"
+                                onchange={handleActionItemBoardChange}
+                            >
+                                <option value="">
+                                    -- Select Board --
+                                </option>
+                                <template
+                                    for:each={availableBoards}
+                                    for:item="board"
+                                >
+                                    <option
+                                        key={board.Id}
+                                        value={board.Id}
+                                        selected={board.isSelected}
+                                    >
+                                        {board.Name}
+                                    </option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Destination -->
+                    <div
+                        class="slds-form-element slds-var-m-bottom_small"
+                    >
+                        <label
+                            class="slds-form-element__label"
+                            >Destination</label
+                        >
+                        <div
+                            class="slds-form-element__control"
+                        >
+                            <select
+                                class="slds-select"
+                                onchange={handleActionItemDestinationChange}
+                            >
+                                <option
+                                    value="first_column"
+                                >
+                                    First Column
+                                </option>
+                                <option value="backlog">
+                                    Backlog
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Assignee Search -->
+                    <div class="slds-form-element">
+                        <label
+                            class="slds-form-element__label"
+                            >Assignee (optional)</label
+                        >
+                        <div
+                            class="slds-form-element__control"
+                        >
+                            <lightning-input
+                                type="text"
+                                placeholder="Search users..."
+                                onchange={handleAssigneeSearch}
+                                value={assigneeSearchTerm}
+                            ></lightning-input>
+                            <template
+                                lwc:if={assigneeResults.length}
+                            >
+                                <div
+                                    class="retro-user-results"
+                                >
+                                    <template
+                                        for:each={assigneeResults}
+                                        for:item="user"
+                                    >
+                                        <div
+                                            key={user.Id}
+                                            class="retro-user-result"
+                                            data-user-id={user.Id}
+                                            onclick={handleSelectAssignee}
+                                        >
+                                            {user.Name}
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                            <template
+                                lwc:if={selectedAssigneeName}
+                            >
+                                <p
+                                    class="slds-var-m-top_xx-small"
+                                >
+                                    Selected:
+                                    <strong
+                                        >{selectedAssigneeName}</strong
+                                    >
+                                </p>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-modal__footer">
+                    <button
+                        class="slds-button slds-button_neutral"
+                        onclick={handleCloseActionItemModal}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        class="slds-button slds-button_brand"
+                        onclick={handleCreateActionItem}
+                        disabled={actionItemCreateDisabled}
+                    >
+                        Create Card
+                    </button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Subscription Manager for real-time updates -->
+    <template lwc:if={retroSubscriptionChannel}>
+        <c-subscription-manager
+            channel-name={retroSubscriptionChannel}
+            auto-subscribe={hasData}
+            board-id={recordId}
+            onmessage={handleRetroEvent}
+            onstatuschange={handleSubscriptionStatusChange}
+        ></c-subscription-manager>
+    </template>
+
+    <c-toast-manager></c-toast-manager>
+</template>

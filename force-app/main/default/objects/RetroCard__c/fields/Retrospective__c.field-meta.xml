@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Retrospective__c</fullName>
+    <label>Retrospective</label>
+    <referenceTo>Retrospective__c</referenceTo>
+    <relationshipLabel>Retro Cards</relationshipLabel>
+    <relationshipName>RetroCards</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>true</writeRequiresMasterRead>
+</CustomField>
