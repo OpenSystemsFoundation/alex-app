@@ -41,7 +41,8 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Status__c,
                 OpenSF__CardCount__c,
                 OpenSF__Board__c,
-                OpenSF__Category__c
+                OpenSF__Category__c,
+                OpenSF__WipLimit__c
             FROM OpenSF__Column__c
             WHERE OpenSF__Board__c = :boardId
             WITH USER_MODE
@@ -176,7 +177,8 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__Status__c,
                 OpenSF__CardCount__c,
                 OpenSF__Board__c,
-                OpenSF__Category__c
+                OpenSF__Category__c,
+                OpenSF__WipLimit__c
             FROM OpenSF__Column__c
             WHERE Id = :columnId
             WITH USER_MODE

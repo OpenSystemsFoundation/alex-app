@@ -430,6 +430,44 @@ public with sharing class KanbanBoardController {
         }
     }
 
+    // =========================================================================
+    // Analytics Methods
+    // =========================================================================
+
+    /**
+     * Get cycle time analytics for a board
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.CycleTimeResult getCycleTimeAnalytics(
+        Id boardId,
+        Integer daysBack
+    ) {
+        try {
+            return AnalyticsService.getCycleTimeAnalytics(boardId, daysBack);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading cycle time analytics: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Get cumulative flow data for a board
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.CumulativeFlowDataPoint> getCumulativeFlowData(
+        Id boardId,
+        Integer daysBack
+    ) {
+        try {
+            return AnalyticsService.getCumulativeFlowData(boardId, daysBack);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading cumulative flow data: ' + e.getMessage()
+            );
+        }
+    }
+
     /**
      * Wrapper classes (kept here since they're @AuraEnabled)
      */

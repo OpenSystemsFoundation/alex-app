@@ -889,6 +889,148 @@
     }
 }
 
+/* ---------- WIP Limit ---------- */
+.wip-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.625rem;
+    font-weight: 700;
+    padding: 0 0.3125rem;
+    min-width: 1.5rem;
+    text-align: center;
+    line-height: 1.125rem;
+    border-radius: 4px;
+    background: rgb(229, 231, 235);
+    color: rgb(75, 85, 99);
+    flex-shrink: 0;
+    margin: 0 0.25rem;
+}
+
+.wip-badge--over {
+    background: rgb(254, 226, 226);
+    color: rgb(220, 38, 38);
+}
+
+.kanban-column--over-wip {
+    border-color: rgb(252, 165, 165) !important;
+    background-color: rgb(255, 250, 250) !important;
+}
+
+.kanban-column--over-wip .kanban-column__header {
+    background: rgb(254, 242, 242) !important;
+}
+
+/* ---------- Swimlanes ---------- */
+.kanban-board--swimlanes {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    background: rgb(241, 243, 245);
+    padding: 0.5rem !important;
+    overflow: auto;
+}
+
+.swimlane-header-row {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgb(241, 243, 245);
+    border-bottom: 2px solid rgb(209, 213, 219);
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.swimlane-label-cell {
+    min-width: 140px;
+    max-width: 140px;
+    flex: 0 0 140px;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(55, 65, 81);
+}
+
+.swimlane-col-header {
+    min-width: 220px;
+    max-width: 260px;
+    flex: 1 0 220px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: rgb(37, 99, 235);
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.swimlane-row {
+    display: flex;
+    border-bottom: 1px solid rgb(229, 231, 235);
+    min-height: 60px;
+}
+
+.swimlane-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(55, 65, 81);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.swimlane-count {
+    font-size: 0.625rem;
+    font-weight: 700;
+    background: rgb(229, 231, 235);
+    color: rgb(75, 85, 99);
+    border-radius: 4px;
+    padding: 0 0.25rem;
+    min-width: 1rem;
+    text-align: center;
+    line-height: 1rem;
+    flex-shrink: 0;
+}
+
+.swimlane-cell {
+    min-width: 220px;
+    max-width: 260px;
+    flex: 1 0 220px;
+    padding: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    border-left: 1px solid rgb(243, 244, 246);
+}
+
+.swimlane-cell .kanban-card {
+    padding: 0.25rem 0.375rem !important;
+}
+
+.swimlane-cell .kanban-card__body > p {
+    font-size: 0.75rem !important;
+}
+
+.swimlane-card-sp {
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: rgb(107, 114, 128);
+    float: right;
+}
+
+/* ---------- Filter separator ---------- */
+.board-filter-separator {
+    width: 1px;
+    height: 1rem;
+    background: rgb(229, 231, 235);
+    margin: 0 0.125rem;
+}
+
 /* ---------- Debug LexoRank overlay ---------- */
 .debug-lexorank {
     font-family: monospace;

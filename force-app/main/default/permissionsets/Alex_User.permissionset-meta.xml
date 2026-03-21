@@ -79,6 +79,11 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>false</editable>
+        <field>Board__c.DoneCardRetentionDays__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>true</editable>
         <field>Card__c.Assignee__c</field>
         <readable>true</readable>
@@ -106,6 +111,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Card__c.Description__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Card__c.DoneDate__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

@@ -65,6 +65,10 @@ export {
     loadBurndownDataAsync,
     loadVelocityDataAsync
 } from './thunks/sprintThunks';
+export {
+    loadCycleTimeAnalyticsAsync,
+    loadCumulativeFlowDataAsync
+} from './thunks/analyticsThunks';
 
 // Re-export modules for consumers who want organized imports
 import * as actions from './state/actions';
@@ -73,5 +77,14 @@ import * as selectors from './state/selectors';
 import * as thunks from './thunks/boardThunks';
 import * as cardThunks from './thunks/cardThunks';
 import * as sprintThunks from './thunks/sprintThunks';
+import * as analyticsThunks from './thunks/analyticsThunks';
 
-export { actions, types, selectors, thunks, cardThunks, sprintThunks };
+export {
+    actions,
+    types,
+    selectors,
+    thunks,
+    cardThunks,
+    sprintThunks,
+    analyticsThunks
+};

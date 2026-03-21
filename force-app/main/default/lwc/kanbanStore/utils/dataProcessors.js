@@ -37,7 +37,9 @@ export const processColumnsData = (columns) => {
         columnUrl: `/lightning/r/OpenSF__Column__c/${col.Id}/view`,
         isDone: col.category === 'Done',
         isReleased: col.category === 'Released',
-        isCompleted: col.category === 'Done' || col.category === 'Released'
+        isCompleted: col.category === 'Done' || col.category === 'Released',
+        hasWipLimit: col.wipLimit != null && col.wipLimit > 0,
+        isOverWipLimit: false // updated after cards are distributed
     }));
 };
 
@@ -160,6 +162,8 @@ export const processCardsData = (cards, columns, cardTypeIcons) => {
             if (!b.position) return -1;
             return a.position.localeCompare(b.position);
         });
+        // Update WIP limit status after cards are distributed
+        col.isOverWipLimit = col.hasWipLimit && col.cardCount > col.wipLimit;
     });
 
     return processedColumns;

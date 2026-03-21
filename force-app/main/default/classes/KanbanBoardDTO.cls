@@ -73,6 +73,8 @@ public with sharing class KanbanBoardDTO {
         public Id boardId;
         @AuraEnabled
         public String category;
+        @AuraEnabled
+        public Decimal wipLimit;
 
         public ColumnDTO(OpenSF__Column__c column) {
             this.Id = column.Id;
@@ -84,6 +86,7 @@ public with sharing class KanbanBoardDTO {
             this.cardCount = column.OpenSF__CardCount__c;
             this.boardId = column.OpenSF__Board__c;
             this.category = column.OpenSF__Category__c;
+            this.wipLimit = column.OpenSF__WipLimit__c;
         }
     }
 
@@ -140,6 +143,8 @@ public with sharing class KanbanBoardDTO {
         @AuraEnabled
         public Boolean needsRefinement;
         @AuraEnabled
+        public DateTime doneDate;
+        @AuraEnabled
         public Map<String, Object> customFields;
 
         public CardDTO(OpenSF__Card__c card) {
@@ -164,6 +169,7 @@ public with sharing class KanbanBoardDTO {
             this.lastModifiedById = card.LastModifiedById;
             this.sequenceNumber = card.OpenSF__SequenceNumber__c;
             this.needsRefinement = card.OpenSF__NeedsRefinement__c;
+            this.doneDate = card.OpenSF__DoneDate__c;
 
             // Map nested relationships
             if (card.OpenSF__Assignee__r != null) {
@@ -350,6 +356,114 @@ public with sharing class KanbanBoardDTO {
             this.fieldType = field.OpenSF__FieldType__c;
             this.sortOrder = field.OpenSF__SortOrder__c;
         }
+    }
+
+    /**
+     * Card Column History DTO for cycle time analytics
+     */
+    public class CardColumnHistoryDTO {
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public Id cardId;
+        @AuraEnabled
+        public Id columnId;
+        @AuraEnabled
+        public String columnName;
+        @AuraEnabled
+        public Id boardId;
+        @AuraEnabled
+        public DateTime enteredAt;
+        @AuraEnabled
+        public DateTime exitedAt;
+        @AuraEnabled
+        public Decimal durationMinutes;
+
+        public CardColumnHistoryDTO(OpenSF__CardColumnHistory__c h) {
+            this.Id = h.Id;
+            this.cardId = h.OpenSF__Card__c;
+            this.columnId = h.OpenSF__Column__c;
+            this.boardId = h.OpenSF__Board__c;
+            this.enteredAt = h.OpenSF__EnteredAt__c;
+            this.exitedAt = h.OpenSF__ExitedAt__c;
+            this.durationMinutes = h.OpenSF__DurationMinutes__c;
+            try {
+                this.columnName = h.OpenSF__Column__r.OpenSF__ColumnHeader__c;
+            } catch (Exception e) {
+                this.columnName = null;
+            }
+        }
+    }
+
+    /**
+     * Cycle time analytics result
+     */
+    public class CycleTimeResult {
+        @AuraEnabled
+        public List<ColumnCycleTime> columnTimes;
+        @AuraEnabled
+        public Decimal averageCycleTimeHours;
+        @AuraEnabled
+        public Decimal averageLeadTimeHours;
+        @AuraEnabled
+        public List<CardCycleTime> cardDetails;
+    }
+
+    public class ColumnCycleTime {
+        @AuraEnabled
+        public Id columnId;
+        @AuraEnabled
+        public String columnName;
+        @AuraEnabled
+        public Decimal averageMinutes;
+        @AuraEnabled
+        public Decimal medianMinutes;
+        @AuraEnabled
+        public Decimal minMinutes;
+        @AuraEnabled
+        public Decimal maxMinutes;
+        @AuraEnabled
+        public Integer cardCount;
+    }
+
+    public class CardCycleTime {
+        @AuraEnabled
+        public Id cardId;
+        @AuraEnabled
+        public String cardName;
+        @AuraEnabled
+        public String cardType;
+        @AuraEnabled
+        public Decimal cycleTimeHours;
+        @AuraEnabled
+        public Decimal leadTimeHours;
+        @AuraEnabled
+        public DateTime createdDate;
+        @AuraEnabled
+        public DateTime completedDate;
+    }
+
+    /**
+     * Cumulative flow data point
+     */
+    public class CumulativeFlowDataPoint {
+        @AuraEnabled
+        public Date snapshotDate;
+        @AuraEnabled
+        public Map<String, Integer> columnCounts;
+    }
+
+    /**
+     * Convert list of card column histories
+     */
+    public static List<CardColumnHistoryDTO> convertHistories(
+        List<OpenSF__CardColumnHistory__c> histories
+    ) {
+        List<CardColumnHistoryDTO> result = new List<CardColumnHistoryDTO>();
+        for (OpenSF__CardColumnHistory__c h : histories) {
+            result.add(new CardColumnHistoryDTO(h));
+        }
+        return result;
     }
 
     /**

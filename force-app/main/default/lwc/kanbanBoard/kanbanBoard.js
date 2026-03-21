@@ -113,6 +113,12 @@ export default class KanbanBoard extends LightningElement {
     @track showSprintReports = false;
     @track editSprint = null;
 
+    // Analytics UI state
+    @track showAnalytics = false;
+
+    // Swimlane state
+    @track _swimlaneMode = 'none'; // 'none', 'assignee', 'priority', 'cardType', 'epic'
+
     // Undo/redo state
     @track _canUndo = false;
     @track _canRedo = false;
@@ -174,19 +180,34 @@ export default class KanbanBoard extends LightningElement {
             search || priority !== 'All' || cardType !== 'All' || hideCompleted;
         const activeIdx = this._mobileActiveColumnIndex;
 
+        // Auto-expire done cards for non-Sprint boards based on retention days
+        const isSprint = this.isSprintBoard;
+        const retentionDays = this.board?.doneCardRetentionDays;
+        const hasRetention =
+            !isSprint && retentionDays != null && retentionDays >= 0;
+        let retentionCutoff = null;
+        if (hasRetention) {
+            retentionCutoff = new Date();
+            retentionCutoff.setDate(retentionCutoff.getDate() - retentionDays);
+        }
+
         const addMobileClass = (col, idx) => {
             const isActive = idx === activeIdx;
+            const isOverWip = col.hasWipLimit && col.cardCount > col.wipLimit;
             const baseClass =
                 'kanban-column slds-col slds-grid slds-grid_vertical';
+            const wipClass = isOverWip ? ' kanban-column--over-wip' : '';
             return {
                 ...col,
+                isOverWipLimit: isOverWip,
+                wipBadgeClass: `wip-badge${isOverWip ? ' wip-badge--over' : ''}`,
                 mobileColumnClass: isActive
-                    ? `${baseClass} mobile-column-active`
-                    : `${baseClass} mobile-column-hidden`
+                    ? `${baseClass} mobile-column-active${wipClass}`
+                    : `${baseClass} mobile-column-hidden${wipClass}`
             };
         };
 
-        if (!hasFilter) {
+        if (!hasFilter && !hasRetention) {
             return cols.map((col, idx) => addMobileClass(col, idx));
         }
 
@@ -200,6 +221,16 @@ export default class KanbanBoard extends LightningElement {
             }
 
             const filtered = (col.cards || []).filter((card) => {
+                // Auto-hide expired done cards (retention policy)
+                if (
+                    hasRetention &&
+                    col.isCompleted &&
+                    card.doneDate &&
+                    new Date(card.doneDate) < retentionCutoff
+                ) {
+                    return false;
+                }
+
                 // Hide cards with Done status
                 if (hideCompleted && card.status === 'Done') {
                     return false;
@@ -937,6 +968,129 @@ export default class KanbanBoard extends LightningElement {
         if (searchInput) {
             searchInput.value = '';
         }
+    }
+
+    // =============================================================================
+    // Swimlane Logic
+    // =============================================================================
+
+    get swimlaneModeOptions() {
+        return [
+            { label: 'No Swimlanes', value: 'none' },
+            { label: 'By Assignee', value: 'assignee' },
+            { label: 'By Priority', value: 'priority' },
+            { label: 'By Card Type', value: 'cardType' },
+            { label: 'By Epic', value: 'epic' }
+        ];
+    }
+
+    get hasSwimlanes() {
+        return this._swimlaneMode !== 'none';
+    }
+
+    get swimlanes() {
+        if (!this.hasSwimlanes) return [];
+        const cols = this.filteredColumns;
+        if (!cols || cols.length === 0) return [];
+
+        // Collect all unique values for the grouping key
+        const groupMap = new Map();
+        const mode = this._swimlaneMode;
+
+        cols.forEach((col) => {
+            (col.cards || []).forEach((card) => {
+                let key;
+                let label;
+                switch (mode) {
+                    case 'assignee':
+                        key = card.assigneeId || '__unassigned__';
+                        label = card.assignee?.name || 'Unassigned';
+                        break;
+                    case 'priority':
+                        key = card.priority || '__none__';
+                        label = card.priority || 'No Priority';
+                        break;
+                    case 'cardType':
+                        key = card.cardType || '__none__';
+                        label = card.cardType || 'No Type';
+                        break;
+                    case 'epic':
+                        key = card.epicId || '__none__';
+                        label = card.epic?.subject || 'No Epic';
+                        break;
+                    default:
+                        key = '__all__';
+                        label = 'All';
+                }
+                if (!groupMap.has(key)) {
+                    groupMap.set(key, label);
+                }
+            });
+        });
+
+        // Build swimlane rows
+        const swimlanes = [];
+        groupMap.forEach((label, key) => {
+            const laneCols = cols.map((col) => {
+                const laneCards = (col.cards || []).filter((card) => {
+                    switch (mode) {
+                        case 'assignee':
+                            return (
+                                (card.assigneeId || '__unassigned__') === key
+                            );
+                        case 'priority':
+                            return (card.priority || '__none__') === key;
+                        case 'cardType':
+                            return (card.cardType || '__none__') === key;
+                        case 'epic':
+                            return (card.epicId || '__none__') === key;
+                        default:
+                            return true;
+                    }
+                });
+                return {
+                    ...col,
+                    cards: laneCards,
+                    cardCount: laneCards.length,
+                    laneKey: `${key}-${col.Id}`
+                };
+            });
+            const totalCards = laneCols.reduce(
+                (sum, c) => sum + c.cardCount,
+                0
+            );
+            swimlanes.push({
+                key,
+                label,
+                columns: laneCols,
+                totalCards
+            });
+        });
+
+        // Sort: put items with cards first, then alphabetically
+        swimlanes.sort((a, b) => {
+            if (a.totalCards === 0 && b.totalCards > 0) return 1;
+            if (a.totalCards > 0 && b.totalCards === 0) return -1;
+            return a.label.localeCompare(b.label);
+        });
+
+        return swimlanes;
+    }
+
+    handleSwimlaneChange(event) {
+        this._swimlaneMode = event.target.value;
+    }
+
+    // =============================================================================
+    // Analytics Handlers
+    // =============================================================================
+
+    handleShowAnalytics() {
+        this.showAnalytics = true;
+    }
+
+    handleAnalyticsClose() {
+        this.showAnalytics = false;
     }
 
     handleCreateSprint() {

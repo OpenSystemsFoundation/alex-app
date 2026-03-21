@@ -77,6 +77,9 @@ public with sharing class KanbanCardService {
             existingCard.OpenSF__Status__c
         );
 
+        // Track when card enters/leaves Done-category columns
+        updateDoneDate(card, targetColumn);
+
         update Security.stripInaccessible(
                 AccessType.UPDATABLE,
                 new List<OpenSF__Card__c>{ card }
@@ -143,6 +146,9 @@ public with sharing class KanbanCardService {
 
         // Apply column status to new card (currentStatus is null for new cards)
         applyColumnStatusToCard(card, column, null);
+
+        // Set DoneDate if card is created directly in a Done-category column
+        updateDoneDate(card, column);
 
         List<OpenSF__Card__c> strippedCards = (List<OpenSF__Card__c>) Security.stripInaccessible(
                 AccessType.CREATABLE,
@@ -502,5 +508,37 @@ public with sharing class KanbanCardService {
             );
         }
         // If category is null or unrecognized, do nothing — don't break existing boards
+    }
+
+    /**
+     * Set or clear DoneDate__c based on the target column's category.
+     * - Moving TO a Done or Released column → stamp DoneDate if not already set
+     * - Moving BACK to active work → clear DoneDate
+     *
+     * Works for all board types (Kanban and Sprint). The frontend uses
+     * DoneDate + Board.DoneCardRetentionDays to auto-hide old done cards
+     * on non-Sprint boards.
+     *
+     * @param card The card record being updated (fields are set in-place before DML)
+     * @param targetColumn The column the card is moving to
+     */
+    private static void updateDoneDate(
+        OpenSF__Card__c card,
+        OpenSF__Column__c targetColumn
+    ) {
+        String category = targetColumn.OpenSF__Category__c;
+        Boolean isDoneOrReleased =
+            category ==
+            KanbanEnums.columnCategoryValue(KanbanEnums.ColumnCategory.DONE) ||
+            category ==
+            KanbanEnums.columnCategoryValue(
+                KanbanEnums.ColumnCategory.RELEASED
+            );
+
+        if (isDoneOrReleased) {
+            card.OpenSF__DoneDate__c = DateTime.now();
+        } else {
+            card.OpenSF__DoneDate__c = null;
+        }
     }
 }
