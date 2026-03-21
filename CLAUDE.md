@@ -18,7 +18,9 @@ If you create new custom objects, custom fields, platform events, or any metadat
 
 ## CLI Usage
 
-Use `powershell.exe -Command "sf ..."` to run Salesforce CLI commands. The bash shell cannot resolve the `sf` path directly on this Windows machine.
+Use `sf` directly to run Salesforce CLI commands. The SF CLI is available at `/opt/node22/bin/sf`.
+
+For scratch org operations, set `SFDX_DISABLE_DNS_CHECK=true` if DNS resolution fails in CI or cloud environments.
 
 ## Code Style
 
