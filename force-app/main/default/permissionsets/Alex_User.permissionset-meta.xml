@@ -254,6 +254,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Column__c.WipLimit__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>PokerSession__c.SessionName__c</field>
         <readable>true</readable>
     </fieldPermissions>

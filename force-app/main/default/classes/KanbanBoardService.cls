@@ -220,6 +220,7 @@ public with sharing class KanbanBoardService {
                     OpenSF__Epic__r.OpenSF__Subject__c,
                     OpenSF__Locked__c,
                     OpenSF__NeedsRefinement__c,
+                    OpenSF__DoneDate__c,
                     OpenSF__SequenceNumber__c,
                     LastModifiedDate,
                     LastModifiedById

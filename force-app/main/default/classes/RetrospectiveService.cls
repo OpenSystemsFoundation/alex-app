@@ -121,11 +121,13 @@ public with sharing class RetrospectiveService {
             OpenSF__Position__c = nextPosition
         );
 
-        insert Security.stripInaccessible(
+        List<OpenSF__RetroCard__c> toInsert = Security.stripInaccessible(
                 AccessType.CREATABLE,
                 new List<OpenSF__RetroCard__c>{ card }
             )
             .getRecords();
+        insert toInsert;
+        card = toInsert[0];
 
         // Re-query to get all fields including author
         OpenSF__RetroCard__c created = [
@@ -365,22 +367,25 @@ public with sharing class RetrospectiveService {
             OpenSF__Priority__c = 'Medium'
         );
 
-        insert Security.stripInaccessible(
+        List<OpenSF__Card__c> cardsToInsert = Security.stripInaccessible(
                 AccessType.CREATABLE,
                 new List<OpenSF__Card__c>{ newCard }
             )
             .getRecords();
+        insert cardsToInsert;
+        newCard = cardsToInsert[0];
 
         // Link the action item card back to the retro card
         OpenSF__RetroCard__c updateRetroCard = new OpenSF__RetroCard__c(
             Id = retroCardId,
             OpenSF__ActionItemCard__c = newCard.Id
         );
-        update Security.stripInaccessible(
+        List<OpenSF__RetroCard__c> retroCardsToUpdate = Security.stripInaccessible(
                 AccessType.UPDATABLE,
                 new List<OpenSF__RetroCard__c>{ updateRetroCard }
             )
             .getRecords();
+        update retroCardsToUpdate;
 
         // Re-query to get full data
         OpenSF__RetroCard__c updated = [

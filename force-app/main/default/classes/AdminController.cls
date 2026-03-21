@@ -50,11 +50,13 @@ public with sharing class AdminController {
                 OpenSF__Status__c = 'Active',
                 OpenSF__Active__c = true
             );
-            insert Security.stripInaccessible(
+            List<OpenSF__Board__c> boardsToInsert = Security.stripInaccessible(
                     AccessType.CREATABLE,
                     new List<OpenSF__Board__c>{ board }
                 )
                 .getRecords();
+            insert boardsToInsert;
+            board.Id = boardsToInsert[0].Id;
 
             // Re-query to get all fields
             OpenSF__Board__c created = [
@@ -193,14 +195,19 @@ public with sharing class AdminController {
                 OpenSF__Status__c = 'Active'
             );
 
-            insert Security.stripInaccessible(
+            List<OpenSF__Column__c> colsToInsert = Security.stripInaccessible(
                     AccessType.CREATABLE,
                     new List<OpenSF__Column__c>{ column }
                 )
                 .getRecords();
+            // Re-apply master-detail field (stripped by Security.stripInaccessible)
+            for (OpenSF__Column__c c : colsToInsert) {
+                c.OpenSF__Board__c = boardId;
+            }
+            insert colsToInsert;
 
             OpenSF__Column__c created = KanbanBoardSelector.getColumnById(
-                column.Id
+                colsToInsert[0].Id
             );
             return new KanbanBoardDTO.ColumnDTO(created);
         } catch (Exception e) {
@@ -236,11 +243,12 @@ public with sharing class AdminController {
                 column.OpenSF__Status__c = (String) updates.get('status');
             }
 
-            update Security.stripInaccessible(
+            List<OpenSF__Column__c> colsToUpdate = Security.stripInaccessible(
                     AccessType.UPDATABLE,
                     new List<OpenSF__Column__c>{ column }
                 )
                 .getRecords();
+            update colsToUpdate;
 
             OpenSF__Column__c updated = KanbanBoardSelector.getColumnById(
                 columnId
@@ -361,11 +369,13 @@ public with sharing class AdminController {
                 OpenSF__Status__c = 'Active',
                 OpenSF__Active__c = true
             );
-            insert Security.stripInaccessible(
+            List<OpenSF__Board__c> boardsToCreate = Security.stripInaccessible(
                     AccessType.CREATABLE,
                     new List<OpenSF__Board__c>{ board }
                 )
                 .getRecords();
+            insert boardsToCreate;
+            board.Id = boardsToCreate[0].Id;
 
             // Create default columns
             List<OpenSF__Column__c> columns = new List<OpenSF__Column__c>();
@@ -397,8 +407,16 @@ public with sharing class AdminController {
                 position = newPosition;
             }
 
-            insert Security.stripInaccessible(AccessType.CREATABLE, columns)
+            List<OpenSF__Column__c> colsToCreate = Security.stripInaccessible(
+                    AccessType.CREATABLE,
+                    columns
+                )
                 .getRecords();
+            // Re-apply master-detail field (stripped by Security.stripInaccessible)
+            for (OpenSF__Column__c c : colsToCreate) {
+                c.OpenSF__Board__c = board.Id;
+            }
+            insert colsToCreate;
 
             // Re-query board
             OpenSF__Board__c created = KanbanBoardSelector.getBoardById(
