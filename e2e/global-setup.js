@@ -1,5 +1,5 @@
 // @ts-check
-const { chromium } = require('@playwright/test');
+const { chromium, firefox, webkit } = require('@playwright/test');
 const { execSync } = require('child_process');
 const path = require('path');
 
@@ -23,9 +23,18 @@ async function globalSetup() {
         { encoding: 'utf8', timeout: 60_000, env: SF_ENV, stdio: 'inherit' }
     );
 
-    // Authenticate and save session
+    // Authenticate and save session — use whichever browser is installed
     console.log('[global-setup] Authenticating via frontdoor...');
-    const browser = await chromium.launch();
+    let browser;
+    for (const browserType of [chromium, firefox, webkit]) {
+        try {
+            browser = await browserType.launch();
+            break;
+        } catch {
+            // Browser not installed, try next
+        }
+    }
+    if (!browser) throw new Error('No browser installed for global setup');
     const context = await browser.newContext();
     const page = await context.newPage();
 
