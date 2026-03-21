@@ -53,12 +53,12 @@ List<String> categories = new List<String>{
     'Done'
 };
 List<String> colors = new List<String>{
-    '#747474',
+    '#3A49DA',
     '#1B96FF',
-    '#F39C12',
-    '#9B59B6',
+    '#F38303',
+    '#9050E9',
     '#06A59A',
-    '#2ECC71'
+    '#2E844A'
 };
 List<Integer> wipLimits = new List<Integer>{ null, 5, 3, 3, 2, null };
 
