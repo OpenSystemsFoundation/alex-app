@@ -10,17 +10,17 @@
 export const createMockBoard = (overrides = {}) => ({
     Id: 'a00xx000000001',
     Name: 'Test Board',
-    OpenSF__Description__c: 'Test board description',
-    OpenSF__Active__c: true,
+    description: 'Test board description',
+    active: true,
     ...overrides
 });
 
 export const createMockColumn = (overrides = {}) => ({
     Id: `col${Math.random().toString(36).substr(2, 9)}`,
     Name: 'Test Column',
-    OpenSF__Position__c: 'a',
-    OpenSF__Board__c: 'a00xx000000001',
-    OpenSF__Color__c: '#4285F4',
+    position: 'a',
+    boardId: 'a00xx000000001',
+    color: '#4285F4',
     cards: [],
     cardCount: 0,
     ...overrides
@@ -29,17 +29,14 @@ export const createMockColumn = (overrides = {}) => ({
 export const createMockCard = (overrides = {}) => ({
     Id: `card${Math.random().toString(36).substr(2, 9)}`,
     Name: 'Test Card',
-    OpenSF__Subject__c: 'Test Subject',
-    OpenSF__Description__c: 'Test Description',
-    OpenSF__Column__c: 'col1',
-    OpenSF__Position__c: 'a',
-    OpenSF__Priority__c: 'Medium',
-    OpenSF__Status__c: 'New',
-    OpenSF__CardType__c: 'Feature',
-    OpenSF__StoryPoints__c: 3,
-    columnId: 'col1',
     subject: 'Test Subject',
     description: 'Test Description',
+    columnId: 'col1',
+    position: 'a',
+    priority: 'Medium',
+    status: 'New',
+    cardType: 'Feature',
+    storyPoints: 3,
     ...overrides
 });
 
@@ -49,7 +46,7 @@ export const createMockBoardData = (numColumns = 3, cardsPerColumn = 2) => {
         createMockColumn({
             Id: `col${i + 1}`,
             Name: `Column ${i + 1}`,
-            OpenSF__Position__c: String.fromCharCode(97 + i) // a, b, c...
+            position: String.fromCharCode(97 + i) // a, b, c...
         })
     );
 
@@ -58,9 +55,8 @@ export const createMockBoardData = (numColumns = 3, cardsPerColumn = 2) => {
             createMockCard({
                 Id: `card${colIndex}_${cardIndex}`,
                 Name: `Card ${colIndex + 1}-${cardIndex + 1}`,
-                OpenSF__Column__c: column.Id,
                 columnId: column.Id,
-                OpenSF__Position__c: String.fromCharCode(97 + cardIndex)
+                position: String.fromCharCode(97 + cardIndex)
             })
         )
     );
@@ -316,7 +312,7 @@ export class BoardDataBuilder {
             createMockColumn({
                 Id: `col${i + 1}`,
                 Name: `Column ${i + 1}`,
-                OpenSF__Position__c: String.fromCharCode(97 + i)
+                position: String.fromCharCode(97 + i)
             })
         );
         return this;
@@ -330,7 +326,6 @@ export class BoardDataBuilder {
         const cards = Array.from({ length: count }, (_, i) =>
             createMockCard({
                 Id: `card${columnIndex}_${i}`,
-                OpenSF__Column__c: column.Id,
                 columnId: column.Id
             })
         );
