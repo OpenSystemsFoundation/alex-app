@@ -218,7 +218,9 @@ test.describe('Backlog View', () => {
         await firstRow.click({ button: 'right' });
 
         // Context menu should appear with Move to Column option
-        const contextMenu = boardPage.page.locator('c-kanban-context-menu');
+        const contextMenu = boardPage.page.locator(
+            'opensf-kanban-context-menu'
+        );
         await expect(contextMenu).toBeVisible({ timeout: 5000 });
 
         const moveToColumn = contextMenu.getByText('Move to Column');

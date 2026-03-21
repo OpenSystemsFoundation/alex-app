@@ -130,7 +130,9 @@ test.describe('Board Toolbar', () => {
         await boardPage.waitForCards();
 
         // Sprint header only renders when isSprintBoard is true
-        const sprintHeader = boardPage.page.locator('c-kanban-sprint-header');
+        const sprintHeader = boardPage.page.locator(
+            'opensf-kanban-sprint-header'
+        );
         const hasSprintHeader = await sprintHeader
             .isVisible({ timeout: 5_000 })
             .catch(() => false);

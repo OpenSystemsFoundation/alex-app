@@ -121,7 +121,9 @@ test.describe('Board Filters', () => {
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.waitForCards();
 
-        const hideDoneBtn = boardPage.page.locator('button.filter-toggle');
+        const hideDoneBtn = boardPage.page.locator(
+            'button.filter-toggle[title="Hide cards in Done-category columns"]'
+        );
         await expect(hideDoneBtn).toBeVisible({ timeout: SF_TIMEOUT });
 
         // Hide Done does not remove columns from DOM; it empties their cards

@@ -126,8 +126,11 @@ export class BoardPage extends BasePage {
         await this.boardTab.click();
     }
 
-    /** Switch to the Backlog tab. */
+    /** Switch to the Backlog tab and wait for backlog view to render. */
     async switchToBacklogTab(): Promise<void> {
         await this.backlogTab.click();
+        await this.page
+            .locator('opensf-kanban-backlog-view')
+            .waitFor({ state: 'attached', timeout: this.timeout });
     }
 }
