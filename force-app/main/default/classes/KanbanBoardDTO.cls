@@ -528,6 +528,55 @@ public with sharing class KanbanBoardDTO {
     }
 
     /**
+     * Linked Record DTO
+     */
+    public class LinkedRecordDTO {
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public String Name;
+        @AuraEnabled
+        public Id cardId;
+        @AuraEnabled
+        public String recordId;
+        @AuraEnabled
+        public String recordName;
+        @AuraEnabled
+        public String sObjectType;
+        @AuraEnabled
+        public Boolean syncEnabled;
+        @AuraEnabled
+        public String statusMapping;
+        @AuraEnabled
+        public DateTime lastSyncDate;
+
+        public LinkedRecordDTO(OpenSF__LinkedRecord__c rec) {
+            this.Id = rec.Id;
+            this.Name = rec.Name;
+            this.cardId = rec.OpenSF__Card__c;
+            this.recordId = rec.OpenSF__RecordId__c;
+            this.recordName = rec.OpenSF__RecordName__c;
+            this.sObjectType = rec.OpenSF__SObjectType__c;
+            this.syncEnabled = rec.OpenSF__SyncEnabled__c;
+            this.statusMapping = rec.OpenSF__StatusMapping__c;
+            this.lastSyncDate = rec.OpenSF__LastSyncDate__c;
+        }
+    }
+
+    /**
+     * Convert list of linked records
+     */
+    public static List<LinkedRecordDTO> convertLinkedRecords(
+        List<OpenSF__LinkedRecord__c> records
+    ) {
+        List<LinkedRecordDTO> result = new List<LinkedRecordDTO>();
+        for (OpenSF__LinkedRecord__c rec : records) {
+            result.add(new LinkedRecordDTO(rec));
+        }
+        return result;
+    }
+
+    /**
      * Convert list of sprint snapshots
      */
     public static List<SprintSnapshotDTO> convertSnapshots(

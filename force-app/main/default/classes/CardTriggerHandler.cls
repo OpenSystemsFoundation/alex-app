@@ -42,6 +42,7 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
                 KanbanEnums.CardEventType.CARD_UPDATE
             )
         );
+        syncStatusToLinkedRecords(this.newCards, this.oldCardMap);
     }
 
     protected override void afterDelete() {
@@ -319,6 +320,28 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
      * Update column card counts
      * Handles insert, update (column changes), delete, and undelete scenarios
      */
+    /**
+     * Sync card status changes to linked records (card → record direction)
+     * Only triggers when card status actually changed
+     */
+    private void syncStatusToLinkedRecords(
+        List<OpenSF__Card__c> newCards,
+        Map<Id, OpenSF__Card__c> oldCardMap
+    ) {
+        for (OpenSF__Card__c newCard : newCards) {
+            OpenSF__Card__c oldCard = oldCardMap.get(newCard.Id);
+            if (
+                newCard.OpenSF__Status__c != oldCard.OpenSF__Status__c &&
+                newCard.OpenSF__Status__c != null
+            ) {
+                RecordLinkingService.syncCardStatusToLinkedRecords(
+                    newCard.Id,
+                    newCard.OpenSF__Status__c
+                );
+            }
+        }
+    }
+
     private void updateColumnCounts(
         List<OpenSF__Card__c> newCards,
         Map<Id, OpenSF__Card__c> oldCardMap
