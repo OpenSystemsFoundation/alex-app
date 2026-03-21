@@ -25,6 +25,8 @@ public with sharing class KanbanBoardDTO {
         public Boolean salesforceNotifications;
         @AuraEnabled
         public Id activeSprintId;
+        @AuraEnabled
+        public Decimal doneCardRetentionDays;
 
         public BoardDTO(OpenSF__Board__c board) {
             this.Id = board.Id;
@@ -40,6 +42,11 @@ public with sharing class KanbanBoardDTO {
                 this.activeSprintId = board.OpenSF__ActiveSprint__c;
             } catch (Exception e) {
                 this.activeSprintId = null;
+            }
+            try {
+                this.doneCardRetentionDays = board.OpenSF__DoneCardRetentionDays__c;
+            } catch (Exception e) {
+                this.doneCardRetentionDays = 7;
             }
         }
     }
