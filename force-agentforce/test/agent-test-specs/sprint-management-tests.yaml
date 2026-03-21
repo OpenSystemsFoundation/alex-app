@@ -1,0 +1,131 @@
+# Agent Test Spec: Sprint Management Topic
+# Tests topic classification, action selection, and expected outcomes
+# for the Sprint_Management topic of the Alex Agent.
+#
+# Run with: sf agent test create --spec force-agentforce/test/agent-test-specs/sprint-management-tests.yaml
+#           sf agent test run --name Sprint_Management_Tests --wait 10
+
+testName: Sprint_Management_Tests
+description: Validates Sprint Management topic routing, action selection, and response quality.
+agentName: Alex_Agent
+
+testCases:
+  # --- Create Sprint ---
+  - utterance: "Create a new sprint starting Monday and ending in two weeks with goal 'Complete payment integration'"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Create_Sprint
+    expectedOutcome: "A new sprint is created with the specified dates and goal about payment integration."
+
+  - utterance: "Set up sprint 5 for the next iteration"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Create_Sprint
+    expectedOutcome: "A new sprint is created in Planning status."
+
+  # --- Start Sprint ---
+  - utterance: "Start the sprint"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Start_Sprint
+    expectedOutcome: "The sprint in Planning status is activated. Only one sprint can be active at a time."
+
+  - utterance: "Kick off the current sprint"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Start_Sprint
+    expectedOutcome: "The sprint is started and moves to Active status."
+
+  # --- Complete Sprint ---
+  - utterance: "Complete the current sprint"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Complete_Sprint
+    expectedOutcome: "The agent confirms before completing the sprint, calculates velocity, and handles incomplete cards."
+
+  - utterance: "End the sprint and move unfinished work to backlog"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Complete_Sprint
+    expectedOutcome: "The sprint is completed, velocity is calculated, and incomplete cards are moved to backlog."
+
+  # --- Add Cards to Sprint ---
+  - utterance: "Add the login bug and the dark mode card to the sprint"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Search_Cards
+      - Add_Cards_To_Sprint
+    expectedOutcome: "Both cards are added to the sprint and story points are recalculated."
+
+  - utterance: "Pull in three more backlog items to the sprint"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Get_Backlog
+      - Add_Cards_To_Sprint
+    expectedOutcome: "Backlog items are retrieved and added to the active sprint."
+
+  # --- Remove Card from Sprint ---
+  - utterance: "Remove the API timeout card from the sprint"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Search_Cards
+      - Remove_Card_From_Sprint
+    expectedOutcome: "The card is removed from the sprint and returned to the backlog."
+
+  - utterance: "Take the payment feature out of this sprint, it's too big"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Search_Cards
+      - Remove_Card_From_Sprint
+    expectedOutcome: "The payment feature card is removed from the sprint."
+
+  # --- Get Sprint Status ---
+  - utterance: "How is the sprint going?"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Get_Sprint_Status
+    expectedOutcome: "Sprint progress is returned with completed vs total points, card counts, and days remaining."
+
+  - utterance: "What's our sprint progress?"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Get_Sprint_Status
+    expectedOutcome: "Current sprint status with metrics is returned."
+
+  - utterance: "How many points have we completed?"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Get_Sprint_Status
+    expectedOutcome: "Completed story points and total sprint points are returned."
+
+  # --- Get Backlog ---
+  - utterance: "Show me the backlog"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Get_Backlog
+    expectedOutcome: "Backlog cards not in the active sprint are returned."
+
+  - utterance: "What cards need refinement?"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Get_Backlog
+    expectedOutcome: "Backlog cards that are not yet refined are returned."
+
+  - utterance: "List unscheduled work items"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Get_Backlog
+    expectedOutcome: "Cards in the backlog that are not assigned to any sprint are returned."
+
+  # --- Edge Cases ---
+  - utterance: "We need to plan the next sprint with the top backlog items"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Create_Sprint
+    expectedOutcome: "A new sprint is created for planning purposes."
+
+  - utterance: "Are there any blockers in the sprint?"
+    expectedTopic: Sprint_Management
+    expectedActions:
+      - Get_Sprint_Status
+    expectedOutcome: "Sprint status is returned with information about card distribution and any concerning patterns."

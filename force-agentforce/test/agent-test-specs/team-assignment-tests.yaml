@@ -1,0 +1,100 @@
+# Agent Test Spec: Team Assignment Topic
+# Tests topic classification, action selection, and expected outcomes
+# for the Team_Assignment topic of the Alex Agent.
+#
+# Run with: sf agent test create --spec force-agentforce/test/agent-test-specs/team-assignment-tests.yaml
+#           sf agent test run --name Team_Assignment_Tests --wait 10
+
+testName: Team_Assignment_Tests
+description: Validates Team Assignment topic routing, action selection, and response quality.
+agentName: Alex_Agent
+
+testCases:
+  # --- Assign Card ---
+  - utterance: "Assign the login bug to Sarah"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Assign_Card
+    expectedOutcome: "The login bug card is assigned to Sarah as the primary assignee."
+
+  - utterance: "Set Mike as the peer reviewer for the API card"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Assign_Card
+    expectedOutcome: "Mike is set as the peer reviewer for the API card."
+
+  - utterance: "Give the dark mode card to the new developer"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Search_Users
+      - Assign_Card
+    expectedOutcome: "A user search is performed and the card is assigned to the found developer."
+
+  - utterance: "Reassign the payment card from John to Lisa"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Assign_Card
+    expectedOutcome: "The payment card's assignee is changed from John to Lisa."
+
+  # --- Search Users ---
+  - utterance: "Find Sarah's user account"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Search_Users
+    expectedOutcome: "Users matching 'Sarah' are returned with names and email addresses."
+
+  - utterance: "Who are the developers on the team?"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Search_Users
+    expectedOutcome: "Active Salesforce users are returned."
+
+  - utterance: "Look up user john.doe@company.com"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Search_Users
+    expectedOutcome: "The user matching the email address is returned."
+
+  # --- Get User Workload ---
+  - utterance: "What is Sarah working on?"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Get_User_Workload
+    expectedOutcome: "Sarah's assigned cards are shown with breakdown by status and total story points."
+
+  - utterance: "Who has the most work right now?"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Get_User_Workload
+    expectedOutcome: "User workload information is returned showing card assignments and story points."
+
+  - utterance: "Show me the workload distribution"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Get_User_Workload
+    expectedOutcome: "Team workload breakdown is returned with story points per team member."
+
+  - utterance: "Does anyone have bandwidth for more work?"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Get_User_Workload
+    expectedOutcome: "Workload information is returned to identify team members with available capacity."
+
+  - utterance: "How many story points does Mike have on his plate?"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Get_User_Workload
+    expectedOutcome: "Mike's total story points and card assignment details are returned."
+
+  # --- Edge Cases ---
+  - utterance: "Who should I assign this to?"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Get_User_Workload
+    expectedOutcome: "Team workload is returned to help determine who has capacity for the work."
+
+  - utterance: "I need a code reviewer for the authentication feature"
+    expectedTopic: Team_Assignment
+    expectedActions:
+      - Search_Users
+    expectedOutcome: "Available team members are returned to select a peer reviewer."
