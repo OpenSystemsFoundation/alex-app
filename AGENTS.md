@@ -331,3 +331,38 @@ User action → dispatch thunk → Apex controller → DB update → Trigger fir
 **ALWAYS** place Apex test classes in the `tests/` subdirectory:
 
 - `force-app/main/default/classes/tests/MyClassTest.cls`
+
+### Type Safety Standards
+
+**Apex — Prefer enums over string literals:**
+- Use `KanbanEnums.SprintStatus`, `KanbanEnums.ColumnCategory`, `KanbanEnums.CardEventType`, etc. instead of raw string constants
+- Convert enums to picklist values with helper methods like `KanbanEnums.sprintStatusValue(KanbanEnums.SprintStatus.ACTIVE)`
+- For SOQL WHERE clauses, bind enum-derived values to local variables (SOQL can't call methods directly)
+
+**Apex — Prefer typed parameters over Map<String, Object>:**
+- Use `CardUpdateRequest` (or similar typed wrappers) instead of `Map<String, Object>` for complex inputs
+- Keep `Map<String, Object>` in `@AuraEnabled` method signatures for LWC compatibility, but convert to typed objects internally via `CardUpdateRequest.fromMap(updates)`
+
+**LWC — JSDoc type annotations:**
+- Add `@type` annotations to all `@api` properties
+- Add `@typedef` definitions for event payloads and complex data shapes
+- Add `@param` and `@returns` annotations to public methods
+
+**LWC — ESLint enforcement:**
+- Strict ESLint config enforces: no implicit globals, consistent returns, no var, prefer const, strict equality
+- All code must pass `npm run lint` before commit (enforced by lint-staged)
+
+### AI-Assisted Development
+
+**Adversarial testing workflow:** When writing or modifying Apex classes, proactively consider:
+- What inputs would break this?
+- What governor limit scenarios haven't been tested?
+- What happens with 10,000+ records?
+- What race conditions exist in multi-user scenarios?
+
+**Spec-driven prompting:** Before implementing complex features, provide:
+- Relevant object schema (fields, types, relationships)
+- Governor limits the code must respect
+- Namespace (`OpenSF`)
+- Existing method signatures it must integrate with
+- Redux store shape (for LWC work)

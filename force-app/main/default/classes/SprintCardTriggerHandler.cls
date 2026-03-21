@@ -14,18 +14,33 @@ public with sharing class SprintCardTriggerHandler extends TriggerHandler {
 
     protected override void afterInsert() {
         this.newRecords = (List<OpenSF__SprintCard__c>) this.newList;
-        publishEvents(this.newRecords, 'card_added');
+        publishEvents(
+            this.newRecords,
+            KanbanEnums.sprintEventTypeValue(
+                KanbanEnums.SprintEventType.CARD_ADDED
+            )
+        );
     }
 
     protected override void afterUpdate() {
         this.newRecords = (List<OpenSF__SprintCard__c>) this.newList;
         this.oldMap = (Map<Id, OpenSF__SprintCard__c>) this.oldMap;
-        publishEvents(this.newRecords, 'card_updated');
+        publishEvents(
+            this.newRecords,
+            KanbanEnums.sprintEventTypeValue(
+                KanbanEnums.SprintEventType.CARD_UPDATED
+            )
+        );
     }
 
     protected override void afterDelete() {
         this.oldRecords = (List<OpenSF__SprintCard__c>) this.oldList;
-        publishEvents(this.oldRecords, 'card_removed');
+        publishEvents(
+            this.oldRecords,
+            KanbanEnums.sprintEventTypeValue(
+                KanbanEnums.SprintEventType.CARD_REMOVED
+            )
+        );
     }
 
     private void publishEvents(

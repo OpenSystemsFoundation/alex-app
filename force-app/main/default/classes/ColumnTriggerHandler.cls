@@ -14,18 +14,33 @@ public with sharing class ColumnTriggerHandler extends TriggerHandler {
 
     protected override void afterInsert() {
         this.newColumns = (List<OpenSF__Column__c>) this.newList;
-        publishColumnEvents(this.newColumns, 'create');
+        publishColumnEvents(
+            this.newColumns,
+            KanbanEnums.columnEventTypeValue(
+                KanbanEnums.ColumnEventType.COLUMN_CREATE
+            )
+        );
     }
 
     protected override void afterUpdate() {
         this.newColumns = (List<OpenSF__Column__c>) this.newList;
         this.oldColumnMap = (Map<Id, OpenSF__Column__c>) this.oldMap;
-        publishColumnEvents(this.newColumns, 'update');
+        publishColumnEvents(
+            this.newColumns,
+            KanbanEnums.columnEventTypeValue(
+                KanbanEnums.ColumnEventType.COLUMN_UPDATE
+            )
+        );
     }
 
     protected override void afterDelete() {
         this.oldColumns = (List<OpenSF__Column__c>) this.oldList;
-        publishColumnEvents(this.oldColumns, 'delete');
+        publishColumnEvents(
+            this.oldColumns,
+            KanbanEnums.columnEventTypeValue(
+                KanbanEnums.ColumnEventType.COLUMN_DELETE
+            )
+        );
     }
 
     /**
@@ -41,7 +56,12 @@ public with sharing class ColumnTriggerHandler extends TriggerHandler {
             try {
                 String jsonPayload;
 
-                if (eventType == 'delete') {
+                if (
+                    eventType ==
+                    KanbanEnums.columnEventTypeValue(
+                        KanbanEnums.ColumnEventType.COLUMN_DELETE
+                    )
+                ) {
                     // Minimal payload for delete
                     jsonPayload = createDeletePayload(column);
                 } else {

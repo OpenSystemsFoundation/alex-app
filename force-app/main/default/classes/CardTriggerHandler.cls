@@ -22,26 +22,46 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
     protected override void afterInsert() {
         this.newCards = (List<OpenSF__Card__c>) this.newList;
         updateColumnCounts(this.newCards, null);
-        publishCardEvents(this.newCards, 'create');
+        publishCardEvents(
+            this.newCards,
+            KanbanEnums.cardEventTypeValue(
+                KanbanEnums.CardEventType.CARD_CREATE
+            )
+        );
     }
 
     protected override void afterUpdate() {
         this.newCards = (List<OpenSF__Card__c>) this.newList;
         this.oldCardMap = (Map<Id, OpenSF__Card__c>) this.oldMap;
         updateColumnCounts(this.newCards, this.oldCardMap);
-        publishCardEvents(this.newCards, 'update');
+        publishCardEvents(
+            this.newCards,
+            KanbanEnums.cardEventTypeValue(
+                KanbanEnums.CardEventType.CARD_UPDATE
+            )
+        );
     }
 
     protected override void afterDelete() {
         this.oldCards = (List<OpenSF__Card__c>) this.oldList;
         updateColumnCounts(null, null, this.oldCards);
-        publishCardEvents(this.oldCards, 'delete');
+        publishCardEvents(
+            this.oldCards,
+            KanbanEnums.cardEventTypeValue(
+                KanbanEnums.CardEventType.CARD_DELETE
+            )
+        );
     }
 
     protected override void afterUndelete() {
         this.newCards = (List<OpenSF__Card__c>) this.newList;
         updateColumnCounts(this.newCards, null);
-        publishCardEvents(this.newCards, 'undelete');
+        publishCardEvents(
+            this.newCards,
+            KanbanEnums.cardEventTypeValue(
+                KanbanEnums.CardEventType.CARD_UNDELETE
+            )
+        );
     }
 
     /**
@@ -102,7 +122,12 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
 
         // Query cards with all relationships for complete DTO data
         Map<Id, OpenSF__Card__c> fullCardMap = new Map<Id, OpenSF__Card__c>();
-        if (eventType != 'delete') {
+        if (
+            eventType !=
+            KanbanEnums.cardEventTypeValue(
+                KanbanEnums.CardEventType.CARD_DELETE
+            )
+        ) {
             fullCardMap = new Map<Id, OpenSF__Card__c>(
                 KanbanBoardSelector.getCardsByIds(new List<Id>(cardIds))
             );
@@ -113,7 +138,12 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
             try {
                 String jsonPayload;
 
-                if (eventType == 'delete') {
+                if (
+                    eventType ==
+                    KanbanEnums.cardEventTypeValue(
+                        KanbanEnums.CardEventType.CARD_DELETE
+                    )
+                ) {
                     // For delete, create minimal payload from old data
                     jsonPayload = createDeletePayload(card);
                 } else {

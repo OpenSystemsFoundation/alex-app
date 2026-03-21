@@ -101,8 +101,11 @@ const MAX_PANEL_WIDTH = 800;
 const DELETE_CONFIRM_TIMEOUT = 3000;
 
 export default class KanbanCardPanel extends LightningElement {
+    /** @type {CardDTO} The card data to display in the panel */
     @api card;
+    /** @type {import('c/kanbanStore').Store} The Redux-style store instance */
     @api store;
+    /** @type {boolean} Whether the panel is currently visible */
     @api isOpen = false;
 
     @track modalSettings;

@@ -23,3 +23,10 @@ Use `powershell.exe -Command "sf ..."` to run Salesforce CLI commands. The bash 
 ## Code Style
 
 - prettier-plugin-apex pinned to v2.1.5 (v2.2.6 breaks SOQL formatting and test class visibility)
+
+## Type Safety
+
+- Apex: Use `KanbanEnums` for all status values, event types, and column categories — never raw string literals
+- Apex: Use `CardUpdateRequest.fromMap()` to convert `Map<String, Object>` to typed requests in service methods
+- LWC: Add JSDoc `@type` annotations to `@api` properties and `@typedef` for event payloads
+- E2E: TypeScript strict mode enabled via `e2e/tsconfig.json` — run `npm run type-check:e2e` to validate

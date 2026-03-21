@@ -1,16 +1,12 @@
 import { LightningElement, api, track } from 'lwc';
-import { selectors } from 'c/kanbanStore';
 import {
+    selectors,
     setSelectedBacklogCards,
-    toggleBacklogCardSelection
-} from 'c/kanbanStore';
-import {
+    toggleBacklogCardSelection,
     createBacklogCardAsync,
     updateBacklogCardAsync,
     deleteBacklogCardsAsync,
-    reorderBacklogCardAsync
-} from 'c/kanbanStore';
-import {
+    reorderBacklogCardAsync,
     moveCardsToSprintAsync,
     createSprintAsync,
     addCardsToBacklogSprintAsync,
@@ -18,7 +14,9 @@ import {
 } from 'c/kanbanStore';
 
 export default class KanbanBacklogView extends LightningElement {
+    /** @type {import('c/kanbanStore').Store} The Redux-style store instance */
     @api store;
+    /** @type {boolean} Whether to show debug information */
     @api showDebugInfo = false;
 
     @track searchTerm = '';

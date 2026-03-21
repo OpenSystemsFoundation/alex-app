@@ -11,8 +11,60 @@ import CardOperations from './handlers/cardOperations';
 import SubscriptionEventHandler from './handlers/subscriptionEventHandler';
 import { generateClientId } from './helpers/clientIdGenerator';
 
+/**
+ * @typedef {Object} CardDTO
+ * @property {string} id
+ * @property {string} name
+ * @property {string} subject
+ * @property {string} [description]
+ * @property {string} [priority]
+ * @property {string} [status]
+ * @property {string} [cardType]
+ * @property {string} [color]
+ * @property {string} [dueDate]
+ * @property {number} [storyPoints]
+ * @property {string} columnId
+ * @property {string} boardId
+ * @property {string} [lexoRankPosition]
+ * @property {number} [sequenceNumber]
+ * @property {boolean} [locked]
+ * @property {boolean} [needsRefinement]
+ * @property {{id: string, name: string, photoUrl: string}} [assignee]
+ * @property {{id: string, name: string}} [peerReviewer]
+ * @property {{id: string, subject: string}} [epic]
+ */
+
+/**
+ * @typedef {Object} ColumnDTO
+ * @property {string} id
+ * @property {string} name
+ * @property {string} columnHeader
+ * @property {string} boardId
+ * @property {string} [lexoRankPosition]
+ * @property {string} [color]
+ * @property {string} [status]
+ * @property {string} [category]
+ * @property {number} [cardCount]
+ */
+
+/**
+ * @typedef {Object} SprintDTO
+ * @property {string} id
+ * @property {string} name
+ * @property {string} boardId
+ * @property {string} [goal]
+ * @property {string} status - 'Planning' | 'Active' | 'Completed'
+ * @property {string} [startDate]
+ * @property {string} [endDate]
+ * @property {number} [sprintNumber]
+ * @property {number} [totalStoryPoints]
+ * @property {number} [completedStoryPoints]
+ * @property {number} [velocity]
+ */
+
 export default class KanbanBoard extends LightningElement {
-    @api height; // Optional fixed height, if not set uses dynamic calculation
+    /** @type {string|undefined} Optional fixed height; if not set, uses dynamic calculation */
+    @api height;
 
     // Private properties
     _recordId;

@@ -42,7 +42,9 @@ public with sharing class SprintService {
         OpenSF__Sprint__c sprint = new OpenSF__Sprint__c(
             OpenSF__Board__c = boardId,
             OpenSF__Goal__c = goal,
-            OpenSF__Status__c = 'Planning',
+            OpenSF__Status__c = KanbanEnums.sprintStatusValue(
+                KanbanEnums.SprintStatus.PLANNING
+            ),
             OpenSF__StartDate__c = startDate,
             OpenSF__EndDate__c = endDate,
             OpenSF__SprintNumber__c = nextNumber,
@@ -67,7 +69,10 @@ public with sharing class SprintService {
     public static KanbanBoardDTO.SprintDTO startSprint(Id sprintId) {
         OpenSF__Sprint__c sprint = SprintSelector.getSprintById(sprintId);
 
-        if (sprint.OpenSF__Status__c != 'Planning') {
+        if (
+            sprint.OpenSF__Status__c !=
+            KanbanEnums.sprintStatusValue(KanbanEnums.SprintStatus.PLANNING)
+        ) {
             throw new AuraHandledException(
                 'Only sprints in Planning status can be started.'
             );
@@ -94,7 +99,9 @@ public with sharing class SprintService {
             }
         }
 
-        sprint.OpenSF__Status__c = 'Active';
+        sprint.OpenSF__Status__c = KanbanEnums.sprintStatusValue(
+            KanbanEnums.SprintStatus.ACTIVE
+        );
         sprint.OpenSF__StartDate__c = sprint.OpenSF__StartDate__c != null
             ? sprint.OpenSF__StartDate__c
             : Date.today();
@@ -120,7 +127,12 @@ public with sharing class SprintService {
         createDailySnapshot(sprintId);
 
         // Publish event
-        publishSprintEvent('sprint_started', sprint);
+        publishSprintEvent(
+            KanbanEnums.sprintEventTypeValue(
+                KanbanEnums.SprintEventType.SPRINT_STARTED
+            ),
+            sprint
+        );
 
         return new KanbanBoardDTO.SprintDTO(
             SprintSelector.getSprintById(sprintId)
@@ -137,7 +149,10 @@ public with sharing class SprintService {
     ) {
         OpenSF__Sprint__c sprint = SprintSelector.getSprintById(sprintId);
 
-        if (sprint.OpenSF__Status__c != 'Active') {
+        if (
+            sprint.OpenSF__Status__c !=
+            KanbanEnums.sprintStatusValue(KanbanEnums.SprintStatus.ACTIVE)
+        ) {
             throw new AuraHandledException(
                 'Only active sprints can be completed.'
             );
@@ -222,7 +237,9 @@ public with sharing class SprintService {
         }
 
         // Update sprint
-        sprint.OpenSF__Status__c = 'Completed';
+        sprint.OpenSF__Status__c = KanbanEnums.sprintStatusValue(
+            KanbanEnums.SprintStatus.COMPLETED
+        );
         sprint.OpenSF__CompletedStoryPoints__c = completedPoints;
         sprint.OpenSF__Velocity__c = completedPoints;
         sprint.OpenSF__EndDate__c = sprint.OpenSF__EndDate__c != null
@@ -249,7 +266,12 @@ public with sharing class SprintService {
         createDailySnapshot(sprintId);
 
         // Publish event
-        publishSprintEvent('sprint_completed', sprint);
+        publishSprintEvent(
+            KanbanEnums.sprintEventTypeValue(
+                KanbanEnums.SprintEventType.SPRINT_COMPLETED
+            ),
+            sprint
+        );
 
         return new KanbanBoardDTO.SprintDTO(
             SprintSelector.getSprintById(sprintId)
@@ -310,7 +332,12 @@ public with sharing class SprintService {
 
         // Publish event
         OpenSF__Sprint__c sprint = SprintSelector.getSprintById(sprintId);
-        publishSprintEvent('cards_added', sprint);
+        publishSprintEvent(
+            KanbanEnums.sprintEventTypeValue(
+                KanbanEnums.SprintEventType.CARDS_ADDED
+            ),
+            sprint
+        );
 
         // Return the newly created junctions
         List<OpenSF__SprintCard__c> allCards = SprintSelector.getSprintCardsBySprintId(
@@ -345,7 +372,12 @@ public with sharing class SprintService {
 
         // Publish event
         OpenSF__Sprint__c sprint = SprintSelector.getSprintById(sprintId);
-        publishSprintEvent('card_removed', sprint);
+        publishSprintEvent(
+            KanbanEnums.sprintEventTypeValue(
+                KanbanEnums.SprintEventType.CARD_REMOVED
+            ),
+            sprint
+        );
     }
 
     /**

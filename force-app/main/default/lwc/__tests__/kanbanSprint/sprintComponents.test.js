@@ -793,7 +793,7 @@ describe('c-kanban-sprint-complete', () => {
         await flushPromises();
 
         // Navigate to step 3 (no incomplete cards, so Next goes straight to 3)
-        let nextBtn = element.shadowRoot.querySelector(
+        const nextBtn = element.shadowRoot.querySelector(
             'button.slds-button_brand'
         );
         nextBtn.click();

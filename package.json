@@ -29,7 +29,8 @@
         "alexadmin": "sf org assign permset --name Alex_Admin",
         "test:e2e": "npx playwright test",
         "test:e2e:headed": "npx playwright test --headed",
-        "test:e2e:report": "npx playwright show-report"
+        "test:e2e:report": "npx playwright show-report",
+        "type-check:e2e": "npx tsc --noEmit -p e2e/tsconfig.json"
     },
     "devDependencies": {
         "@lwc/eslint-plugin-lwc": "^2.2.0",
