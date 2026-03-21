@@ -1,4 +1,4 @@
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 import ConnectionStatusIndicator from 'c/connectionStatusIndicator';
 
 describe('c-connection-status-indicator', () => {

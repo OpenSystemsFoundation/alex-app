@@ -1,4 +1,4 @@
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 import ToastManager from 'c/toastManager';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 

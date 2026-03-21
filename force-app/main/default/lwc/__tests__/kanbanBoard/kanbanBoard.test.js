@@ -1,4 +1,4 @@
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 import KanbanBoard from 'c/kanbanBoard';
 import getBoardData from '@salesforce/apex/KanbanBoardController.getBoardData';
 
