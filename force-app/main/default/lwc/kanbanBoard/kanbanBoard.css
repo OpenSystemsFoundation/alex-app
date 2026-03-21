@@ -757,17 +757,6 @@
 .wip-badge--over {
     background: rgb(254, 226, 226);
     color: rgb(220, 38, 38);
-    animation: wipPulse 1.5s ease-in-out infinite;
-}
-
-@keyframes wipPulse {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.7;
-    }
 }
 
 .kanban-column--over-wip {
