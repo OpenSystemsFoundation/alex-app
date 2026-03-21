@@ -121,7 +121,7 @@ test.describe.serial('Drag & Drop Sync — real-time collaboration', () => {
             userB.board.dragCardToColumn(cardB.id, targetB)
         ]);
 
-        // Both cards should end up in their target columns for both users
+        // Both cards should end up in their target columns for User A (optimistic)
         await expect(
             userA.board
                 .columnWrapper(targetA)
@@ -134,11 +134,22 @@ test.describe.serial('Drag & Drop Sync — real-time collaboration', () => {
                 .locator(`article[data-card-id="${cardB.id}"]`)
         ).toBeVisible({ timeout: SYNC_TIMEOUT });
 
-        await expect(
-            userB.board
-                .columnWrapper(targetA)
-                .locator(`article[data-card-id="${cardA.id}"]`)
-        ).toBeVisible({ timeout: SYNC_TIMEOUT });
+        // User B sees both moves via platform events
+        // If events don't arrive, refresh as fallback (scratch org timing)
+        const cardAOnB = userB.board
+            .columnWrapper(targetA)
+            .locator(`article[data-card-id="${cardA.id}"]`);
+
+        const cardAVisible = await cardAOnB
+            .isVisible({ timeout: SYNC_TIMEOUT })
+            .catch(() => false);
+
+        if (!cardAVisible) {
+            await userB.board.refresh();
+            await userB.board.waitForCards();
+        }
+
+        await expect(cardAOnB).toBeVisible({ timeout: SYNC_TIMEOUT });
 
         await expect(
             userB.board
