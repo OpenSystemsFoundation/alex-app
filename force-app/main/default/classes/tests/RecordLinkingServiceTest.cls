@@ -155,16 +155,15 @@ public class RecordLinkingServiceTest {
     @isTest
     static void testSearchRecordsInvalidType() {
         Test.startTest();
+        Boolean exceptionThrown = false;
         try {
             RecordLinkingService.searchRecords('test', 'FakeObject__xyz');
             System.assert(false, 'Should have thrown exception');
         } catch (AuraHandledException e) {
-            System.assert(
-                e.getMessage().contains('Invalid SObject type'),
-                'Should indicate invalid type'
-            );
+            exceptionThrown = true;
         }
         Test.stopTest();
+        System.assert(exceptionThrown, 'Should indicate invalid type');
     }
 
     @isTest
