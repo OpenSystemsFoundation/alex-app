@@ -142,17 +142,19 @@
                         </option>
                     </template>
                 </select>
-                <button
-                    class={hideCompletedClass}
-                    onclick={handleToggleHideCompleted}
-                    title="Hide cards in Done-category columns"
-                >
-                    <lightning-icon
-                        icon-name="utility:check"
-                        size="xx-small"
-                    ></lightning-icon>
-                    Hide Done
-                </button>
+                <template lwc:if={showHideDoneToggle}>
+                    <button
+                        class={hideCompletedClass}
+                        onclick={handleToggleHideCompleted}
+                        title="Hide cards in Done-category columns"
+                    >
+                        <lightning-icon
+                            icon-name="utility:check"
+                            size="xx-small"
+                        ></lightning-icon>
+                        Hide Done
+                    </button>
+                </template>
                 <template lwc:if={hasActiveFilters}>
                     <span class="board-filter-summary"
                         >{filterSummary}</span

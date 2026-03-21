@@ -18,6 +18,7 @@
     <tabs>Board__c</tabs>
     <tabs>Card__c</tabs>
     <tabs>Admin_Management</tabs>
+    <tabs>Planning_Poker</tabs>
     <tabs>standard-Task</tabs>
     <tabs>standard-Dashboard</tabs>
     <tabs>standard-report</tabs>

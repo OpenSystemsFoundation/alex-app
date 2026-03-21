@@ -290,6 +290,10 @@ export default class KanbanBoard extends LightningElement {
         ];
     }
 
+    get showHideDoneToggle() {
+        return !this.isSprintBoard;
+    }
+
     get hideCompletedClass() {
         return this._boardHideCompleted
             ? 'filter-toggle filter-toggle--active'
