@@ -17,8 +17,8 @@
     <flexiPageRegions>
         <itemInstances>
             <componentInstance>
-                <componentName>OpenSF:retroBoard</componentName>
-                <identifier>OpenSF_retroBoard</identifier>
+                <componentName>retroBoard</componentName>
+                <identifier>c_retroBoard</identifier>
             </componentInstance>
         </itemInstances>
         <name>main</name>
@@ -27,7 +27,7 @@
     <masterLabel>Retrospective Record Page</masterLabel>
     <sobjectType>Retrospective__c</sobjectType>
     <template>
-        <name>flexipage:recordHomeHeaderAndRightSidebar</name>
+        <name>flexipage:recordHomeTemplateDesktop</name>
     </template>
     <type>RecordPage</type>
 </FlexiPage>

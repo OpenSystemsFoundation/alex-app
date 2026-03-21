@@ -9,6 +9,7 @@ import castVote from '@salesforce/apex/PlanningPokerController.castVote';
 import revealVotes from '@salesforce/apex/PlanningPokerController.revealVotes';
 import clearVotes from '@salesforce/apex/PlanningPokerController.clearVotes';
 import getSession from '@salesforce/apex/PlanningPokerController.getSession';
+// eslint-disable-next-line no-unused-vars -- wired for future use
 import closeSession from '@salesforce/apex/PlanningPokerController.closeSession';
 import setReaction from '@salesforce/apex/PlanningPokerController.setReaction';
 import getCurrentUserId from '@salesforce/apex/PlanningPokerController.getCurrentUserId';
@@ -659,6 +660,7 @@ export default class PlanningPoker extends LightningElement {
         if (this._pollInterval) {
             clearInterval(this._pollInterval);
         }
+        // eslint-disable-next-line @lwc/lwc/no-async-operation -- polling required for real-time session sync
         this._pollInterval = setInterval(() => {
             if (this.session) {
                 this._refreshSession();
@@ -671,6 +673,7 @@ export default class PlanningPoker extends LightningElement {
             clearInterval(this._timerInterval);
             this._timerInterval = null;
         }
+        // eslint-disable-next-line @lwc/lwc/no-async-operation -- countdown timer requires setInterval
         this._timerInterval = setInterval(() => {
             if (this.timerSeconds > 0) {
                 this.timerSeconds--;

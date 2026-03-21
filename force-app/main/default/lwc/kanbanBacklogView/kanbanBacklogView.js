@@ -186,7 +186,7 @@ export default class KanbanBacklogView extends LightningElement {
         const ungroupedCards = allCards.filter(
             (c) => !cardsInSprints.has(c.Id)
         );
-        const isBacklogCollapsed = !!this._collapsedSprints['ungrouped'];
+        const isBacklogCollapsed = !!this._collapsedSprints.ungrouped;
         sections.push({
             key: 'ungrouped',
             isSprintSection: false,

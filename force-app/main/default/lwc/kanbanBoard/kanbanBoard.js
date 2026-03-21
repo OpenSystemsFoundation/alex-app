@@ -1,10 +1,5 @@
 import { LightningElement, api, track, wire } from 'lwc';
-import {
-    createStore,
-    selectors,
-    moveCardToBacklogAsync,
-    moveCardAsync
-} from 'c/kanbanStore';
+import { createStore, selectors } from 'c/kanbanStore';
 import getKanbanConfig from '@salesforce/apex/KanbanBoardController.getKanbanConfig';
 import EventHandler from './handlers/eventHandler';
 import RequestTracker from './helpers/requestTracker';
@@ -14,6 +9,10 @@ import BoardDataLoader from './managers/boardDataLoader';
 import DragDropHandler from './handlers/dragDropHandler';
 import CardOperations from './handlers/cardOperations';
 import SubscriptionEventHandler from './handlers/subscriptionEventHandler';
+import FilterManager from './managers/filterManager';
+import SwimlaneManager from './managers/swimlaneManager';
+import MobileNavigationManager from './managers/mobileNavigationManager';
+import ContextMenuManager from './managers/contextMenuManager';
 import { generateClientId } from './helpers/clientIdGenerator';
 
 /**
@@ -107,7 +106,6 @@ export default class KanbanBoard extends LightningElement {
 
     // Mobile state
     @track _mobileActiveColumnIndex = 0;
-    _touchStartX = null;
 
     // Sprint UI state
     @track showSprintModal = false;
@@ -150,6 +148,10 @@ export default class KanbanBoard extends LightningElement {
     _dragDropHandler = null;
     _cardOperations = null;
     _subscriptionEventHandler = null;
+    _filterManager = null;
+    _swimlaneManager = null;
+    _mobileNavigationManager = null;
+    _contextMenuManager = null;
 
     // Store accessor
     get store() {
@@ -171,123 +173,15 @@ export default class KanbanBoard extends LightningElement {
     }
 
     get filteredColumns() {
-        const cols = this.columns;
-        if (!cols || cols.length === 0) return [];
-
-        const search = this._boardSearchTerm.toLowerCase().trim();
-        const priority = this._boardFilterPriority;
-        const cardType = this._boardFilterCardType;
-        const hideCompleted = this._boardHideCompleted;
-        const hasFilter =
-            search || priority !== 'All' || cardType !== 'All' || hideCompleted;
-        const activeIdx = this._mobileActiveColumnIndex;
-
-        // Auto-expire done cards for non-Sprint boards based on retention days
-        const isSprint = this.isSprintBoard;
-        const retentionDays = this.board?.doneCardRetentionDays;
-        const hasRetention =
-            !isSprint && retentionDays != null && retentionDays >= 0;
-        let retentionCutoff = null;
-        if (hasRetention) {
-            retentionCutoff = new Date();
-            retentionCutoff.setDate(retentionCutoff.getDate() - retentionDays);
-        }
-
-        const addMobileClass = (col, idx) => {
-            const isActive = idx === activeIdx;
-            const isOverWip = col.hasWipLimit && col.cardCount > col.wipLimit;
-            const baseClass =
-                'kanban-column slds-col slds-grid slds-grid_vertical';
-            const wipClass = isOverWip ? ' kanban-column--over-wip' : '';
-            return {
-                ...col,
-                isOverWipLimit: isOverWip,
-                wipBadgeClass: `wip-badge${isOverWip ? ' wip-badge--over' : ''}`,
-                mobileColumnClass: isActive
-                    ? `${baseClass} mobile-column-active${wipClass}`
-                    : `${baseClass} mobile-column-hidden${wipClass}`
-            };
-        };
-
-        if (!hasFilter && !hasRetention) {
-            return cols.map((col, idx) => addMobileClass(col, idx));
-        }
-
-        return cols.map((col, idx) => {
-            // Hide Done and Released columns when toggle is on
-            if (hideCompleted && col.isCompleted) {
-                return addMobileClass(
-                    { ...col, cards: [], cardCount: 0, isHidden: true },
-                    idx
-                );
-            }
-
-            const filtered = (col.cards || []).filter((card) => {
-                // Auto-hide expired done cards (retention policy)
-                if (
-                    hasRetention &&
-                    col.isCompleted &&
-                    card.doneDate &&
-                    new Date(card.doneDate) < retentionCutoff
-                ) {
-                    return false;
-                }
-
-                // Hide cards with Done status
-                if (hideCompleted && card.status === 'Done') {
-                    return false;
-                }
-
-                // Search: match subject, Name, cardType, assignee name
-                if (search) {
-                    const haystack = [
-                        card.subject,
-                        card.Name,
-                        card.cardType,
-                        card.assignee?.name,
-                        card.status
-                    ]
-                        .filter(Boolean)
-                        .join(' ')
-                        .toLowerCase();
-                    if (!haystack.includes(search)) return false;
-                }
-
-                // Priority filter
-                if (priority !== 'All' && card.priority !== priority) {
-                    return false;
-                }
-
-                // Card type filter
-                if (cardType !== 'All' && card.cardType !== cardType) {
-                    return false;
-                }
-
-                return true;
-            });
-
-            return addMobileClass(
-                { ...col, cards: filtered, cardCount: filtered.length },
-                idx
-            );
-        });
+        return this.filterManager.getFilteredColumns();
     }
 
     get hasActiveFilters() {
-        return (
-            this._boardSearchTerm.trim() ||
-            this._boardFilterPriority !== 'All' ||
-            this._boardFilterCardType !== 'All' ||
-            this._boardHideCompleted
-        );
+        return this.filterManager.hasActiveFilters;
     }
 
     get filteredCardCount() {
-        if (!this.hasActiveFilters) return null;
-        return this.filteredColumns.reduce(
-            (sum, col) => sum + (col.cardCount || 0),
-            0
-        );
+        return this.filterManager.getFilteredCardCount(this.filteredColumns);
     }
 
     get totalCardCount() {
@@ -298,39 +192,26 @@ export default class KanbanBoard extends LightningElement {
     }
 
     get filterSummary() {
-        if (!this.hasActiveFilters) return '';
-        return `${this.filteredCardCount} of ${this.totalCardCount} cards`;
+        return this.filterManager.getFilterSummary(
+            this.filteredColumns,
+            this.totalCardCount
+        );
     }
 
     get priorityFilterOptions() {
-        return [
-            { label: 'All Priorities', value: 'All' },
-            { label: 'Blocking', value: 'Blocking' },
-            { label: 'High', value: 'High' },
-            { label: 'Medium', value: 'Medium' },
-            { label: 'Low', value: 'Low' },
-            { label: 'Trivial', value: 'Trivial' }
-        ];
+        return this.filterManager.priorityFilterOptions;
     }
 
     get cardTypeFilterOptions() {
-        return [
-            { label: 'All Types', value: 'All' },
-            { label: 'Story', value: 'Story' },
-            { label: 'Bug', value: 'Bug' },
-            { label: 'Task', value: 'Task' },
-            { label: 'Epic', value: 'Epic' }
-        ];
+        return this.filterManager.cardTypeFilterOptions;
     }
 
     get showHideDoneToggle() {
-        return !this.isSprintBoard;
+        return this.filterManager.showHideDoneToggle;
     }
 
     get hideCompletedClass() {
-        return this._boardHideCompleted
-            ? 'filter-toggle filter-toggle--active'
-            : 'filter-toggle';
+        return this.filterManager.hideCompletedClass;
     }
 
     get cardsByColumn() {
@@ -416,6 +297,34 @@ export default class KanbanBoard extends LightningElement {
             this._subscriptionEventHandler = new SubscriptionEventHandler(this);
         }
         return this._subscriptionEventHandler;
+    }
+
+    get filterManager() {
+        if (!this._filterManager) {
+            this._filterManager = new FilterManager(this);
+        }
+        return this._filterManager;
+    }
+
+    get swimlaneManager() {
+        if (!this._swimlaneManager) {
+            this._swimlaneManager = new SwimlaneManager(this);
+        }
+        return this._swimlaneManager;
+    }
+
+    get mobileNavigationManager() {
+        if (!this._mobileNavigationManager) {
+            this._mobileNavigationManager = new MobileNavigationManager(this);
+        }
+        return this._mobileNavigationManager;
+    }
+
+    get contextMenuManager() {
+        if (!this._contextMenuManager) {
+            this._contextMenuManager = new ContextMenuManager(this);
+        }
+        return this._contextMenuManager;
     }
 
     @wire(getKanbanConfig)
@@ -976,40 +885,23 @@ export default class KanbanBoard extends LightningElement {
     // =============================================================================
 
     handleBoardSearch(event) {
-        const value = event.target.value;
-        // Debounce search input for smooth typing
-        if (this._searchDebounceTimer) {
-            // eslint-disable-next-line @lwc/lwc/no-async-operation
-            clearTimeout(this._searchDebounceTimer);
-        }
-        // eslint-disable-next-line @lwc/lwc/no-async-operation
-        this._searchDebounceTimer = setTimeout(() => {
-            this._boardSearchTerm = value;
-        }, 150);
+        this.filterManager.handleBoardSearch(event);
     }
 
     handlePriorityFilter(event) {
-        this._boardFilterPriority = event.target.value;
+        this.filterManager.handlePriorityFilter(event);
     }
 
     handleCardTypeFilter(event) {
-        this._boardFilterCardType = event.target.value;
+        this.filterManager.handleCardTypeFilter(event);
     }
 
     handleToggleHideCompleted() {
-        this._boardHideCompleted = !this._boardHideCompleted;
+        this.filterManager.handleToggleHideCompleted();
     }
 
     handleClearFilters() {
-        this._boardSearchTerm = '';
-        this._boardFilterPriority = 'All';
-        this._boardFilterCardType = 'All';
-        this._boardHideCompleted = false;
-        // Clear the search input element value
-        const searchInput = this.template.querySelector('.board-filter-search');
-        if (searchInput) {
-            searchInput.value = '';
-        }
+        this.filterManager.handleClearFilters();
     }
 
     // =============================================================================
@@ -1017,110 +909,19 @@ export default class KanbanBoard extends LightningElement {
     // =============================================================================
 
     get swimlaneModeOptions() {
-        return [
-            { label: 'No Swimlanes', value: 'none' },
-            { label: 'By Assignee', value: 'assignee' },
-            { label: 'By Priority', value: 'priority' },
-            { label: 'By Card Type', value: 'cardType' },
-            { label: 'By Epic', value: 'epic' }
-        ];
+        return this.swimlaneManager.modeOptions;
     }
 
     get hasSwimlanes() {
-        return this._swimlaneMode !== 'none';
+        return this.swimlaneManager.isActive;
     }
 
     get swimlanes() {
-        if (!this.hasSwimlanes) return [];
-        const cols = this.filteredColumns;
-        if (!cols || cols.length === 0) return [];
-
-        // Collect all unique values for the grouping key
-        const groupMap = new Map();
-        const mode = this._swimlaneMode;
-
-        cols.forEach((col) => {
-            (col.cards || []).forEach((card) => {
-                let key;
-                let label;
-                switch (mode) {
-                    case 'assignee':
-                        key = card.assigneeId || '__unassigned__';
-                        label = card.assignee?.name || 'Unassigned';
-                        break;
-                    case 'priority':
-                        key = card.priority || '__none__';
-                        label = card.priority || 'No Priority';
-                        break;
-                    case 'cardType':
-                        key = card.cardType || '__none__';
-                        label = card.cardType || 'No Type';
-                        break;
-                    case 'epic':
-                        key = card.epicId || '__none__';
-                        label = card.epic?.subject || 'No Epic';
-                        break;
-                    default:
-                        key = '__all__';
-                        label = 'All';
-                }
-                if (!groupMap.has(key)) {
-                    groupMap.set(key, label);
-                }
-            });
-        });
-
-        // Build swimlane rows
-        const swimlanes = [];
-        groupMap.forEach((label, key) => {
-            const laneCols = cols.map((col) => {
-                const laneCards = (col.cards || []).filter((card) => {
-                    switch (mode) {
-                        case 'assignee':
-                            return (
-                                (card.assigneeId || '__unassigned__') === key
-                            );
-                        case 'priority':
-                            return (card.priority || '__none__') === key;
-                        case 'cardType':
-                            return (card.cardType || '__none__') === key;
-                        case 'epic':
-                            return (card.epicId || '__none__') === key;
-                        default:
-                            return true;
-                    }
-                });
-                return {
-                    ...col,
-                    cards: laneCards,
-                    cardCount: laneCards.length,
-                    laneKey: `${key}-${col.Id}`
-                };
-            });
-            const totalCards = laneCols.reduce(
-                (sum, c) => sum + c.cardCount,
-                0
-            );
-            swimlanes.push({
-                key,
-                label,
-                columns: laneCols,
-                totalCards
-            });
-        });
-
-        // Sort: put items with cards first, then alphabetically
-        swimlanes.sort((a, b) => {
-            if (a.totalCards === 0 && b.totalCards > 0) return 1;
-            if (a.totalCards > 0 && b.totalCards === 0) return -1;
-            return a.label.localeCompare(b.label);
-        });
-
-        return swimlanes;
+        return this.swimlaneManager.getSwimlanes(this.filteredColumns);
     }
 
     handleSwimlaneChange(event) {
-        this._swimlaneMode = event.target.value;
+        this.swimlaneManager.handleModeChange(event);
     }
 
     // =============================================================================
@@ -1180,96 +981,16 @@ export default class KanbanBoard extends LightningElement {
     // Board Context Menu
     // =============================================================================
 
-    _boardContextMenuCardId = null;
-    _boardContextMenuColumnId = null;
-
-    _buildBoardContextMenuItems(currentColumnId) {
-        const items = [];
-
-        // Build "Move to Column" submenu with all columns except the current one
-        const cols = this.columns || [];
-        const columnSubmenu = [];
-        for (const col of cols) {
-            if (col.Id === currentColumnId) continue;
-            columnSubmenu.push({
-                label: col.columnHeader || col.name,
-                value: col.Id
-            });
-        }
-        if (columnSubmenu.length > 0) {
-            items.push({
-                label: 'Move to Column',
-                value: 'moveToColumn',
-                icon: 'utility:right',
-                submenu: columnSubmenu
-            });
-        }
-
-        items.push(
-            {
-                label: 'Move to Backlog',
-                value: 'moveToBacklog',
-                icon: 'utility:back',
-                dividerBefore: columnSubmenu.length > 0
-            },
-            {
-                label: 'Delete',
-                value: 'delete',
-                icon: 'utility:delete',
-                dividerBefore: true
-            }
-        );
-
-        return items;
-    }
-
     get boardContextMenuItems() {
-        return this._buildBoardContextMenuItems(null);
+        return this.contextMenuManager.defaultMenuItems;
     }
 
     handleBoardCardContextMenu(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        const cardId = event.currentTarget.dataset.cardId;
-        const columnId = event.currentTarget.dataset.columnId;
-        this._boardContextMenuCardId = cardId;
-        this._boardContextMenuColumnId = columnId;
-        const contextMenu = this.template.querySelector(
-            'c-kanban-context-menu'
-        );
-        if (contextMenu) {
-            contextMenu.menuItems = this._buildBoardContextMenuItems(columnId);
-            contextMenu.show(event.clientX, event.clientY);
-        }
+        this.contextMenuManager.handleContextMenu(event);
     }
 
     async handleBoardContextMenuSelect(event) {
-        const { value, subValue } = event.detail;
-        const cardId = this._boardContextMenuCardId;
-        if (!cardId || !this.store) return;
-
-        switch (value) {
-            case 'moveToColumn':
-                if (subValue) {
-                    await this.store.dispatch(
-                        moveCardAsync(cardId, subValue, 0)
-                    );
-                }
-                break;
-            case 'moveToBacklog':
-                await this.store.dispatch(
-                    moveCardToBacklogAsync(
-                        this.activeSprint?.Id || null,
-                        cardId
-                    )
-                );
-                break;
-            case 'delete':
-                this.cardOperations.handleCardDeleted(cardId);
-                break;
-            default:
-                break;
-        }
+        await this.contextMenuManager.handleMenuSelect(event);
     }
 
     // =============================================================================
@@ -1315,66 +1036,48 @@ export default class KanbanBoard extends LightningElement {
     // =============================================================================
 
     get mobileActiveColumnId() {
-        const cols = this.filteredColumns;
-        if (cols.length === 0) return null;
-        const idx = Math.min(this._mobileActiveColumnIndex, cols.length - 1);
-        return cols[idx]?.Id || null;
+        return this.mobileNavigationManager.getActiveColumnId(
+            this.filteredColumns
+        );
     }
 
     get mobileColumnCounter() {
-        const cols = this.filteredColumns;
-        if (cols.length === 0) return '';
-        const idx = Math.min(this._mobileActiveColumnIndex, cols.length - 1);
-        return `${idx + 1} / ${cols.length}`;
+        return this.mobileNavigationManager.getColumnCounter(
+            this.filteredColumns
+        );
     }
 
     get isMobileFirstColumn() {
-        return this._mobileActiveColumnIndex <= 0;
+        return this.mobileNavigationManager.isFirstColumn;
     }
 
     get isMobileLastColumn() {
-        const cols = this.filteredColumns;
-        return this._mobileActiveColumnIndex >= cols.length - 1;
+        return this.mobileNavigationManager.isLastColumn(this.filteredColumns);
     }
 
     handleMobileColumnChange(event) {
-        const selectedId = event.target.value;
-        const cols = this.filteredColumns;
-        const idx = cols.findIndex((c) => c.Id === selectedId);
-        if (idx >= 0) {
-            this._mobileActiveColumnIndex = idx;
-        }
+        this.mobileNavigationManager.handleColumnChange(
+            event,
+            this.filteredColumns
+        );
     }
 
     handleMobilePrevColumn() {
-        if (this._mobileActiveColumnIndex > 0) {
-            this._mobileActiveColumnIndex--;
-        }
+        this.mobileNavigationManager.handlePrevColumn();
     }
 
     handleMobileNextColumn() {
-        const cols = this.filteredColumns;
-        if (this._mobileActiveColumnIndex < cols.length - 1) {
-            this._mobileActiveColumnIndex++;
-        }
+        this.mobileNavigationManager.handleNextColumn(this.filteredColumns);
     }
 
     handleTouchStart(event) {
-        if (event.touches && event.touches.length === 1) {
-            this._touchStartX = event.touches[0].clientX;
-        }
+        this.mobileNavigationManager.handleTouchStart(event);
     }
 
     handleTouchEnd(event) {
-        if (this._touchStartX === null || !event.changedTouches) return;
-        const deltaX = event.changedTouches[0].clientX - this._touchStartX;
-        this._touchStartX = null;
-
-        const SWIPE_THRESHOLD = 60;
-        if (deltaX > SWIPE_THRESHOLD) {
-            this.handleMobilePrevColumn();
-        } else if (deltaX < -SWIPE_THRESHOLD) {
-            this.handleMobileNextColumn();
-        }
+        this.mobileNavigationManager.handleTouchEnd(
+            event,
+            this.filteredColumns
+        );
     }
 }

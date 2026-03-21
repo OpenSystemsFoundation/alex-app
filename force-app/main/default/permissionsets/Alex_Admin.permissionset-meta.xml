@@ -208,17 +208,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>LinkedRecord__c.RecordId__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>LinkedRecord__c.RecordName__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>LinkedRecord__c.SObjectType__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -479,11 +469,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>RetroCard__c.Author__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>RetroCard__c.Category__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

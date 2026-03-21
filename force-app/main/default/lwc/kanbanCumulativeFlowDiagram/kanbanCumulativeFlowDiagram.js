@@ -223,7 +223,6 @@ export default class KanbanCumulativeFlowDiagram extends LightningElement {
         if (this.showStacked) {
             // Draw from bottom to top (reversed column order so first column is on top)
             for (let ci = numCols - 1; ci >= 0; ci--) {
-                const colName = this.columnNames[ci];
                 const color = COLUMN_COLORS[ci % COLUMN_COLORS.length];
 
                 ctx.fillStyle = color + '80'; // 50% opacity

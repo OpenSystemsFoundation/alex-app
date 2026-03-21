@@ -335,7 +335,7 @@ public with sharing class KanbanBoardDTO {
     /**
      * Card Custom Field configuration DTO
      */
-    public class CardCustomFieldDTO {
+    public virtual class CardCustomFieldDTO {
         @AuraEnabled
         public String fieldApiName;
         @AuraEnabled

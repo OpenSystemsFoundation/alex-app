@@ -1554,7 +1554,7 @@ describe('c-admin-management', () => {
 
             const columnItems =
                 element.shadowRoot.querySelectorAll('.column-item');
-            const dragEvent = new Event('dragstart', { bubbles: true });
+            const dragEvent = new CustomEvent('dragstart', { bubbles: true });
             Object.defineProperty(dragEvent, 'dataTransfer', {
                 value: { effectAllowed: '' }
             });
@@ -1570,7 +1570,7 @@ describe('c-admin-management', () => {
 
             const columnsList =
                 element.shadowRoot.querySelector('.columns-list');
-            const dragOverEvent = new Event('dragover', {
+            const dragOverEvent = new CustomEvent('dragover', {
                 bubbles: true,
                 cancelable: true
             });
@@ -1590,7 +1590,7 @@ describe('c-admin-management', () => {
                 element.shadowRoot.querySelectorAll('.column-item');
 
             // Start dragging col1
-            const dragStartEvent = new Event('dragstart', {
+            const dragStartEvent = new CustomEvent('dragstart', {
                 bubbles: true
             });
             Object.defineProperty(dragStartEvent, 'dataTransfer', {
@@ -1600,7 +1600,7 @@ describe('c-admin-management', () => {
             await flushPromises();
 
             // Enter col2
-            const dragEnterEvent = new Event('dragenter', {
+            const dragEnterEvent = new CustomEvent('dragenter', {
                 bubbles: true,
                 cancelable: true
             });
@@ -1615,7 +1615,7 @@ describe('c-admin-management', () => {
                 element.shadowRoot.querySelectorAll('.column-item');
 
             // Start dragging col1
-            const dragStartEvent = new Event('dragstart', {
+            const dragStartEvent = new CustomEvent('dragstart', {
                 bubbles: true
             });
             Object.defineProperty(dragStartEvent, 'dataTransfer', {
@@ -1625,7 +1625,7 @@ describe('c-admin-management', () => {
             await flushPromises();
 
             // Enter same col1
-            const dragEnterEvent = new Event('dragenter', {
+            const dragEnterEvent = new CustomEvent('dragenter', {
                 bubbles: true,
                 cancelable: true
             });
@@ -1640,7 +1640,7 @@ describe('c-admin-management', () => {
                 element.shadowRoot.querySelectorAll('.column-item');
 
             // Start drag
-            const dragStartEvent = new Event('dragstart', {
+            const dragStartEvent = new CustomEvent('dragstart', {
                 bubbles: true
             });
             Object.defineProperty(dragStartEvent, 'dataTransfer', {
@@ -1650,7 +1650,7 @@ describe('c-admin-management', () => {
             await flushPromises();
 
             // End drag
-            const dragEndEvent = new Event('dragend', { bubbles: true });
+            const dragEndEvent = new CustomEvent('dragend', { bubbles: true });
             columnItems[0].dispatchEvent(dragEndEvent);
             await flushPromises();
         });
@@ -1663,7 +1663,7 @@ describe('c-admin-management', () => {
                 element.shadowRoot.querySelectorAll('.column-item');
 
             // Start dragging col1
-            const dragStartEvent = new Event('dragstart', {
+            const dragStartEvent = new CustomEvent('dragstart', {
                 bubbles: true
             });
             Object.defineProperty(dragStartEvent, 'dataTransfer', {
@@ -1673,7 +1673,7 @@ describe('c-admin-management', () => {
             await flushPromises();
 
             // Enter col3
-            const dragEnterEvent = new Event('dragenter', {
+            const dragEnterEvent = new CustomEvent('dragenter', {
                 bubbles: true,
                 cancelable: true
             });
@@ -1683,7 +1683,7 @@ describe('c-admin-management', () => {
             // Drop
             const columnsList =
                 element.shadowRoot.querySelector('.columns-list');
-            const dropEvent = new Event('drop', {
+            const dropEvent = new CustomEvent('drop', {
                 bubbles: true,
                 cancelable: true
             });
@@ -1702,7 +1702,7 @@ describe('c-admin-management', () => {
 
             const columnsList =
                 element.shadowRoot.querySelector('.columns-list');
-            const dropEvent = new Event('drop', {
+            const dropEvent = new CustomEvent('drop', {
                 bubbles: true,
                 cancelable: true
             });
@@ -1725,7 +1725,7 @@ describe('c-admin-management', () => {
                 element.shadowRoot.querySelectorAll('.column-item');
 
             // Start dragging col1
-            const dragStartEvent = new Event('dragstart', {
+            const dragStartEvent = new CustomEvent('dragstart', {
                 bubbles: true
             });
             Object.defineProperty(dragStartEvent, 'dataTransfer', {
@@ -1735,7 +1735,7 @@ describe('c-admin-management', () => {
             await flushPromises();
 
             // Enter col2
-            const dragEnterEvent = new Event('dragenter', {
+            const dragEnterEvent = new CustomEvent('dragenter', {
                 bubbles: true,
                 cancelable: true
             });
@@ -1746,7 +1746,7 @@ describe('c-admin-management', () => {
             getColumns.mockResolvedValue(MOCK_COLUMNS);
             const columnsList =
                 element.shadowRoot.querySelector('.columns-list');
-            const dropEvent = new Event('drop', {
+            const dropEvent = new CustomEvent('drop', {
                 bubbles: true,
                 cancelable: true
             });
@@ -1767,7 +1767,7 @@ describe('c-admin-management', () => {
                 element.shadowRoot.querySelectorAll('.column-item');
 
             // Drag col3
-            const dragStartEvent = new Event('dragstart', {
+            const dragStartEvent = new CustomEvent('dragstart', {
                 bubbles: true
             });
             Object.defineProperty(dragStartEvent, 'dataTransfer', {
@@ -1777,7 +1777,7 @@ describe('c-admin-management', () => {
             await flushPromises();
 
             // Enter col1
-            const dragEnterEvent = new Event('dragenter', {
+            const dragEnterEvent = new CustomEvent('dragenter', {
                 bubbles: true,
                 cancelable: true
             });
@@ -1787,7 +1787,7 @@ describe('c-admin-management', () => {
             // Drop
             const columnsList =
                 element.shadowRoot.querySelector('.columns-list');
-            const dropEvent = new Event('drop', {
+            const dropEvent = new CustomEvent('drop', {
                 bubbles: true,
                 cancelable: true
             });

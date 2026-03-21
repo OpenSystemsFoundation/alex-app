@@ -9,7 +9,7 @@
     <targetConfigs>
         <targetConfig targets="lightning__RecordPage">
             <objects>
-                <object>OpenSF__Retrospective__c</object>
+                <object>Retrospective__c</object>
             </objects>
         </targetConfig>
     </targetConfigs>

@@ -173,7 +173,7 @@
             </conditions>
             <conditions>
                 <leftValueReference
-                >$Record.OpenSF__LexoRankPosition__c</leftValueReference>
+                >$Record.LexoRankPosition__c</leftValueReference>
                 <operator>IsChanged</operator>
                 <rightValue>
                     <booleanValue>false</booleanValue>
