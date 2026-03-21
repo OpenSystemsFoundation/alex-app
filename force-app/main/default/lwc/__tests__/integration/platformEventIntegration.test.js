@@ -30,13 +30,13 @@ describe('Platform Event Integration Tests', () => {
                     cards: [
                         {
                             Id: 'card1',
-                            OpenSF__Subject__c: 'Task 1',
-                            OpenSF__Status__c: 'To Do'
+                            subject: 'Task 1',
+                            status: 'To Do'
                         },
                         {
                             Id: 'card2',
-                            OpenSF__Subject__c: 'Task 2',
-                            OpenSF__Status__c: 'To Do'
+                            subject: 'Task 2',
+                            status: 'To Do'
                         }
                     ]
                 },
@@ -57,8 +57,8 @@ describe('Platform Event Integration Tests', () => {
                 OpenSF__EventType__c: 'create',
                 OpenSF__Payload__c: JSON.stringify({
                     Id: 'card3',
-                    OpenSF__Subject__c: 'New Task',
-                    OpenSF__Status__c: 'To Do',
+                    subject: 'New Task',
+                    status: 'To Do',
                     columnId: 'col1'
                 })
             };
@@ -78,8 +78,8 @@ describe('Platform Event Integration Tests', () => {
                 OpenSF__EventType__c: 'update',
                 OpenSF__Payload__c: JSON.stringify({
                     Id: 'card1',
-                    OpenSF__Subject__c: 'Updated Task',
-                    OpenSF__Status__c: 'To Do',
+                    subject: 'Updated Task',
+                    status: 'To Do',
                     columnId: 'col1'
                 })
             };
@@ -90,7 +90,7 @@ describe('Platform Event Integration Tests', () => {
             const col1Cards = state.columns[0].cards;
             const updatedCard = col1Cards.find((c) => c.Id === 'card1');
             expect(updatedCard).toBeDefined();
-            expect(updatedCard.OpenSF__Subject__c).toBe('Updated Task');
+            expect(updatedCard.subject).toBe('Updated Task');
         });
     });
 
@@ -127,8 +127,8 @@ describe('Platform Event Integration Tests', () => {
                 OpenSF__EventType__c: 'move',
                 OpenSF__Payload__c: JSON.stringify({
                     Id: 'card1',
-                    OpenSF__Subject__c: 'Task 1',
-                    OpenSF__Status__c: 'In Progress',
+                    subject: 'Task 1',
+                    status: 'In Progress',
                     columnId: 'col2'
                 })
             };

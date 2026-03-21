@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 import NavigationUtil from 'c/navigationUtil';
 import { mockNavigate, getNavigateCalledWith } from 'lightning/navigation';
 import {

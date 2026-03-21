@@ -1,0 +1,27 @@
+# Setup steps for GitHub Copilot coding agent
+# This runs BEFORE Copilot starts working on issues/PRs, giving it
+# access to Salesforce CLI, Node.js, and the project dependencies.
+
+setup:
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+          node-version: '22'
+
+    - name: Install project dependencies
+      run: npm ci
+
+    - name: Install Salesforce CLI
+      run: npm install -g @salesforce/cli
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium
+
+    - name: Authenticate DevHub
+      run: |
+          echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
+          sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
+          rm sfdx_auth.txt
+
+    - name: Verify SF CLI
+      run: sf version && sf org list --all || true

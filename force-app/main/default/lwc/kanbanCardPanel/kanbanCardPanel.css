@@ -43,3 +43,7 @@
     background: rgb(250, 250, 250);
     flex-shrink: 0;
 }
+
+.template-btn {
+    flex-shrink: 0;
+}
