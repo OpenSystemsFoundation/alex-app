@@ -229,7 +229,10 @@ System.debug('E2E_RETRO_ID:' + retro.Id);
     };
 }
 
-export function createIsolatedBoard(label: string = 'E2E'): BoardData {
+export function createIsolatedBoard(
+    label: string = 'E2E',
+    boardType: string = 'Project'
+): BoardData {
     const boardName = `${label}-${Date.now()}`;
 
     // Anonymous Apex that creates a board, 6 columns, and cards.
@@ -238,7 +241,7 @@ export function createIsolatedBoard(label: string = 'E2E'): BoardData {
 OpenSF__Board__c board = new OpenSF__Board__c(
     Name = '${boardName}',
     OpenSF__Status__c = 'Published',
-    OpenSF__Type__c = 'Project',
+    OpenSF__Type__c = '${boardType}',
     OpenSF__Active__c = true,
     OpenSF__EmailNotifications__c = false,
     OpenSF__SalesforceNotifications__c = false
