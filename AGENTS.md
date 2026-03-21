@@ -330,4 +330,4 @@ User action → dispatch thunk → Apex controller → DB update → Trigger fir
 
 Place Apex test classes in the same `classes/` directory as the classes they test:
 
-- `force-app/main/default/classes/MyClassTest.cls`
+- `force-alex/main/default/classes/MyClassTest.cls`

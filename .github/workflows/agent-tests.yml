@@ -52,7 +52,7 @@ jobs:
               run: sf org create scratch --definition-file config/agentforce-project-scratch-def.json --alias ci-agent-test --duration-days 1 --wait 10
 
             - name: Deploy Base Package
-              run: sf project deploy start --source-dir force-app --target-org ci-agent-test --ignore-conflicts
+              run: sf project deploy start --source-dir force-alex --target-org ci-agent-test --ignore-conflicts
 
             - name: Deploy Agentforce Package
               run: sf project deploy start --source-dir force-agentforce --target-org ci-agent-test --ignore-conflicts
@@ -141,7 +141,7 @@ jobs:
 
             - name: Deploy All Source
               run: |
-                  sf project deploy start --source-dir force-app --target-org ci-agent-eval --ignore-conflicts
+                  sf project deploy start --source-dir force-alex --target-org ci-agent-eval --ignore-conflicts
                   sf project deploy start --source-dir force-agentforce --target-org ci-agent-eval --ignore-conflicts
 
             - name: Assign Permission Sets

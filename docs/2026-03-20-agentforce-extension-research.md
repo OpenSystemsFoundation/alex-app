@@ -183,7 +183,7 @@ If you later wanted to charge for the extension, it would become "freemium" and 
 
 ```
 alex-app/
-├── force-app/main/default/     ← everything in one flat directory
+├── force-alex/main/default/     ← everything in one flat directory
 │   ├── classes/                 ← all Apex classes (services, selectors, tests mixed)
 │   ├── lwc/                    ← all LWC components
 │   ├── objects/                ← all custom objects
@@ -198,7 +198,7 @@ alex-app/
 
 ```
 alex-app/
-├── force-app/                          ← BASE PACKAGE: Alex - A Kanban App (OpenSF)
+├── force-alex/                          ← BASE PACKAGE: Alex - A Kanban App (OpenSF)
 │   └── main/default/
 │       ├── applications/
 │       ├── classes/                     ← base Apex (controllers, services, selectors, DTOs)
@@ -247,7 +247,7 @@ alex-app/
 {
     "packageDirectories": [
         {
-            "path": "force-app",
+            "path": "force-alex",
             "default": true,
             "package": "Alex - A Kanban App",
             "versionName": "ver 2.0",
@@ -284,7 +284,7 @@ alex-app/
 
 ## 6. Base Package — Test Organization Cleanup
 
-The AGENTS.md says test classes should be in `force-app/main/default/classes/tests/`, but currently all test classes sit flat alongside production classes. As part of the restructure, we should move test classes into the `tests/` subdirectory as originally intended.
+The AGENTS.md says test classes should be in `force-alex/main/default/classes/tests/`, but currently all test classes sit flat alongside production classes. As part of the restructure, we should move test classes into the `tests/` subdirectory as originally intended.
 
 ## 7. Agentforce Agent Design — Alex Sprint Assistant
 
@@ -333,5 +333,5 @@ The AGENTS.md says test classes should be in `force-app/main/default/classes/tes
 - [Salesforce Opens Agentforce 360 to ISVs — Salesforce Ben](https://www.salesforceben.com/salesforce-opens-agentforce-360-to-isvs-so-partners-can-build-and-distribute-ai-agents/)
 - [Agentforce 360 Features — Salesforce Developers Blog](https://developer.salesforce.com/blogs/2025/10/build-and-optimize-agents-with-new-agentforce-360-features)
 - [Free AppExchange Listing Policy — Aquiva Labs](https://aquivalabs.com/the-truth-about-free-appexchange-listings-a-guide-for-prospective-salesforce-isv-partners/)
-- [Agentforce Implementation for ISVs — CEPTES](https://ceptes.com/blogs/agentforce-implementation-for-isvs-harnessing-ai-to-transform-salesforce-apps/)
+- [Agentforce Implementation for ISVs — CEPTES](https://ceptes.com/blogs/agentforce-implementation-for-isvs-harnessing-ai-to-transform-salesforce-alexs/)
 - [Namespace Behavior in 2GP — Greytrix](https://www.greytrix.com/blogs/salesforce/2026/01/13/understanding-namespace-behavior-in-salesforce-second-generation-packaging-2gp/)

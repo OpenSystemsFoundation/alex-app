@@ -41,7 +41,7 @@ sf org create scratch --definition-file config/agentforce-project-scratch-def.js
 Deploy both packages to the target org:
 
 ```bash
-sf project deploy start --source-dir force-app --target-org <org-alias> --ignore-conflicts
+sf project deploy start --source-dir force-alex --target-org <org-alias> --ignore-conflicts
 sf project deploy start --source-dir force-agentforce --target-org <org-alias> --ignore-conflicts
 sf org assign permset --name Alex_Admin --target-org <org-alias>
 sf org assign permset --name Alex_Agentforce_User --target-org <org-alias>

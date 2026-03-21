@@ -22,7 +22,7 @@ jobs:
               run: |
                   mkdir -p scan-results
                   sf code-analyzer run \
-                    --workspace "force-app" \
+                    --workspace "force-alex" \
                     --output-file scan-results/code-analyzer-results.json \
                     --severity-threshold 2 || true
 

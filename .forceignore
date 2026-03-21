@@ -21,8 +21,8 @@ coverage/
 
 # Salesforce Metadata Exclusions
 # Exclude specific profiles by path
-force-app/main/default/profiles/Admin.profile-meta.xml
-force-app/main/default/profiles/B2B Reordering Portal Buyer Profile.profile-meta.xml
+force-alex/main/default/profiles/Admin.profile-meta.xml
+force-alex/main/default/profiles/B2B Reordering Portal Buyer Profile.profile-meta.xml
 
 # Exclude specific permission sets
 **/permissionsets/Admin.permissionSet-meta.xml

@@ -4,7 +4,7 @@
             "versionName": "ver 2.0",
             "versionNumber": "2.0.0.NEXT",
             "ancestorVersion": "HIGHEST",
-            "path": "force-app",
+            "path": "force-alex",
             "default": true,
             "package": "Alex - A Kanban App",
             "versionDescription": "Manage your workflows with Alex, a Kanban App. Install for Admin only and assign Alex permission sets to Admins/Users.",

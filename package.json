@@ -25,7 +25,7 @@
         "deploy": "sf project deploy start --ignore-conflicts",
         "create:sample": "sf apex run --file scripts/apex/CreateBoard.apex",
         "create:testdata": "node scripts/create-test-data.js",
-        "validate": "sf project deploy validate --source-dir force-app/main/default",
+        "validate": "sf project deploy validate --source-dir force-alex/main/default",
         "alexadmin": "sf org assign permset --name Alex_Admin"
     },
     "devDependencies": {

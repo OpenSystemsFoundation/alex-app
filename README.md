@@ -173,7 +173,7 @@ npm run test:all
 
 ```
 alex-app/
-├── force-app/main/default/
+├── force-alex/main/default/
 │   ├── lwc/              # Lightning Web Components
 │   ├── classes/          # Apex classes
 │   ├── objects/          # Custom objects (Board, Column, Card)
