@@ -129,8 +129,13 @@ export class BoardPage extends BasePage {
     /** Switch to the Backlog tab and wait for backlog view to render. */
     async switchToBacklogTab(): Promise<void> {
         await this.backlogTab.click();
+        // Wait for either the namespaced tag or the .backlog-view CSS class
+        // LWC tag rendering varies between org types (namespace vs non-namespace)
         await this.page
-            .locator('opensf-kanban-backlog-view')
-            .waitFor({ state: 'attached', timeout: this.timeout });
+            .locator(
+                'opensf-kanban-backlog-view, c-kanban-backlog-view, .backlog-view'
+            )
+            .first()
+            .waitFor({ state: 'visible', timeout: this.timeout });
     }
 }

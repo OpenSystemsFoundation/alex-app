@@ -66,7 +66,7 @@ test.describe('Analytics & Visualization', () => {
         await analyticsBtn.click();
 
         const analyticsModal = boardPage.page.locator(
-            'opensf-kanban-analytics'
+            '.analytics-modal, c-kanban-analytics'
         );
         const hasModal = await analyticsModal
             .isVisible({ timeout: 10_000 })
@@ -108,7 +108,7 @@ test.describe('Analytics & Visualization', () => {
         await analyticsBtn.click();
 
         const analyticsModal = boardPage.page.locator(
-            'opensf-kanban-analytics'
+            '.analytics-modal, c-kanban-analytics'
         );
         const hasModal = await analyticsModal
             .isVisible({ timeout: 10_000 })
@@ -130,7 +130,7 @@ test.describe('Analytics & Visualization', () => {
 
         // CFD component should be visible
         const cfdComponent = analyticsModal.locator(
-            'opensf-kanban-cumulative-flow-diagram'
+            '.cfd-wrapper, c-kanban-cumulative-flow-diagram'
         );
         const hasCfdComponent = await cfdComponent
             .isVisible({ timeout: 10_000 })
@@ -160,7 +160,7 @@ test.describe('Analytics & Visualization', () => {
         await analyticsBtn.click();
 
         const analyticsModal = boardPage.page.locator(
-            'opensf-kanban-analytics'
+            '.analytics-modal, c-kanban-analytics'
         );
         const hasModal = await analyticsModal
             .isVisible({ timeout: 10_000 })

@@ -32,7 +32,9 @@ test.describe('Planning Poker — single user', () => {
         );
 
         // The planning poker component should render
-        const pokerComponent = boardPage.page.locator('opensf-planning-poker');
+        const pokerComponent = boardPage.page.locator(
+            '.lobby-container, .session-container'
+        );
         await expect(pokerComponent).toBeAttached({ timeout: SF_TIMEOUT });
     });
 
@@ -46,7 +48,9 @@ test.describe('Planning Poker — single user', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const pokerComponent = boardPage.page.locator('opensf-planning-poker');
+        const pokerComponent = boardPage.page.locator(
+            '.lobby-container, .session-container'
+        );
         const isAttached = await pokerComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -55,9 +59,7 @@ test.describe('Planning Poker — single user', () => {
         }
 
         // Display name input should be visible in the lobby
-        const displayNameInput = boardPage.page.locator(
-            'opensf-planning-poker input[type="text"]'
-        );
+        const displayNameInput = boardPage.page.locator('input[type="text"]');
         const hasInput = await displayNameInput
             .first()
             .isVisible({ timeout: 10_000 })
@@ -75,7 +77,9 @@ test.describe('Planning Poker — single user', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const pokerComponent = boardPage.page.locator('opensf-planning-poker');
+        const pokerComponent = boardPage.page.locator(
+            '.lobby-container, .session-container'
+        );
         const isAttached = await pokerComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -84,9 +88,7 @@ test.describe('Planning Poker — single user', () => {
         }
 
         // Fill in display name and create session
-        const nameInput = boardPage.page.locator(
-            'opensf-planning-poker input.display-name-input'
-        );
+        const nameInput = boardPage.page.locator('input.display-name-input');
         const hasNameInput = await nameInput
             .isVisible({ timeout: 10_000 })
             .catch(() => false);
@@ -96,9 +98,7 @@ test.describe('Planning Poker — single user', () => {
 
         await nameInput.fill('E2E Test User');
 
-        const createBtn = boardPage.page.locator(
-            'opensf-planning-poker button.create-session-btn'
-        );
+        const createBtn = boardPage.page.locator('button.create-session-btn');
         const hasCreateBtn = await createBtn
             .isVisible({ timeout: 5_000 })
             .catch(() => false);
@@ -110,9 +110,7 @@ test.describe('Planning Poker — single user', () => {
         await boardPage.page.waitForTimeout(2000);
 
         // Should transition to voting view — look for estimate chips
-        const votingCard = boardPage.page.locator(
-            'opensf-planning-poker .estimate-chip'
-        );
+        const votingCard = boardPage.page.locator('.estimate-chip');
         const hasCards = await votingCard
             .first()
             .isVisible({ timeout: SF_TIMEOUT })
@@ -133,7 +131,9 @@ test.describe('Planning Poker — single user', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const pokerComponent = boardPage.page.locator('opensf-planning-poker');
+        const pokerComponent = boardPage.page.locator(
+            '.lobby-container, .session-container'
+        );
         const isAttached = await pokerComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -142,9 +142,7 @@ test.describe('Planning Poker — single user', () => {
         }
 
         // Create a session first
-        const nameInput = boardPage.page.locator(
-            'opensf-planning-poker input.display-name-input'
-        );
+        const nameInput = boardPage.page.locator('input.display-name-input');
         const hasInput = await nameInput
             .isVisible({ timeout: 10_000 })
             .catch(() => false);
@@ -153,18 +151,14 @@ test.describe('Planning Poker — single user', () => {
         }
 
         await nameInput.fill('Timer Test User');
-        const createBtn = boardPage.page.locator(
-            'opensf-planning-poker button.create-session-btn'
-        );
+        const createBtn = boardPage.page.locator('button.create-session-btn');
         if (await createBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
             await createBtn.click();
             await boardPage.page.waitForTimeout(2000);
         }
 
         // Look for timer button in the session view
-        const timerBtn = boardPage.page.locator(
-            'opensf-planning-poker button.timer-btn'
-        );
+        const timerBtn = boardPage.page.locator('button.timer-btn');
         const hasTimerBtn = await timerBtn
             .isVisible({ timeout: 10_000 })
             .catch(() => false);
@@ -175,9 +169,7 @@ test.describe('Planning Poker — single user', () => {
         await timerBtn.click();
 
         // Timer modal should appear
-        const timerModal = boardPage.page.locator(
-            'opensf-planning-poker .timer-modal'
-        );
+        const timerModal = boardPage.page.locator('.timer-modal');
         const hasModal = await timerModal
             .isVisible({ timeout: 5_000 })
             .catch(() => false);
@@ -216,8 +208,12 @@ multiTest.describe('Planning Poker — multi-user sync', () => {
             });
 
             // Check components loaded
-            const userAComponent = userA.page.locator('opensf-planning-poker');
-            const userBComponent = userB.page.locator('opensf-planning-poker');
+            const userAComponent = userA.page.locator(
+                '.lobby-container, .session-container'
+            );
+            const userBComponent = userB.page.locator(
+                '.lobby-container, .session-container'
+            );
 
             const aLoaded = await userAComponent
                 .isVisible({ timeout: SF_TIMEOUT })
@@ -234,9 +230,7 @@ multiTest.describe('Planning Poker — multi-user sync', () => {
             }
 
             // User A creates session
-            const nameInputA = userA.page.locator(
-                'opensf-planning-poker input.display-name-input'
-            );
+            const nameInputA = userA.page.locator('input.display-name-input');
             const hasInputA = await nameInputA
                 .isVisible({ timeout: 10_000 })
                 .catch(() => false);
@@ -245,9 +239,7 @@ multiTest.describe('Planning Poker — multi-user sync', () => {
             }
 
             await nameInputA.fill('User A');
-            const createBtn = userA.page.locator(
-                'opensf-planning-poker button.create-session-btn'
-            );
+            const createBtn = userA.page.locator('button.create-session-btn');
             if (
                 await createBtn.isVisible({ timeout: 5_000 }).catch(() => false)
             ) {
@@ -257,7 +249,7 @@ multiTest.describe('Planning Poker — multi-user sync', () => {
 
             // User B should see the session in the active sessions list
             const refreshBtn = userB.page.locator(
-                'opensf-planning-poker button.refresh-sessions-btn'
+                'button.refresh-sessions-btn'
             );
             if (
                 await refreshBtn
@@ -269,9 +261,7 @@ multiTest.describe('Planning Poker — multi-user sync', () => {
             }
 
             // User B joins the session
-            const sessionItem = userB.page.locator(
-                'opensf-planning-poker .session-item'
-            );
+            const sessionItem = userB.page.locator('.session-item');
             const hasSessions = await sessionItem
                 .first()
                 .isVisible({ timeout: SYNC_TIMEOUT })
@@ -282,7 +272,7 @@ multiTest.describe('Planning Poker — multi-user sync', () => {
                 await userB.page.waitForTimeout(1000);
 
                 const nameInputB = userB.page.locator(
-                    'opensf-planning-poker input.display-name-input'
+                    'input.display-name-input'
                 );
                 if (
                     await nameInputB
@@ -292,9 +282,7 @@ multiTest.describe('Planning Poker — multi-user sync', () => {
                     await nameInputB.fill('User B');
                 }
 
-                const joinBtn = userB.page.locator(
-                    'opensf-planning-poker button.join-session-btn'
-                );
+                const joinBtn = userB.page.locator('button.join-session-btn');
                 if (
                     await joinBtn
                         .isVisible({ timeout: 5_000 })
@@ -306,12 +294,8 @@ multiTest.describe('Planning Poker — multi-user sync', () => {
             }
 
             // Both users should now see participants in the session
-            const participantsA = userA.page.locator(
-                'opensf-planning-poker .participant-card'
-            );
-            const participantsB = userB.page.locator(
-                'opensf-planning-poker .participant-card'
-            );
+            const participantsA = userA.page.locator('.participant-card');
+            const participantsB = userB.page.locator('.participant-card');
 
             const aHasParticipants = await participantsA
                 .first()

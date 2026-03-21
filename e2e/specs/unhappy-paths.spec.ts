@@ -269,7 +269,7 @@ test.describe('Unhappy Paths — Breaking the Board', () => {
         await card.click({ button: 'right' });
 
         const contextMenu = boardPage.page.locator(
-            'opensf-kanban-context-menu'
+            '.context-menu, opensf-kanban-context-menu, c-kanban-context-menu'
         );
         const hasMenu = await contextMenu
             .isVisible({ timeout: 5_000 })
@@ -393,7 +393,9 @@ test.describe('Unhappy Paths — Planning Poker Edge Cases', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const pokerComponent = boardPage.page.locator('opensf-planning-poker');
+        const pokerComponent = boardPage.page.locator(
+            '.lobby-container, .session-container'
+        );
         const loaded = await pokerComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -402,9 +404,7 @@ test.describe('Unhappy Paths — Planning Poker Edge Cases', () => {
         }
 
         // Try to create session without filling display name
-        const createBtn = boardPage.page.locator(
-            'opensf-planning-poker button.create-session-btn'
-        );
+        const createBtn = boardPage.page.locator('button.create-session-btn');
         const hasBtn = await createBtn
             .isVisible({ timeout: 10_000 })
             .catch(() => false);
@@ -431,7 +431,9 @@ test.describe('Unhappy Paths — Planning Poker Edge Cases', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const pokerComponent = boardPage.page.locator('opensf-planning-poker');
+        const pokerComponent = boardPage.page.locator(
+            '.lobby-container, .session-container'
+        );
         const loaded = await pokerComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -441,7 +443,7 @@ test.describe('Unhappy Paths — Planning Poker Edge Cases', () => {
 
         // Create a session first
         const nameInput = boardPage.page.locator(
-            'opensf-planning-poker input.display-name-input'
+            '.lobby-container, .session-container input.display-name-input'
         );
         const hasInput = await nameInput
             .isVisible({ timeout: 10_000 })
@@ -451,18 +453,14 @@ test.describe('Unhappy Paths — Planning Poker Edge Cases', () => {
         }
 
         await nameInput.fill('Rapid Vote Tester');
-        const createBtn = boardPage.page.locator(
-            'opensf-planning-poker button.create-session-btn'
-        );
+        const createBtn = boardPage.page.locator('button.create-session-btn');
         if (await createBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
             await createBtn.click();
             await boardPage.page.waitForTimeout(3000);
         }
 
         // Rapidly click multiple vote buttons
-        const voteButtons = boardPage.page.locator(
-            'opensf-planning-poker .estimate-chip'
-        );
+        const voteButtons = boardPage.page.locator('.estimate-chip');
         const hasVotes = await voteButtons
             .first()
             .isVisible({ timeout: 10_000 })
@@ -504,7 +502,7 @@ test.describe('Unhappy Paths — Retro Board Edge Cases', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const retroBoard = boardPage.page.locator('opensf-retro-board');
+        const retroBoard = boardPage.page.locator('.retro-board-wrapper');
         const loaded = await retroBoard
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -514,7 +512,7 @@ test.describe('Unhappy Paths — Retro Board Edge Cases', () => {
 
         // Try adding an empty card (click Add without typing)
         const addBtn = boardPage.page.locator(
-            'opensf-retro-board button.retro-add-btn'
+            '.retro-board-wrapper button.retro-add-btn'
         );
         const hasAddBtn = await addBtn
             .first()
@@ -540,7 +538,7 @@ test.describe('Unhappy Paths — Retro Board Edge Cases', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const retroBoard = boardPage.page.locator('opensf-retro-board');
+        const retroBoard = boardPage.page.locator('.retro-board-wrapper');
         const loaded = await retroBoard
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -549,7 +547,9 @@ test.describe('Unhappy Paths — Retro Board Edge Cases', () => {
         }
 
         // First, create a card to vote on
-        const textarea = boardPage.page.locator('opensf-retro-board textarea');
+        const textarea = boardPage.page.locator(
+            '.retro-board-wrapper textarea'
+        );
         const hasTextarea = await textarea
             .first()
             .isVisible({ timeout: 5_000 })
@@ -558,7 +558,7 @@ test.describe('Unhappy Paths — Retro Board Edge Cases', () => {
         if (hasTextarea) {
             await textarea.first().fill('Rapid vote test card');
             const addBtn = boardPage.page.locator(
-                'opensf-retro-board button.retro-add-btn'
+                '.retro-board-wrapper button.retro-add-btn'
             );
             if (
                 await addBtn
@@ -573,7 +573,7 @@ test.describe('Unhappy Paths — Retro Board Edge Cases', () => {
 
         // Find vote buttons and click rapidly
         const voteBtn = boardPage.page.locator(
-            'opensf-retro-board button.retro-vote-btn'
+            '.retro-board-wrapper button.retro-vote-btn'
         );
         const hasVoteBtn = await voteBtn
             .first()
@@ -609,9 +609,7 @@ test.describe('Unhappy Paths — Admin Panel Edge Cases', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const adminComponent = boardPage.page.locator(
-            'opensf-admin-management'
-        );
+        const adminComponent = boardPage.page.locator('.admin-container');
         const loaded = await adminComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -655,9 +653,7 @@ test.describe('Unhappy Paths — Admin Panel Edge Cases', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const adminComponent = boardPage.page.locator(
-            'opensf-admin-management'
-        );
+        const adminComponent = boardPage.page.locator('.admin-container');
         const loaded = await adminComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);

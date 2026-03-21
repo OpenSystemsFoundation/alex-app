@@ -52,7 +52,10 @@ test.describe('Board Toolbar', () => {
             .catch(() => false);
 
         if (!hasUndo) {
-            test.skip(true, 'Undo button not rendered even after enabling dev tools');
+            test.skip(
+                true,
+                'Undo button not rendered even after enabling dev tools'
+            );
             return;
         }
 
@@ -81,7 +84,10 @@ test.describe('Board Toolbar', () => {
             .catch(() => false);
 
         if (!hasRedo) {
-            test.skip(true, 'Redo button not rendered even after enabling dev tools');
+            test.skip(
+                true,
+                'Redo button not rendered even after enabling dev tools'
+            );
             return;
         }
 
@@ -127,7 +133,7 @@ test.describe('Board Toolbar', () => {
         await boardPage.waitForCards();
 
         const statusIndicator = boardPage.page.locator(
-            'opensf-connection-status-indicator'
+            'opensf-connection-status-indicator, c-connection-status-indicator'
         );
         await expect(statusIndicator).toBeAttached({ timeout: SF_TIMEOUT });
     });
@@ -141,7 +147,7 @@ test.describe('Board Toolbar', () => {
 
         // Sprint header only renders when isSprintBoard is true
         const sprintHeader = boardPage.page.locator(
-            'opensf-kanban-sprint-header'
+            '.sprint-inline, c-kanban-sprint-header, opensf-kanban-sprint-header'
         );
         // Just verify it's attached (may be invisible if board type is Project)
         const isAttached = await sprintHeader

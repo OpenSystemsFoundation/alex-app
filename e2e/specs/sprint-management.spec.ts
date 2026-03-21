@@ -25,7 +25,7 @@ test.describe('Sprint Management', () => {
 
         // Sprint header component should be attached (even if empty)
         const sprintHeader = boardPage.page.locator(
-            'opensf-kanban-sprint-header'
+            '.sprint-inline, c-kanban-sprint-header'
         );
         await expect(sprintHeader).toBeAttached({ timeout: SF_TIMEOUT });
     });
@@ -38,7 +38,7 @@ test.describe('Sprint Management', () => {
         await boardPage.waitForCards();
 
         const sprintHeader = boardPage.page.locator(
-            'opensf-kanban-sprint-header'
+            '.sprint-inline, c-kanban-sprint-header'
         );
         const isAttached = await sprintHeader
             .isVisible({ timeout: 10_000 })
@@ -117,7 +117,7 @@ test.describe('Sprint Management', () => {
         await boardPage.waitForCards();
 
         const sprintHeader = boardPage.page.locator(
-            'opensf-kanban-sprint-header'
+            '.sprint-inline, c-kanban-sprint-header'
         );
         const isVisible = await sprintHeader
             .isVisible({ timeout: SF_TIMEOUT })
@@ -127,7 +127,9 @@ test.describe('Sprint Management', () => {
         }
 
         // Progress bar should be visible
-        const progressBar = sprintHeader.locator('.sprint-inline__progress-bar');
+        const progressBar = sprintHeader.locator(
+            '.sprint-inline__progress-bar'
+        );
         const hasProgress = await progressBar
             .isVisible({ timeout: 10_000 })
             .catch(() => false);
@@ -169,7 +171,7 @@ test.describe('Sprint Management', () => {
         await boardPage.waitForCards();
 
         const sprintHeader = boardPage.page.locator(
-            'opensf-kanban-sprint-header'
+            '.sprint-inline, c-kanban-sprint-header'
         );
         const completeBtn = sprintHeader.locator(
             'button:has-text("Complete Sprint")'
@@ -184,7 +186,9 @@ test.describe('Sprint Management', () => {
         await completeBtn.click();
 
         // Sprint completion wizard modal should open
-        const wizard = boardPage.page.locator('opensf-kanban-sprint-complete');
+        const wizard = boardPage.page.locator(
+            '.sprint-complete, c-kanban-sprint-complete'
+        );
         const hasWizard = await wizard
             .isVisible({ timeout: 10_000 })
             .catch(() => false);
@@ -210,11 +214,9 @@ test.describe('Sprint Management', () => {
         await boardPage.waitForCards();
 
         const sprintHeader = boardPage.page.locator(
-            'opensf-kanban-sprint-header'
+            '.sprint-inline, c-kanban-sprint-header'
         );
-        const reportsBtn = sprintHeader.locator(
-            'button:has-text("Reports")'
-        );
+        const reportsBtn = sprintHeader.locator('button:has-text("Reports")');
         const hasBtn = await reportsBtn
             .isVisible({ timeout: 10_000 })
             .catch(() => false);
@@ -226,7 +228,7 @@ test.describe('Sprint Management', () => {
 
         // Reports modal should open
         const reportsModal = boardPage.page.locator(
-            'opensf-kanban-sprint-reports'
+            '.sprint-reports, c-kanban-sprint-reports'
         );
         const hasModal = await reportsModal
             .isVisible({ timeout: 10_000 })

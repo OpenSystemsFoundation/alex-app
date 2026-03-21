@@ -25,9 +25,7 @@ test.describe('Admin Management', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const adminComponent = boardPage.page.locator(
-            'opensf-admin-management'
-        );
+        const adminComponent = boardPage.page.locator('.admin-container');
         await expect(adminComponent).toBeAttached({ timeout: SF_TIMEOUT });
     });
 
@@ -41,9 +39,7 @@ test.describe('Admin Management', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const adminComponent = boardPage.page.locator(
-            'opensf-admin-management'
-        );
+        const adminComponent = boardPage.page.locator('.admin-container');
         const loaded = await adminComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -64,9 +60,7 @@ test.describe('Admin Management', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const adminComponent = boardPage.page.locator(
-            'opensf-admin-management'
-        );
+        const adminComponent = boardPage.page.locator('.admin-container');
         const loaded = await adminComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -87,9 +81,7 @@ test.describe('Admin Management', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const adminComponent = boardPage.page.locator(
-            'opensf-admin-management'
-        );
+        const adminComponent = boardPage.page.locator('.admin-container');
         const loaded = await adminComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -124,9 +116,7 @@ test.describe('Admin Management', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const adminComponent = boardPage.page.locator(
-            'opensf-admin-management'
-        );
+        const adminComponent = boardPage.page.locator('.admin-container');
         const loaded = await adminComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -179,9 +169,7 @@ test.describe('Admin Management', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const adminComponent = boardPage.page.locator(
-            'opensf-admin-management'
-        );
+        const adminComponent = boardPage.page.locator('.admin-container');
         const loaded = await adminComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -226,9 +214,7 @@ test.describe('Admin Management', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const adminComponent = boardPage.page.locator(
-            'opensf-admin-management'
-        );
+        const adminComponent = boardPage.page.locator('.admin-container');
         const loaded = await adminComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -276,9 +262,7 @@ test.describe('Admin Management', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const adminComponent = boardPage.page.locator(
-            'opensf-admin-management'
-        );
+        const adminComponent = boardPage.page.locator('.admin-container');
         const loaded = await adminComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
@@ -320,9 +304,7 @@ test.describe('Admin Management', () => {
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const adminComponent = boardPage.page.locator(
-            'opensf-admin-management'
-        );
+        const adminComponent = boardPage.page.locator('.admin-container');
         const loaded = await adminComponent
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
