@@ -16,8 +16,11 @@ public class KanbanEnums {
      * Column semantic categories for burndown and auto-completion logic
      */
     public enum ColumnCategory {
+        BACKLOG,
         TODO,
         IN_PROGRESS,
+        TESTING,
+        REVIEW,
         DONE,
         RELEASED
     }
@@ -78,11 +81,20 @@ public class KanbanEnums {
      */
     public static String columnCategoryValue(ColumnCategory category) {
         switch on category {
+            when BACKLOG {
+                return 'Backlog';
+            }
             when TODO {
                 return 'To Do';
             }
             when IN_PROGRESS {
                 return 'In Progress';
+            }
+            when TESTING {
+                return 'Testing';
+            }
+            when REVIEW {
+                return 'Review';
             }
             when DONE {
                 return 'Done';

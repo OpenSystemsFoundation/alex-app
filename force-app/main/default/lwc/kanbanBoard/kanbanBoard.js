@@ -1,5 +1,10 @@
 import { LightningElement, api, track, wire } from 'lwc';
-import { createStore, selectors, moveCardToBacklogAsync } from 'c/kanbanStore';
+import {
+    createStore,
+    selectors,
+    moveCardToBacklogAsync,
+    moveCardAsync
+} from 'c/kanbanStore';
 import getKanbanConfig from '@salesforce/apex/KanbanBoardController.getKanbanConfig';
 import EventHandler from './handlers/eventHandler';
 import RequestTracker from './helpers/requestTracker';
@@ -166,43 +171,45 @@ export default class KanbanBoard extends LightningElement {
 
         if (!hasFilter) return cols;
 
-        return cols.map((col) => {
-            // Hide Done and Released columns when toggle is on
-            if (hideCompleted && col.isCompleted) {
-                return { ...col, cards: [], cardCount: 0, isHidden: true };
-            }
+        return cols
+            .filter((col) => !(hideCompleted && col.isCompleted))
+            .map((col) => {
+                const filtered = (col.cards || []).filter((card) => {
+                    // Hide cards with Done status
+                    if (hideCompleted && card.status === 'Done') {
+                        return false;
+                    }
 
-            const filtered = (col.cards || []).filter((card) => {
-                // Search: match subject, Name, cardType, assignee name
-                if (search) {
-                    const haystack = [
-                        card.subject,
-                        card.Name,
-                        card.cardType,
-                        card.assignee?.name,
-                        card.status
-                    ]
-                        .filter(Boolean)
-                        .join(' ')
-                        .toLowerCase();
-                    if (!haystack.includes(search)) return false;
-                }
+                    // Search: match subject, Name, cardType, assignee name
+                    if (search) {
+                        const haystack = [
+                            card.subject,
+                            card.Name,
+                            card.cardType,
+                            card.assignee?.name,
+                            card.status
+                        ]
+                            .filter(Boolean)
+                            .join(' ')
+                            .toLowerCase();
+                        if (!haystack.includes(search)) return false;
+                    }
 
-                // Priority filter
-                if (priority !== 'All' && card.priority !== priority) {
-                    return false;
-                }
+                    // Priority filter
+                    if (priority !== 'All' && card.priority !== priority) {
+                        return false;
+                    }
 
-                // Card type filter
-                if (cardType !== 'All' && card.cardType !== cardType) {
-                    return false;
-                }
+                    // Card type filter
+                    if (cardType !== 'All' && card.cardType !== cardType) {
+                        return false;
+                    }
 
-                return true;
+                    return true;
+                });
+
+                return { ...col, cards: filtered, cardCount: filtered.length };
             });
-
-            return { ...col, cards: filtered, cardCount: filtered.length };
-        });
     }
 
     get hasActiveFilters() {
@@ -946,13 +953,36 @@ export default class KanbanBoard extends LightningElement {
     // =============================================================================
 
     _boardContextMenuCardId = null;
+    _boardContextMenuColumnId = null;
 
-    get boardContextMenuItems() {
-        return [
+    _buildBoardContextMenuItems(currentColumnId) {
+        const items = [];
+
+        // Build "Move to Column" submenu with all columns except the current one
+        const cols = this.columns || [];
+        const columnSubmenu = [];
+        for (const col of cols) {
+            if (col.Id === currentColumnId) continue;
+            columnSubmenu.push({
+                label: col.columnHeader || col.name,
+                value: col.Id
+            });
+        }
+        if (columnSubmenu.length > 0) {
+            items.push({
+                label: 'Move to Column',
+                value: 'moveToColumn',
+                icon: 'utility:right',
+                submenu: columnSubmenu
+            });
+        }
+
+        items.push(
             {
                 label: 'Move to Backlog',
                 value: 'moveToBacklog',
-                icon: 'utility:back'
+                icon: 'utility:back',
+                dividerBefore: columnSubmenu.length > 0
             },
             {
                 label: 'Delete',
@@ -960,28 +990,44 @@ export default class KanbanBoard extends LightningElement {
                 icon: 'utility:delete',
                 dividerBefore: true
             }
-        ];
+        );
+
+        return items;
+    }
+
+    get boardContextMenuItems() {
+        return this._buildBoardContextMenuItems(null);
     }
 
     handleBoardCardContextMenu(event) {
         event.preventDefault();
         event.stopPropagation();
         const cardId = event.currentTarget.dataset.cardId;
+        const columnId = event.currentTarget.dataset.columnId;
         this._boardContextMenuCardId = cardId;
+        this._boardContextMenuColumnId = columnId;
         const contextMenu = this.template.querySelector(
             'c-kanban-context-menu'
         );
         if (contextMenu) {
+            contextMenu.menuItems = this._buildBoardContextMenuItems(columnId);
             contextMenu.show(event.clientX, event.clientY);
         }
     }
 
     async handleBoardContextMenuSelect(event) {
-        const { value } = event.detail;
+        const { value, subValue } = event.detail;
         const cardId = this._boardContextMenuCardId;
         if (!cardId || !this.store) return;
 
         switch (value) {
+            case 'moveToColumn':
+                if (subValue) {
+                    await this.store.dispatch(
+                        moveCardAsync(cardId, subValue, 0)
+                    );
+                }
+                break;
             case 'moveToBacklog':
                 await this.store.dispatch(
                     moveCardToBacklogAsync(

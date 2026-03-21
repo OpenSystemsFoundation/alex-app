@@ -1,30 +1,31 @@
-import { LightningElement, track } from "lwc";
-import { ShowToastEvent } from "lightning/platformShowToastEvent";
-import getBoards from "@salesforce/apex/AdminController.getBoards";
-import createBoard from "@salesforce/apex/AdminController.createBoard";
-import createBoardWithDefaultColumns from "@salesforce/apex/AdminController.createBoardWithDefaultColumns";
-import updateBoard from "@salesforce/apex/AdminController.updateBoard";
-import deleteBoard from "@salesforce/apex/AdminController.deleteBoard";
-import getColumns from "@salesforce/apex/AdminController.getColumns";
-import createColumn from "@salesforce/apex/AdminController.createColumn";
-import updateColumn from "@salesforce/apex/AdminController.updateColumn";
-import deleteColumn from "@salesforce/apex/AdminController.deleteColumn";
-import reorderColumn from "@salesforce/apex/AdminController.reorderColumn";
-import getOnboardingStatus from "@salesforce/apex/AdminController.getOnboardingStatus";
+import { LightningElement, track } from 'lwc';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import getBoards from '@salesforce/apex/AdminController.getBoards';
+import createBoard from '@salesforce/apex/AdminController.createBoard';
+import createBoardWithDefaultColumns from '@salesforce/apex/AdminController.createBoardWithDefaultColumns';
+import updateBoard from '@salesforce/apex/AdminController.updateBoard';
+import deleteBoard from '@salesforce/apex/AdminController.deleteBoard';
+import getColumns from '@salesforce/apex/AdminController.getColumns';
+import createColumn from '@salesforce/apex/AdminController.createColumn';
+import updateColumn from '@salesforce/apex/AdminController.updateColumn';
+import deleteColumn from '@salesforce/apex/AdminController.deleteColumn';
+import reorderColumn from '@salesforce/apex/AdminController.reorderColumn';
+import getOnboardingStatus from '@salesforce/apex/AdminController.getOnboardingStatus';
 
 const BOARD_TYPE_OPTIONS = [
-    { label: "Project", value: "Project" },
-    { label: "Personal", value: "Personal" },
-    { label: "Team", value: "Team" }
+    { label: 'Project', value: 'Project' },
+    { label: 'Personal', value: 'Personal' },
+    { label: 'Team', value: 'Team' }
 ];
 
 const COLUMN_CATEGORY_OPTIONS = [
-    { label: "Backlog", value: "Backlog" },
-    { label: "To Do", value: "To Do" },
-    { label: "In Progress", value: "In Progress" },
-    { label: "Testing", value: "Testing" },
-    { label: "Review", value: "Review" },
-    { label: "Done", value: "Done" }
+    { label: 'Backlog', value: 'Backlog' },
+    { label: 'To Do', value: 'To Do' },
+    { label: 'In Progress', value: 'In Progress' },
+    { label: 'Testing', value: 'Testing' },
+    { label: 'Review', value: 'Review' },
+    { label: 'Done', value: 'Done' },
+    { label: 'Released', value: 'Released' }
 ];
 
 export default class AdminManagement extends LightningElement {
@@ -34,8 +35,8 @@ export default class AdminManagement extends LightningElement {
     @track boardForm = {};
     @track columnForm = {};
 
-    activeTab = "boards";
-    selectedBoardId = "";
+    activeTab = 'boards';
+    selectedBoardId = '';
     isLoading = true;
     isLoadingColumns = false;
     isSaving = false;
@@ -47,9 +48,9 @@ export default class AdminManagement extends LightningElement {
     editingBoardId = null;
     editingColumnId = null;
     createWithDefaults = true;
-    deleteType = "";
+    deleteType = '';
     deleteId = null;
-    deleteMessage = "";
+    deleteMessage = '';
     dragColumnId = null;
     dragOverColumnId = null;
 
@@ -70,7 +71,7 @@ export default class AdminManagement extends LightningElement {
             this.boards = boards;
             this.onboardingStatus = status;
         } catch (error) {
-            this.showError("Error loading data", error);
+            this.showError('Error loading data', error);
         } finally {
             this.isLoading = false;
         }
@@ -93,9 +94,9 @@ export default class AdminManagement extends LightningElement {
     }
 
     get onboardingCurrentStep() {
-        if (!this.onboardingStatus.hasBoardsCreated) return "board";
-        if (!this.onboardingStatus.hasColumnsConfigured) return "columns";
-        return "users";
+        if (!this.onboardingStatus.hasBoardsCreated) return 'board';
+        if (!this.onboardingStatus.hasColumnsConfigured) return 'columns';
+        return 'users';
     }
 
     get showCreateFirstBoard() {
@@ -122,11 +123,11 @@ export default class AdminManagement extends LightningElement {
     }
 
     get boardModalTitle() {
-        return this.isEditingBoard ? "Edit Board" : "New Board";
+        return this.isEditingBoard ? 'Edit Board' : 'New Board';
     }
 
     get boardModalSaveLabel() {
-        return this.isEditingBoard ? "Save" : "Create";
+        return this.isEditingBoard ? 'Save' : 'Create';
     }
 
     get showDefaultColumnsOption() {
@@ -134,11 +135,11 @@ export default class AdminManagement extends LightningElement {
     }
 
     get columnModalTitle() {
-        return this.isEditingColumn ? "Edit Column" : "New Column";
+        return this.isEditingColumn ? 'Edit Column' : 'New Column';
     }
 
     get columnModalSaveLabel() {
-        return this.isEditingColumn ? "Save" : "Create";
+        return this.isEditingColumn ? 'Save' : 'Create';
     }
 
     get showColumnList() {
@@ -177,9 +178,9 @@ export default class AdminManagement extends LightningElement {
         this.isEditingBoard = false;
         this.editingBoardId = null;
         this.boardForm = {
-            name: "",
-            description: "",
-            type: "Project"
+            name: '',
+            description: '',
+            type: 'Project'
         };
         this.createWithDefaults = true;
         this.showBoardModal = true;
@@ -192,31 +193,30 @@ export default class AdminManagement extends LightningElement {
     handleBoardAction(event) {
         const action = event.detail.value;
         const boardId =
-            event.target.dataset.boardId ||
-            event.currentTarget.dataset.boardId;
+            event.target.dataset.boardId || event.currentTarget.dataset.boardId;
         const board = this.boards.find((b) => b.Id === boardId);
 
         switch (action) {
-            case "edit":
+            case 'edit':
                 this.isEditingBoard = true;
                 this.editingBoardId = boardId;
                 this.boardForm = {
                     name: board.Name,
-                    description: board.description || "",
-                    type: board.type || "Project",
+                    description: board.description || '',
+                    type: board.type || 'Project',
                     active: board.active,
                     emailNotifications: board.emailNotifications,
                     salesforceNotifications: board.salesforceNotifications
                 };
                 this.showBoardModal = true;
                 break;
-            case "columns":
+            case 'columns':
                 this.selectedBoardId = boardId;
-                this.activeTab = "columns";
+                this.activeTab = 'columns';
                 this.loadColumns();
                 break;
-            case "delete":
-                this.deleteType = "board";
+            case 'delete':
+                this.deleteType = 'board';
                 this.deleteId = boardId;
                 this.deleteMessage = `Are you sure you want to delete the board "${board.Name}"? This will also delete all columns and cards on this board. This action cannot be undone.`;
                 this.showDeleteModal = true;
@@ -228,14 +228,21 @@ export default class AdminManagement extends LightningElement {
 
     handleManageColumns(event) {
         this.selectedBoardId = event.currentTarget.dataset.boardId;
-        this.activeTab = "columns";
+        this.activeTab = 'columns';
         this.loadColumns();
     }
 
     handleBoardFormChange(event) {
         const field = event.target.dataset.field;
-        if (field === "active" || field === "emailNotifications" || field === "salesforceNotifications") {
-            this.boardForm = { ...this.boardForm, [field]: event.target.checked };
+        if (
+            field === 'active' ||
+            field === 'emailNotifications' ||
+            field === 'salesforceNotifications'
+        ) {
+            this.boardForm = {
+                ...this.boardForm,
+                [field]: event.target.checked
+            };
         } else {
             this.boardForm = { ...this.boardForm, [field]: event.detail.value };
         }
@@ -251,7 +258,7 @@ export default class AdminManagement extends LightningElement {
 
     async handleSaveBoard() {
         if (!this.boardForm.name) {
-            this.showToast("Error", "Board name is required", "error");
+            this.showToast('Error', 'Board name is required', 'error');
             return;
         }
 
@@ -270,7 +277,7 @@ export default class AdminManagement extends LightningElement {
                             this.boardForm.salesforceNotifications
                     }
                 });
-                this.showToast("Success", "Board updated", "success");
+                this.showToast('Success', 'Board updated', 'success');
             } else if (this.createWithDefaults) {
                 await createBoardWithDefaultColumns({
                     name: this.boardForm.name,
@@ -278,9 +285,9 @@ export default class AdminManagement extends LightningElement {
                     boardType: this.boardForm.type
                 });
                 this.showToast(
-                    "Success",
-                    "Board created with default columns",
-                    "success"
+                    'Success',
+                    'Board created with default columns',
+                    'success'
                 );
             } else {
                 await createBoard({
@@ -288,12 +295,12 @@ export default class AdminManagement extends LightningElement {
                     description: this.boardForm.description,
                     boardType: this.boardForm.type
                 });
-                this.showToast("Success", "Board created", "success");
+                this.showToast('Success', 'Board created', 'success');
             }
             this.showBoardModal = false;
             await this.loadData();
         } catch (error) {
-            this.showError("Error saving board", error);
+            this.showError('Error saving board', error);
         } finally {
             this.isSaving = false;
         }
@@ -318,15 +325,13 @@ export default class AdminManagement extends LightningElement {
                 ...col,
                 index,
                 cardCountLabel: `${col.cardCount || 0} cards`,
-                colorStyle: `background-color: ${col.color || "#1B96FF"}`,
+                colorStyle: `background-color: ${col.color || '#1B96FF'}`,
                 cssClass:
-                    "column-item" +
-                    (this.dragOverColumnId === col.Id
-                        ? " drag-over"
-                        : "")
+                    'column-item' +
+                    (this.dragOverColumnId === col.Id ? ' drag-over' : '')
             }));
         } catch (error) {
-            this.showError("Error loading columns", error);
+            this.showError('Error loading columns', error);
         } finally {
             this.isLoadingColumns = false;
         }
@@ -336,9 +341,9 @@ export default class AdminManagement extends LightningElement {
         this.isEditingColumn = false;
         this.editingColumnId = null;
         this.columnForm = {
-            columnHeader: "",
-            category: "To Do",
-            color: "#1B96FF"
+            columnHeader: '',
+            category: 'To Do',
+            color: '#1B96FF'
         };
         this.showColumnModal = true;
     }
@@ -350,8 +355,8 @@ export default class AdminManagement extends LightningElement {
         this.editingColumnId = columnId;
         this.columnForm = {
             columnHeader: column.columnHeader,
-            category: column.category || "",
-            color: column.color || "#1B96FF"
+            category: column.category || '',
+            color: column.color || '#1B96FF'
         };
         this.showColumnModal = true;
     }
@@ -359,7 +364,7 @@ export default class AdminManagement extends LightningElement {
     handleDeleteColumn(event) {
         const columnId = event.currentTarget.dataset.columnId;
         const column = this.columns.find((c) => c.Id === columnId);
-        this.deleteType = "column";
+        this.deleteType = 'column';
         this.deleteId = columnId;
         this.deleteMessage = `Are you sure you want to delete the column "${column.columnHeader}"? Cards in this column will be moved to the backlog.`;
         this.showDeleteModal = true;
@@ -376,7 +381,7 @@ export default class AdminManagement extends LightningElement {
 
     async handleSaveColumn() {
         if (!this.columnForm.columnHeader) {
-            this.showToast("Error", "Column header is required", "error");
+            this.showToast('Error', 'Column header is required', 'error');
             return;
         }
 
@@ -391,7 +396,7 @@ export default class AdminManagement extends LightningElement {
                         color: this.columnForm.color
                     }
                 });
-                this.showToast("Success", "Column updated", "success");
+                this.showToast('Success', 'Column updated', 'success');
             } else {
                 const lastPosition =
                     this.columns.length > 0
@@ -405,13 +410,13 @@ export default class AdminManagement extends LightningElement {
                     previousPosition: lastPosition,
                     nextPosition: null
                 });
-                this.showToast("Success", "Column created", "success");
+                this.showToast('Success', 'Column created', 'success');
             }
             this.showColumnModal = false;
             await this.loadColumns();
             await this.refreshOnboarding();
         } catch (error) {
-            this.showError("Error saving column", error);
+            this.showError('Error saving column', error);
         } finally {
             this.isSaving = false;
         }
@@ -423,14 +428,14 @@ export default class AdminManagement extends LightningElement {
 
     handleColumnDragStart(event) {
         this.dragColumnId = event.currentTarget.dataset.columnId;
-        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.effectAllowed = 'move';
         // Add dragging class after a tick to avoid affecting the drag image
         // eslint-disable-next-line @lwc/lwc/no-async-operation
         setTimeout(() => {
             const el = this.template.querySelector(
                 `[data-column-id="${this.dragColumnId}"]`
             );
-            if (el) el.classList.add("dragging");
+            if (el) el.classList.add('dragging');
         }, 0);
     }
 
@@ -438,11 +443,11 @@ export default class AdminManagement extends LightningElement {
         const el = this.template.querySelector(
             `[data-column-id="${this.dragColumnId}"]`
         );
-        if (el) el.classList.remove("dragging");
+        if (el) el.classList.remove('dragging');
 
         // Remove all drag-over classes
-        this.template.querySelectorAll(".column-item").forEach((item) => {
-            item.classList.remove("drag-over");
+        this.template.querySelectorAll('.column-item').forEach((item) => {
+            item.classList.remove('drag-over');
         });
 
         this.dragColumnId = null;
@@ -451,7 +456,7 @@ export default class AdminManagement extends LightningElement {
 
     handleColumnDragOver(event) {
         event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
+        event.dataTransfer.dropEffect = 'move';
     }
 
     handleColumnDragEnter(event) {
@@ -460,12 +465,12 @@ export default class AdminManagement extends LightningElement {
         if (targetId === this.dragColumnId) return;
 
         // Remove previous drag-over
-        this.template.querySelectorAll(".column-item").forEach((item) => {
-            item.classList.remove("drag-over");
+        this.template.querySelectorAll('.column-item').forEach((item) => {
+            item.classList.remove('drag-over');
         });
 
         this.dragOverColumnId = targetId;
-        event.currentTarget.classList.add("drag-over");
+        event.currentTarget.classList.add('drag-over');
     }
 
     async handleColumnDrop(event) {
@@ -499,7 +504,7 @@ export default class AdminManagement extends LightningElement {
         this.columns = reordered.map((col, index) => ({
             ...col,
             index,
-            cssClass: "column-item"
+            cssClass: 'column-item'
         }));
 
         try {
@@ -510,7 +515,7 @@ export default class AdminManagement extends LightningElement {
             });
             await this.loadColumns();
         } catch (error) {
-            this.showError("Error reordering column", error);
+            this.showError('Error reordering column', error);
             await this.loadColumns();
         }
     }
@@ -521,29 +526,29 @@ export default class AdminManagement extends LightningElement {
 
     handleCloseDeleteModal() {
         this.showDeleteModal = false;
-        this.deleteType = "";
+        this.deleteType = '';
         this.deleteId = null;
     }
 
     async handleConfirmDelete() {
         this.isSaving = true;
         try {
-            if (this.deleteType === "board") {
+            if (this.deleteType === 'board') {
                 await deleteBoard({ boardId: this.deleteId });
-                this.showToast("Success", "Board deleted", "success");
+                this.showToast('Success', 'Board deleted', 'success');
                 if (this.selectedBoardId === this.deleteId) {
-                    this.selectedBoardId = "";
+                    this.selectedBoardId = '';
                     this.columns = [];
                 }
                 await this.loadData();
-            } else if (this.deleteType === "column") {
+            } else if (this.deleteType === 'column') {
                 await deleteColumn({ columnId: this.deleteId });
-                this.showToast("Success", "Column deleted", "success");
+                this.showToast('Success', 'Column deleted', 'success');
                 await this.loadColumns();
             }
             this.showDeleteModal = false;
         } catch (error) {
-            this.showError("Error deleting", error);
+            this.showError('Error deleting', error);
         } finally {
             this.isSaving = false;
         }
@@ -562,14 +567,12 @@ export default class AdminManagement extends LightningElement {
     }
 
     showToast(title, message, variant) {
-        this.dispatchEvent(
-            new ShowToastEvent({ title, message, variant })
-        );
+        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
     }
 
     showError(title, error) {
         const message =
-            error?.body?.message || error?.message || "Unknown error";
-        this.showToast(title, message, "error");
+            error?.body?.message || error?.message || 'Unknown error';
+        this.showToast(title, message, 'error');
     }
 }
