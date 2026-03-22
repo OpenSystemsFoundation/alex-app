@@ -14,7 +14,7 @@ public with sharing class AgentUpdateCard {
         public String subject;
 
         @InvocableVariable(description='New description')
-        public String description;
+        public String cardDescription;
 
         @InvocableVariable(description='New priority')
         public String priority;
@@ -65,8 +65,8 @@ public with sharing class AgentUpdateCard {
                 card.OpenSF__Subject__c = req.subject;
                 hasUpdates = true;
             }
-            if (req.description != null) {
-                card.OpenSF__Description__c = req.description;
+            if (req.cardDescription != null) {
+                card.OpenSF__Description__c = req.cardDescription;
                 hasUpdates = true;
             }
             if (req.priority != null) {

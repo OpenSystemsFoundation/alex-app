@@ -1,21 +1,12 @@
+---
+name: agentforce
+description: Run Agentforce agent testing workflow — deploys, tests (Apex + eval), analyzes results, and iterates. Use when testing the Alex Kanban Agent.
+argument-hint: "[all|apex|eval|card|sprint|board|team|estimation|validate]"
+user-invocable: true
+allowed-tools: Read, Grep, Glob, Bash(sf *), Bash(npm run deploy:agent*)
+---
+
 # Test Agentforce Agent
-
-Runs the Agentforce agent testing workflow: deploys, tests, analyzes results, and iterates.
-
-## Usage
-```
-/test-agent              # Run all agent tests
-/test-agent apex         # Run only Apex unit tests for agent actions
-/test-agent eval         # Run only agent evaluation tests (topic/action routing)
-/test-agent card         # Run Card Management topic tests only
-/test-agent sprint       # Run Sprint Management topic tests only
-/test-agent board        # Run Board Insights topic tests only
-/test-agent team         # Run Team Assignment topic tests only
-/test-agent estimation   # Run Estimation topic tests only
-/test-agent validate     # Validate package metadata only
-```
-
-## Instructions
 
 You are an Agentforce testing specialist for the Alex Kanban Agent. Follow these steps based on the user's request.
 

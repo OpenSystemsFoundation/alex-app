@@ -97,7 +97,9 @@ public with sharing class EpicService {
         // Get the epic card itself
         OpenSF__Card__c epic = KanbanBoardSelector.getCardById(epicId);
         if (epic.OpenSF__CardType__c != 'Epic') {
-            AuraHandledException ex = new AuraHandledException('Card is not an Epic');
+            AuraHandledException ex = new AuraHandledException(
+                'Card is not an Epic'
+            );
             ex.setMessage('Card is not an Epic');
             throw ex;
         }

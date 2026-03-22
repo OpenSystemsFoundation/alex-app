@@ -22,7 +22,7 @@ public with sharing class AgentCreateCard {
         public String subject;
 
         @InvocableVariable(description='Description of the card')
-        public String description;
+        public String cardDescription;
 
         @InvocableVariable(
             description='Priority (e.g. Critical, High, Medium, Low)'
@@ -98,8 +98,8 @@ public with sharing class AgentCreateCard {
             if (columnId != null) {
                 card.OpenSF__Column__c = columnId;
             }
-            if (req.description != null) {
-                card.OpenSF__Description__c = req.description;
+            if (req.cardDescription != null) {
+                card.OpenSF__Description__c = req.cardDescription;
             }
             if (req.priority != null) {
                 card.OpenSF__Priority__c = req.priority;

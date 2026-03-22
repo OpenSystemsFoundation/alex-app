@@ -50,10 +50,9 @@ force-app/main/default/profiles/B2B Reordering Portal Buyer Profile.profile-meta
 # App Switcher
 **/appMenus/*.appMenu-meta.xml
 
-# Temporary: Agentforce metadata pending PBO enablement
-# These require Bot/BotVersion + GenAiPlugin support in the org (PBO pending)
-# **/bots/**
-# **/botVersions/**
-# **/genAiPlugins/**
-# **/genAiPlannerBundles/**
-# **/aiAuthoringBundles/**
+# Agentforce metadata managed by `sf agent publish authoring-bundle`
+**/genAiFunctions/**
+**/genAiPlugins/**
+**/genAiPlannerBundles/**
+**/bots/**
+**/botVersions/**

@@ -83,7 +83,7 @@ private class AgentCardActionsTest {
         req.boardId = board.Id;
         req.columnName = 'To Do';
         req.subject = 'New Card In Column';
-        req.description = 'Created via test';
+        req.cardDescription = 'Created via test';
         req.priority = 'High';
         req.cardType = 'Story';
         req.storyPoints = 3;

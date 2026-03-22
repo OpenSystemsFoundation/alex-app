@@ -205,7 +205,8 @@ public class TestFactory {
             FROM OpenSF__Column__c
             WHERE Id = :columnId
             LIMIT 1
-        ].OpenSF__Board__c;
+        ]
+        .OpenSF__Board__c;
 
         OpenSF__Card__c card = new OpenSF__Card__c(
             OpenSF__Column__c = columnId,
@@ -266,7 +267,8 @@ public class TestFactory {
             FROM OpenSF__Column__c
             WHERE Id = :columnId
             LIMIT 1
-        ].OpenSF__Board__c;
+        ]
+        .OpenSF__Board__c;
 
         List<OpenSF__Card__c> cards = new List<OpenSF__Card__c>();
         String previousPosition = null;
