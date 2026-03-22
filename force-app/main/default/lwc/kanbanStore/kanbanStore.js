@@ -70,6 +70,11 @@ export {
     loadCumulativeFlowDataAsync
 } from './thunks/analyticsThunks';
 
+// Undo/Redo exports
+export { createUndoManager } from './undo/undoManager';
+export { getUndoableAction, isUndoable } from './undo/undoableActions';
+export { createUndoMiddleware } from './middleware/undoMiddleware';
+
 // Re-export modules for consumers who want organized imports
 import * as actions from './state/actions';
 import * as types from './core/actionTypes';

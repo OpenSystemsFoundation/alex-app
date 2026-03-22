@@ -14,11 +14,14 @@ import { rootReducer, initialState } from '../state/reducers';
 import * as selectors from '../state/selectors';
 import { createThunkMiddleware } from '../middleware/thunkMiddleware';
 import { createLoggingMiddleware } from '../middleware/loggingMiddleware';
+import { createUndoMiddleware } from '../middleware/undoMiddleware';
 import {
     createDevToolsRecorder,
     createDevToolsMiddleware
 } from '../middleware/devToolsMiddleware';
 import { installDevToolsBridge } from '../devtools/devToolsBridge';
+import { createUndoManager } from '../undo/undoManager';
+import { getUndoableAction } from '../undo/undoableActions';
 
 /**
  * KanbanStore class - Redux-style store implementation with middleware
@@ -196,7 +199,74 @@ class KanbanStore {
     reset() {
         this._state = { ...initialState };
         this._lastDragPosition = null;
+        if (this.undoManager) {
+            this.undoManager.clear();
+        }
         this._notifySubscribers();
+    }
+
+    /**
+     * Execute an undo operation — pops the undo stack, builds a reverse thunk,
+     * and dispatches it through the store (with undo recording paused).
+     * @returns {Promise<boolean>} true if undo succeeded
+     */
+    async performUndo() {
+        if (!this.undoManager || !this.undoManager.canUndo()) return false;
+
+        const entry = this.undoManager.popUndo();
+        if (!entry) return false;
+
+        if (entry.stale) return false;
+
+        const def = getUndoableAction(entry.actionType);
+        if (!def) return false;
+
+        const thunk = def.buildReverseThunk(entry.reverseContext, this);
+
+        // Grace period so our own platform event echo doesn't mark entries stale
+        const cardId =
+            entry.reverseContext?.cardId || entry.forwardContext?.cardId;
+        if (cardId) this.undoManager.addGrace(cardId);
+
+        this.undoManager.pause();
+        try {
+            await this.dispatch(thunk);
+            return true;
+        } finally {
+            this.undoManager.resume();
+        }
+    }
+
+    /**
+     * Execute a redo operation — pops the redo stack, builds a forward thunk,
+     * and dispatches it through the store (with undo recording paused).
+     * @returns {Promise<boolean>} true if redo succeeded
+     */
+    async performRedo() {
+        if (!this.undoManager || !this.undoManager.canRedo()) return false;
+
+        const entry = this.undoManager.popRedo();
+        if (!entry) return false;
+
+        if (entry.stale) return false;
+
+        const def = getUndoableAction(entry.actionType);
+        if (!def) return false;
+
+        const thunk = def.buildForwardThunk(entry.forwardContext, this);
+
+        // Grace period so our own platform event echo doesn't mark entries stale
+        const cardId =
+            entry.forwardContext?.cardId || entry.reverseContext?.cardId;
+        if (cardId) this.undoManager.addGrace(cardId);
+
+        this.undoManager.pause();
+        try {
+            await this.dispatch(thunk);
+            return true;
+        } finally {
+            this.undoManager.resume();
+        }
     }
 
     /**
@@ -252,10 +322,14 @@ class KanbanStore {
  * @returns {KanbanStore} New store instance
  */
 export const createStore = (options = {}) => {
+    const undoManager = createUndoManager();
     const middlewares = [];
 
     // Add thunk middleware (always enabled — must be first to intercept functions)
     middlewares.push(createThunkMiddleware);
+
+    // Add undo middleware (always enabled — after thunk so only plain actions reach it)
+    middlewares.push(createUndoMiddleware(undoManager));
 
     // Add logging middleware (optional)
     if (options.enableLogging) {
@@ -263,6 +337,9 @@ export const createStore = (options = {}) => {
     }
 
     const store = new KanbanStore(middlewares);
+
+    // Attach undoManager to the store for public access
+    store.undoManager = undoManager;
 
     // devTools starts as null — enabled later via store.enableDevTools()
     store.devTools = null;

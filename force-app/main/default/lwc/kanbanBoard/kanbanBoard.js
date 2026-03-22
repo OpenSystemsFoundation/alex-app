@@ -123,6 +123,7 @@ export default class KanbanBoard extends LightningElement {
     @track _canUndo = false;
     @track _canRedo = false;
     _keyboardHandler = null;
+    _undoManagerUnsubscribe = null;
 
     // Drag state
     dragData = null;
@@ -379,6 +380,16 @@ export default class KanbanBoard extends LightningElement {
             this._refreshUndoRedoState();
         });
 
+        // Subscribe to undoManager state changes for reactive UI updates
+        if (this.store.undoManager) {
+            this._undoManagerUnsubscribe = this.store.undoManager.subscribe(
+                ({ canUndo, canRedo }) => {
+                    this._canUndo = canUndo;
+                    this._canRedo = canRedo;
+                }
+            );
+        }
+
         // Keyboard shortcuts for undo/redo
         this._keyboardHandler = this._handleKeyboard.bind(this);
         // eslint-disable-next-line @lwc/lwc/no-document-query
@@ -423,6 +434,12 @@ export default class KanbanBoard extends LightningElement {
             this._keyboardHandler = null;
         }
 
+        // Cleanup undo manager subscription
+        if (this._undoManagerUnsubscribe) {
+            this._undoManagerUnsubscribe();
+            this._undoManagerUnsubscribe = null;
+        }
+
         // Cleanup search debounce timer
         if (this._searchDebounceTimer) {
             clearTimeout(this._searchDebounceTimer);
@@ -441,8 +458,11 @@ export default class KanbanBoard extends LightningElement {
         // Use lazy getter to ensure boardDataLoader is instantiated
         await this.boardDataLoader.loadBoardData();
 
-        // Clear DevTools history after first load so only
+        // Clear undo/redo history after load so only
         // user-initiated actions are undoable.
+        if (this.store.undoManager) {
+            this.store.undoManager.clear();
+        }
         if (this.store.devTools && !this._initialLoadDone) {
             this._initialLoadDone = true;
             this.store.devTools.clear();
@@ -662,44 +682,70 @@ export default class KanbanBoard extends LightningElement {
     }
 
     get undoTooltip() {
-        return this._isMac ? 'Undo (\u2318Z)' : 'Undo (Ctrl+Z)';
+        const entry = this.store.undoManager?.peekUndo();
+        const desc = entry ? ` — ${entry.description}` : '';
+        return this._isMac ? `Undo (\u2318Z)${desc}` : `Undo (Ctrl+Z)${desc}`;
     }
 
     get redoTooltip() {
-        return this._isMac ? 'Redo (\u2318\u21E7Z)' : 'Redo (Ctrl+Y)';
+        const entry = this.store.undoManager?.peekRedo();
+        const desc = entry ? ` — ${entry.description}` : '';
+        return this._isMac
+            ? `Redo (\u2318\u21E7Z)${desc}`
+            : `Redo (Ctrl+Y)${desc}`;
     }
 
     _refreshUndoRedoState() {
-        const dt = this.store.devTools;
-        if (dt) {
-            this._canUndo = dt.canUndo();
-            this._canRedo = dt.canRedo();
+        const um = this.store.undoManager;
+        if (um) {
+            this._canUndo = um.canUndo();
+            this._canRedo = um.canRedo();
         }
     }
 
     handleUndo() {
-        const dt = this.store.devTools;
-        if (!dt) return;
-        const state = dt.undo();
-        if (state) {
-            this.store._applyState(state);
-            this._refreshUndoRedoState();
-        }
+        const um = this.store.undoManager;
+        if (!um || !um.canUndo()) return;
+        this.store
+            .performUndo()
+            .then((success) => {
+                this._refreshUndoRedoState();
+                if (!success && this.toastManager) {
+                    this.toastManager.showWarning(
+                        'Cannot undo — card was modified by another user.'
+                    );
+                }
+            })
+            .catch((err) => {
+                this._refreshUndoRedoState();
+                if (this.toastManager) {
+                    this.toastManager.showError('Undo failed', err);
+                }
+            });
     }
 
     handleRedo() {
-        const dt = this.store.devTools;
-        if (!dt) return;
-        const state = dt.redo();
-        if (state) {
-            this.store._applyState(state);
-            this._refreshUndoRedoState();
-        }
+        const um = this.store.undoManager;
+        if (!um || !um.canRedo()) return;
+        this.store
+            .performRedo()
+            .then((success) => {
+                this._refreshUndoRedoState();
+                if (!success && this.toastManager) {
+                    this.toastManager.showWarning(
+                        'Cannot redo — card was modified by another user.'
+                    );
+                }
+            })
+            .catch((err) => {
+                this._refreshUndoRedoState();
+                if (this.toastManager) {
+                    this.toastManager.showError('Redo failed', err);
+                }
+            });
     }
 
     _handleKeyboard(event) {
-        if (!this.store.devTools) return;
-
         const isMeta = event.metaKey || event.ctrlKey;
         if (!isMeta) return;
 

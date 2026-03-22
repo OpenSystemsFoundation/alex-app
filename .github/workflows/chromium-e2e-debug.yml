@@ -101,3 +101,14 @@ jobs:
             create-retro-data: false
             grep: ${{ inputs.grep || '' }}
             debug: ${{ inputs.debug || false }}
+
+    undo-redo:
+        name: Undo/Redo
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: undo-redo
+            specs: 'undo-redo.spec.ts board-toolbar.spec.ts'
+            create-retro-data: false
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}

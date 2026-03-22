@@ -1,9 +1,30 @@
 /**
  * Branch coverage tests for store.js
  * Targets uncovered branches: selector methods, createStore with logging,
- * baseDispatch null check
+ * baseDispatch null check, performUndo/performRedo
  */
 import { createStore, KanbanStore } from '../../kanbanStore/kanbanStore';
+import { MOVE_CARD } from '../../kanbanStore/core/actionTypes';
+
+// Mock thunks so performUndo/performRedo don't make real Apex calls
+jest.mock('../../kanbanStore/thunks/cardThunks', () => ({
+    moveCardAsync: jest.fn(
+        (_cardId, _colId, _idx) => (dispatch) =>
+            dispatch({ type: 'MOCK_MOVE', payload: {} })
+    ),
+    createCardAsync: jest.fn(
+        (_colId, _subj) => (dispatch) =>
+            dispatch({ type: 'MOCK_CREATE', payload: {} })
+    ),
+    deleteCardAsync: jest.fn(
+        (_cardId) => (dispatch) =>
+            dispatch({ type: 'MOCK_DELETE', payload: {} })
+    ),
+    updateCardAsync: jest.fn(
+        (_cardId, _updates) => (dispatch) =>
+            dispatch({ type: 'MOCK_UPDATE', payload: {} })
+    )
+}));
 
 describe('KanbanStore - selector methods', () => {
     let store;
@@ -283,5 +304,164 @@ describe('KanbanStore - enableDevTools', () => {
         expect(subscriber).toHaveBeenCalledTimes(1);
         const state = store.getState();
         expect(state.isLoading).toBe(true);
+    });
+});
+
+describe('KanbanStore - performUndo / performRedo', () => {
+    let store;
+
+    beforeEach(() => {
+        store = createStore();
+        // Set up state with columns and cards so MOVE_CARD can capture context
+        store.dispatch({
+            type: 'SET_COLUMNS',
+            payload: [
+                {
+                    Id: 'col1',
+                    Name: 'To Do',
+                    cards: [{ Id: 'card1', subject: 'Task 1' }],
+                    cardCount: 1
+                },
+                {
+                    Id: 'col2',
+                    Name: 'Done',
+                    cards: [],
+                    cardCount: 0
+                }
+            ]
+        });
+    });
+
+    it('performUndo returns false when undoManager has nothing to undo', async () => {
+        const result = await store.performUndo();
+        expect(result).toBe(false);
+    });
+
+    it('performRedo returns false when undoManager has nothing to redo', async () => {
+        const result = await store.performRedo();
+        expect(result).toBe(false);
+    });
+
+    it('performUndo dispatches reverse thunk and returns true', async () => {
+        // Trigger a MOVE_CARD to populate the undo stack
+        store.dispatch({
+            type: MOVE_CARD,
+            payload: {
+                cardId: 'card1',
+                targetColumnId: 'col2',
+                targetIndex: 0
+            }
+        });
+        expect(store.undoManager.canUndo()).toBe(true);
+
+        const result = await store.performUndo();
+        expect(result).toBe(true);
+    });
+
+    it('performRedo dispatches forward thunk and returns true', async () => {
+        store.dispatch({
+            type: MOVE_CARD,
+            payload: {
+                cardId: 'card1',
+                targetColumnId: 'col2',
+                targetIndex: 0
+            }
+        });
+        await store.performUndo();
+        expect(store.undoManager.canRedo()).toBe(true);
+
+        const result = await store.performRedo();
+        expect(result).toBe(true);
+    });
+
+    it('performUndo returns false for stale entry', async () => {
+        store.dispatch({
+            type: MOVE_CARD,
+            payload: {
+                cardId: 'card1',
+                targetColumnId: 'col2',
+                targetIndex: 0
+            }
+        });
+        store.undoManager.markStale('card1');
+
+        const result = await store.performUndo();
+        expect(result).toBe(false);
+    });
+
+    it('performRedo returns false when popRedo returns null (all stale)', async () => {
+        store.dispatch({
+            type: MOVE_CARD,
+            payload: {
+                cardId: 'card1',
+                targetColumnId: 'col2',
+                targetIndex: 0
+            }
+        });
+        // Undo to make entry available for redo
+        store.undoManager.popUndo();
+        // Mark it stale before redo — popRedo will skip it and return null
+        store.undoManager.markStale('card1');
+
+        const result = await store.performRedo();
+        expect(result).toBe(false);
+    });
+
+    it('performUndo resumes undoManager even on dispatch error', async () => {
+        store.dispatch({
+            type: MOVE_CARD,
+            payload: {
+                cardId: 'card1',
+                targetColumnId: 'col2',
+                targetIndex: 0
+            }
+        });
+
+        // Spy on dispatch to make it throw
+        const origDispatch = store.dispatch.bind(store);
+        let callCount = 0;
+        jest.spyOn(store, 'dispatch').mockImplementation((action) => {
+            callCount++;
+            // Let the first few dispatches through (setup), throw on the undo thunk
+            if (typeof action === 'function') {
+                return Promise.reject(new Error('dispatch error'));
+            }
+            return origDispatch(action);
+        });
+
+        await expect(store.performUndo()).rejects.toThrow('dispatch error');
+        expect(store.undoManager.isPaused()).toBe(false);
+    });
+
+    it('performUndo adds grace period for cardId', async () => {
+        const graceSpy = jest.spyOn(store.undoManager, 'addGrace');
+        store.dispatch({
+            type: MOVE_CARD,
+            payload: {
+                cardId: 'card1',
+                targetColumnId: 'col2',
+                targetIndex: 0
+            }
+        });
+
+        await store.performUndo();
+        expect(graceSpy).toHaveBeenCalledWith('card1');
+    });
+
+    it('performRedo adds grace period for cardId', async () => {
+        const graceSpy = jest.spyOn(store.undoManager, 'addGrace');
+        store.dispatch({
+            type: MOVE_CARD,
+            payload: {
+                cardId: 'card1',
+                targetColumnId: 'col2',
+                targetIndex: 0
+            }
+        });
+        await store.performUndo();
+        graceSpy.mockClear();
+
+        await store.performRedo();
+        expect(graceSpy).toHaveBeenCalledWith('card1');
     });
 });

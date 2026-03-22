@@ -100,6 +100,24 @@ jobs:
                     2>&1 | tee /tmp/playwright-output.txt
                   echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
 
+            - name: Post results as commit comment
+              if: always()
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  # Truncate to last 200 lines to stay within API limits
+                  BODY=$(tail -200 /tmp/playwright-output.txt | head -c 60000)
+                  SUITE="${{ inputs.suite-name }}"
+                  EXIT="${{ steps.playwright.outputs.exit_code }}"
+                  STATUS="PASS"
+                  if [ "$EXIT" != "0" ]; then STATUS="FAIL"; fi
+                  COMMENT="### E2E: $SUITE — $STATUS (exit $EXIT)
+                  \`\`\`
+                  $BODY
+                  \`\`\`"
+                  gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
+                    -f body="$COMMENT" || echo "Failed to post comment"
+
             - name: Upload output
               if: always()
               uses: actions/upload-artifact@v4
