@@ -37,7 +37,7 @@ jobs:
                       --alias test-org \
                       --duration-days 1 \
                       --wait 10
-                    sf project deploy start --target-org test-org --ignore-conflicts
+                    sf project deploy start --source-dir force-app --target-org test-org --ignore-conflicts
                     sf org assign permset --name Alex_Admin --target-org test-org
                     echo "is_scratch=true" >> "$GITHUB_OUTPUT"
                   elif [ "${{ inputs.target_org }}" = "staging" ]; then

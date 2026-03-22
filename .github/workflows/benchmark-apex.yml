@@ -4,13 +4,13 @@ on:
     workflow_dispatch:
         inputs:
             test_class:
-                description: "Test class to run (default: PerformanceBenchmarkTest)"
+                description: 'Test class to run (default: PerformanceBenchmarkTest)'
                 required: false
-                default: "PerformanceBenchmarkTest"
+                default: 'PerformanceBenchmarkTest'
             scratch_org_duration:
-                description: "Scratch org duration in days"
+                description: 'Scratch org duration in days'
                 required: false
-                default: "1"
+                default: '1'
 
 jobs:
     apex-benchmark:
@@ -32,17 +32,8 @@ jobs:
             - name: Create Scratch Org
               run: sf org create scratch --definition-file config/project-scratch-def.json --alias bench-org --duration-days ${{ github.event.inputs.scratch_org_duration }} --wait 10
 
-            - name: Prepare Project Config
-              run: |
-                  node -e "
-                    const p = require('./sfdx-project.json');
-                    p.packageDirectories = p.packageDirectories.filter(d => d.default);
-                    p.packageDirectories.forEach(d => { delete d.dependencies; });
-                    require('fs').writeFileSync('sfdx-project.json', JSON.stringify(p, null, 4));
-                  "
-
-            - name: Deploy Source
-              run: sf project deploy start --target-org bench-org --ignore-conflicts
+            - name: Deploy Source (base package only)
+              run: sf project deploy start --source-dir force-app --target-org bench-org --ignore-conflicts
 
             - name: Assign Permission Set
               run: sf org assign permset --name Alex_Admin --target-org bench-org

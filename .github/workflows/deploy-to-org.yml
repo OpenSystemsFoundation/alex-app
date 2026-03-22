@@ -50,6 +50,7 @@ jobs:
                   fi
 
                   sf project deploy start \
+                    --source-dir force-app \
                     --target-org target-org \
                     --ignore-conflicts \
                     $DRY_RUN_FLAG \

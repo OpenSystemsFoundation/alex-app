@@ -26,21 +26,10 @@ jobs:
             - name: Create Scratch Org
               run: sf org create scratch --definition-file config/project-scratch-def.json --alias ci-test --duration-days 1 --wait 10
 
-            - name: Prepare Project Config for Source Deploy
-              run: |
-                  # Remove extension packages and dependencies — this base scratch org
-                  # only has standard features, not Einstein/Agentforce metadata types.
-                  node -e "
-                    const p = require('./sfdx-project.json');
-                    p.packageDirectories = p.packageDirectories.filter(d => d.default);
-                    p.packageDirectories.forEach(d => { delete d.dependencies; });
-                    require('fs').writeFileSync('sfdx-project.json', JSON.stringify(p, null, 4));
-                  "
-
-            - name: Deploy Source
+            - name: Deploy Source (base package only)
               id: deploy
               run: |
-                  sf project deploy start --target-org ci-test --ignore-conflicts 2>&1 | tee /tmp/deploy-output.txt
+                  sf project deploy start --source-dir force-app --target-org ci-test --ignore-conflicts 2>&1 | tee /tmp/deploy-output.txt
               continue-on-error: true
 
             - name: Report deploy failure
