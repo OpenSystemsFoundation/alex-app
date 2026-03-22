@@ -125,9 +125,9 @@ runs:
               path: /tmp/cached-org-auth-${{ inputs.org-alias }}.txt
               key: scratch-org-${{ inputs.cache-key }}-${{ inputs.org-alias }}
 
-        - name: Deploy Source
+        - name: Deploy Source (base package only)
           shell: bash
-          run: sf project deploy start --target-org ${{ inputs.org-alias }} --ignore-conflicts
+          run: sf project deploy start --source-dir force-app --target-org ${{ inputs.org-alias }} --ignore-conflicts
 
         - name: Assign Permission Sets
           if: steps.provision.outputs.org_created == 'true'

@@ -83,6 +83,7 @@ export default class DragDropHandler {
         this.component.dragData = null;
         this.component.dragPlaceholder = null;
         this.component.lastPlaceholderPosition = null;
+        this._invalidateCardCache();
     }
 
     /**
@@ -295,15 +296,43 @@ export default class DragDropHandler {
             );
     }
 
+    _cachedCardElements = null;
+    _cachedContainerId = null;
+
     /**
-     * Calculate the drop position based on mouse Y coordinate
+     * Get card elements for a container, caching during a drag operation.
      */
-    calculateDropPosition(event, cardsContainer) {
-        const cardElements = Array.from(
+    _getCardElements(cardsContainer) {
+        const containerId = cardsContainer.dataset?.columnId || null;
+        if (
+            containerId &&
+            this._cachedContainerId === containerId &&
+            this._cachedCardElements
+        ) {
+            return this._cachedCardElements;
+        }
+        this._cachedContainerId = containerId;
+        this._cachedCardElements = Array.from(
             cardsContainer.querySelectorAll(
                 '.kanban-card:not(.dragging):not(.drag-placeholder)'
             )
         );
+        return this._cachedCardElements;
+    }
+
+    /**
+     * Invalidate cached card elements (call when placeholder is moved)
+     */
+    _invalidateCardCache() {
+        this._cachedCardElements = null;
+        this._cachedContainerId = null;
+    }
+
+    /**
+     * Calculate the drop position based on mouse Y coordinate
+     */
+    calculateDropPosition(event, cardsContainer) {
+        const cardElements = this._getCardElements(cardsContainer);
 
         if (cardElements.length === 0) {
             return 0;
@@ -327,11 +356,7 @@ export default class DragDropHandler {
      * Update the drag placeholder position
      */
     updateDragPlaceholder(cardsContainer, targetPosition) {
-        const cardElements = Array.from(
-            cardsContainer.querySelectorAll(
-                '.kanban-card:not(.dragging):not(.drag-placeholder)'
-            )
-        );
+        const cardElements = this._getCardElements(cardsContainer);
 
         if (!this.component.dragPlaceholder) {
             this.component.dragPlaceholder = document.createElement('div');
@@ -368,5 +393,8 @@ export default class DragDropHandler {
                 );
             }
         }
+
+        // Invalidate cache since DOM order changed
+        this._invalidateCardCache();
     }
 }

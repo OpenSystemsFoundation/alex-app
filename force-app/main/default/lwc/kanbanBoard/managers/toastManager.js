@@ -1,62 +1,37 @@
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import {
+    showSuccess as _showSuccess,
+    showInfo as _showInfo,
+    showWarning as _showWarning,
+    showError as _showError,
+    dispatchToast
+} from 'c/toastUtils';
 
+/**
+ * Toast manager utility class for kanbanBoard.
+ * Wraps the shared toastUtils functions with a component reference.
+ */
 export default class ToastManager {
     constructor(component) {
         this.component = component;
     }
 
     showSuccess(message, mode = 'dismissible') {
-        this._dispatchToast('Success', message, 'success', mode);
+        _showSuccess(this.component, message, mode);
     }
 
     showInfo(message, mode = 'dismissible') {
-        this._dispatchToast('Info', message, 'info', mode);
+        _showInfo(this.component, message, mode);
     }
 
     showWarning(message, mode = 'dismissible') {
-        this._dispatchToast('Warning', message, 'warning', mode);
+        _showWarning(this.component, message, mode);
     }
 
     showError(title, error) {
-        const message = this._extractErrorMessage(error);
-        this._dispatchToast(title, message, 'error', 'sticky');
-    }
-
-    _extractErrorMessage(error) {
-        if (!error) {
-            return 'Unknown error';
-        }
-
-        if (error.body && error.body.message) {
-            return error.body.message;
-        }
-
-        if (error.message) {
-            return error.message;
-        }
-
-        if (typeof error === 'string') {
-            return error;
-        }
-
-        return 'Unknown error';
-    }
-
-    _dispatchToast(title, message, variant, mode = null) {
-        const toastConfig = {
-            title,
-            message,
-            variant
-        };
-
-        if (mode) {
-            toastConfig.mode = mode;
-        }
-
-        this.component.dispatchEvent(new ShowToastEvent(toastConfig));
+        _showError(this.component, title, error);
     }
 
     showSubscriptionStatus(title, message, variant = 'info') {
-        this._dispatchToast(title, message, variant, 'dismissible');
+        dispatchToast(this.component, title, message, variant, 'dismissible');
     }
 }

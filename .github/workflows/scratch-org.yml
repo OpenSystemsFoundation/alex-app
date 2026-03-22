@@ -15,7 +15,6 @@ on:
                 options:
                     - config/project-scratch-def.json
                     - config/community-scratch-def.json
-                    - config/agentforce-project-scratch-def.json
                     - config/preview-project-scratch-def.json
             skip_tests:
                 description: 'Skip Apex tests after deploy'
@@ -98,8 +97,8 @@ jobs:
                     --duration-days ${{ steps.config.outputs.duration }} \
                     --wait 15
 
-            - name: Deploy Source
-              run: sf project deploy start --target-org test-drive --ignore-conflicts
+            - name: Deploy Source (base package only)
+              run: sf project deploy start --source-dir force-app --target-org test-drive --ignore-conflicts
 
             - name: Assign Permission Set
               run: sf org assign permset --name Alex_Admin --target-org test-drive

@@ -21,6 +21,10 @@
  */
 
 export default class SwimlaneManager {
+    _lastFilteredColumnsRef = null;
+    _lastMode = null;
+    _cachedSwimlanes = [];
+
     /** @param {Object} component - The parent LWC component instance */
     constructor(component) {
         this.component = component;
@@ -65,9 +69,16 @@ export default class SwimlaneManager {
         const cols = filteredColumns;
         if (!cols || cols.length === 0) return [];
 
+        // Memoize: skip recalculation if inputs haven't changed
+        const mode = this.component._swimlaneMode;
+        if (this._lastFilteredColumnsRef === cols && this._lastMode === mode) {
+            return this._cachedSwimlanes;
+        }
+        this._lastFilteredColumnsRef = cols;
+        this._lastMode = mode;
+
         // Collect all unique values for the grouping key
         const groupMap = new Map();
-        const mode = this.component._swimlaneMode;
 
         cols.forEach((col) => {
             (col.cards || []).forEach((card) => {
@@ -146,6 +157,7 @@ export default class SwimlaneManager {
             return a.label.localeCompare(b.label);
         });
 
+        this._cachedSwimlanes = swimlanes;
         return swimlanes;
     }
 

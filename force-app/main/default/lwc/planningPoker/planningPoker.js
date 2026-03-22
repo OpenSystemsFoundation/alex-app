@@ -196,18 +196,28 @@ export default class PlanningPoker extends LightningElement {
         return this.session.createdById === this._currentUserId;
     }
 
+    _cachedVoteResults = null;
+    _lastVotersRef = null;
+
     get voteResults() {
+        // Memoize: only recalculate when voters reference changes
+        if (this._lastVotersRef === this.voters && this._cachedVoteResults) {
+            return this._cachedVoteResults;
+        }
+        this._lastVotersRef = this.voters;
+
         const numericVotes = this.voters
             .filter((v) => v.hasVoted && v.vote && !isNaN(parseFloat(v.vote)))
             .map((v) => parseFloat(v.vote));
 
         if (numericVotes.length === 0) {
-            return {
+            this._cachedVoteResults = {
                 stats: [],
                 isConsensus: false,
                 consensusValue: null,
                 chartSegments: []
             };
+            return this._cachedVoteResults;
         }
 
         const sorted = [...numericVotes].sort((a, b) => a - b);
@@ -215,7 +225,7 @@ export default class PlanningPoker extends LightningElement {
         const min = Math.min(...numericVotes);
         const median = this._calculateMedian(sorted);
 
-        // Count votes for chart
+        // Count votes for chart (single pass over voters)
         const voteCounts = {};
         this.voters
             .filter((v) => v.hasVoted && v.vote)
@@ -270,7 +280,8 @@ export default class PlanningPoker extends LightningElement {
             })
         );
 
-        return { stats, isConsensus, consensusValue, chartSegments };
+        this._cachedVoteResults = { stats, isConsensus, consensusValue, chartSegments };
+        return this._cachedVoteResults;
     }
 
     get hasActiveSessions() {
@@ -789,10 +800,15 @@ export default class PlanningPoker extends LightningElement {
         this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
     }
 
-    // Lifecycle - render chart on results
+    _lastRenderedVoteResults = null;
+
+    // Lifecycle - render chart on results (only when vote data changes)
     renderedCallback() {
         if (this.isRevealed && this.voteResults.chartSegments.length > 0) {
-            this._renderDonutChart();
+            if (this._lastRenderedVoteResults !== this._cachedVoteResults) {
+                this._lastRenderedVoteResults = this._cachedVoteResults;
+                this._renderDonutChart();
+            }
         }
     }
 }

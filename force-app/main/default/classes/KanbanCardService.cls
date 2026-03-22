@@ -87,7 +87,7 @@ public with sharing class KanbanCardService {
             .getRecords();
 
         // Auto-complete/un-complete sprint card based on column category
-        autoUpdateSprintCompletion(cardId, targetColumn);
+        SprintService.autoUpdateSprintCompletion(cardId, targetColumn);
 
         // Query updated card to get new sequence number
         OpenSF__Card__c updatedCard = [
@@ -398,116 +398,6 @@ public with sharing class KanbanCardService {
             return true;
         }
         return false;
-    }
-
-    /**
-     * Auto-update sprint completion when a card moves between column categories.
-     *
-     * The key insight: "Done" means development complete — that's when the
-     * burndown should count the card. "Released" means deployed to production —
-     * a logistics step that happens AFTER Done.
-     *
-     * Rules:
-     *  - Moving TO a Done column → mark CompletedInSprint = true (burndown counts it)
-     *  - Moving FROM Done TO Released → no change (card stays completed)
-     *  - Moving FROM Done/Released BACK to To Do or In Progress → un-complete
-     *    (card was pulled back into active work)
-     *
-     * This gives smooth, incremental burndown. Release batches don't create cliffs
-     * because the burndown already counted the card when it hit Done.
-     *
-     * @param cardId The card that was moved
-     * @param targetColumn The column the card was moved to
-     */
-    private static void autoUpdateSprintCompletion(
-        Id cardId,
-        OpenSF__Column__c targetColumn
-    ) {
-        String category = targetColumn.OpenSF__Category__c;
-        Boolean isDoneCategory =
-            category ==
-            KanbanEnums.columnCategoryValue(KanbanEnums.ColumnCategory.DONE);
-        Boolean isReleasedCategory =
-            category ==
-            KanbanEnums.columnCategoryValue(
-                KanbanEnums.ColumnCategory.RELEASED
-            );
-        Boolean isActiveWork =
-            category ==
-            KanbanEnums.columnCategoryValue(KanbanEnums.ColumnCategory.TODO) ||
-            category ==
-            KanbanEnums.columnCategoryValue(
-                KanbanEnums.ColumnCategory.IN_PROGRESS
-            );
-
-        // Find active sprint junction for this card
-        List<OpenSF__SprintCard__c> junctions = [
-            SELECT
-                Id,
-                OpenSF__CompletedInSprint__c,
-                OpenSF__CompletedDate__c,
-                OpenSF__Sprint__c,
-                OpenSF__Sprint__r.OpenSF__Status__c
-            FROM OpenSF__SprintCard__c
-            WHERE
-                OpenSF__Card__c = :cardId
-                AND OpenSF__RemovedDate__c = NULL
-                AND OpenSF__Sprint__r.OpenSF__Status__c = 'Active'
-            WITH USER_MODE
-            LIMIT 1
-        ];
-
-        if (junctions.isEmpty()) {
-            return;
-        }
-
-        OpenSF__SprintCard__c junction = junctions[0];
-
-        if (isDoneCategory && !junction.OpenSF__CompletedInSprint__c) {
-            // Moving to Done — mark completed (burndown counts this)
-            junction.OpenSF__CompletedInSprint__c = true;
-            junction.OpenSF__CompletedDate__c = DateTime.now();
-            update Security.stripInaccessible(
-                    AccessType.UPDATABLE,
-                    new List<OpenSF__SprintCard__c>{ junction }
-                )
-                .getRecords();
-
-            SprintService.recalculateSprintPointsPublic(
-                junction.OpenSF__Sprint__c
-            );
-        } else if (isReleasedCategory) {
-            // Moving to Released — card stays completed, no burndown change.
-            // Released is post-Done. If the card wasn't already completed
-            // (edge case: dragged straight to Released), complete it now.
-            if (!junction.OpenSF__CompletedInSprint__c) {
-                junction.OpenSF__CompletedInSprint__c = true;
-                junction.OpenSF__CompletedDate__c = DateTime.now();
-                update Security.stripInaccessible(
-                        AccessType.UPDATABLE,
-                        new List<OpenSF__SprintCard__c>{ junction }
-                    )
-                    .getRecords();
-
-                SprintService.recalculateSprintPointsPublic(
-                    junction.OpenSF__Sprint__c
-                );
-            }
-        } else if (isActiveWork && junction.OpenSF__CompletedInSprint__c) {
-            // Moving back to active work — un-complete (card was pulled back)
-            junction.OpenSF__CompletedInSprint__c = false;
-            junction.OpenSF__CompletedDate__c = null;
-            update Security.stripInaccessible(
-                    AccessType.UPDATABLE,
-                    new List<OpenSF__SprintCard__c>{ junction }
-                )
-                .getRecords();
-
-            SprintService.recalculateSprintPointsPublic(
-                junction.OpenSF__Sprint__c
-            );
-        }
-        // If category is null or unrecognized, do nothing — don't break existing boards
     }
 
     /**

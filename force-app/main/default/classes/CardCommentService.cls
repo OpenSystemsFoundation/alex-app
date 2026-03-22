@@ -3,26 +3,49 @@
  */
 public with sharing class CardCommentService {
     /**
+     * Standard comment field list used by all comment queries.
+     */
+    private static final String COMMENT_FIELDS = String.join(
+        new List<String>{
+            'Id',
+            'Name',
+            'OpenSF__Body__c',
+            'OpenSF__Card__c',
+            'CreatedById',
+            'CreatedBy.Name',
+            'CreatedBy.SmallPhotoUrl',
+            'CreatedDate',
+            'LastModifiedDate'
+        },
+        ', '
+    );
+
+    /**
+     * Query a single comment by Id with all standard fields.
+     */
+    private static OpenSF__CardComment__c queryCommentById(Id commentId) {
+        return Database.query(
+            'SELECT ' +
+                COMMENT_FIELDS +
+                ' FROM OpenSF__CardComment__c' +
+                ' WHERE Id = :commentId' +
+                ' WITH SECURITY_ENFORCED'
+        );
+    }
+
+    /**
      * Get comments for a card, ordered newest first
      */
     public static List<KanbanBoardDTO.CardCommentDTO> getComments(Id cardId) {
-        List<OpenSF__CardComment__c> comments = [
-            SELECT
-                Id,
-                Name,
-                OpenSF__Body__c,
-                OpenSF__Card__c,
-                CreatedById,
-                CreatedBy.Name,
-                CreatedBy.SmallPhotoUrl,
-                CreatedDate,
-                LastModifiedDate
-            FROM OpenSF__CardComment__c
-            WHERE OpenSF__Card__c = :cardId
-            WITH SECURITY_ENFORCED
-            ORDER BY CreatedDate DESC
-            LIMIT 200
-        ];
+        List<OpenSF__CardComment__c> comments = Database.query(
+            'SELECT ' +
+                COMMENT_FIELDS +
+                ' FROM OpenSF__CardComment__c' +
+                ' WHERE OpenSF__Card__c = :cardId' +
+                ' WITH SECURITY_ENFORCED' +
+                ' ORDER BY CreatedDate DESC' +
+                ' LIMIT 200'
+        );
         List<KanbanBoardDTO.CardCommentDTO> dtos = new List<KanbanBoardDTO.CardCommentDTO>();
         for (OpenSF__CardComment__c c : comments) {
             dtos.add(new KanbanBoardDTO.CardCommentDTO(c));
@@ -56,21 +79,7 @@ public with sharing class CardCommentService {
         insert toInsert;
 
         // Re-query to get CreatedBy fields
-        comment = [
-            SELECT
-                Id,
-                Name,
-                OpenSF__Body__c,
-                OpenSF__Card__c,
-                CreatedById,
-                CreatedBy.Name,
-                CreatedBy.SmallPhotoUrl,
-                CreatedDate,
-                LastModifiedDate
-            FROM OpenSF__CardComment__c
-            WHERE Id = :toInsert[0].Id
-            WITH SECURITY_ENFORCED
-        ];
+        comment = queryCommentById(toInsert[0].Id);
         return new KanbanBoardDTO.CardCommentDTO(comment);
     }
 
@@ -108,21 +117,7 @@ public with sharing class CardCommentService {
             )
             .getRecords();
 
-        comment = [
-            SELECT
-                Id,
-                Name,
-                OpenSF__Body__c,
-                OpenSF__Card__c,
-                CreatedById,
-                CreatedBy.Name,
-                CreatedBy.SmallPhotoUrl,
-                CreatedDate,
-                LastModifiedDate
-            FROM OpenSF__CardComment__c
-            WHERE Id = :comment.Id
-            WITH SECURITY_ENFORCED
-        ];
+        comment = queryCommentById(comment.Id);
         return new KanbanBoardDTO.CardCommentDTO(comment);
     }
 

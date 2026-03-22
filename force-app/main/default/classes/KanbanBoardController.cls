@@ -286,7 +286,7 @@ public with sharing class KanbanBoardController {
     /**
      * Get epic summaries with progress data for a board
      */
-    @AuraEnabled
+    @AuraEnabled(cacheable=true)
     public static List<KanbanBoardDTO.EpicSummaryDTO> getEpicSummaries(
         Id boardId
     ) {
@@ -302,7 +302,7 @@ public with sharing class KanbanBoardController {
     /**
      * Get detailed epic data with child cards list
      */
-    @AuraEnabled
+    @AuraEnabled(cacheable=true)
     public static KanbanBoardDTO.EpicSummaryDTO getEpicDetail(Id epicId) {
         try {
             return EpicService.getEpicDetail(epicId);
@@ -509,7 +509,7 @@ public with sharing class KanbanBoardController {
     /**
      * Get files attached to a card
      */
-    @AuraEnabled
+    @AuraEnabled(cacheable=true)
     public static List<CardFileService.CardFileDTO> getCardFiles(Id cardId) {
         try {
             return CardFileService.getCardFiles(cardId);
@@ -541,7 +541,7 @@ public with sharing class KanbanBoardController {
     /**
      * Get linked records for a card
      */
-    @AuraEnabled
+    @AuraEnabled(cacheable=true)
     public static List<KanbanBoardDTO.LinkedRecordDTO> getLinkedRecords(
         Id cardId
     ) {
@@ -597,7 +597,7 @@ public with sharing class KanbanBoardController {
     /**
      * Search for Salesforce records to link
      */
-    @AuraEnabled
+    @AuraEnabled(cacheable=true)
     public static List<RecordLinkingService.RecordSearchResult> searchRecordsToLink(
         String searchTerm,
         String sObjectType
@@ -618,7 +618,7 @@ public with sharing class KanbanBoardController {
     /**
      * Get comments for a card
      */
-    @AuraEnabled
+    @AuraEnabled(cacheable=true)
     public static List<KanbanBoardDTO.CardCommentDTO> getCardComments(
         Id cardId
     ) {
@@ -686,7 +686,7 @@ public with sharing class KanbanBoardController {
     /**
      * Get all links for a card
      */
-    @AuraEnabled
+    @AuraEnabled(cacheable=true)
     public static List<KanbanBoardDTO.CardLinkDTO> getCardLinks(Id cardId) {
         try {
             return CardLinkService.getCardLinks(cardId);
