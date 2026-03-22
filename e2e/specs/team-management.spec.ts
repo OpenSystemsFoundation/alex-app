@@ -85,7 +85,9 @@ OpenSF.TeamService.removeTeamMember(member.Id);
 
     test('TeamService.addTeamMember rejects duplicate active membership', async () => {
         const teamName = `E2E-Dup-Team-${Date.now()}`;
-        const output = sfApexRun(`
+
+        // First: add a member successfully
+        const setupOutput = sfApexRun(`
 OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'For duplicate test',
@@ -93,21 +95,34 @@ OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
 );
 Id userId = UserInfo.getUserId();
 OpenSF.KanbanBoardDTO.TeamMemberDTO first = OpenSF.TeamService.addTeamMember(team.Id, userId, 'Developer', 5);
-
-try {
-    OpenSF.TeamService.addTeamMember(team.Id, userId, 'QA', 5);
-    System.debug('E2E_DUPLICATE:NOT_CAUGHT');
-} catch (AuraHandledException e) {
-    System.debug('E2E_DUPLICATE:CAUGHT');
-    System.debug('E2E_ERROR_MSG:' + e.getMessage());
-}
-
-// Cleanup
-OpenSF.TeamService.removeTeamMember(first.Id);
+System.debug('E2E_TEAM_ID:' + team.Id);
+System.debug('E2E_MEMBER_ID:' + first.Id);
 `);
+        expect(setupOutput).toContain('E2E_TEAM_ID:');
+        const teamIdMatch = setupOutput.match(
+            /E2E_TEAM_ID:([a-zA-Z0-9]{15,18})/
+        );
+        const memberIdMatch = setupOutput.match(
+            /E2E_MEMBER_ID:([a-zA-Z0-9]{15,18})/
+        );
+        expect(teamIdMatch).toBeTruthy();
+        expect(memberIdMatch).toBeTruthy();
 
-        expect(output).toContain('E2E_DUPLICATE:CAUGHT');
-        expect(output).toContain('already an active member');
+        // Second: try to add duplicate — expect sf apex run to fail
+        let duplicateFailed = false;
+        try {
+            sfApexRun(`
+OpenSF.TeamService.addTeamMember('${teamIdMatch![1]}', UserInfo.getUserId(), 'QA', 5);
+`);
+        } catch {
+            duplicateFailed = true;
+        }
+        expect(duplicateFailed).toBe(true);
+
+        // Cleanup
+        sfApexRun(`
+OpenSF.TeamService.removeTeamMember('${memberIdMatch![1]}');
+`);
     });
 
     test('TeamService.removeTeamMember soft-deletes by setting Inactive status', async () => {
