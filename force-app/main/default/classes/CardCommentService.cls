@@ -38,17 +38,22 @@ public with sharing class CardCommentService {
         String body
     ) {
         if (String.isBlank(body)) {
-            throw new AuraHandledException('Comment body cannot be empty');
+            AuraHandledException ex = new AuraHandledException(
+                'Comment body cannot be empty'
+            );
+            ex.setMessage('Comment body cannot be empty');
+            throw ex;
         }
         OpenSF__CardComment__c comment = new OpenSF__CardComment__c(
             OpenSF__Card__c = cardId,
             OpenSF__Body__c = body.trim()
         );
-        insert Security.stripInaccessible(
+        List<OpenSF__CardComment__c> toInsert = Security.stripInaccessible(
                 AccessType.CREATABLE,
                 new List<OpenSF__CardComment__c>{ comment }
             )
             .getRecords();
+        insert toInsert;
 
         // Re-query to get CreatedBy fields
         comment = [
@@ -63,7 +68,7 @@ public with sharing class CardCommentService {
                 CreatedDate,
                 LastModifiedDate
             FROM OpenSF__CardComment__c
-            WHERE Id = :comment.Id
+            WHERE Id = :toInsert[0].Id
             WITH SECURITY_ENFORCED
         ];
         return new KanbanBoardDTO.CardCommentDTO(comment);
@@ -77,7 +82,11 @@ public with sharing class CardCommentService {
         String body
     ) {
         if (String.isBlank(body)) {
-            throw new AuraHandledException('Comment body cannot be empty');
+            AuraHandledException ex = new AuraHandledException(
+                'Comment body cannot be empty'
+            );
+            ex.setMessage('Comment body cannot be empty');
+            throw ex;
         }
         OpenSF__CardComment__c comment = [
             SELECT Id, CreatedById
@@ -86,9 +95,11 @@ public with sharing class CardCommentService {
             WITH SECURITY_ENFORCED
         ];
         if (comment.CreatedById != UserInfo.getUserId()) {
-            throw new AuraHandledException(
+            AuraHandledException ex = new AuraHandledException(
                 'You can only edit your own comments'
             );
+            ex.setMessage('You can only edit your own comments');
+            throw ex;
         }
         comment.OpenSF__Body__c = body.trim();
         update Security.stripInaccessible(
@@ -126,9 +137,11 @@ public with sharing class CardCommentService {
             WITH SECURITY_ENFORCED
         ];
         if (comment.CreatedById != UserInfo.getUserId()) {
-            throw new AuraHandledException(
+            AuraHandledException ex = new AuraHandledException(
                 'You can only delete your own comments'
             );
+            ex.setMessage('You can only delete your own comments');
+            throw ex;
         }
         delete comment;
     }
