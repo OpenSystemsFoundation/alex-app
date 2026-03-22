@@ -2,7 +2,8 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Team__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
-    <description>Team assigned to this card during sprint planning (LeSS multi-team support).</description>
+    <description
+    >Team assigned to this card during sprint planning (LeSS multi-team support).</description>
     <label>Team</label>
     <referenceTo>Team__c</referenceTo>
     <relationshipLabel>Cards</relationshipLabel>

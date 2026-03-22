@@ -88,26 +88,14 @@ public class TeamServiceTest {
         Test.stopTest();
 
         System.assertNotEquals(null, member.Id, 'Member should be created');
-        System.assertEquals(
-            userId,
-            member.userId,
-            'User ID should match'
-        );
+        System.assertEquals(userId, member.userId, 'User ID should match');
         System.assertEquals(
             'Developer',
             member.role,
             'Role should be Developer'
         );
-        System.assertEquals(
-            100,
-            member.allocation,
-            'Allocation should be 100'
-        );
-        System.assertEquals(
-            'Active',
-            member.status,
-            'Status should be Active'
-        );
+        System.assertEquals(100, member.allocation, 'Allocation should be 100');
+        System.assertEquals('Active', member.status, 'Status should be Active');
     }
 
     @isTest
@@ -188,9 +176,7 @@ public class TeamServiceTest {
         TeamService.addTeamMember(team.Id, userId, 'Scrum Master', 100);
 
         Test.startTest();
-        KanbanBoardDTO.TeamDTO result = TeamService.getTeamWithMembers(
-            team.Id
-        );
+        KanbanBoardDTO.TeamDTO result = TeamService.getTeamWithMembers(team.Id);
         Test.stopTest();
 
         System.assertEquals('Full Team', result.Name, 'Team name should match');
@@ -199,11 +185,7 @@ public class TeamServiceTest {
             result.members,
             'Members list should not be null'
         );
-        System.assertEquals(
-            1,
-            result.members.size(),
-            'Should have 1 member'
-        );
+        System.assertEquals(1, result.members.size(), 'Should have 1 member');
         System.assertEquals(
             'Scrum Master',
             result.members[0].role,
