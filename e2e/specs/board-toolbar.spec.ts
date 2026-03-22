@@ -1,5 +1,4 @@
 import { test, expect } from '../fixtures';
-import { enableDevTools } from '../helpers/sf-data';
 
 const SF_TIMEOUT = 45_000;
 
@@ -34,31 +33,12 @@ test.describe('Board Toolbar', () => {
         boardPage,
         boardData
     }) => {
-        // Enable dev tools via custom settings so undo/redo buttons render
-        try {
-            enableDevTools();
-        } catch {
-            test.skip(true, 'Could not enable dev tools via custom settings');
-        }
-
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.waitForCards();
 
         const undoBtn = boardPage.page.locator(
             'button.topbar-icon-btn[title*="Undo"]'
         );
-        const hasUndo = await undoBtn
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-
-        if (!hasUndo) {
-            test.skip(
-                true,
-                'Undo button not rendered even after enabling dev tools'
-            );
-            return;
-        }
-
         await expect(undoBtn).toBeVisible({ timeout: SF_TIMEOUT });
         await expect(undoBtn).toBeDisabled();
     });
@@ -67,30 +47,12 @@ test.describe('Board Toolbar', () => {
         boardPage,
         boardData
     }) => {
-        try {
-            enableDevTools();
-        } catch {
-            test.skip(true, 'Could not enable dev tools via custom settings');
-        }
-
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.waitForCards();
 
         const redoBtn = boardPage.page.locator(
             'button.topbar-icon-btn[title*="Redo"]'
         );
-        const hasRedo = await redoBtn
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-
-        if (!hasRedo) {
-            test.skip(
-                true,
-                'Redo button not rendered even after enabling dev tools'
-            );
-            return;
-        }
-
         await expect(redoBtn).toBeVisible({ timeout: SF_TIMEOUT });
         await expect(redoBtn).toBeDisabled();
     });
