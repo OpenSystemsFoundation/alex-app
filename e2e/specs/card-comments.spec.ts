@@ -27,20 +27,31 @@ async function openCardPanel(
 }
 
 /**
- * Helper to type into the comment textarea and post
+ * Helper to type into the comment textarea and post.
+ * Uses the native textarea inside lightning-textarea and dispatches
+ * an input+change event so the LWC binding fires.
  */
 async function postComment(panel: any, text: string) {
     // lightning-textarea renders a native textarea inside shadow DOM
-    // Playwright pierces shadow DOM, so we can target the inner textarea
     const textarea = panel.locator('[data-id="comment-input"] textarea');
     await textarea.waitFor({ state: 'visible', timeout: SF_TIMEOUT });
-    await textarea.fill(text);
 
-    // Small wait for the reactive binding to propagate
-    await textarea.page().waitForTimeout(300);
+    // Clear and type character by character to trigger input events
+    await textarea.click();
+    await textarea.fill('');
+    await textarea.type(text, { delay: 10 });
+
+    // Dispatch change event to ensure LWC onchange fires
+    await textarea.dispatchEvent('change');
+
+    // Wait for reactive binding
+    await textarea.page().waitForTimeout(500);
 
     const postBtn = panel.locator('[data-id="post-comment-btn"]');
     await postBtn.click();
+
+    // Wait for the Apex call to complete and comment to render
+    await panel.page().waitForTimeout(1000);
 }
 
 test.describe('Card Comments', () => {

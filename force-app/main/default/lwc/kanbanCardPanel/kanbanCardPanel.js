@@ -346,7 +346,12 @@ export default class KanbanCardPanel extends LightningElement {
     }
 
     async handlePostComment() {
-        const body = this.newCommentBody?.trim();
+        // Read value from the lightning-textarea component directly
+        // in case the onchange binding didn't fire (e.g. automated tests)
+        const textareaEl = this.template.querySelector(
+            '[data-id="comment-input"]'
+        );
+        const body = (textareaEl?.value || this.newCommentBody || '').trim();
         if (!body) {
             return;
         }
@@ -358,11 +363,8 @@ export default class KanbanCardPanel extends LightningElement {
             this.comments = [this.enrichComment(newComment), ...this.comments];
             this.newCommentBody = '';
             // Clear the textarea
-            const textarea = this.template.querySelector(
-                '[data-id="comment-input"]'
-            );
-            if (textarea) {
-                textarea.value = '';
+            if (textareaEl) {
+                textareaEl.value = '';
             }
         } catch (error) {
             this.dispatchEvent(
