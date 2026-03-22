@@ -412,4 +412,46 @@ public class TestFactory {
             LanguageLocaleKey = 'en_US'
         );
     }
+
+    /**
+     * Creates a test Team
+     * @param teamName The name of the team
+     * @return The created Team record
+     */
+    public static OpenSF__Team__c createTeam(String teamName) {
+        OpenSF__Team__c team = new OpenSF__Team__c(
+            Name = teamName,
+            OpenSF__Description__c = 'Test team: ' + teamName,
+            OpenSF__Status__c = 'Active',
+            OpenSF__AvatarColor__c = '#3366FF',
+            OpenSF__DefaultVelocity__c = 30
+        );
+        insert team;
+        return team;
+    }
+
+    /**
+     * Creates a test Team Member
+     * @param teamId The ID of the parent team
+     * @param userId The ID of the user
+     * @param role The role of the member
+     * @return The created Team Member record
+     */
+    public static OpenSF__TeamMember__c createTeamMember(
+        Id teamId,
+        Id userId,
+        String role
+    ) {
+        OpenSF__TeamMember__c member = new OpenSF__TeamMember__c(
+            OpenSF__Team__c = teamId,
+            OpenSF__Member__c = userId,
+            OpenSF__Role__c = role,
+            OpenSF__Allocation__c = 100,
+            OpenSF__JoinDate__c = Date.today(),
+            OpenSF__Status__c = 'Active',
+            OpenSF__WeeklyCapacityHours__c = 40
+        );
+        insert member;
+        return member;
+    }
 }

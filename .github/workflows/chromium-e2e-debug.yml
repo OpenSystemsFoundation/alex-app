@@ -112,3 +112,14 @@ jobs:
             create-retro-data: false
             grep: ${{ inputs.grep || '' }}
             debug: ${{ inputs.debug || false }}
+
+    team-management:
+        name: Team Management
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: team-management
+            specs: 'team-management.spec.ts'
+            create-retro-data: false
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}

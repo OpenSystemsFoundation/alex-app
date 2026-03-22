@@ -528,6 +528,119 @@ public with sharing class KanbanBoardDTO {
     }
 
     /**
+     * Team DTO
+     */
+    public class TeamDTO {
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public String Name;
+        @AuraEnabled
+        public String description;
+        @AuraEnabled
+        public String status;
+        @AuraEnabled
+        public Id teamLeadId;
+        @AuraEnabled
+        public String teamLeadName;
+        @AuraEnabled
+        public Decimal defaultVelocity;
+        @AuraEnabled
+        public String avatarColor;
+        @AuraEnabled
+        public List<TeamMemberDTO> members;
+
+        public TeamDTO(OpenSF__Team__c team) {
+            this.Id = team.Id;
+            this.Name = team.Name;
+            this.description = team.OpenSF__Description__c;
+            this.status = team.OpenSF__Status__c;
+            this.teamLeadId = team.OpenSF__TeamLead__c;
+            this.defaultVelocity = team.OpenSF__DefaultVelocity__c;
+            this.avatarColor = team.OpenSF__AvatarColor__c;
+            try {
+                this.teamLeadName = team.OpenSF__TeamLead__r.Name;
+            } catch (Exception e) {
+                this.teamLeadName = null;
+            }
+        }
+    }
+
+    /**
+     * Team Member DTO
+     */
+    public class TeamMemberDTO {
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public String Name;
+        @AuraEnabled
+        public Id teamId;
+        @AuraEnabled
+        public Id userId;
+        @AuraEnabled
+        public String userName;
+        @AuraEnabled
+        public String userPhotoUrl;
+        @AuraEnabled
+        public String role;
+        @AuraEnabled
+        public Decimal allocation;
+        @AuraEnabled
+        public Date joinDate;
+        @AuraEnabled
+        public String status;
+        @AuraEnabled
+        public Decimal weeklyCapacityHours;
+
+        public TeamMemberDTO(OpenSF__TeamMember__c member) {
+            this.Id = member.Id;
+            this.Name = member.Name;
+            this.teamId = member.OpenSF__Team__c;
+            this.userId = member.OpenSF__Member__c;
+            this.role = member.OpenSF__Role__c;
+            this.allocation = member.OpenSF__Allocation__c;
+            this.joinDate = member.OpenSF__JoinDate__c;
+            this.status = member.OpenSF__Status__c;
+            this.weeklyCapacityHours = member.OpenSF__WeeklyCapacityHours__c;
+            try {
+                this.userName = member.OpenSF__Member__r.Name;
+            } catch (Exception e) {
+                this.userName = null;
+            }
+            try {
+                this.userPhotoUrl = member.OpenSF__Member__r.SmallPhotoUrl;
+            } catch (Exception e) {
+                this.userPhotoUrl = null;
+            }
+        }
+    }
+
+    /**
+     * Convert list of teams
+     */
+    public static List<TeamDTO> convertTeams(List<OpenSF__Team__c> teams) {
+        List<TeamDTO> result = new List<TeamDTO>();
+        for (OpenSF__Team__c team : teams) {
+            result.add(new TeamDTO(team));
+        }
+        return result;
+    }
+
+    /**
+     * Convert list of team members
+     */
+    public static List<TeamMemberDTO> convertTeamMembers(
+        List<OpenSF__TeamMember__c> members
+    ) {
+        List<TeamMemberDTO> result = new List<TeamMemberDTO>();
+        for (OpenSF__TeamMember__c member : members) {
+            result.add(new TeamMemberDTO(member));
+        }
+        return result;
+    }
+
+    /**
      * Linked Record DTO
      */
     public class LinkedRecordDTO {

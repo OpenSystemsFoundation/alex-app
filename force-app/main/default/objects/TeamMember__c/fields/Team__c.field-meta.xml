@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Team__c</fullName>
+    <description>Parent team for this membership record.</description>
+    <externalId>false</externalId>
+    <label>Team</label>
+    <referenceTo>Team__c</referenceTo>
+    <relationshipLabel>Team Members</relationshipLabel>
+    <relationshipName>TeamMembers</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>
