@@ -128,20 +128,14 @@ export class BoardPage extends BasePage {
 
     /** Switch to the Backlog tab and wait for backlog view to render. */
     async switchToBacklogTab(): Promise<void> {
+        // Click the backlog tab button and verify it becomes active
         await this.backlogTab.click();
+        await expect(this.backlogTab).toHaveClass(/topbar-tab--active/, {
+            timeout: 5_000
+        });
         // Wait for the backlog view container
         await this.page
-            .locator(
-                'opensf-kanban-backlog-view, c-kanban-backlog-view, .backlog-view'
-            )
-            .first()
-            .waitFor({ state: 'visible', timeout: this.timeout });
-        // Wait for content to load (table header or empty state)
-        await this.page
-            .locator(
-                '.backlog-row--header, .backlog-empty-state, .backlog-header-row'
-            )
-            .first()
+            .locator('.backlog-view')
             .waitFor({ state: 'visible', timeout: this.timeout });
     }
 }
