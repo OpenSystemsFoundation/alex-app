@@ -45,6 +45,62 @@ public class KanbanEnums {
     }
 
     /**
+     * Card link relationship types
+     */
+    public enum CardLinkType {
+        BLOCKS,
+        IS_BLOCKED_BY,
+        RELATES_TO,
+        DUPLICATES,
+        IS_DUPLICATED_BY
+    }
+
+    /**
+     * Convert CardLinkType enum to picklist API value
+     */
+    public static String cardLinkTypeValue(CardLinkType linkType) {
+        switch on linkType {
+            when BLOCKS {
+                return 'Blocks';
+            }
+            when IS_BLOCKED_BY {
+                return 'Is Blocked By';
+            }
+            when RELATES_TO {
+                return 'Relates To';
+            }
+            when DUPLICATES {
+                return 'Duplicates';
+            }
+            when IS_DUPLICATED_BY {
+                return 'Is Duplicated By';
+            }
+            when else {
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Get the inverse link type for bidirectional display
+     */
+    public static String inverseLinkType(String linkType) {
+        if (linkType == 'Blocks') {
+            return 'Is Blocked By';
+        }
+        if (linkType == 'Is Blocked By') {
+            return 'Blocks';
+        }
+        if (linkType == 'Duplicates') {
+            return 'Is Duplicated By';
+        }
+        if (linkType == 'Is Duplicated By') {
+            return 'Duplicates';
+        }
+        return 'Relates To';
+    }
+
+    /**
      * Platform event types for SprintUpdateEvent__e
      */
     public enum SprintEventType {

@@ -1,0 +1,69 @@
+:host {
+    display: block;
+}
+
+.add-link-form {
+    border-bottom: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+    padding-bottom: var(--slds-g-spacing-3, 0.75rem);
+}
+
+.search-results {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+    border-radius: 4px;
+}
+
+.search-result-item {
+    padding: 0.5rem;
+    cursor: pointer;
+}
+
+.search-result-item:hover {
+    background-color: var(--slds-g-color-neutral-base-95, #f3f3f3);
+}
+
+.search-result-name {
+    color: var(--slds-g-color-neutral-base-50, #747474);
+    margin-right: 0.25rem;
+}
+
+.search-result-subject {
+    font-weight: 500;
+}
+
+.linked-cards-list {
+    list-style: none;
+    margin: 0;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.linked-card-item {
+    border-bottom: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+}
+
+.linked-card-item:last-child {
+    border-bottom: none;
+}
+
+.link-type-badge {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    color: var(--slds-g-color-neutral-base-50, #747474);
+    font-size: 0.75rem;
+}
+
+.linked-card-name {
+    font-size: 0.8125rem;
+}
+
+.delete-link-btn {
+    opacity: 0.4;
+    transition: opacity 0.15s;
+}
+
+.delete-link-btn:hover {
+    opacity: 1;
+}

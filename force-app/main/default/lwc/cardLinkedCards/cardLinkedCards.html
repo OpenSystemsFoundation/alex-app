@@ -1,0 +1,144 @@
+<template>
+    <lightning-card title="Linked Cards" icon-name="utility:link">
+        <lightning-button-icon
+            slot="actions"
+            icon-name={addButtonIcon}
+            alternative-text="Link a card"
+            title="Link a card"
+            onclick={handleToggleAddForm}
+            class="link-add-btn"
+        ></lightning-button-icon>
+
+        <!-- Add Link Form -->
+        <template lwc:if={showAddForm}>
+            <div class="slds-var-p-horizontal_small slds-var-p-bottom_small add-link-form">
+                <lightning-combobox
+                    label="Link Type"
+                    value={selectedLinkType}
+                    options={linkTypeOptions}
+                    onchange={handleLinkTypeChange}
+                    variant="label-stacked"
+                    class="slds-var-m-bottom_x-small"
+                ></lightning-combobox>
+                <lightning-input
+                    type="search"
+                    label="Search Cards"
+                    placeholder="Type to search cards..."
+                    value={searchTerm}
+                    onchange={handleSearchInput}
+                    variant="label-stacked"
+                    class="slds-var-m-bottom_x-small"
+                ></lightning-input>
+
+                <template lwc:if={isSearching}>
+                    <lightning-spinner
+                        alternative-text="Searching"
+                        size="small"
+                        class="slds-var-m-top_small"
+                    ></lightning-spinner>
+                </template>
+
+                <template lwc:if={showSearchResults}>
+                    <template lwc:if={hasSearchResults}>
+                        <ul class="slds-listbox slds-listbox_vertical search-results">
+                            <template
+                                for:each={searchResults}
+                                for:item="result"
+                            >
+                                <li
+                                    key={result.Id}
+                                    class="slds-listbox__item"
+                                >
+                                    <div
+                                        class="slds-media slds-media_center slds-listbox__option slds-listbox__option_plain search-result-item"
+                                        data-card-id={result.Id}
+                                        onclick={handleSelectCard}
+                                        role="option"
+                                    >
+                                        <span class="slds-media__figure">
+                                            <lightning-icon
+                                                icon-name="standard:task"
+                                                size="x-small"
+                                            ></lightning-icon>
+                                        </span>
+                                        <span class="slds-media__body">
+                                            <span class="slds-text-body_small search-result-name">{result.Name}</span>
+                                            <span class="slds-truncate search-result-subject">{result.subject}</span>
+                                        </span>
+                                    </div>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+                    <template lwc:else>
+                        <p class="slds-text-body_small slds-text-color_weak slds-var-p-around_small">
+                            No matching cards found.
+                        </p>
+                    </template>
+                </template>
+            </div>
+        </template>
+
+        <!-- Loading State -->
+        <template lwc:if={isLoading}>
+            <lightning-spinner
+                alternative-text="Loading"
+                size="small"
+            ></lightning-spinner>
+        </template>
+
+        <!-- Links List -->
+        <template lwc:if={hasLinks}>
+            <ul class="slds-var-p-horizontal_small slds-var-p-bottom_small linked-cards-list">
+                <template for:each={displayLinks} for:item="link">
+                    <li key={link.Id} class="linked-card-item slds-var-p-vertical_xx-small">
+                        <div class="slds-grid slds-grid_vertical-align-center slds-gutters_xx-small">
+                            <div class="slds-col slds-grow">
+                                <div class="slds-grid slds-grid_vertical-align-center slds-wrap">
+                                    <span class="link-type-badge slds-var-m-right_xx-small">
+                                        <lightning-icon
+                                            icon-name={link.icon}
+                                            size="xx-small"
+                                            class="slds-var-m-right_xxx-small"
+                                        ></lightning-icon>
+                                        <span class="slds-text-body_small">{link.linkType}</span>
+                                    </span>
+                                    <a
+                                        href={link.cardUrl}
+                                        data-card-id={link.targetCardId}
+                                        onclick={handleNavigateToCard}
+                                        class="slds-text-link slds-truncate linked-card-name"
+                                        title={link.targetCardSubject}
+                                    >
+                                        {link.targetCardName} - {link.targetCardSubject}
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-shrink-none">
+                                <lightning-button-icon
+                                    icon-name={deleteIcon}
+                                    alternative-text="Remove link"
+                                    variant="bare"
+                                    size="small"
+                                    data-link-id={link.Id}
+                                    onclick={handleDeleteClick}
+                                    class={deleteButtonClass}
+                                    title={deleteTitle}
+                                ></lightning-button-icon>
+                            </div>
+                        </div>
+                    </li>
+                </template>
+            </ul>
+        </template>
+
+        <!-- Empty State -->
+        <template lwc:if={showEmptyState}>
+            <div class="slds-var-p-around_small slds-text-align_center">
+                <p class="slds-text-body_small slds-text-color_weak">
+                    No linked cards. Click + to link a card.
+                </p>
+            </div>
+        </template>
+    </lightning-card>
+</template>

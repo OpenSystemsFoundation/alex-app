@@ -435,6 +435,12 @@
     <flexiPageRegions>
         <itemInstances>
             <componentInstance>
+                <componentName>cardLinkedCards</componentName>
+                <identifier>cardLinkedCards_instance</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
                 <componentInstanceProperties>
                     <name>parentFieldApiName</name>
                     <value>Card__c.Id</value>

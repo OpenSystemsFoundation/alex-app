@@ -545,6 +545,79 @@ public with sharing class KanbanBoardController {
         }
     }
 
+    // =========================================================================
+    // Card Linking Methods
+    // =========================================================================
+
+    /**
+     * Get all links for a card
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.CardLinkDTO> getCardLinks(Id cardId) {
+        try {
+            return CardLinkService.getCardLinks(cardId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading card links: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Create a link between two cards
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.CardLinkDTO createCardLink(
+        Id sourceCardId,
+        Id targetCardId,
+        String linkType
+    ) {
+        try {
+            return CardLinkService.createCardLink(
+                sourceCardId,
+                targetCardId,
+                linkType
+            );
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error creating card link: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Delete a card link
+     */
+    @AuraEnabled
+    public static void deleteCardLink(Id cardLinkId) {
+        try {
+            CardLinkService.deleteCardLink(cardLinkId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error deleting card link: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Search cards for linking
+     */
+    @AuraEnabled
+    public static List<CardLinkService.CardSearchResult> searchCardsForLinking(
+        Id cardId,
+        String searchTerm
+    ) {
+        try {
+            return CardLinkService.searchCardsForLinking(cardId, searchTerm);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error searching cards: ' + e.getMessage()
+            );
+        }
+    }
+
     /**
      * Wrapper classes (kept here since they're @AuraEnabled)
      */
