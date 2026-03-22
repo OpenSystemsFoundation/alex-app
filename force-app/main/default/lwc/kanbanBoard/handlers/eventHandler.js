@@ -115,6 +115,12 @@ export default class EventHandler {
                 !this.requestTracker?.isOwnRequest(clientRequestId)
             ) {
                 this._notifyActivity(eventType, payload);
+
+                // Mark undo entries referencing this card as stale —
+                // another client modified it so our undo context is invalid.
+                if (payload.Id && store.undoManager) {
+                    store.undoManager.markStale(payload.Id);
+                }
             }
 
             this._applyEvent(eventType, payload, store);

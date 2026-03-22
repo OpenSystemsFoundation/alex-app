@@ -36,34 +36,32 @@
 
                 <!-- Right: Status + Actions -->
                 <div class="kanban-topbar__actions">
-                    <template lwc:if={hasDevTools}>
-                        <div class="topbar-undo-redo">
-                            <button
-                                class={undoButtonClass}
-                                title={undoTooltip}
-                                onclick={handleUndo}
-                                disabled={isUndoDisabled}
-                            >
-                                <lightning-icon
-                                    icon-name="utility:undo"
-                                    size="xx-small"
-                                    alternative-text="Undo"
-                                ></lightning-icon>
-                            </button>
-                            <button
-                                class={redoButtonClass}
-                                title={redoTooltip}
-                                onclick={handleRedo}
-                                disabled={isRedoDisabled}
-                            >
-                                <lightning-icon
-                                    icon-name="utility:redo"
-                                    size="xx-small"
-                                    alternative-text="Redo"
-                                ></lightning-icon>
-                            </button>
-                        </div>
-                    </template>
+                    <div class="topbar-undo-redo">
+                        <button
+                            class={undoButtonClass}
+                            title={undoTooltip}
+                            onclick={handleUndo}
+                            disabled={isUndoDisabled}
+                        >
+                            <lightning-icon
+                                icon-name="utility:undo"
+                                size="xx-small"
+                                alternative-text="Undo"
+                            ></lightning-icon>
+                        </button>
+                        <button
+                            class={redoButtonClass}
+                            title={redoTooltip}
+                            onclick={handleRedo}
+                            disabled={isRedoDisabled}
+                        >
+                            <lightning-icon
+                                icon-name="utility:redo"
+                                size="xx-small"
+                                alternative-text="Redo"
+                            ></lightning-icon>
+                        </button>
+                    </div>
                     <c-connection-status-indicator
                         config={connectionStatusConfig}
                     ></c-connection-status-indicator>
