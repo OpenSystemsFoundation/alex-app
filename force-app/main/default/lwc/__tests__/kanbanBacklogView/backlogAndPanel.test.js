@@ -48,6 +48,33 @@ jest.mock(
     { virtual: true }
 );
 
+// ─── Mock: @salesforce/user/Id ──────────────────────────────────────
+jest.mock('@salesforce/user/Id', () => ({ default: 'mockUserId001' }), {
+    virtual: true
+});
+
+// ─── Mock: Apex imperative methods for card comments ────────────────
+jest.mock(
+    '@salesforce/apex/KanbanBoardController.getCardComments',
+    () => ({ default: jest.fn().mockResolvedValue([]) }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/KanbanBoardController.addCardComment',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/KanbanBoardController.updateCardComment',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/KanbanBoardController.deleteCardComment',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+
 // ─── Mock: lightning/platformShowToastEvent ──────────────────────────
 jest.mock(
     'lightning/platformShowToastEvent',
@@ -83,6 +110,17 @@ import {
     updateCardAsync as mockUpdateCardAsync,
     deleteCardAsync as mockDeleteCardAsync
 } from 'c/kanbanStore';
+
+// ─── Get references to the mocked Apex comment functions ────────────
+import getCardComments from '@salesforce/apex/KanbanBoardController.getCardComments';
+import addCardComment from '@salesforce/apex/KanbanBoardController.addCardComment';
+import updateCardComment from '@salesforce/apex/KanbanBoardController.updateCardComment';
+import deleteCardComment from '@salesforce/apex/KanbanBoardController.deleteCardComment';
+
+const mockGetCardComments = getCardComments;
+const mockAddCardComment = addCardComment;
+const mockUpdateCardComment = updateCardComment;
+const mockDeleteCardComment = deleteCardComment;
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -2747,6 +2785,624 @@ describe('c-kanban-card-panel', () => {
 
             // Should dispatch toast error + close event
             expect(ctx.dispatchEvent).toHaveBeenCalled();
+        });
+    });
+
+    // ── Comment computed properties ──────────────────────────────────
+    describe('comment computed properties', () => {
+        it('commentCount returns 0 when comments is empty', () => {
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'commentCount'
+            ).get;
+            expect(getter.call({ comments: [] })).toBe(0);
+            expect(getter.call({ comments: null })).toBe(0);
+        });
+
+        it('commentCount returns the number of comments', () => {
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'commentCount'
+            ).get;
+            expect(getter.call({ comments: [{ Id: '1' }, { Id: '2' }] })).toBe(
+                2
+            );
+        });
+
+        it('hasComments returns true when not loading and has items', () => {
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'hasComments'
+            ).get;
+            expect(
+                getter.call({
+                    isLoadingComments: false,
+                    comments: [{ Id: '1' }]
+                })
+            ).toBe(true);
+        });
+
+        it('hasComments returns false when loading', () => {
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'hasComments'
+            ).get;
+            expect(
+                getter.call({
+                    isLoadingComments: true,
+                    comments: [{ Id: '1' }]
+                })
+            ).toBe(false);
+        });
+
+        it('hasComments returns false when comments is empty', () => {
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'hasComments'
+            ).get;
+            expect(
+                getter.call({ isLoadingComments: false, comments: [] })
+            ).toBe(false);
+        });
+
+        it('noComments returns true when not loading and empty', () => {
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'noComments'
+            ).get;
+            expect(
+                getter.call({ isLoadingComments: false, comments: [] })
+            ).toBe(true);
+            expect(
+                getter.call({ isLoadingComments: false, comments: null })
+            ).toBe(true);
+        });
+
+        it('noComments returns false when has comments', () => {
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'noComments'
+            ).get;
+            expect(
+                getter.call({
+                    isLoadingComments: false,
+                    comments: [{ Id: '1' }]
+                })
+            ).toBe(false);
+        });
+
+        it('noComments returns false when loading', () => {
+            const getter = Object.getOwnPropertyDescriptor(
+                KanbanCardPanel.prototype,
+                'noComments'
+            ).get;
+            expect(getter.call({ isLoadingComments: true, comments: [] })).toBe(
+                false
+            );
+        });
+    });
+
+    // ── Comment methods ─────────────────────────────────────────────
+    describe('comment methods', () => {
+        const MOCK_COMMENT = {
+            Id: 'comment1',
+            body: 'Test comment',
+            cardId: 'card1',
+            createdById: 'mockUserId001',
+            createdByName: 'Test User',
+            createdByPhotoUrl: null,
+            createdDate: new Date().toISOString(),
+            lastModifiedDate: new Date().toISOString()
+        };
+
+        it('loadComments fetches and enriches comments', async () => {
+            mockGetCardComments.mockResolvedValue([MOCK_COMMENT]);
+            const loadComments = KanbanCardPanel.prototype.loadComments;
+            const enrichComment = KanbanCardPanel.prototype.enrichComment;
+            const formatRelativeDate =
+                KanbanCardPanel.prototype.formatRelativeDate;
+
+            const ctx = {
+                card: { Id: 'card1' },
+                isLoadingComments: false,
+                comments: [],
+                enrichComment,
+                formatRelativeDate
+            };
+
+            await loadComments.call(ctx);
+
+            expect(mockGetCardComments).toHaveBeenCalledWith({
+                cardId: 'card1'
+            });
+            expect(ctx.comments).toHaveLength(1);
+            expect(ctx.comments[0].isOwnComment).toBe(true);
+            expect(ctx.comments[0].isEditing).toBe(false);
+            expect(ctx.isLoadingComments).toBe(false);
+        });
+
+        it('loadComments does nothing when card has no Id', async () => {
+            const loadComments = KanbanCardPanel.prototype.loadComments;
+            const ctx = {
+                card: null,
+                isLoadingComments: false,
+                comments: ['existing']
+            };
+
+            await loadComments.call(ctx);
+
+            expect(ctx.comments).toEqual(['existing']);
+        });
+
+        it('loadComments handles errors gracefully', async () => {
+            mockGetCardComments.mockRejectedValue(new Error('fail'));
+            const loadComments = KanbanCardPanel.prototype.loadComments;
+
+            const ctx = {
+                card: { Id: 'card1' },
+                isLoadingComments: false,
+                comments: [{ Id: 'old' }],
+                enrichComment: jest.fn()
+            };
+
+            await loadComments.call(ctx);
+
+            expect(ctx.comments).toEqual([]);
+            expect(ctx.isLoadingComments).toBe(false);
+        });
+
+        it('enrichComment marks own comments and sets defaults', () => {
+            const enrichComment = KanbanCardPanel.prototype.enrichComment;
+            const formatRelativeDate =
+                KanbanCardPanel.prototype.formatRelativeDate;
+            const ctx = { formatRelativeDate };
+
+            const result = enrichComment.call(ctx, MOCK_COMMENT);
+
+            expect(result.isOwnComment).toBe(true);
+            expect(result.isEditing).toBe(false);
+            expect(result.editBody).toBe('Test comment');
+            expect(result.formattedDate).toBeDefined();
+        });
+
+        it('enrichComment marks other users comments as not own', () => {
+            const enrichComment = KanbanCardPanel.prototype.enrichComment;
+            const formatRelativeDate =
+                KanbanCardPanel.prototype.formatRelativeDate;
+            const ctx = { formatRelativeDate };
+
+            const result = enrichComment.call(ctx, {
+                ...MOCK_COMMENT,
+                createdById: 'otherUser'
+            });
+
+            expect(result.isOwnComment).toBe(false);
+        });
+    });
+
+    // ── formatRelativeDate ──────────────────────────────────────────
+    describe('formatRelativeDate', () => {
+        const formatRelativeDate = KanbanCardPanel.prototype.formatRelativeDate;
+
+        it('returns empty string for null/undefined', () => {
+            expect(formatRelativeDate(null)).toBe('');
+            expect(formatRelativeDate(undefined)).toBe('');
+        });
+
+        it('returns "just now" for dates less than 1 minute ago', () => {
+            const now = new Date();
+            expect(formatRelativeDate(now.toISOString())).toBe('just now');
+        });
+
+        it('returns minutes ago for dates less than 1 hour ago', () => {
+            const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+            expect(formatRelativeDate(fiveMinAgo.toISOString())).toBe('5m ago');
+        });
+
+        it('returns hours ago for dates less than 1 day ago', () => {
+            const threeHoursAgo = new Date(Date.now() - 3 * 3600 * 1000);
+            expect(formatRelativeDate(threeHoursAgo.toISOString())).toBe(
+                '3h ago'
+            );
+        });
+
+        it('returns days ago for dates less than 7 days ago', () => {
+            const twoDaysAgo = new Date(Date.now() - 2 * 86400 * 1000);
+            expect(formatRelativeDate(twoDaysAgo.toISOString())).toBe('2d ago');
+        });
+
+        it('returns localized date for dates 7+ days ago', () => {
+            const tenDaysAgo = new Date(Date.now() - 10 * 86400 * 1000);
+            const result = formatRelativeDate(tenDaysAgo.toISOString());
+            // Should be a date string, not a relative format
+            expect(result).not.toContain('ago');
+            expect(result).not.toBe('just now');
+        });
+    });
+
+    // ── handlePostComment ───────────────────────────────────────────
+    describe('handlePostComment', () => {
+        it('posts comment and prepends to list', async () => {
+            const newComment = {
+                Id: 'newComment1',
+                body: 'New comment',
+                createdById: 'mockUserId001',
+                createdByName: 'Test',
+                createdDate: new Date().toISOString()
+            };
+            mockAddCardComment.mockResolvedValue(newComment);
+
+            const handlePostComment =
+                KanbanCardPanel.prototype.handlePostComment;
+            const enrichComment = KanbanCardPanel.prototype.enrichComment;
+            const formatRelativeDate =
+                KanbanCardPanel.prototype.formatRelativeDate;
+
+            const textareaEl = { value: 'New comment' };
+            const ctx = {
+                card: { Id: 'card1' },
+                comments: [],
+                enrichComment,
+                formatRelativeDate,
+                dispatchEvent: jest.fn(),
+                template: {
+                    querySelector: jest.fn(() => textareaEl)
+                }
+            };
+
+            await handlePostComment.call(ctx);
+
+            expect(mockAddCardComment).toHaveBeenCalledWith({
+                cardId: 'card1',
+                body: 'New comment'
+            });
+            expect(ctx.comments).toHaveLength(1);
+            expect(ctx.comments[0].body).toBe('New comment');
+            expect(textareaEl.value).toBe('');
+        });
+
+        it('does nothing when textarea is empty', async () => {
+            const handlePostComment =
+                KanbanCardPanel.prototype.handlePostComment;
+            const ctx = {
+                card: { Id: 'card1' },
+                comments: [],
+                dispatchEvent: jest.fn(),
+                template: {
+                    querySelector: jest.fn(() => ({ value: '   ' }))
+                }
+            };
+
+            await handlePostComment.call(ctx);
+
+            expect(mockAddCardComment).not.toHaveBeenCalled();
+        });
+
+        it('does nothing when textarea element is null', async () => {
+            const handlePostComment =
+                KanbanCardPanel.prototype.handlePostComment;
+            const ctx = {
+                card: { Id: 'card1' },
+                comments: [],
+                dispatchEvent: jest.fn(),
+                template: {
+                    querySelector: jest.fn(() => null)
+                }
+            };
+
+            await handlePostComment.call(ctx);
+
+            expect(mockAddCardComment).not.toHaveBeenCalled();
+        });
+
+        it('shows error toast on failure', async () => {
+            mockAddCardComment.mockRejectedValue(new Error('fail'));
+            const handlePostComment =
+                KanbanCardPanel.prototype.handlePostComment;
+            const ctx = {
+                card: { Id: 'card1' },
+                comments: [],
+                dispatchEvent: jest.fn(),
+                template: {
+                    querySelector: jest.fn(() => ({ value: 'test' }))
+                }
+            };
+
+            await handlePostComment.call(ctx);
+
+            expect(ctx.dispatchEvent).toHaveBeenCalled();
+        });
+    });
+
+    // ── handleCommentAction ─────────────────────────────────────────
+    describe('handleCommentAction', () => {
+        it('sets comment to editing mode on edit action', () => {
+            const handleCommentAction =
+                KanbanCardPanel.prototype.handleCommentAction;
+            const ctx = {
+                comments: [
+                    { Id: 'c1', body: 'Hello', isEditing: false },
+                    { Id: 'c2', body: 'World', isEditing: false }
+                ],
+                handleDeleteComment: jest.fn()
+            };
+
+            handleCommentAction.call(ctx, {
+                detail: { value: 'edit' },
+                currentTarget: { dataset: { commentId: 'c1' } },
+                target: {}
+            });
+
+            expect(ctx.comments[0].isEditing).toBe(true);
+            expect(ctx.comments[0].editBody).toBe('Hello');
+            expect(ctx.comments[1].isEditing).toBe(false);
+        });
+
+        it('calls handleDeleteComment on delete action', () => {
+            const handleCommentAction =
+                KanbanCardPanel.prototype.handleCommentAction;
+            const ctx = {
+                comments: [{ Id: 'c1', body: 'Hello' }],
+                handleDeleteComment: jest.fn()
+            };
+
+            handleCommentAction.call(ctx, {
+                detail: { value: 'delete' },
+                currentTarget: { dataset: { commentId: 'c1' } },
+                target: {}
+            });
+
+            expect(ctx.handleDeleteComment).toHaveBeenCalledWith('c1');
+        });
+
+        it('does nothing when commentId is missing', () => {
+            const handleCommentAction =
+                KanbanCardPanel.prototype.handleCommentAction;
+            const ctx = {
+                comments: [{ Id: 'c1' }],
+                handleDeleteComment: jest.fn()
+            };
+
+            handleCommentAction.call(ctx, {
+                detail: { value: 'edit' },
+                currentTarget: { dataset: {} },
+                target: { closest: jest.fn(() => null) }
+            });
+
+            expect(ctx.handleDeleteComment).not.toHaveBeenCalled();
+        });
+    });
+
+    // ── handleEditInputChange ───────────────────────────────────────
+    describe('handleEditInputChange', () => {
+        it('updates editBody for the target comment', () => {
+            const handleEditInputChange =
+                KanbanCardPanel.prototype.handleEditInputChange;
+            const ctx = {
+                comments: [
+                    { Id: 'c1', editBody: 'old' },
+                    { Id: 'c2', editBody: 'other' }
+                ]
+            };
+
+            handleEditInputChange.call(ctx, {
+                target: { dataset: { commentId: 'c1' } },
+                detail: { value: 'updated text' }
+            });
+
+            expect(ctx.comments[0].editBody).toBe('updated text');
+            expect(ctx.comments[1].editBody).toBe('other');
+        });
+
+        it('does nothing when commentId is missing', () => {
+            const handleEditInputChange =
+                KanbanCardPanel.prototype.handleEditInputChange;
+            const ctx = {
+                comments: [{ Id: 'c1', editBody: 'old' }]
+            };
+
+            handleEditInputChange.call(ctx, {
+                target: { dataset: {} },
+                detail: { value: 'new' }
+            });
+
+            expect(ctx.comments[0].editBody).toBe('old');
+        });
+    });
+
+    // ── handleCancelEdit ────────────────────────────────────────────
+    describe('handleCancelEdit', () => {
+        it('reverts editBody and sets isEditing to false', () => {
+            const handleCancelEdit = KanbanCardPanel.prototype.handleCancelEdit;
+            const ctx = {
+                comments: [
+                    {
+                        Id: 'c1',
+                        body: 'original',
+                        isEditing: true,
+                        editBody: 'changed'
+                    }
+                ]
+            };
+
+            handleCancelEdit.call(ctx, {
+                target: { dataset: { commentId: 'c1' } }
+            });
+
+            expect(ctx.comments[0].isEditing).toBe(false);
+            expect(ctx.comments[0].editBody).toBe('original');
+        });
+
+        it('does nothing when commentId is missing', () => {
+            const handleCancelEdit = KanbanCardPanel.prototype.handleCancelEdit;
+            const ctx = {
+                comments: [{ Id: 'c1', isEditing: true }]
+            };
+
+            handleCancelEdit.call(ctx, {
+                target: { dataset: {} }
+            });
+
+            expect(ctx.comments[0].isEditing).toBe(true);
+        });
+    });
+
+    // ── handleSaveEdit ──────────────────────────────────────────────
+    describe('handleSaveEdit', () => {
+        it('calls updateCardComment and updates list', async () => {
+            const updatedComment = {
+                Id: 'c1',
+                body: 'edited',
+                createdById: 'mockUserId001',
+                createdDate: new Date().toISOString()
+            };
+            mockUpdateCardComment.mockResolvedValue(updatedComment);
+
+            const handleSaveEdit = KanbanCardPanel.prototype.handleSaveEdit;
+            const enrichComment = KanbanCardPanel.prototype.enrichComment;
+            const formatRelativeDate =
+                KanbanCardPanel.prototype.formatRelativeDate;
+
+            const ctx = {
+                comments: [
+                    {
+                        Id: 'c1',
+                        body: 'original',
+                        editBody: 'edited',
+                        isEditing: true
+                    }
+                ],
+                enrichComment,
+                formatRelativeDate,
+                dispatchEvent: jest.fn()
+            };
+
+            await handleSaveEdit.call(ctx, {
+                target: { dataset: { commentId: 'c1' } }
+            });
+
+            expect(mockUpdateCardComment).toHaveBeenCalledWith({
+                commentId: 'c1',
+                body: 'edited'
+            });
+            expect(ctx.comments[0].body).toBe('edited');
+            expect(ctx.comments[0].isEditing).toBe(false);
+        });
+
+        it('does nothing when commentId is missing', async () => {
+            const handleSaveEdit = KanbanCardPanel.prototype.handleSaveEdit;
+            const ctx = {
+                comments: [],
+                dispatchEvent: jest.fn()
+            };
+
+            await handleSaveEdit.call(ctx, {
+                target: { dataset: {} }
+            });
+
+            expect(mockUpdateCardComment).not.toHaveBeenCalled();
+        });
+
+        it('does nothing when editBody is empty', async () => {
+            const handleSaveEdit = KanbanCardPanel.prototype.handleSaveEdit;
+            const ctx = {
+                comments: [{ Id: 'c1', editBody: '  ', isEditing: true }],
+                dispatchEvent: jest.fn()
+            };
+
+            await handleSaveEdit.call(ctx, {
+                target: { dataset: { commentId: 'c1' } }
+            });
+
+            expect(mockUpdateCardComment).not.toHaveBeenCalled();
+        });
+
+        it('shows error toast on failure', async () => {
+            mockUpdateCardComment.mockRejectedValue(new Error('fail'));
+            const handleSaveEdit = KanbanCardPanel.prototype.handleSaveEdit;
+            const ctx = {
+                comments: [{ Id: 'c1', editBody: 'text', isEditing: true }],
+                dispatchEvent: jest.fn(),
+                enrichComment: jest.fn()
+            };
+
+            await handleSaveEdit.call(ctx, {
+                target: { dataset: { commentId: 'c1' } }
+            });
+
+            expect(ctx.dispatchEvent).toHaveBeenCalled();
+        });
+    });
+
+    // ── handleDeleteComment ─────────────────────────────────────────
+    describe('handleDeleteComment', () => {
+        it('calls deleteCardComment and removes from list', async () => {
+            mockDeleteCardComment.mockResolvedValue();
+            const handleDeleteComment =
+                KanbanCardPanel.prototype.handleDeleteComment;
+            const ctx = {
+                comments: [
+                    { Id: 'c1', body: 'keep' },
+                    { Id: 'c2', body: 'delete' }
+                ],
+                dispatchEvent: jest.fn()
+            };
+
+            await handleDeleteComment.call(ctx, 'c2');
+
+            expect(mockDeleteCardComment).toHaveBeenCalledWith({
+                commentId: 'c2'
+            });
+            expect(ctx.comments).toHaveLength(1);
+            expect(ctx.comments[0].Id).toBe('c1');
+        });
+
+        it('shows error toast on failure', async () => {
+            mockDeleteCardComment.mockRejectedValue(new Error('fail'));
+            const handleDeleteComment =
+                KanbanCardPanel.prototype.handleDeleteComment;
+            const ctx = {
+                comments: [{ Id: 'c1' }],
+                dispatchEvent: jest.fn()
+            };
+
+            await handleDeleteComment.call(ctx, 'c1');
+
+            expect(ctx.dispatchEvent).toHaveBeenCalled();
+            // Comments should not be modified on error
+            expect(ctx.comments).toHaveLength(1);
+        });
+    });
+
+    // ── renderedCallback comment loading ────────────────────────────
+    describe('renderedCallback comment loading', () => {
+        it('loads comments when card changes', async () => {
+            mockGetCardComments.mockResolvedValue([]);
+            createPanel({
+                card: { Id: 'cardNew', Name: 'NEW-001' }
+            });
+            await flushPromises();
+
+            expect(mockGetCardComments).toHaveBeenCalledWith({
+                cardId: 'cardNew'
+            });
+        });
+
+        it('does not reload comments for same card', async () => {
+            mockGetCardComments.mockResolvedValue([]);
+            createPanel({
+                card: { Id: 'cardSame', Name: 'SAME-001' }
+            });
+            await flushPromises();
+
+            const callCount = mockGetCardComments.mock.calls.length;
+
+            // Trigger another render cycle
+            element.card = { Id: 'cardSame', Name: 'SAME-001' };
+            await flushPromises();
+
+            // Should not have made additional calls for same card
+            expect(mockGetCardComments.mock.calls.length).toBe(callCount);
         });
     });
 });

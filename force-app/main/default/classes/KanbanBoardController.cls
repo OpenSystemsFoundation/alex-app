@@ -545,6 +545,74 @@ public with sharing class KanbanBoardController {
         }
     }
 
+    // =========================================================================
+    // Card Comment Methods
+    // =========================================================================
+
+    /**
+     * Get comments for a card
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.CardCommentDTO> getCardComments(
+        Id cardId
+    ) {
+        try {
+            return CardCommentService.getComments(cardId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading comments: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Add a comment to a card
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.CardCommentDTO addCardComment(
+        Id cardId,
+        String body
+    ) {
+        try {
+            return CardCommentService.addComment(cardId, body);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error adding comment: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Update a comment
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.CardCommentDTO updateCardComment(
+        Id commentId,
+        String body
+    ) {
+        try {
+            return CardCommentService.updateComment(commentId, body);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error updating comment: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Delete a comment
+     */
+    @AuraEnabled
+    public static void deleteCardComment(Id commentId) {
+        try {
+            CardCommentService.deleteComment(commentId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error deleting comment: ' + e.getMessage()
+            );
+        }
+    }
+
     /**
      * Wrapper classes (kept here since they're @AuraEnabled)
      */

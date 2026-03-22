@@ -128,6 +128,28 @@ jobs:
               if: always() && inputs.persistent != true
               run: sf org delete scratch --target-org e2e-${{ inputs.suite-name }} --no-prompt || true
 
+            - name: Post results as commit comment
+              if: always() && steps.playwright.outputs.exit_code != ''
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  STATUS="PASSED"
+                  if [ "${{ steps.playwright.outputs.exit_code }}" != "0" ]; then
+                    STATUS="FAILED"
+                  fi
+                  # Truncate output to fit GitHub comment limit
+                  OUTPUT=$(tail -100 /tmp/playwright-output.txt 2>/dev/null || echo "No output captured")
+                  BODY=$(cat <<COMMENT_EOF
+                  ## E2E Results: ${{ inputs.suite-name }} — ${STATUS}
+
+                  \`\`\`
+                  ${OUTPUT}
+                  \`\`\`
+                  COMMENT_EOF
+                  )
+                  gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
+                    -f body="$BODY" || true
+
             - name: Fail if tests failed
               if: always() && steps.playwright.outputs.exit_code != '0'
               run: exit 1
