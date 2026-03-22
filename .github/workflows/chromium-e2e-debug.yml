@@ -1,5 +1,21 @@
 name: Chromium E2E Debug
 
+# Iterative E2E debug workflow for feature branches.
+# Add suites below as you develop new features, then promote
+# passing tests to e2e-tests.yml (PR-to-main) when stable.
+#
+# Usage:
+#   1. Create specs in e2e/specs/ for the feature you're building
+#   2. Add a job below that references those specs via e2e-suite.yml
+#   3. Push to your claude/* branch -- results posted as commit comments
+#   4. Read results: gh api repos/OWNER/REPO/commits/SHA/comments
+#   5. Fix, push, repeat until green
+#   6. Promote stable tests to e2e-tests.yml
+#
+# Available reusable workflows:
+#   ./.github/workflows/e2e-suite.yml       -- single-user suite
+#   ./.github/workflows/e2e-multi-user.yml  -- multi-user suite (2 users, 1 org)
+
 on:
     push:
         branches:
@@ -21,200 +37,49 @@ on:
                 type: boolean
                 default: false
 
-# Cancel in-progress runs on same branch (only keep latest push)
 concurrency:
     group: e2e-debug-${{ github.ref }}
     cancel-in-progress: true
 
 jobs:
+    # ---------------------------------------------------------------
+    # Add feature-specific suites here during development.
     # Each suite gets its own scratch org for full isolation.
-    # Specs are grouped by feature area for focused data setup.
+    #
+    # Example:
+    #
+    #   my-feature:
+    #       name: My Feature
+    #       uses: ./.github/workflows/e2e-suite.yml
+    #       secrets: inherit
+    #       with:
+    #           suite-name: my-feature
+    #           specs: 'my-feature.spec.ts'
+    #           create-retro-data: false
+    #           grep: ${{ inputs.grep || '' }}
+    #           debug: ${{ inputs.debug || false }}
+    #
+    # For multi-user tests:
+    #
+    #   my-feature-sync:
+    #       name: My Feature Sync
+    #       uses: ./.github/workflows/e2e-multi-user.yml
+    #       secrets: inherit
+    #       with:
+    #           suite-name: my-feature-sync
+    #           specs: 'my-feature-sync.spec.ts'
+    #           grep: ${{ inputs.grep || '' }}
+    #           debug: ${{ inputs.debug || false }}
+    # ---------------------------------------------------------------
 
-    board-core:
-        name: Board Core
-        uses: ./.github/workflows/e2e-suite.yml
-        secrets: inherit
-        with:
-            suite-name: board-core
-            specs: 'kanban-board.spec.ts board-filters.spec.ts card-panel.spec.ts board-toolbar.spec.ts'
-            create-retro-data: false
-            grep: ${{ inputs.grep || '' }}
-            debug: ${{ inputs.debug || false }}
-
-    backlog-sprint:
-        name: Backlog & Sprint
-        uses: ./.github/workflows/e2e-suite.yml
-        secrets: inherit
-        with:
-            suite-name: backlog-sprint
-            specs: 'backlog-view.spec.ts sprint-management.spec.ts'
-            create-retro-data: false
-            grep: ${{ inputs.grep || '' }}
-            debug: ${{ inputs.debug || false }}
-
-    admin:
-        name: Admin Panel
-        uses: ./.github/workflows/e2e-suite.yml
-        secrets: inherit
-        with:
-            suite-name: admin
-            specs: 'admin-management.spec.ts'
-            create-retro-data: false
-            grep: ${{ inputs.grep || '' }}
-            debug: ${{ inputs.debug || false }}
-
-    retro-analytics:
-        name: Retro & Analytics
-        uses: ./.github/workflows/e2e-suite.yml
-        secrets: inherit
-        with:
-            suite-name: retro-analytics
-            specs: 'analytics.spec.ts retrospective.spec.ts'
-            create-retro-data: true
-            grep: ${{ inputs.grep || '' }}
-            debug: ${{ inputs.debug || false }}
-
-    planning-poker:
-        name: Planning Poker
-        uses: ./.github/workflows/e2e-suite.yml
-        secrets: inherit
-        with:
-            suite-name: planning-poker
-            specs: 'planning-poker.spec.ts'
-            create-retro-data: false
-            grep: ${{ inputs.grep || '' }}
-            debug: ${{ inputs.debug || false }}
-
-    unhappy-paths:
-        name: Unhappy Paths
-        uses: ./.github/workflows/e2e-suite.yml
-        secrets: inherit
-        with:
-            suite-name: unhappy-paths
-            specs: 'unhappy-paths.spec.ts'
-            create-retro-data: true
-            grep: ${{ inputs.grep || '' }}
-            debug: ${{ inputs.debug || false }}
-
-    multi-user:
-        name: Multi-User Sync
-        uses: ./.github/workflows/e2e-multi-user.yml
-        secrets: inherit
-        with:
-            suite-name: multi-user
-            specs: 'card-sync.spec.ts drag-drop-sync.spec.ts'
-            grep: ${{ inputs.grep || '' }}
-            debug: ${{ inputs.debug || false }}
-
-    # Results Collector
-    collect-results:
-        name: Collect Results
+    no-suites:
+        name: No debug suites configured
         runs-on: ubuntu-latest
-        needs:
-            - board-core
-            - backlog-sprint
-            - admin
-            - retro-analytics
-            - planning-poker
-            - unhappy-paths
-            - multi-user
-        if: always()
-        timeout-minutes: 5
-
+        timeout-minutes: 1
         steps:
-            - name: Download all suite outputs
-              uses: actions/download-artifact@v4
-              with:
-                  pattern: e2e-output-*
-                  path: suite-outputs
-
-            - name: Merge results and post comment
-              uses: actions/github-script@v7
-              if: github.event_name == 'push'
-              with:
-                  script: |
-                      const fs = require('fs');
-                      const path = require('path');
-
-                      const suites = [
-                        'board-core', 'backlog-sprint', 'admin',
-                        'retro-analytics', 'planning-poker',
-                        'unhappy-paths', 'multi-user'
-                      ];
-
-                      let totalPassed = 0, totalFailed = 0, totalSkipped = 0, totalFlaky = 0;
-                      let allPassed = true;
-                      let body = '';
-
-                      for (const suite of suites) {
-                        const file = path.join('suite-outputs', `e2e-output-${suite}`, 'playwright-output.txt');
-                        if (fs.existsSync(file)) {
-                          const output = fs.readFileSync(file, 'utf8');
-                          const lines = output.split('\n');
-                          const tail = lines.slice(-50).join('\n');
-
-                          const passedM = output.match(/(\d+) passed/);
-                          const failedM = output.match(/(\d+) failed/);
-                          const skippedM = output.match(/(\d+) skipped/);
-                          const flakyM = output.match(/(\d+) flaky/);
-
-                          const p = passedM ? parseInt(passedM[1]) : 0;
-                          const f = failedM ? parseInt(failedM[1]) : 0;
-                          const s = skippedM ? parseInt(skippedM[1]) : 0;
-                          const fl = flakyM ? parseInt(flakyM[1]) : 0;
-
-                          totalPassed += p; totalFailed += f;
-                          totalSkipped += s; totalFlaky += fl;
-                          if (f > 0) allPassed = false;
-
-                          const icon = f > 0 ? 'FAIL' : 'PASS';
-                          body += `### [${icon}] ${suite} -- ${p} passed, ${f} failed, ${s} skipped\n`;
-                          body += `<details><summary>Output</summary>\n\n\`\`\`\n${tail}\n\`\`\`\n\n</details>\n\n`;
-                        } else {
-                          body += `### [SKIP] ${suite} -- No output (may have been skipped or failed to start)\n\n`;
-                          allPassed = false;
-                        }
-                      }
-
-                      const status = allPassed ? 'PASS' : 'FAIL';
-                      const sha = context.sha.substring(0, 7);
-                      const summary = `**${totalPassed} passed** | **${totalFailed} failed** | **${totalSkipped} skipped** | **${totalFlaky} flaky**`;
-                      const comment = `### [${status}] E2E Debug -- \`${sha}\` (7 feature suites)\n\n${summary}\n\n${body}`;
-
-                      const maxLen = 65000;
-                      const truncated = comment.length > maxLen
-                        ? comment.slice(0, maxLen) + '\n\n...truncated...'
-                        : comment;
-
-                      await github.rest.repos.createCommitComment({
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        commit_sha: context.sha,
-                        body: truncated,
-                      });
-
-            - name: Post Workflow Summary
-              if: always()
+            - name: Info
               run: |
-                  echo "## E2E Debug Results -- 7 Feature Suites" >> "$GITHUB_STEP_SUMMARY"
-                  echo "" >> "$GITHUB_STEP_SUMMARY"
-                  for suite in board-core backlog-sprint admin retro-analytics planning-poker unhappy-paths multi-user; do
-                    FILE="suite-outputs/e2e-output-${suite}/playwright-output.txt"
-                    if [ -f "$FILE" ]; then
-                      SUMMARY=$(tail -3 "$FILE" | head -1)
-                      echo "### ${suite}: ${SUMMARY}" >> "$GITHUB_STEP_SUMMARY"
-                    else
-                      echo "### ${suite}: No output" >> "$GITHUB_STEP_SUMMARY"
-                    fi
-                  done
-
-            - name: Fail if any suite failed
-              if: |
-                  needs.board-core.result == 'failure' ||
-                  needs.backlog-sprint.result == 'failure' ||
-                  needs.admin.result == 'failure' ||
-                  needs.retro-analytics.result == 'failure' ||
-                  needs.planning-poker.result == 'failure' ||
-                  needs.unhappy-paths.result == 'failure' ||
-                  needs.multi-user.result == 'failure'
-              run: exit 1
+                  echo "No debug E2E suites are configured."
+                  echo "Add suites to .github/workflows/chromium-e2e-debug.yml to start testing."
+                  echo ""
+                  echo "See the workflow file comments for examples."
