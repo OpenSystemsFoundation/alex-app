@@ -14,6 +14,8 @@ import { sfApexRun, sfQuery } from '../helpers/sf-data';
  * conflicts across tests (allocation validation sums active memberships).
  */
 test.describe('Team Management', () => {
+    test.describe.configure({ mode: 'serial' });
+
     test.beforeEach(async () => {
         if (!process.env.SCRATCH_ORG_URL) {
             test.skip(true, 'SCRATCH_ORG_URL not set — skipping');
