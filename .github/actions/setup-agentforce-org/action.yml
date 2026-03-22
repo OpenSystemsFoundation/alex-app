@@ -55,7 +55,10 @@ runs:
     steps:
         - name: Install Salesforce CLI
           shell: bash
-          run: npm install -g @salesforce/cli
+          run: |
+              npm install -g @salesforce/cli
+              echo "CLI version: $(sf --version)"
+              sf plugins install @salesforce/plugin-agent 2>/dev/null || true
 
         - name: Authenticate DevHub
           shell: bash
