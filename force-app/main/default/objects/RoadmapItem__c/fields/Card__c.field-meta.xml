@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Card__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>The epic card this roadmap item represents</description>
+    <label>Card</label>
+    <referenceTo>Card__c</referenceTo>
+    <relationshipLabel>Roadmap Items</relationshipLabel>
+    <relationshipName>RoadmapItems</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>
