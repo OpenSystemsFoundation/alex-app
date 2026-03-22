@@ -1,8 +1,6 @@
 import { test, expect } from '../fixtures';
 import { sfApexRun, sfQuery } from '../helpers/sf-data';
 
-const SF_TIMEOUT = 45_000;
-
 /**
  * Team Management — E2E tests.
  *
@@ -11,6 +9,9 @@ const SF_TIMEOUT = 45_000;
  *
  * NOTE: Anonymous Apex in a namespaced org requires the OpenSF. prefix
  * on all class references (e.g., OpenSF.TeamService, OpenSF.KanbanBoardDTO).
+ *
+ * Each test deactivates its team members after use to avoid allocation
+ * conflicts across tests (allocation validation sums active memberships).
  */
 test.describe('Team Management', () => {
     test.beforeEach(async () => {
@@ -57,6 +58,17 @@ System.debug('E2E_TEAM_COLOR:' + team.avatarColor);
     }) => {
         const teamName = `E2E-Member-Team-${Date.now()}`;
         const output = sfApexRun(`
+// Deactivate any existing active memberships to avoid allocation conflicts
+List<OpenSF__TeamMember__c> existing = [
+    SELECT Id FROM OpenSF__TeamMember__c
+    WHERE OpenSF__User__c = :UserInfo.getUserId()
+    AND OpenSF__Status__c = 'Active'
+];
+for (OpenSF__TeamMember__c m : existing) {
+    m.OpenSF__Status__c = 'Inactive';
+}
+if (!existing.isEmpty()) update existing;
+
 OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'For member tests',
@@ -73,6 +85,9 @@ System.debug('E2E_MEMBER_ID:' + member.Id);
 System.debug('E2E_MEMBER_ROLE:' + member.role);
 System.debug('E2E_MEMBER_ALLOC:' + member.allocation);
 System.debug('E2E_MEMBER_STATUS:' + member.status);
+
+// Cleanup: deactivate for other tests
+OpenSF.TeamService.removeTeamMember(member.Id);
 `);
 
         expect(output).toContain('E2E_MEMBER_ID:');
@@ -86,6 +101,17 @@ System.debug('E2E_MEMBER_STATUS:' + member.status);
     }) => {
         const teamName = `E2E-Dup-Team-${Date.now()}`;
         const output = sfApexRun(`
+// Deactivate any existing active memberships
+List<OpenSF__TeamMember__c> existing = [
+    SELECT Id FROM OpenSF__TeamMember__c
+    WHERE OpenSF__User__c = :UserInfo.getUserId()
+    AND OpenSF__Status__c = 'Active'
+];
+for (OpenSF__TeamMember__c m : existing) {
+    m.OpenSF__Status__c = 'Inactive';
+}
+if (!existing.isEmpty()) update existing;
+
 OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'For duplicate test',
@@ -101,6 +127,16 @@ try {
     System.debug('E2E_DUPLICATE:CAUGHT');
     System.debug('E2E_ERROR_MSG:' + e.getMessage());
 }
+
+// Cleanup
+List<OpenSF__TeamMember__c> cleanup = [
+    SELECT Id FROM OpenSF__TeamMember__c
+    WHERE OpenSF__User__c = :userId AND OpenSF__Status__c = 'Active'
+];
+for (OpenSF__TeamMember__c m : cleanup) {
+    m.OpenSF__Status__c = 'Inactive';
+}
+if (!cleanup.isEmpty()) update cleanup;
 `);
 
         expect(output).toContain('E2E_DUPLICATE:CAUGHT');
@@ -112,6 +148,17 @@ try {
     }) => {
         const teamName = `E2E-Remove-Team-${Date.now()}`;
         const output = sfApexRun(`
+// Deactivate any existing active memberships
+List<OpenSF__TeamMember__c> existing = [
+    SELECT Id FROM OpenSF__TeamMember__c
+    WHERE OpenSF__User__c = :UserInfo.getUserId()
+    AND OpenSF__Status__c = 'Active'
+];
+for (OpenSF__TeamMember__c m : existing) {
+    m.OpenSF__Status__c = 'Inactive';
+}
+if (!existing.isEmpty()) update existing;
+
 OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'For removal test',
@@ -193,6 +240,17 @@ System.debug('E2E_DEACTIVATED_STATUS:' + result.OpenSF__Status__c);
     }) => {
         const teamName = `E2E-WithMembers-${Date.now()}`;
         const output = sfApexRun(`
+// Deactivate any existing active memberships
+List<OpenSF__TeamMember__c> existing = [
+    SELECT Id FROM OpenSF__TeamMember__c
+    WHERE OpenSF__User__c = :UserInfo.getUserId()
+    AND OpenSF__Status__c = 'Active'
+];
+for (OpenSF__TeamMember__c m : existing) {
+    m.OpenSF__Status__c = 'Inactive';
+}
+if (!existing.isEmpty()) update existing;
+
 OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'Team with members',
@@ -205,6 +263,16 @@ OpenSF.KanbanBoardDTO.TeamDTO result = OpenSF.TeamService.getTeamWithMembers(tea
 System.debug('E2E_TEAM_NAME:' + result.Name);
 System.debug('E2E_MEMBER_COUNT:' + result.members.size());
 System.debug('E2E_MEMBER_ROLE:' + result.members[0].role);
+
+// Cleanup
+List<OpenSF__TeamMember__c> cleanup = [
+    SELECT Id FROM OpenSF__TeamMember__c
+    WHERE OpenSF__User__c = :userId AND OpenSF__Status__c = 'Active'
+];
+for (OpenSF__TeamMember__c m : cleanup) {
+    m.OpenSF__Status__c = 'Inactive';
+}
+if (!cleanup.isEmpty()) update cleanup;
 `);
 
         expect(output).toContain(`E2E_TEAM_NAME:${teamName}`);
@@ -333,6 +401,17 @@ System.debug('E2E_MS_INACTIVE:' + OpenSF.KanbanEnums.teamMemberStatusValue(OpenS
     }) => {
         const teamName = `E2E-ActiveMembers-${Date.now()}`;
         const output = sfApexRun(`
+// Deactivate any existing active memberships
+List<OpenSF__TeamMember__c> existing = [
+    SELECT Id FROM OpenSF__TeamMember__c
+    WHERE OpenSF__User__c = :UserInfo.getUserId()
+    AND OpenSF__Status__c = 'Active'
+];
+for (OpenSF__TeamMember__c m : existing) {
+    m.OpenSF__Status__c = 'Inactive';
+}
+if (!existing.isEmpty()) update existing;
+
 OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'Active member filter test',
