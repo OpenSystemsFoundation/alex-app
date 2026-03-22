@@ -1,0 +1,196 @@
+name: LWC Performance Benchmark (E2E)
+
+on:
+    workflow_dispatch:
+        inputs:
+            scratch_org_duration:
+                description: "Scratch org duration in days"
+                required: false
+                default: "1"
+
+jobs:
+    perf-benchmark:
+        name: LWC Performance via Playwright CDP
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install Playwright Chromium
+              run: npx playwright install chromium --with-deps
+
+            - name: Install Salesforce CLI
+              run: npm install -g @salesforce/cli
+
+            - name: Authenticate DevHub
+              run: |
+                  echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
+                  sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
+                  rm sfdx_auth.txt
+
+            - name: Create Scratch Org
+              run: |
+                  SFDX_DISABLE_DNS_CHECK=true sf org create scratch \
+                    --definition-file config/project-scratch-def.json \
+                    --alias perf-org \
+                    --duration-days ${{ github.event.inputs.scratch_org_duration }} \
+                    --wait 10
+
+            - name: Prepare Project Config
+              run: |
+                  node -e "
+                    const p = require('./sfdx-project.json');
+                    p.packageDirectories = p.packageDirectories.filter(d => d.default);
+                    p.packageDirectories.forEach(d => { delete d.dependencies; });
+                    require('fs').writeFileSync('sfdx-project.json', JSON.stringify(p, null, 4));
+                  "
+
+            - name: Deploy Source
+              run: sf project deploy start --target-org perf-org --ignore-conflicts
+
+            - name: Assign Permission Set
+              run: sf org assign permset --name Alex_Admin --target-org perf-org
+
+            - name: Create Sample Data
+              run: sf apex run --file scripts/apex/CreateFilledKanbanBoard.apex --target-org perf-org
+
+            - name: Get Scratch Org Login URL
+              id: login
+              run: |
+                  LOGIN_URL=$(sf org open --target-org perf-org --url-only --json | node -e "
+                    let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                      const j=JSON.parse(d);
+                      console.log(j.result?.url || '');
+                    });
+                  ")
+                  echo "url=$LOGIN_URL" >> $GITHUB_OUTPUT
+
+            - name: Run Performance Benchmarks
+              env:
+                  SCRATCH_ORG_URL: ${{ steps.login.outputs.url }}
+                  SF_TARGET_ORG: perf-org
+              run: |
+                  mkdir -p benchmark-results
+                  npx playwright test e2e/specs/performance.spec.ts \
+                    --project=chromium \
+                    --workers=1 \
+                    --reporter=list \
+                    2>&1 | tee benchmark-results/perf-console.txt || true
+
+            - name: Parse Performance Results
+              if: always()
+              run: |
+                  node -e "
+                    const fs = require('fs');
+
+                    let consoleOutput = '';
+                    try { consoleOutput = fs.readFileSync('benchmark-results/perf-console.txt', 'utf8'); } catch(e) {}
+
+                    // Extract PERF_BENCHMARK lines
+                    const benchLines = consoleOutput.split('\\n')
+                      .filter(l => l.includes('PERF_BENCHMARK|'));
+
+                    const benchmarks = {};
+                    for (const line of benchLines) {
+                      const match = line.match(/PERF_BENCHMARK\|([^|]+)\|(.+)/);
+                      if (!match) continue;
+                      const [, category, jsonStr] = match;
+                      try {
+                        benchmarks[category] = JSON.parse(jsonStr);
+                      } catch(e) {
+                        benchmarks[category] = jsonStr;
+                      }
+                    }
+
+                    // Save JSON
+                    fs.writeFileSync(
+                      'benchmark-results/perf-benchmark.json',
+                      JSON.stringify({ timestamp: new Date().toISOString(), benchmarks }, null, 2)
+                    );
+
+                    // GitHub Step Summary
+                    const lines = ['## LWC Performance Benchmark (E2E + CDP)', ''];
+
+                    // Board load metrics
+                    const load = benchmarks.board_load;
+                    if (load) {
+                      lines.push('### Board Page Load');
+                      lines.push('| Metric | Value |');
+                      lines.push('|--------|-------|');
+                      lines.push('| Board page load | ' + load.boardPageLoad + 'ms |');
+                      lines.push('| Cards render | ' + load.cardsRender + 'ms |');
+                      lines.push('| TTFB | ' + load.ttfbMs + 'ms |');
+                      lines.push('| DOM interactive | ' + load.domInteractiveMs + 'ms |');
+                      lines.push('| DOM content loaded | ' + load.domContentLoadedMs + 'ms |');
+                      lines.push('| Load complete | ' + load.loadCompleteMs + 'ms |');
+                      lines.push('| DOM nodes | ' + load.domNodes + ' |');
+                      lines.push('| JS heap used | ' + load.jsHeapUsedMB + ' MB |');
+                      lines.push('| JS heap total | ' + load.jsHeapTotalMB + ' MB |');
+                      lines.push('| Long tasks | ' + load.longTaskCount + ' (' + load.totalLongTaskMs + 'ms total) |');
+                      lines.push('| Longest task | ' + load.longestTaskMs + 'ms |');
+                      lines.push('| Script duration (delta) | ' + load.scriptDurationDelta + 's |');
+                      lines.push('| Layout duration (delta) | ' + load.layoutDurationDelta + 's |');
+                      lines.push('');
+                    }
+
+                    // Interaction metrics
+                    const interact = benchmarks.interactions;
+                    if (interact) {
+                      lines.push('### Interaction Performance');
+                      lines.push('| Action | Duration |');
+                      lines.push('|--------|----------|');
+                      if (interact.interactions) {
+                        for (const t of interact.interactions) {
+                          const flag = t.durationMs > 3000 ? ' ⚠️' : '';
+                          lines.push('| ' + t.label + ' | ' + t.durationMs + 'ms' + flag + ' |');
+                        }
+                      }
+                      lines.push('| JS heap after interactions | ' + interact.jsHeapUsedMB + ' MB |');
+                      lines.push('| Long tasks during interactions | ' + interact.longTaskCount + ' (' + interact.totalLongTaskMs + 'ms) |');
+                      lines.push('');
+                    }
+
+                    // Memory metrics
+                    const mem = benchmarks.memory;
+                    if (mem) {
+                      lines.push('### Memory Leak Check');
+                      lines.push('| Metric | Value |');
+                      lines.push('|--------|-------|');
+                      lines.push('| Heap after first load | ' + mem.heapFirstMB + ' MB |');
+                      lines.push('| Heap after navigate back | ' + mem.heapSecondMB + ' MB |');
+                      const growthFlag = parseFloat(mem.heapGrowthMB) > 10 ? ' ⚠️' : '';
+                      lines.push('| Heap growth | ' + mem.heapGrowthMB + ' MB' + growthFlag + ' |');
+                      lines.push('');
+                    }
+
+                    if (Object.keys(benchmarks).length === 0) {
+                      lines.push('> ⚠️ No benchmark data captured. Check test output for errors.');
+                    }
+
+                    lines.push('---');
+                    lines.push('*Captured via Playwright CDP (Chrome DevTools Protocol) against a scratch org*');
+                    lines.push('*Metrics: Navigation Timing API, Performance.getMetrics, PerformanceObserver (longtask)*');
+
+                    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\\n'));
+                  "
+
+            - name: Delete Scratch Org
+              if: always()
+              run: sf org delete scratch --target-org perf-org --no-prompt || true
+
+            - name: Upload Performance Results
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: lwc-perf-benchmark
+                  path: benchmark-results/
+                  retention-days: 90
