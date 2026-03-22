@@ -1,4 +1,5 @@
 import { LightningElement, api, track, wire } from 'lwc';
+import { NavigationMixin } from 'lightning/navigation';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { updateCardAsync, deleteCardAsync } from 'c/kanbanStore';
 import getModalSettings from '@salesforce/apex/KanbanBoardController.getModalSettings';
@@ -108,7 +109,9 @@ const MIN_PANEL_WIDTH = 300;
 const MAX_PANEL_WIDTH = 800;
 const DELETE_CONFIRM_TIMEOUT = 3000;
 
-export default class KanbanCardPanel extends LightningElement {
+export default class KanbanCardPanel extends NavigationMixin(
+    LightningElement
+) {
     /** @type {CardDTO} The card data to display in the panel */
     _card;
     @api
@@ -730,6 +733,28 @@ export default class KanbanCardPanel extends LightningElement {
                 })
             );
         }
+    }
+
+    handleDownloadFile(event) {
+        const url = event.currentTarget.dataset.url;
+        window.open(url, '_blank');
+    }
+
+    handlePreviewFile(event) {
+        event.preventDefault();
+        const fileId = event.currentTarget.dataset.fileId;
+        this[NavigationMixin.Navigate]({
+            type: 'standard__namedPage',
+            attributes: {
+                pageName: 'filePreview'
+            },
+            state: {
+                recordIds: this.files
+                    .map((f) => f.contentDocumentId)
+                    .join(','),
+                selectedRecordId: fileId
+            }
+        });
     }
 
     _getFileIcon(extension) {
