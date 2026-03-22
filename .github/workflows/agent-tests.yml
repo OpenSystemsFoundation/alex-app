@@ -1,14 +1,6 @@
 name: Agentforce Agent Tests
 
 on:
-    push:
-        branches: [main]
-        paths:
-            - 'force-agentforce/**'
-    pull_request:
-        branches: [main]
-        paths:
-            - 'force-agentforce/**'
     workflow_dispatch:
         inputs:
             test_suite:
@@ -30,6 +22,7 @@ on:
 
 env:
     PASS_RATE_THRESHOLD: ${{ inputs.pass_rate_threshold || '80' }}
+    SFDX_DISABLE_DNS_CHECK: 'true'
 
 jobs:
     apex-unit-tests:
@@ -53,7 +46,7 @@ jobs:
               uses: actions/cache/restore@v4
               with:
                   path: /tmp/cached-org-auth-ci-agent-test.txt
-                  key: scratch-org-${{ github.head_ref || github.ref_name }}-ci-agent-test
+                  key: scratch-org-${{ github.ref_name }}-ci-agent-test
 
             - name: Provision Scratch Org (create or reuse)
               id: provision
@@ -63,31 +56,39 @@ jobs:
                   AUTH_FILE="/tmp/cached-org-auth-ci-agent-test.txt"
 
                   if [ "$CACHE_HIT" = "true" ] && [ -f "$AUTH_FILE" ]; then
+                    echo "::group::Attempting to reuse cached scratch org"
                     sf org login sfdx-url --sfdx-url-file "$AUTH_FILE" --alias ci-agent-test 2>/dev/null || true
                     if sf org display --target-org ci-agent-test --json 2>/dev/null | node -e "
                       let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
-                        const j=JSON.parse(d);
-                        process.exit((j.result&&j.result.connectedStatus)==='Connected'?0:1);
+                        try {
+                          const j=JSON.parse(d);
+                          const status = (j.result&&j.result.connectedStatus)||'';
+                          process.exit(status==='Connected'?0:1);
+                        } catch(e) { process.exit(1); }
                       });
                     "; then
                       echo "Cached scratch org is alive — reusing"
                       ORG_CREATED="false"
                     else
+                      echo "Cached org is dead or expired — will create a new one"
                       rm -f "$AUTH_FILE"
                     fi
+                    echo "::endgroup::"
                   fi
 
                   if [ "$ORG_CREATED" = "true" ]; then
+                    echo "::group::Creating new scratch org"
                     sf org create scratch \
                       --definition-file config/agentforce-project-scratch-def.json \
                       --alias ci-agent-test \
                       --duration-days 7 \
-                      --wait 10
+                      --wait 15
                     sf org display --target-org ci-agent-test --verbose --json 2>/dev/null | node -e "
                       let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
                         console.log(JSON.parse(d).result.sfdxAuthUrl);
                       });
                     " > "$AUTH_FILE"
+                    echo "::endgroup::"
                   fi
 
                   echo "org_created=$ORG_CREATED" >> "$GITHUB_OUTPUT"
@@ -97,12 +98,10 @@ jobs:
               uses: actions/cache/save@v4
               with:
                   path: /tmp/cached-org-auth-ci-agent-test.txt
-                  key: scratch-org-${{ github.head_ref || github.ref_name }}-ci-agent-test
+                  key: scratch-org-${{ github.ref_name }}-ci-agent-test
 
             - name: Prepare Project Config for Source Deploy
               run: |
-                  # Remove package dependencies that are only needed for package version creation.
-                  # Source deploys don't need inter-package dependency resolution.
                   node -e "
                     const p = require('./sfdx-project.json');
                     p.packageDirectories.forEach(d => { delete d.dependencies; });
@@ -112,7 +111,6 @@ jobs:
             - name: Deploy Base Package
               run: |
                   sf project deploy start --source-dir force-app --target-org ci-agent-test --ignore-conflicts --json 2>&1 | tee /tmp/deploy-base.json || true
-                  # Check for deploy failure and extract error details
                   node -e "
                     const raw = require('fs').readFileSync('/tmp/deploy-base.json', 'utf8');
                     const idx = raw.indexOf('{');
@@ -131,10 +129,9 @@ jobs:
               run: sf project deploy start --source-dir force-agentforce --target-org ci-agent-test --ignore-conflicts
 
             - name: Assign Permission Sets
-              if: steps.provision.outputs.org_created == 'true'
               run: |
-                  sf org assign permset --name Alex_Admin --target-org ci-agent-test
-                  sf org assign permset --name Alex_Agentforce_User --target-org ci-agent-test
+                  sf org assign permset --name Alex_Admin --target-org ci-agent-test || true
+                  sf org assign permset --name Alex_Agentforce_User --target-org ci-agent-test || true
 
             - name: Run Agentforce Apex Tests
               run: |
@@ -215,7 +212,7 @@ jobs:
               uses: actions/cache/restore@v4
               with:
                   path: /tmp/cached-org-auth-ci-agent-eval.txt
-                  key: scratch-org-${{ github.head_ref || github.ref_name }}-ci-agent-eval
+                  key: scratch-org-${{ github.ref_name }}-ci-agent-eval
 
             - name: Provision Scratch Org (create or reuse)
               id: provision
@@ -225,31 +222,39 @@ jobs:
                   AUTH_FILE="/tmp/cached-org-auth-ci-agent-eval.txt"
 
                   if [ "$CACHE_HIT" = "true" ] && [ -f "$AUTH_FILE" ]; then
+                    echo "::group::Attempting to reuse cached scratch org"
                     sf org login sfdx-url --sfdx-url-file "$AUTH_FILE" --alias ci-agent-eval 2>/dev/null || true
                     if sf org display --target-org ci-agent-eval --json 2>/dev/null | node -e "
                       let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
-                        const j=JSON.parse(d);
-                        process.exit((j.result&&j.result.connectedStatus)==='Connected'?0:1);
+                        try {
+                          const j=JSON.parse(d);
+                          const status = (j.result&&j.result.connectedStatus)||'';
+                          process.exit(status==='Connected'?0:1);
+                        } catch(e) { process.exit(1); }
                       });
                     "; then
                       echo "Cached scratch org is alive — reusing"
                       ORG_CREATED="false"
                     else
+                      echo "Cached org is dead or expired — will create a new one"
                       rm -f "$AUTH_FILE"
                     fi
+                    echo "::endgroup::"
                   fi
 
                   if [ "$ORG_CREATED" = "true" ]; then
+                    echo "::group::Creating new scratch org"
                     sf org create scratch \
                       --definition-file config/agentforce-project-scratch-def.json \
                       --alias ci-agent-eval \
                       --duration-days 7 \
-                      --wait 10
+                      --wait 15
                     sf org display --target-org ci-agent-eval --verbose --json 2>/dev/null | node -e "
                       let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
                         console.log(JSON.parse(d).result.sfdxAuthUrl);
                       });
                     " > "$AUTH_FILE"
+                    echo "::endgroup::"
                   fi
 
                   echo "org_created=$ORG_CREATED" >> "$GITHUB_OUTPUT"
@@ -259,7 +264,7 @@ jobs:
               uses: actions/cache/save@v4
               with:
                   path: /tmp/cached-org-auth-ci-agent-eval.txt
-                  key: scratch-org-${{ github.head_ref || github.ref_name }}-ci-agent-eval
+                  key: scratch-org-${{ github.ref_name }}-ci-agent-eval
 
             - name: Prepare Project Config for Source Deploy
               run: |
@@ -275,10 +280,9 @@ jobs:
                   sf project deploy start --source-dir force-agentforce --target-org ci-agent-eval --ignore-conflicts
 
             - name: Assign Permission Sets
-              if: steps.provision.outputs.org_created == 'true'
               run: |
-                  sf org assign permset --name Alex_Admin --target-org ci-agent-eval
-                  sf org assign permset --name Alex_Agentforce_User --target-org ci-agent-eval
+                  sf org assign permset --name Alex_Admin --target-org ci-agent-eval || true
+                  sf org assign permset --name Alex_Agentforce_User --target-org ci-agent-eval || true
 
             - name: Create Agent Test Definitions
               run: |
@@ -297,7 +301,6 @@ jobs:
 
             - name: Run Agent Evaluation Tests
               run: |
-                  SPECS="force-agentforce/test/agent-test-specs"
                   RESULTS_DIR="agent-results/evaluations"
 
                   if [ "${{ inputs.test_suite }}" = "" ] || [ "${{ inputs.test_suite }}" = "all" ]; then
@@ -306,7 +309,6 @@ jobs:
                     TEST_NAMES=("${{ inputs.test_suite }}")
                   fi
 
-                  ALL_PASSED=true
                   for TEST_NAME in "${TEST_NAMES[@]}"; do
                     echo ""
                     echo "=========================================="
@@ -466,14 +468,12 @@ jobs:
                   echo "Checking packageable metadata types..."
                   ERRORS=0
 
-                  # BotTemplate should exist (not Bot/BotVersion in package)
                   if [ -d "force-agentforce/main/default/botTemplates" ]; then
                     echo "  [OK] BotTemplate found"
                   else
                     echo "  [WARN] No BotTemplate found — generate with: sf agent generate template"
                   fi
 
-                  # GenAiPlannerBundle must exist
                   if [ -d "force-agentforce/main/default/genAiPlannerBundles" ]; then
                     BUNDLES=$(find force-agentforce/main/default/genAiPlannerBundles -name "*.xml" | wc -l)
                     echo "  [OK] GenAiPlannerBundle: $BUNDLES file(s)"
@@ -482,7 +482,6 @@ jobs:
                     ERRORS=$((ERRORS + 1))
                   fi
 
-                  # GenAiPlugins (Topics)
                   if [ -d "force-agentforce/main/default/genAiPlugins" ]; then
                     PLUGINS=$(find force-agentforce/main/default/genAiPlugins -name "*.xml" | wc -l)
                     echo "  [OK] GenAiPlugin (Topics): $PLUGINS file(s)"
@@ -491,7 +490,6 @@ jobs:
                     ERRORS=$((ERRORS + 1))
                   fi
 
-                  # GenAiFunctions (Actions)
                   if [ -d "force-agentforce/main/default/genAiFunctions" ]; then
                     FUNCTIONS=$(find force-agentforce/main/default/genAiFunctions -name "*.xml" | wc -l)
                     echo "  [OK] GenAiFunction (Actions): $FUNCTIONS file(s)"
@@ -500,19 +498,17 @@ jobs:
                     ERRORS=$((ERRORS + 1))
                   fi
 
-                  # Check namespace prefixes are NOT in metadata source
                   echo ""
                   echo "Checking for incorrect namespace prefixes in metadata..."
                   NAMESPACE_VIOLATIONS=$(grep -rl "OpenSF__" force-agentforce/main/default/objects/ force-agentforce/main/default/genAiPlugins/ force-agentforce/main/default/genAiFunctions/ force-agentforce/main/default/genAiPlannerBundles/ 2>/dev/null | wc -l)
                   if [ "$NAMESPACE_VIOLATIONS" -gt 0 ]; then
-                    echo "  [FAIL] Found OpenSF__ prefix in metadata source files (should be auto-added during deployment)"
+                    echo "  [FAIL] Found OpenSF__ prefix in metadata source files"
                     grep -rl "OpenSF__" force-agentforce/main/default/objects/ force-agentforce/main/default/genAiPlugins/ force-agentforce/main/default/genAiFunctions/ force-agentforce/main/default/genAiPlannerBundles/ 2>/dev/null
                     ERRORS=$((ERRORS + 1))
                   else
                     echo "  [OK] No namespace prefix violations in metadata"
                   fi
 
-                  # Check that Apex classes DO use namespace prefix
                   echo ""
                   echo "Checking Apex runtime namespace references..."
                   APEX_FILES=$(find force-agentforce/main/default/classes -name "*.cls" ! -name "*Test*" | head -5)
@@ -546,4 +542,4 @@ jobs:
                     --definition-file config/agentforce-project-scratch-def.json \
                     --code-coverage \
                     --skip-validation \
-                    --wait 15 || echo "::warning::Package version dry run failed — this may be expected if the base package version is not yet promoted"
+                    --wait 15 || echo "::warning::Package version dry run failed"

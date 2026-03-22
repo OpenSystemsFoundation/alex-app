@@ -56,6 +56,8 @@ runs:
 
         - name: Authenticate DevHub
           shell: bash
+          env:
+              SFDX_DISABLE_DNS_CHECK: 'true'
           run: |
               echo "${{ inputs.sfdx-auth-url }}" > /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
               sf org login sfdx-url \
@@ -75,6 +77,8 @@ runs:
         - name: Provision Scratch Org (create or reuse)
           id: provision
           shell: bash
+          env:
+              SFDX_DISABLE_DNS_CHECK: 'true'
           run: |
               ORG_CREATED="true"
               PERSISTENT="${{ inputs.persistent }}"

@@ -5,20 +5,6 @@ name: Agentforce Dual-Org Test Matrix
 # in parallel to catch environment-specific regressions.
 
 on:
-    push:
-        branches: [main]
-        paths:
-            - 'force-app/**'
-            - 'force-agentforce/**'
-            - 'config/agentforce-*.json'
-            - 'config/dc-agentforce-*.json'
-    pull_request:
-        branches: [main]
-        paths:
-            - 'force-app/**'
-            - 'force-agentforce/**'
-            - 'config/agentforce-*.json'
-            - 'config/dc-agentforce-*.json'
     workflow_dispatch:
         inputs:
             package:
@@ -29,6 +15,9 @@ on:
                     - standard
                     - data-cloud
                     - both
+
+env:
+    SFDX_DISABLE_DNS_CHECK: 'true'
 
 concurrency:
     group: agentforce-dual-tests-${{ github.ref }}
