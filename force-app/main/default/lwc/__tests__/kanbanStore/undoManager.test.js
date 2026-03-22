@@ -284,6 +284,19 @@ describe('UndoManager', () => {
             expect(um.canUndo()).toBe(true);
         });
 
+        it('handles entries with missing contexts gracefully', () => {
+            um.push(
+                makeEntry({
+                    reverseContext: null,
+                    forwardContext: null
+                })
+            );
+            // Should not throw
+            um.markStale('card1');
+            // Entry should still be undoable since cardId didn't match
+            expect(um.canUndo()).toBe(true);
+        });
+
         it('matches against forwardContext.cardId', () => {
             um.push(
                 makeEntry({

@@ -160,6 +160,18 @@ describe('undoableActions', () => {
             expect(def.captureContext({}, action, {})).toBeNull();
         });
 
+        it('captureContext falls back subject to card.subject', () => {
+            const action = {
+                type: ADD_CARD,
+                payload: {
+                    columnId: 'col1',
+                    card: { Id: 'c1', subject: 'SubjectField' }
+                }
+            };
+            const result = def.captureContext({}, action, {});
+            expect(result.forwardContext.subject).toBe('SubjectField');
+        });
+
         it('captureContext falls back subject to Name', () => {
             const action = {
                 type: ADD_CARD,
@@ -170,6 +182,18 @@ describe('undoableActions', () => {
             };
             const result = def.captureContext({}, action, {});
             expect(result.forwardContext.subject).toBe('Fallback');
+        });
+
+        it('captureContext defaults subject to Card when no fields', () => {
+            const action = {
+                type: ADD_CARD,
+                payload: {
+                    columnId: 'col1',
+                    card: { Id: 'c1' }
+                }
+            };
+            const result = def.captureContext({}, action, {});
+            expect(result.forwardContext.subject).toBe('Card');
         });
 
         it('buildReverseThunk dispatches deleteCardAsync', () => {
@@ -252,6 +276,16 @@ describe('undoableActions', () => {
             const thunk = def.buildReverseThunk({
                 cardId: 'c1',
                 updates: { x: 'old' }
+            });
+            const dispatch = jest.fn((v) => v);
+            thunk(dispatch);
+            expect(dispatch).toHaveBeenCalled();
+        });
+
+        it('buildForwardThunk dispatches updateCardAsync', () => {
+            const thunk = def.buildForwardThunk({
+                cardId: 'c1',
+                updates: { x: 'new' }
             });
             const dispatch = jest.fn((v) => v);
             thunk(dispatch);
