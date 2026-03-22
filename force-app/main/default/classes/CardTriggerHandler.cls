@@ -414,7 +414,10 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
         }
 
         if (!epicsToUpdate.isEmpty()) {
+            // Bypass this trigger to prevent recursion since epics are also Card__c
+            TriggerHandler.bypass('CardTriggerHandler');
             update epicsToUpdate;
+            TriggerHandler.clearBypass('CardTriggerHandler');
         }
     }
 
