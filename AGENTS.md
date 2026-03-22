@@ -190,6 +190,24 @@ Salesforce Lightning Web Component (LWC) Kanban board application called "Alex" 
 - SprintSnapshot\_\_c daily snapshots for burndown data
 - SprintSnapshotScheduler for automated daily snapshots
 
+**Card Enrichment:**
+
+- Card Comments (PR #42) — comment threads with edit/delete on card panel
+- File Attachments (PR #37) — upload/manage files on cards
+- Card Linking (PR #44) — card-to-card links (blocks, relates, duplicates)
+- Undo/Redo (PR #39) — production undo/redo with Ctrl+Z/Ctrl+Y toolbar buttons
+
+**Epic & Team Management:**
+
+- Epic Management (PR #40) — epic cards with progress tracking, child card rollup, epic selector on card panel
+- LeSS Framework (PR #41) — Team\_\_c and TeamMember\_\_c objects, team management admin panel
+- Roadmap Board (PR #38) — horizon and quarterly views for epic planning with roadmapBoard LWC
+
+**Agentforce AI Agent (PR #43):**
+
+- Extension package (`force-agentforce/`) with 22 Apex invocable actions
+- Agent Script definition, 5 topics (Card Management, Sprint Management, Board Insights, Team Assignment, Estimation)
+
 **Apex Service Layer (recently implemented):**
 
 - SprintService.cls — full sprint business logic
@@ -209,14 +227,21 @@ Full pipeline managed via GitHub Actions — no IDE required for releases, testi
 
 ### Existing workflows
 
-| Workflow                   | Trigger                    | Purpose                                                    |
-| -------------------------- | -------------------------- | ---------------------------------------------------------- |
-| `test.yml`                 | Push / PR                  | Lint, Prettier formatting, LWC Jest tests                  |
-| `apex-tests.yml`           | Push to main / PR          | Scratch org Apex tests with code coverage                  |
-| `security-scan.yml`        | PR to main                 | Salesforce Code Analyzer + npm audit                       |
-| `e2e-tests.yml`            | PR to main / manual        | Full E2E Playwright tests (chromium + firefox + webkit)    |
-| `chromium-e2e-debug.yml`   | Push to `claude/*` branches | Fast Chromium-only E2E debug loop — posts results as commit comments |
-| `scratch-org.yml`          | Manual / PR comment         | Create scratch org with sample data and login URL          |
+| Workflow                        | Trigger                     | Purpose                                                    |
+| ------------------------------- | --------------------------- | ---------------------------------------------------------- |
+| `test.yml`                      | Push / PR                   | Lint, Prettier formatting, LWC Jest tests                  |
+| `apex-tests.yml`                | Push to main / PR           | Scratch org Apex tests with code coverage                  |
+| `security-scan.yml`             | PR to main                  | Salesforce Code Analyzer + npm audit                       |
+| `e2e-tests.yml`                 | PR to main / manual         | Full E2E Playwright tests (chromium + firefox + webkit)    |
+| `chromium-e2e-debug.yml`        | Push to `claude/*` branches | Fast Chromium-only E2E debug loop — posts results as commit comments |
+| `scratch-org.yml`               | Manual / PR comment         | Create scratch org with sample data and login URL          |
+| `agent-tests.yml`               | Push / PR                   | Agentforce Apex unit tests + agent evaluation tests        |
+| `agentforce-dual-org-tests.yml` | Push / PR                   | Dual-org test matrix (standard + data cloud)               |
+| `e2e-cleanup.yml`               | PR close                    | Cleanup persistent scratch org caches                      |
+| `e2e-suite.yml`                 | Reusable workflow           | Reusable E2E test suite template                           |
+| `e2e-multi-user.yml`            | Reusable workflow           | Reusable multi-user E2E test template                      |
+
+> **Note:** All workflows now use persistent scratch orgs (create-if-missing, redeploy-if-exists via GitHub Actions cache).
 
 ### Planned workflows (see [docs/2026-03-20-cicd-release-plan.md](docs/2026-03-20-cicd-release-plan.md))
 
@@ -265,7 +290,56 @@ Feature branch → PR (tests run) → Merge to main (version auto-bumps)
 - **GitHub Environments for approval gating** — `production` environment requires reviewer approval for GA promotion
 - **`[skip ci]`** — version bump commits skip CI to avoid infinite loops
 
+## Agentforce Development
+
+### Agent Script Workflow
+
+1. **Generate spec** — `sf agent generate spec` creates the agent specification from prompts
+2. **Generate bundle** — `sf agent generate authoring-bundle` produces deployable metadata
+3. **Publish bundle** — `sf agent publish authoring-bundle` deploys to the org
+4. **Preview** — test the agent in Agent Builder or via `sf agent preview`
+
+### Topics and Actions
+
+| Topic              | Actions                                                                 |
+| ------------------ | ----------------------------------------------------------------------- |
+| Card Management    | Create, update, move, delete, assign cards; manage comments and links   |
+| Sprint Management  | Create, start, complete sprints; add/remove cards; track velocity       |
+| Board Insights     | Query board state, card counts, sprint progress, burndown data          |
+| Team Assignment    | Assign team members to cards, manage team membership                    |
+| Estimation         | Set/update story points, estimation suggestions based on history        |
+
+### Key Notes
+
+- **Bot/GenAiPlugin/GenAiPlannerBundle metadata is auto-generated** by `sf agent publish` — do not hand-edit these files
+- **`.forceignore` entries** exist for agent metadata pending PBO (Pilot/Beta/GA) — these are excluded from source tracking until the metadata types are fully supported
+
 ## Architecture Overview
+
+### Package Structure
+
+```
+alex-app/
+├── force-app/              → Base kanban application (managed package)
+└── force-agentforce/       → AI extension package (Agentforce)
+    ├── main/default/
+    │   ├── classes/        → 22 Apex invocable actions
+    │   ├── genAiFunctions/ → GenAiFunction metadata (one per action)
+    │   ├── genAiPlugins/   → GenAiPlugin metadata (5 topics)
+    │   ├── bots/           → Agent Script / Bot definition
+    │   └── genAiPlannerBundles/ → Planner bundles (auto-generated)
+```
+
+**Agentforce backend layer:**
+- **Agent Script** — declarative conversation flow definition
+- **GenAiFunctions (22)** — individual invocable action metadata wrappers
+- **GenAiPlugins (5 topics)** — Card Management, Sprint Management, Board Insights, Team Assignment, Estimation
+- **Apex invocable actions** — business logic callable by the agent
+
+**`sf agent` CLI workflow:**
+```
+sf agent generate spec → sf agent generate authoring-bundle → sf agent publish authoring-bundle
+```
 
 ### Frontend Layers
 

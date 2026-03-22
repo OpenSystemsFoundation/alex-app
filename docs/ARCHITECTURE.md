@@ -4,6 +4,7 @@
 
 - [Overview](#overview)
 - [System Architecture](#system-architecture)
+- [Agentforce Architecture](#agentforce-architecture)
 - [Data Model](#data-model)
 - [Component Architecture](#component-architecture)
 - [State Management](#state-management)
@@ -27,9 +28,10 @@ Alex is a real-time collaborative Kanban board application built on the Salesfor
 
 - **Frontend**: Lightning Web Components (LWC)
 - **Backend**: Salesforce Apex
+- **AI Agent**: Agentforce (Agent Script, GenAiPlannerBundle, Bot)
 - **Real-time**: Salesforce Platform Events
 - **Testing**: Jest (unit), Playwright (E2E), Apex Test Framework
-- **Build Tools**: Salesforce CLI, npm
+- **Build Tools**: Salesforce CLI (`sf`), `sf agent` CLI, npm
 - **Development Environment**:
     - Node.js v22.x LTS
     - VS Code with Salesforce Extensions Pack recommended
@@ -39,57 +41,62 @@ Alex is a real-time collaborative Kanban board application built on the Salesfor
 ### High-Level Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Salesforce Platform                   │
-├─────────────────────────────────────────────────────────┤
-│                                                           │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │           Lightning Web Components (UI)           │  │
-│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐ │  │
-│  │  │  Kanban    │  │  Column    │  │   Card     │ │  │
-│  │  │  Board     │  │ Component  │  │ Component  │ │  │
-│  │  └────────────┘  └────────────┘  └────────────┘ │  │
-│  └──────────────────────────────────────────────────┘  │
-│                         ▲                                │
-│                         │                                │
-│                         ▼                                │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │              State Management Layer               │  │
-│  │         (Redux-style Store & Reducers)           │  │
-│  └──────────────────────────────────────────────────┘  │
-│                         ▲                                │
-│                         │                                │
-│     ┌───────────────────┼───────────────────┐           │
-│     │                   │                   │           │
-│     ▼                   ▼                   ▼           │
-│  ┌──────┐      ┌──────────────┐      ┌──────────┐     │
-│  │ Data │      │   Platform   │      │  Event   │     │
-│  │ Mgr  │      │    Events    │      │ Handler  │     │
-│  └──────┘      └──────────────┘      └──────────┘     │
-│     ▲                   ▲                   ▲           │
-│     │                   │                   │           │
-│     └───────────────────┼───────────────────┘           │
-│                         │                                │
-│                         ▼                                │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │              Apex Backend Layer                   │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────────┐  │  │
-│  │  │ Board    │  │ Column   │  │   Card       │  │  │
-│  │  │Controller│  │Controller│  │  Controller  │  │  │
-│  │  └──────────┘  └──────────┘  └──────────────┘  │  │
-│  └──────────────────────────────────────────────────┘  │
-│                         ▲                                │
-│                         │                                │
-│                         ▼                                │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │                 Data Layer                        │  │
-│  │   ┌──────────┐  ┌──────────┐  ┌──────────┐     │  │
-│  │   │  Board   │  │  Column  │  │   Card   │     │  │
-│  │   │ (Object) │  │ (Object) │  │ (Object) │     │  │
-│  │   └──────────┘  └──────────┘  └──────────┘     │  │
-│  └──────────────────────────────────────────────────┘  │
-│                                                           │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                      Salesforce Platform                      │
+├──────────────────────────────────────────────────────────────┤
+│                                                                │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │            Lightning Web Components (UI)                 │ │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐        │ │
+│  │  │  Kanban    │  │  Column    │  │   Card     │        │ │
+│  │  │  Board     │  │ Component  │  │ Component  │        │ │
+│  │  └────────────┘  └────────────┘  └────────────┘        │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                          ▲                                     │
+│                          │                                     │
+│                          ▼                                     │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │               State Management Layer                     │ │
+│  │          (Redux-style Store & Reducers)                  │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                          ▲                                     │
+│                          │                                     │
+│      ┌───────────────────┼───────────────────┐                │
+│      │                   │                   │                │
+│      ▼                   ▼                   ▼                │
+│  ┌──────┐       ┌──────────────┐      ┌──────────┐          │
+│  │ Data │       │   Platform   │      │  Event   │          │
+│  │ Mgr  │       │    Events    │      │ Handler  │          │
+│  └──────┘       └──────────────┘      └──────────┘          │
+│      ▲                   ▲                   ▲                │
+│      │                   │                   │                │
+│      └───────────────────┼───────────────────┘                │
+│                          │                                     │
+│                          ▼                                     │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │               Apex Backend Layer                         │ │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────────┐          │ │
+│  │  │ Board    │  │ Column   │  │   Card       │          │ │
+│  │  │Controller│  │Controller│  │  Controller  │          │ │
+│  │  └──────────┘  └──────────┘  └──────────────┘          │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                          ▲                                     │
+│          ┌───────────────┴───────────────┐                    │
+│          │                               │                    │
+│          ▼                               ▼                    │
+│  ┌────────────────────────┐  ┌──────────────────────────┐   │
+│  │      Data Layer        │  │  Agentforce Layer        │   │
+│  │  ┌───────┐ ┌────────┐ │  │  (force-agentforce)      │   │
+│  │  │ Board │ │ Column │ │  │  ┌────────────────────┐  │   │
+│  │  └───────┘ └────────┘ │  │  │ AI Agent (Bot)     │  │   │
+│  │  ┌───────┐ ┌────────┐ │  │  │  └→ GenAiPlanner   │  │   │
+│  │  │ Card  │ │ Sprint │ │  │  │     └→ 5 Topics    │  │   │
+│  │  └───────┘ └────────┘ │  │  │        └→ 22 Actns │  │   │
+│  └────────────────────────┘  │  └────────────────────┘  │   │
+│                               │  22 Invocable Actions   │   │
+│                               └──────────────────────────┘   │
+│                                                                │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ### Layer Responsibilities
@@ -135,6 +142,78 @@ Alex is a real-time collaborative Kanban board application built on the Salesfor
 - Enforce data integrity
 - Provide query interfaces
 - Maintain relationships
+
+#### 7. **Agentforce Layer**
+
+- AI-powered natural language interface to the Kanban board
+- 22 Apex Invocable Actions exposed as GenAi functions
+- 5 Topics organizing actions by domain
+- Agent Script definition compiled to Bot metadata
+
+## Agentforce Architecture
+
+### Overview
+
+Alex includes an Agentforce-powered AI agent that enables natural language interaction with the Kanban board. Users can create cards, manage sprints, query board insights, assign team members, and estimate work through conversational prompts.
+
+### Package Structure
+
+```
+force-agentforce/main/default/
+├── aiAuthoringBundles/Alex_Agent/    # Agent Script definition (.agent file)
+├── bots/Alex_Agent/                  # Bot metadata (auto-generated by sf agent publish)
+├── botVersions/Alex_Agent/           # Bot version (auto-generated)
+├── genAiPlannerBundles/Alex_Agent_v1/ # Planner bundle with topic graph
+├── genAiPlugins/                     # 5 topic definitions
+├── genAiFunctions/                   # 22 action definitions
+├── classes/                          # 22 Apex invocable actions + 5 test classes
+├── customPermissions/                # Use_Alex_Agent
+└── permissionsets/                   # Alex_Agentforce_User
+```
+
+### Agent Script Pipeline
+
+The Agent Script authoring model follows a three-stage pipeline:
+
+1. **Author** -- Define the agent in Agent Script (`.agent` file) within `aiAuthoringBundles/`. This declarative format specifies the agent's persona, topics, actions, and instructions.
+
+2. **Publish** -- Run `sf agent publish` to compile the Agent Script into deployable Salesforce metadata. This auto-generates:
+   - `bots/` -- The Bot definition (Salesforce's runtime container for the agent)
+   - `botVersions/` -- Versioned bot configuration
+   - `genAiPlannerBundles/` -- The planner bundle that maps topics to actions and governs the LLM's reasoning
+
+3. **Deploy** -- Push the generated metadata to the org with `sf project deploy`. The Bot, GenAiPlannerBundle, GenAiPlugins, and GenAiFunctions are deployed together.
+
+```
+Agent Script (.agent)
+       │
+       ▼
+sf agent publish
+       │
+       ├──► Bot metadata (bots/, botVersions/)
+       ├──► GenAiPlannerBundle (genAiPlannerBundles/)
+       ├──► GenAiPlugins (genAiPlugins/) ── 5 Topics
+       └──► GenAiFunctions (genAiFunctions/) ── 22 Actions
+                    │
+                    ▼
+         Apex Invocable Actions (classes/)
+```
+
+### Topics and Actions
+
+| Topic | Description | Actions |
+|-------|-------------|---------|
+| **Card Management** | Create, update, move, and delete cards | Create card, update fields, move to column, delete, add comment, link cards |
+| **Sprint Management** | Sprint lifecycle operations | Create sprint, start, complete, add/remove cards, get sprint status |
+| **Board Insights** | Query and analytics | Get board summary, column counts, blocked cards, cycle time, WIP violations |
+| **Team Assignment** | User and team operations | Assign card, unassign, list team members, get workload |
+| **Estimation** | Story points and sizing | Set estimate, bulk estimate, get velocity, capacity planning |
+
+### Security
+
+- Access gated by the `Use_Alex_Agent` custom permission
+- The `Alex_Agentforce_User` permission set grants the custom permission plus access to all Invocable Actions
+- Each Invocable Action enforces CRUD/FLS independently via `Security.stripInaccessible()`
 
 ## Data Model
 
@@ -230,10 +309,78 @@ Represents a work item card.
 - `OpenSF__AssignedTo__c` (Lookup User) - Assignee
 - `OpenSF__Color__c` (Text) - Card color for visual coding
 
+**Additional Fields (Epic Support):**
+
+- `OpenSF__IsEpic__c` (Checkbox) - Marks card as an epic
+- `OpenSF__ParentEpic__c` (Lookup Card) - Parent epic for child cards
+
 **Relationships:**
 
 - Master-Detail to Column
 - Lookup to User (AssignedTo)
+- Self-Lookup (ParentEpic) for epic hierarchy
+
+#### OpenSF**CardComment**c
+
+Represents a comment on a card.
+
+**Fields:**
+
+- `OpenSF__Body__c` (Long Text Area) - Comment text
+- `OpenSF__Card__c` (Master-Detail) - Parent card
+- `CreatedById` (Lookup User) - Comment author (system-managed)
+
+**Relationships:**
+
+- Master-Detail to Card
+
+#### OpenSF**CardLink**c
+
+Represents a link between two cards (e.g., blocks, relates to, duplicates).
+
+**Fields:**
+
+- `OpenSF__SourceCard__c` (Lookup Card) - Source card
+- `OpenSF__TargetCard__c` (Lookup Card) - Target card
+- `OpenSF__LinkType__c` (Picklist) - Relationship type (Blocks, Relates To, Duplicates)
+
+**Relationships:**
+
+- Lookup to Card (SourceCard)
+- Lookup to Card (TargetCard)
+
+#### OpenSF**Team**c
+
+Represents a team associated with a board.
+
+**Fields:**
+
+- `Name` (Text) - Team name
+- `OpenSF__Board__c` (Lookup Board) - Associated board
+
+**Relationships:**
+
+- Lookup to Board
+- One-to-Many with TeamMembers
+
+#### OpenSF**TeamMember**c
+
+Represents a user's membership in a team.
+
+**Fields:**
+
+- `OpenSF__Team__c` (Master-Detail) - Parent team
+- `OpenSF__User__c` (Lookup User) - Team member
+- `OpenSF__Role__c` (Picklist) - Role within the team
+
+**Relationships:**
+
+- Master-Detail to Team
+- Lookup to User
+
+#### OpenSF**Epic**c (via Card fields)
+
+Epics are modeled as Card__c records with `IsEpic__c = true`. Child cards reference their parent epic via the `ParentEpic__c` lookup, enabling hierarchical work breakdown without a separate object.
 
 ## Component Architecture
 
@@ -533,6 +680,13 @@ describe('kanbanBoard reducer', () => {
 - **Platform Events**: Verify end-to-end event flow
 - **API Contracts**: Ensure LWC-Apex contract stability
 - **Data Integrity**: Verify cascading operations
+
+### CI Infrastructure
+
+- **Persistent Scratch Orgs**: 7-day duration scratch orgs cached via GitHub Actions to avoid cold-start deploys on every run
+- **7 Parallel E2E Suites**: Happy paths, unhappy paths, admin management, sprint lifecycle, analytics, retro, and planning poker run concurrently
+- **1 Multi-User Suite**: Real-time sync tests between two browser contexts using separate login URLs (`USER_A_LOGIN_URL` + `USER_B_LOGIN_URL`)
+- **Agentforce Dual-Org Test Matrix**: Agent tests run against both a standard scratch org and an Agentforce-enabled scratch org to validate invocable action behavior with and without the AI planner
 
 ## Design Patterns
 

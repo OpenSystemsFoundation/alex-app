@@ -2,9 +2,9 @@
 
 <div align="center">
   <img src="assets/images/logo_large.png" alt="Alex Logo" width="200"/>
-  
+
   **A modern, real-time collaborative Kanban board built with Lightning Web Components**
-  
+
   [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE-MIT)
   [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-v66.0-blue.svg)](https://developer.salesforce.com)
@@ -26,21 +26,36 @@ Alex is a powerful Kanban board application for Salesforce that enables teams to
 - **🔒 Salesforce Native** - Built on Salesforce platform with enterprise security
 - **📱 Responsive Design** - Works seamlessly on desktop and mobile devices
 - **🚀 Lightning Fast** - Optimized performance with efficient state management
+- **💬 Card Comments** - Comment threads on cards with edit/delete
+- **📎 File Attachments** - Upload/manage files on cards with drag-and-drop
+- **🔗 Card Linking** - Link cards to each other (blocks, relates to, duplicates)
+- **↩️ Undo/Redo** - Production undo/redo with Ctrl+Z/Ctrl+Y
+- **🏔️ Epic Management** - Epic cards with progress tracking and child card rollup
+- **👥 LeSS Framework** - Team and TeamMember objects for scaled agile
+- **🗺️ Roadmap Board** - Horizon and quarterly views for epic planning
+- **🤖 Agentforce AI Agent** - Natural language board management (card CRUD, sprint management, analytics, estimation, team assignment)
+- **🃏 Planning Poker** - Real-time estimation via platform events
+- **🔄 Retrospectives** - Start/Stop/Continue board with anonymous voting
+- **🏊 Swimlanes** - Group cards by epic, assignee, priority, or card type
 
 ## 🏗️ Architecture
 
 Alex is built using modern Salesforce development practices:
 
+- **Two-package Architecture** - `force-app` (base platform) + `force-agentforce` (AI extension)
 - **Lightning Web Components (LWC)** - Modern web standards-based UI framework
 - **Platform Events** - Real-time event-driven architecture for collaboration
 - **Redux-style State Management** - Predictable state updates with centralized store
 - **Apex Backend** - Secure server-side logic and data access
-- **Custom Objects** - Board, Column, and Card data models
+- **Custom Objects** - Board, Column, Card, Epic, Team, and Sprint data models
+- **Agent Script** - Agentforce agent definition for natural language interaction
+- **22 Apex Invocable Actions** - AI agent capabilities for card CRUD, sprint management, analytics, and more
 
 ## 🛠️ Technology Stack
 
 - **Frontend**: Lightning Web Components (LWC)
 - **Backend**: Apex
+- **AI**: Agentforce, Agent Script language, `sf agent` CLI commands
 - **Testing**:
     - Jest (Unit Tests)
     - Playwright (E2E Tests)
@@ -176,12 +191,22 @@ alex-app/
 ├── force-app/main/default/
 │   ├── lwc/              # Lightning Web Components
 │   ├── classes/          # Apex classes
-│   ├── objects/          # Custom objects (Board, Column, Card)
+│   ├── objects/          # Custom objects (Board, Column, Card, Epic, Team, Sprint)
 │   ├── tabs/             # Custom tabs
 │   └── permissionsets/   # Permission sets
+├── force-agentforce/main/default/
+│   ├── classes/              # Invocable Apex actions for AI agent
+│   ├── genAiFunctions/       # Agentforce function definitions
+│   ├── aiAuthoringBundles/   # Agent Script bundles
+│   ├── genAiPlugins/         # Agentforce plugin configs
+│   └── bots/                 # Bot definitions
+├── e2e/
+│   └── specs/            # Playwright E2E test specs
 ├── test/
-│   ├── unit/lwc/         # Jest unit tests
-│   └── e2e/              # Playwright E2E tests
+│   └── unit/lwc/         # Jest unit tests
+├── specs/                # Agent specs
+├── docs/
+│   └── roadmap/          # Roadmap documentation
 ├── scripts/              # Utility scripts
 └── config/               # Scratch org definitions
 ```
@@ -244,6 +269,20 @@ This project is dual-licensed — you may use it under either license at your ch
 
 ## 🗺️ Roadmap
 
+### Recently Shipped
+
+- [x] Planning Poker — real-time estimation via platform events
+- [x] Retrospectives — Start/Stop/Continue board with anonymous voting
+- [x] Swimlanes — group cards by epic, assignee, priority, or card type
+- [x] Undo/Redo — production undo/redo with Ctrl+Z/Ctrl+Y
+- [x] Card Comments — comment threads with edit/delete
+- [x] File Attachments — upload/manage files on cards with drag-and-drop
+- [x] Card Linking — blocks, relates to, duplicates relationships
+- [x] Epic Management — epic cards with progress tracking and child card rollup
+- [x] LeSS Framework — Team and TeamMember objects for scaled agile
+- [x] Roadmap Board — horizon and quarterly views for epic planning
+- [x] Agentforce AI Agent — natural language board management with 22 invocable actions
+
 ### Now
 
 - [ ] CI/CD release pipeline (GitHub Actions for beta/GA package creation)
@@ -252,9 +291,6 @@ This project is dual-licensed — you may use it under either license at your ch
 
 ### Next
 
-- [ ] Planning Poker — real-time estimation via platform events
-- [ ] Retrospectives — Start/Stop/Continue board with anonymous voting
-- [ ] Swimlanes — group cards by epic, assignee, priority, or card type
 - [ ] Cumulative flow diagram — visualize bottlenecks over time
 - [ ] Salesforce record linking — link cards to Cases, Opportunities, or any SObject
 - [ ] Auto-create cards from Cases (Flow-driven)
@@ -262,13 +298,14 @@ This project is dual-licensed — you may use it under either license at your ch
 
 ### Future
 
+- [ ] **Custom App Tabs** — eliminate triple-tab problem with dedicated tab navigation
 - [ ] **Customer-facing boards via Experience Cloud** — let your customers see project progress in their community portal
     - [ ] Board/column/card visibility controls (internal vs. customer-facing)
     - [ ] Community-ready LWC component
     - [ ] Internal vs. external comments on cards
     - [ ] Customer notifications on card status changes
+- [ ] **Flow-driven automation** — auto-create cards, trigger transitions, and sync statuses via Salesforce Flows
 - [ ] Approval gates on column transitions (Salesforce Approvals integration)
-- [ ] Agentforce integration — sprint planning assistant, retrospective summarizer, smart auto-assignment, natural language board queries
 - [ ] Salesforce Reports & Dashboards integration
 - [ ] Custom fields on cards
 - [ ] Mobile companion
