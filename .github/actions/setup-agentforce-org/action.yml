@@ -46,22 +46,40 @@ outputs:
     org-created:
         description: 'Whether a new org was created (true) or an existing one was reused (false)'
         value: ${{ steps.provision.outputs.org_created }}
+    error-log:
+        description: 'Path to error log file if setup failed'
+        value: /tmp/setup-error-${{ inputs.org-alias }}.log
 
 runs:
     using: 'composite'
     steps:
         - name: Install Salesforce CLI
           shell: bash
-          run: npm install -g @salesforce/cli
+          run: |
+              npm install -g @salesforce/cli
+              echo "CLI version: $(sf --version)"
+              sf plugins install @salesforce/plugin-agent 2>/dev/null || true
 
         - name: Authenticate DevHub
           shell: bash
+          env:
+              SFDX_DISABLE_DNS_CHECK: 'true'
           run: |
+              ERROR_LOG="/tmp/setup-error-${{ inputs.org-alias }}.log"
+              echo "" > "$ERROR_LOG"
+              if [ -z "${{ inputs.sfdx-auth-url }}" ]; then
+                echo "SFDX_AUTH_URL is empty — check the repository secret" | tee "$ERROR_LOG"
+                exit 1
+              fi
               echo "${{ inputs.sfdx-auth-url }}" > /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
-              sf org login sfdx-url \
+              if ! sf org login sfdx-url \
                 --sfdx-url-file /tmp/sfdx_auth_${{ inputs.org-alias }}.txt \
                 --alias devhub \
-                --set-default-dev-hub 2>/dev/null || true
+                --set-default-dev-hub 2>&1 | tee -a "$ERROR_LOG"; then
+                echo "DevHub authentication failed" >> "$ERROR_LOG"
+                rm -f /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
+                exit 1
+              fi
               rm /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
 
         - name: Restore cached org auth
@@ -75,6 +93,8 @@ runs:
         - name: Provision Scratch Org (create or reuse)
           id: provision
           shell: bash
+          env:
+              SFDX_DISABLE_DNS_CHECK: 'true'
           run: |
               ORG_CREATED="true"
               PERSISTENT="${{ inputs.persistent }}"
@@ -106,11 +126,17 @@ runs:
 
               if [ "$ORG_CREATED" = "true" ]; then
                 echo "::group::Creating new scratch org"
-                sf org create scratch \
+                ERROR_LOG="/tmp/setup-error-${{ inputs.org-alias }}.log"
+                set -o pipefail
+                if ! sf org create scratch \
                   --definition-file ${{ inputs.scratch-def }} \
                   --alias "$ALIAS" \
                   --duration-days ${{ inputs.duration-days }} \
-                  --wait 15
+                  --wait 15 2>&1 | tee -a "$ERROR_LOG"; then
+                  echo "Scratch org creation failed for alias=$ALIAS def=${{ inputs.scratch-def }}" >> "$ERROR_LOG"
+                  exit 1
+                fi
+                set +o pipefail
 
                 if [ "$PERSISTENT" = "true" ]; then
                   sf org display --target-org "$ALIAS" --verbose --json 2>/dev/null | node -e "
@@ -144,16 +170,20 @@ runs:
         - name: Deploy Base Package (force-app)
           shell: bash
           run: |
+              ERROR_LOG="/tmp/setup-error-${{ inputs.org-alias }}.log"
               sf project deploy start --source-dir force-app --target-org ${{ inputs.org-alias }} --ignore-conflicts --json 2>&1 | tee /tmp/deploy-base.json || true
               node -e "
                 const raw = require('fs').readFileSync('/tmp/deploy-base.json', 'utf8');
                 const idx = raw.indexOf('{');
-                if (idx < 0) { console.log(raw); process.exit(1); }
+                if (idx < 0) { console.log(raw); require('fs').appendFileSync('$ERROR_LOG', 'Deploy base: no JSON in output\n' + raw); process.exit(1); }
                 const j = JSON.parse(raw.substring(idx));
                 if (j.status !== 0) {
-                  console.error('Deploy failed:', j.message || 'unknown');
+                  const msg = 'Deploy base failed: ' + (j.message || 'unknown');
                   const files = (j.result && j.result.details && j.result.details.componentFailures) || [];
-                  files.forEach(f => console.error('  -', f.fullName, ':', f.problem));
+                  const details = files.map(f => '  - ' + f.fullName + ': ' + f.problem).join('\n');
+                  const full = msg + '\n' + details;
+                  console.error(full);
+                  require('fs').appendFileSync('$ERROR_LOG', full + '\n');
                   process.exit(1);
                 }
                 console.log('Deploy succeeded:', (j.result && j.result.numberComponentsDeployed) || '?', 'components');

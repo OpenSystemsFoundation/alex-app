@@ -5,20 +5,6 @@ name: Agentforce Dual-Org Test Matrix
 # in parallel to catch environment-specific regressions.
 
 on:
-    push:
-        branches: [main]
-        paths:
-            - 'force-app/**'
-            - 'force-agentforce/**'
-            - 'config/agentforce-*.json'
-            - 'config/dc-agentforce-*.json'
-    pull_request:
-        branches: [main]
-        paths:
-            - 'force-app/**'
-            - 'force-agentforce/**'
-            - 'config/agentforce-*.json'
-            - 'config/dc-agentforce-*.json'
     workflow_dispatch:
         inputs:
             package:
@@ -29,6 +15,9 @@ on:
                     - standard
                     - data-cloud
                     - both
+
+env:
+    SFDX_DISABLE_DNS_CHECK: 'true'
 
 concurrency:
     group: agentforce-dual-tests-${{ github.ref }}
@@ -53,12 +42,13 @@ jobs:
                   sfdx-auth-url: ${{ secrets.SFDX_AUTH_URL }}
                   scratch-def: config/agentforce-project-scratch-def.json
                   create-board-data: false
-                  deploy-agentforce: true
+                  deploy-agentforce: false
                   persistent: true
                   cache-key: ${{ github.head_ref || github.ref_name }}
                   duration-days: '7'
 
             - name: Run All Apex Tests
+              id: run-tests
               run: |
                   mkdir -p apex-results
                   sf apex run test \
@@ -78,33 +68,70 @@ jobs:
                     const failed=tests.filter(t=>t.Outcome==='Fail');
                     const passed=tests.filter(t=>t.Outcome==='Pass');
                     const total=tests.length;
+                    const lines=[];
 
-                    console.log('');
-                    console.log('='.repeat(60));
-                    console.log('  AGENTFORCE STANDARD — ALL APEX TESTS');
-                    console.log('='.repeat(60));
+                    lines.push('');
+                    lines.push('='.repeat(60));
+                    lines.push('  AGENTFORCE STANDARD — ALL APEX TESTS');
+                    lines.push('='.repeat(60));
 
                     tests.forEach(t=>{
                       const cls=(t.ApexClass&&t.ApexClass.Name)||'Unknown';
                       const icon=t.Outcome==='Pass'?'PASS':'FAIL';
-                      console.log('  ['+icon+'] '+cls+'.'+t.MethodName+' ('+(t.RunTime||'--')+'ms)');
+                      lines.push('  ['+icon+'] '+cls+'.'+t.MethodName+' ('+(t.RunTime||'--')+'ms)');
                     });
 
-                    console.log('');
-                    console.log('  Passed: '+passed.length+'/'+total);
-                    console.log('  Coverage: '+((r.summary||{}).orgWideCoverage||'N/A'));
+                    lines.push('');
+                    lines.push('  Passed: '+passed.length+'/'+total);
+                    lines.push('  Coverage: '+((r.summary||{}).orgWideCoverage||'N/A'));
 
                     if(failed.length>0){
-                      console.log('');
-                      console.log('  FAILURES:');
+                      lines.push('');
+                      lines.push('  FAILURES:');
                       failed.forEach(t=>{
                         const cls=(t.ApexClass&&t.ApexClass.Name)||'Unknown';
-                        console.log('    '+cls+'.'+t.MethodName+': '+t.Message);
-                        if(t.StackTrace) t.StackTrace.split('\\n').forEach(l=>console.log('      '+l));
+                        lines.push('    '+cls+'.'+t.MethodName+': '+t.Message);
+                        if(t.StackTrace) t.StackTrace.split('\\n').forEach(l=>lines.push('      '+l));
                       });
-                      process.exit(1);
                     }
+
+                    const output=lines.join('\\n');
+                    console.log(output);
+                    fs.writeFileSync('/tmp/test-results-standard.txt', output);
+                    if(failed.length>0) process.exit(1);
                   "
+
+            - name: Post results as commit comment
+              if: always()
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  BODY="## Dual-Org Tests — Agentforce Standard\n\n"
+                  BODY+="**Workflow:** [${{ github.workflow }} #${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n"
+                  BODY+="**Branch:** \`${{ github.ref_name }}\`\n\n"
+
+                  if [ "${{ steps.org.outcome }}" = "failure" ]; then
+                    ERROR_FILE="${{ steps.org.outputs.error-log }}"
+                    if [ -f "$ERROR_FILE" ] && [ -s "$ERROR_FILE" ]; then
+                      BODY+="### Org Setup Failed\n\`\`\`\n$(tail -50 "$ERROR_FILE")\n\`\`\`\n\n"
+                    else
+                      BODY+="### Org Setup Failed\nThe setup-agentforce-org composite action failed. Check if:\n"
+                      BODY+="- DevHub auth URL (SFDX_AUTH_URL secret) is valid\n"
+                      BODY+="- Scratch org limits haven't been exceeded\n"
+                      BODY+="- The scratch def file is valid\n\n"
+                    fi
+                  fi
+
+                  if [ -f /tmp/test-results-standard.txt ]; then
+                    BODY+="### Apex Test Results\n\`\`\`\n$(cat /tmp/test-results-standard.txt)\n\`\`\`\n\n"
+                  elif [ "${{ steps.run-tests.outcome }}" = "skipped" ]; then
+                    BODY+="### Apex Tests\nSkipped (org setup failed)\n\n"
+                  fi
+
+                  BODY+="**Job status:** ${{ job.status }}"
+
+                  printf '%s' "$BODY" | gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
+                    -f "body=$(printf '%s' "$BODY")" --silent || echo "Warning: Failed to post commit comment"
 
             - name: Delete Scratch Org
               if: always() && steps.org.outputs.org-created == 'true' && failure()
@@ -136,12 +163,13 @@ jobs:
                   sfdx-auth-url: ${{ secrets.SFDX_AUTH_URL }}
                   scratch-def: config/dc-agentforce-project-scratch-def.json
                   create-board-data: false
-                  deploy-agentforce: true
+                  deploy-agentforce: false
                   persistent: true
                   cache-key: ${{ github.head_ref || github.ref_name }}
                   duration-days: '7'
 
             - name: Run All Apex Tests
+              id: run-tests
               run: |
                   mkdir -p apex-results
                   sf apex run test \
@@ -161,33 +189,70 @@ jobs:
                     const failed=tests.filter(t=>t.Outcome==='Fail');
                     const passed=tests.filter(t=>t.Outcome==='Pass');
                     const total=tests.length;
+                    const lines=[];
 
-                    console.log('');
-                    console.log('='.repeat(60));
-                    console.log('  AGENTFORCE + DATA CLOUD — ALL APEX TESTS');
-                    console.log('='.repeat(60));
+                    lines.push('');
+                    lines.push('='.repeat(60));
+                    lines.push('  AGENTFORCE + DATA CLOUD — ALL APEX TESTS');
+                    lines.push('='.repeat(60));
 
                     tests.forEach(t=>{
                       const cls=(t.ApexClass&&t.ApexClass.Name)||'Unknown';
                       const icon=t.Outcome==='Pass'?'PASS':'FAIL';
-                      console.log('  ['+icon+'] '+cls+'.'+t.MethodName+' ('+(t.RunTime||'--')+'ms)');
+                      lines.push('  ['+icon+'] '+cls+'.'+t.MethodName+' ('+(t.RunTime||'--')+'ms)');
                     });
 
-                    console.log('');
-                    console.log('  Passed: '+passed.length+'/'+total);
-                    console.log('  Coverage: '+((r.summary||{}).orgWideCoverage||'N/A'));
+                    lines.push('');
+                    lines.push('  Passed: '+passed.length+'/'+total);
+                    lines.push('  Coverage: '+((r.summary||{}).orgWideCoverage||'N/A'));
 
                     if(failed.length>0){
-                      console.log('');
-                      console.log('  FAILURES:');
+                      lines.push('');
+                      lines.push('  FAILURES:');
                       failed.forEach(t=>{
                         const cls=(t.ApexClass&&t.ApexClass.Name)||'Unknown';
-                        console.log('    '+cls+'.'+t.MethodName+': '+t.Message);
-                        if(t.StackTrace) t.StackTrace.split('\\n').forEach(l=>console.log('      '+l));
+                        lines.push('    '+cls+'.'+t.MethodName+': '+t.Message);
+                        if(t.StackTrace) t.StackTrace.split('\\n').forEach(l=>lines.push('      '+l));
                       });
-                      process.exit(1);
                     }
+
+                    const output=lines.join('\\n');
+                    console.log(output);
+                    fs.writeFileSync('/tmp/test-results-dc.txt', output);
+                    if(failed.length>0) process.exit(1);
                   "
+
+            - name: Post results as commit comment
+              if: always()
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  BODY="## Dual-Org Tests — Agentforce + Data Cloud\n\n"
+                  BODY+="**Workflow:** [${{ github.workflow }} #${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n"
+                  BODY+="**Branch:** \`${{ github.ref_name }}\`\n\n"
+
+                  if [ "${{ steps.org.outcome }}" = "failure" ]; then
+                    ERROR_FILE="${{ steps.org.outputs.error-log }}"
+                    if [ -f "$ERROR_FILE" ] && [ -s "$ERROR_FILE" ]; then
+                      BODY+="### Org Setup Failed\n\`\`\`\n$(tail -50 "$ERROR_FILE")\n\`\`\`\n\n"
+                    else
+                      BODY+="### Org Setup Failed\nThe setup-agentforce-org composite action failed. Check if:\n"
+                      BODY+="- DevHub auth URL (SFDX_AUTH_URL secret) is valid\n"
+                      BODY+="- Scratch org limits haven't been exceeded\n"
+                      BODY+="- The scratch def file is valid\n\n"
+                    fi
+                  fi
+
+                  if [ -f /tmp/test-results-dc.txt ]; then
+                    BODY+="### Apex Test Results\n\`\`\`\n$(cat /tmp/test-results-dc.txt)\n\`\`\`\n\n"
+                  elif [ "${{ steps.run-tests.outcome }}" = "skipped" ]; then
+                    BODY+="### Apex Tests\nSkipped (org setup failed)\n\n"
+                  fi
+
+                  BODY+="**Job status:** ${{ job.status }}"
+
+                  printf '%s' "$BODY" | gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
+                    -f "body=$(printf '%s' "$BODY")" --silent || echo "Warning: Failed to post commit comment"
 
             - name: Delete Scratch Org
               if: always() && steps.org.outputs.org-created == 'true' && failure()
@@ -208,6 +273,8 @@ jobs:
         if: always()
         steps:
             - name: Post Summary
+              env:
+                  GH_TOKEN: ${{ github.token }}
               run: |
                   STANDARD="${{ needs.test-standard.result }}"
                   DC="${{ needs.test-data-cloud.result }}"

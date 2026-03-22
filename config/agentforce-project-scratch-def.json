@@ -5,8 +5,6 @@
     "features": [
         "ContactsToMultipleAccounts",
         "Einstein1AIPlatform",
-        "CustomerDataPlatform",
-        "CustomerDataPlatformLite",
         "EnableSetPasswordInApi",
         "Communities"
     ],
@@ -25,9 +23,6 @@
         },
         "agentPlatformSettings": {
             "enableAgentPlatform": true
-        },
-        "customerDataPlatformSettings": {
-            "enableCustomerDataPlatform": true
         },
         "communitiesSettings": {
             "enableNetworksEnabled": true

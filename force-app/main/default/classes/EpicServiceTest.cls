@@ -2,12 +2,14 @@
 public class EpicServiceTest {
     @TestSetup
     static void setup() {
+        TriggerHandler.bypass('ColumnTriggerHandler');
+
         OpenSF__Board__c board = TestFactory.createBoard('Epic Test Board');
         OpenSF__Column__c todoCol = TestFactory.createColumn(
             board.Id,
             'To Do',
             LexoRank.initial(),
-            '#1B96FF'
+            '#2E844A'
         );
         todoCol.OpenSF__Category__c = 'To Do';
         update todoCol;
@@ -16,10 +18,12 @@ public class EpicServiceTest {
             board.Id,
             'Done',
             LexoRank.between(LexoRank.initial(), null),
-            '#4BC076'
+            '#2E844A'
         );
         doneCol.OpenSF__Category__c = 'Done';
         update doneCol;
+
+        TriggerHandler.clearBypass('ColumnTriggerHandler');
 
         // Create an Epic card
         OpenSF__Card__c epic = TestFactory.createCard(

@@ -86,9 +86,11 @@ public with sharing class TeamService {
             userId
         );
         if (!existing.isEmpty()) {
-            throw new AuraHandledException(
+            AuraHandledException ex = new AuraHandledException(
                 'User is already an active member of this team.'
             );
+            ex.setMessage('User is already an active member of this team.');
+            throw ex;
         }
 
         // Validate total allocation does not exceed 100%
