@@ -134,7 +134,7 @@ import setReaction from '@salesforce/apex/PlanningPokerController.setReaction';
 import getCurrentUserId from '@salesforce/apex/PlanningPokerController.getCurrentUserId';
 import getKanbanConfig from '@salesforce/apex/KanbanBoardController.getKanbanConfig';
 import { subscribe, unsubscribe, onError } from 'lightning/empApi';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+// ShowToastEvent is provided by the jest.mock above
 
 // ─── Test Data ──────────────────────────────────────────────────────
 const MOCK_USER_ID = 'user001';

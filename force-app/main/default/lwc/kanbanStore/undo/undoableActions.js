@@ -70,7 +70,7 @@ const registry = {
                 dispatch(moveCardAsync(ctx.cardId, ctx.columnId, ctx.index));
         },
 
-        describe(_action, reverseCtx) {
+        describe(_action, _reverseCtx) {
             return `Move card back`;
         }
     },
@@ -80,7 +80,7 @@ const registry = {
          * After a card is created we know its ID from nextState.
          * Reverse = delete the card.  Forward = re-create (will get new ID).
          */
-        captureContext(prevState, action, nextState) {
+        captureContext(prevState, action, _nextState) {
             const { columnId } = action.payload;
             const card = action.payload.card;
             if (!card || !card.Id) return null;

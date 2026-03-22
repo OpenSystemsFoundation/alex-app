@@ -359,9 +359,9 @@ export default class RetroBoard extends LightningElement {
         const cardId = event.currentTarget.dataset.cardId;
         try {
             const updatedCard = await toggleVote({ cardId });
-            this._cards = this._cards.map((c) =>
-                c.Id === cardId ? updatedCard : c
-            );
+            this._cards = this._cards.map((c) => {
+                return c.Id === cardId ? updatedCard : c;
+            });
             // Update vote count
             this._currentUserVoteCount += updatedCard.hasVoted ? 1 : -1;
         } catch (e) {
@@ -527,9 +527,9 @@ export default class RetroBoard extends LightningElement {
                 destination: this._actionItemDestination
             });
 
-            this._cards = this._cards.map((c) =>
-                c.Id === this._actionItemCardId ? updated : c
-            );
+            this._cards = this._cards.map((c) => {
+                return c.Id === this._actionItemCardId ? updated : c;
+            });
 
             this.showActionItemModal = false;
             this._showToast(
