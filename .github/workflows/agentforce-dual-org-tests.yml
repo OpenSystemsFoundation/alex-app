@@ -42,7 +42,7 @@ jobs:
                   sfdx-auth-url: ${{ secrets.SFDX_AUTH_URL }}
                   scratch-def: config/agentforce-project-scratch-def.json
                   create-board-data: false
-                  deploy-agentforce: true
+                  deploy-agentforce: false
                   persistent: true
                   cache-key: ${{ github.head_ref || github.ref_name }}
                   duration-days: '7'
@@ -163,7 +163,7 @@ jobs:
                   sfdx-auth-url: ${{ secrets.SFDX_AUTH_URL }}
                   scratch-def: config/dc-agentforce-project-scratch-def.json
                   create-board-data: false
-                  deploy-agentforce: true
+                  deploy-agentforce: false
                   persistent: true
                   cache-key: ${{ github.head_ref || github.ref_name }}
                   duration-days: '7'
