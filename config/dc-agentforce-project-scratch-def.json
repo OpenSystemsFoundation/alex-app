@@ -19,9 +19,6 @@
         "agentPlatformSettings": {
             "enableAgentPlatform": true
         },
-        "customerDataPlatformSettings": {
-            "enableCustomerDataPlatform": true
-        },
         "chatterSettings": {
             "enableChatter": true
         }
