@@ -1,5 +1,9 @@
 import { LightningElement, api, track } from 'lwc';
 import { selectors, completeSprintAsync } from 'c/kanbanStore';
+import {
+    applyStoreSubscription,
+    removeStoreSubscription
+} from 'c/storeSubscriptionMixin';
 
 export default class KanbanSprintComplete extends LightningElement {
     @api store;
@@ -11,21 +15,12 @@ export default class KanbanSprintComplete extends LightningElement {
     @track dispositions = {}; // cardId -> 'backlog' | sprintId
     @track isProcessing = false;
 
-    _storeUnsubscribe = null;
-
     connectedCallback() {
-        if (this.store) {
-            this._storeUnsubscribe = this.store.subscribe((state) => {
-                this._storeState = state;
-            });
-            this._storeState = this.store.getState();
-        }
+        applyStoreSubscription(this, this.store);
     }
 
     disconnectedCallback() {
-        if (this._storeUnsubscribe) {
-            this._storeUnsubscribe();
-        }
+        removeStoreSubscription(this);
     }
 
     get sprint() {

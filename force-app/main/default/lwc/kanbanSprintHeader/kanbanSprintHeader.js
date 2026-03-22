@@ -1,25 +1,21 @@
 import { LightningElement, api, track } from 'lwc';
 import { selectors } from 'c/kanbanStore';
+import {
+    applyStoreSubscription,
+    removeStoreSubscription
+} from 'c/storeSubscriptionMixin';
 
 export default class KanbanSprintHeader extends LightningElement {
     @api store;
     @api experienceCloud = false;
     @track _storeState = null;
-    _storeUnsubscribe = null;
 
     connectedCallback() {
-        if (this.store) {
-            this._storeUnsubscribe = this.store.subscribe((state) => {
-                this._storeState = state;
-            });
-            this._storeState = this.store.getState();
-        }
+        applyStoreSubscription(this, this.store);
     }
 
     disconnectedCallback() {
-        if (this._storeUnsubscribe) {
-            this._storeUnsubscribe();
-        }
+        removeStoreSubscription(this);
     }
 
     get sprint() {

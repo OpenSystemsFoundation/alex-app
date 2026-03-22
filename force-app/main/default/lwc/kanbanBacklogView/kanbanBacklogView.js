@@ -13,6 +13,10 @@ import {
     addCardsToBacklogSprintAsync,
     removeCardFromBacklogSprintAsync
 } from 'c/kanbanStore';
+import {
+    applyStoreSubscription,
+    removeStoreSubscription
+} from 'c/storeSubscriptionMixin';
 
 export default class KanbanBacklogView extends LightningElement {
     /** @type {import('c/kanbanStore').Store} The Redux-style store instance */
@@ -42,24 +46,15 @@ export default class KanbanBacklogView extends LightningElement {
     dragOverIndex = null;
     _dragTargetIndex = null; // Final drop target index (not tracked — no re-render)
 
-    _storeUnsubscribe = null;
     _contextMenuCardId = null;
     _contextMenuSprintId = null;
 
     connectedCallback() {
-        if (this.store) {
-            this._storeUnsubscribe = this.store.subscribe((state) => {
-                this._storeState = state;
-            });
-            this._storeState = this.store.getState();
-        }
+        applyStoreSubscription(this, this.store);
     }
 
     disconnectedCallback() {
-        if (this._storeUnsubscribe) {
-            this._storeUnsubscribe();
-            this._storeUnsubscribe = null;
-        }
+        removeStoreSubscription(this);
     }
 
     // ===================================================================

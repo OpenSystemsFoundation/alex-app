@@ -555,6 +555,87 @@ public with sharing class SprintService {
     }
 
     /**
+     * Auto-complete or un-complete a sprint card based on the column category
+     * it was moved to. Called by KanbanCardService.moveCard().
+     *
+     * - Moving to Done → mark CompletedInSprint
+     * - Moving to Released → mark CompletedInSprint (if not already)
+     * - Moving back to active work (To Do/In Progress) → un-complete
+     *
+     * @param cardId The card that was moved
+     * @param targetColumn The column the card was moved to
+     */
+    public static void autoUpdateSprintCompletion(
+        Id cardId,
+        OpenSF__Column__c targetColumn
+    ) {
+        String category = targetColumn.OpenSF__Category__c;
+        Boolean isDoneCategory =
+            category ==
+            KanbanEnums.columnCategoryValue(KanbanEnums.ColumnCategory.DONE);
+        Boolean isReleasedCategory =
+            category ==
+            KanbanEnums.columnCategoryValue(
+                KanbanEnums.ColumnCategory.RELEASED
+            );
+        Boolean isActiveWork =
+            category ==
+            KanbanEnums.columnCategoryValue(KanbanEnums.ColumnCategory.TODO) ||
+            category ==
+            KanbanEnums.columnCategoryValue(
+                KanbanEnums.ColumnCategory.IN_PROGRESS
+            );
+
+        // Find active sprint junction for this card
+        List<OpenSF__SprintCard__c> junctions = [
+            SELECT
+                Id,
+                OpenSF__CompletedInSprint__c,
+                OpenSF__CompletedDate__c,
+                OpenSF__Sprint__c,
+                OpenSF__Sprint__r.OpenSF__Status__c
+            FROM OpenSF__SprintCard__c
+            WHERE
+                OpenSF__Card__c = :cardId
+                AND OpenSF__RemovedDate__c = NULL
+                AND OpenSF__Sprint__r.OpenSF__Status__c = 'Active'
+            WITH USER_MODE
+            LIMIT 1
+        ];
+
+        if (junctions.isEmpty()) {
+            return;
+        }
+
+        OpenSF__SprintCard__c junction = junctions[0];
+        Boolean needsUpdate = false;
+
+        if (
+            (isDoneCategory || isReleasedCategory) &&
+            !junction.OpenSF__CompletedInSprint__c
+        ) {
+            // Moving to Done or Released — mark completed
+            junction.OpenSF__CompletedInSprint__c = true;
+            junction.OpenSF__CompletedDate__c = DateTime.now();
+            needsUpdate = true;
+        } else if (isActiveWork && junction.OpenSF__CompletedInSprint__c) {
+            // Moving back to active work — un-complete
+            junction.OpenSF__CompletedInSprint__c = false;
+            junction.OpenSF__CompletedDate__c = null;
+            needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+            update Security.stripInaccessible(
+                    AccessType.UPDATABLE,
+                    new List<OpenSF__SprintCard__c>{ junction }
+                )
+                .getRecords();
+            recalculateSprintPoints(junction.OpenSF__Sprint__c);
+        }
+    }
+
+    /**
      * Publish a sprint update event
      */
     private static void publishSprintEvent(

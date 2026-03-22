@@ -9,23 +9,7 @@ public with sharing class AdminController {
     @AuraEnabled
     public static List<KanbanBoardDTO.BoardDTO> getBoards() {
         try {
-            List<OpenSF__Board__c> boards = [
-                SELECT
-                    Id,
-                    Name,
-                    OpenSF__Description__c,
-                    OpenSF__Status__c,
-                    OpenSF__Type__c,
-                    OpenSF__Active__c,
-                    OpenSF__EmailNotifications__c,
-                    OpenSF__SalesforceNotifications__c,
-                    OpenSF__ActiveSprint__c,
-                    OpenSF__ColumnCount__c
-                FROM OpenSF__Board__c
-                WITH USER_MODE
-                ORDER BY Name ASC
-            ];
-            return KanbanBoardDTO.convertBoards(boards);
+            return KanbanBoardDTO.convertBoards(BoardSelector.getAllBoards());
         } catch (Exception e) {
             throw new AuraHandledException(
                 'Error loading boards: ' + e.getMessage()
@@ -59,22 +43,9 @@ public with sharing class AdminController {
             board.Id = boardsToInsert[0].Id;
 
             // Re-query to get all fields
-            OpenSF__Board__c created = [
-                SELECT
-                    Id,
-                    Name,
-                    OpenSF__Description__c,
-                    OpenSF__Status__c,
-                    OpenSF__Type__c,
-                    OpenSF__Active__c,
-                    OpenSF__EmailNotifications__c,
-                    OpenSF__SalesforceNotifications__c,
-                    OpenSF__ActiveSprint__c
-                FROM OpenSF__Board__c
-                WHERE Id = :board.Id
-                WITH USER_MODE
-                LIMIT 1
-            ];
+            OpenSF__Board__c created = BoardSelector.getBoardWithListFields(
+                board.Id
+            );
             return new KanbanBoardDTO.BoardDTO(created);
         } catch (Exception e) {
             throw new AuraHandledException(
@@ -301,52 +272,7 @@ public with sharing class AdminController {
     @AuraEnabled
     public static OnboardingStatus getOnboardingStatus() {
         try {
-            OnboardingStatus status = new OnboardingStatus();
-
-            // Check if any boards exist
-            Integer boardCount = [
-                SELECT COUNT()
-                FROM OpenSF__Board__c
-                WITH USER_MODE
-            ];
-            status.hasBoardsCreated = boardCount > 0;
-
-            // Check if any board has columns
-            Integer columnsCount = [
-                SELECT COUNT()
-                FROM OpenSF__Column__c
-                WITH USER_MODE
-            ];
-            status.hasColumnsConfigured = columnsCount > 0;
-
-            // Check if permission sets are assigned
-            Integer permSetCount = [
-                SELECT COUNT()
-                FROM PermissionSetAssignment
-                WHERE
-                    PermissionSet.Name IN (
-                        'OpenSF__Alex_Admin',
-                        'OpenSF__Alex_User'
-                    )
-                    AND AssigneeId != :UserInfo.getUserId()
-                WITH USER_MODE
-            ];
-            status.hasUsersAssigned = permSetCount > 0;
-
-            // Check if any cards exist
-            Integer cardCount = [
-                SELECT COUNT()
-                FROM OpenSF__Card__c
-                WITH USER_MODE
-            ];
-            status.hasCardsCreated = cardCount > 0;
-
-            status.isComplete =
-                status.hasBoardsCreated &&
-                status.hasColumnsConfigured &&
-                status.hasUsersAssigned;
-
-            return status;
+            return BoardSelector.getOnboardingStatus();
         } catch (Exception e) {
             throw new AuraHandledException(
                 'Error checking onboarding status: ' + e.getMessage()
@@ -427,8 +353,8 @@ public with sharing class AdminController {
             }
             insert colsToCreate;
 
-            // Re-query board
-            OpenSF__Board__c created = KanbanBoardSelector.getBoardById(
+            // Re-query board with list fields
+            OpenSF__Board__c created = BoardSelector.getBoardWithListFields(
                 board.Id
             );
             return new KanbanBoardDTO.BoardDTO(created);

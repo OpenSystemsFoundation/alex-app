@@ -1,4 +1,5 @@
 import ToastManager from '../../kanbanBoard/managers/toastManager';
+import { extractErrorMessage } from 'c/toastUtils';
 
 // Mock ShowToastEvent
 jest.mock('lightning/platformShowToastEvent', () => {
@@ -201,7 +202,7 @@ describe('ToastManager', () => {
                     message: 'Body error message'
                 }
             };
-            const message = manager._extractErrorMessage(error);
+            const message = extractErrorMessage(error);
             expect(message).toBe('Body error message');
         });
 
@@ -209,27 +210,27 @@ describe('ToastManager', () => {
             const error = {
                 message: 'Direct error message'
             };
-            const message = manager._extractErrorMessage(error);
+            const message = extractErrorMessage(error);
             expect(message).toBe('Direct error message');
         });
 
         it('should handle string error', () => {
-            const message = manager._extractErrorMessage('String error');
+            const message = extractErrorMessage('String error');
             expect(message).toBe('String error');
         });
 
         it('should return Unknown error for null', () => {
-            const message = manager._extractErrorMessage(null);
+            const message = extractErrorMessage(null);
             expect(message).toBe('Unknown error');
         });
 
         it('should return Unknown error for undefined', () => {
-            const message = manager._extractErrorMessage(undefined);
+            const message = extractErrorMessage(undefined);
             expect(message).toBe('Unknown error');
         });
 
         it('should return Unknown error for object without message', () => {
-            const message = manager._extractErrorMessage({ foo: 'bar' });
+            const message = extractErrorMessage({ foo: 'bar' });
             expect(message).toBe('Unknown error');
         });
     });
