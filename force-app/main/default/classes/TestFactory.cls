@@ -199,8 +199,17 @@ public class TestFactory {
         TriggerHandler.bypass('CardTriggerHandler');
         TriggerHandler.bypass('ColumnTriggerHandler');
 
+        // Derive Board from Column
+        Id boardId = [
+            SELECT OpenSF__Board__c
+            FROM OpenSF__Column__c
+            WHERE Id = :columnId
+            LIMIT 1
+        ].OpenSF__Board__c;
+
         OpenSF__Card__c card = new OpenSF__Card__c(
             OpenSF__Column__c = columnId,
+            OpenSF__Board__c = boardId,
             OpenSF__Subject__c = subject,
             OpenSF__CardType__c = cardType,
             OpenSF__Status__c = status,
@@ -251,6 +260,14 @@ public class TestFactory {
         TriggerHandler.bypass('CardTriggerHandler');
         TriggerHandler.bypass('ColumnTriggerHandler');
 
+        // Derive Board from Column
+        Id boardId = [
+            SELECT OpenSF__Board__c
+            FROM OpenSF__Column__c
+            WHERE Id = :columnId
+            LIMIT 1
+        ].OpenSF__Board__c;
+
         List<OpenSF__Card__c> cards = new List<OpenSF__Card__c>();
         String previousPosition = null;
 
@@ -259,6 +276,7 @@ public class TestFactory {
             cards.add(
                 new OpenSF__Card__c(
                     OpenSF__Column__c = columnId,
+                    OpenSF__Board__c = boardId,
                     OpenSF__Subject__c = 'Test Card ' + i,
                     OpenSF__CardType__c = cardType,
                     OpenSF__Status__c = status,

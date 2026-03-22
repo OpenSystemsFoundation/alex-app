@@ -16,7 +16,7 @@ public class EpicServiceTest {
             board.Id,
             'Done',
             LexoRank.between(LexoRank.initial(), null),
-            '#4BC076'
+            '#2E844A'
         );
         doneCol.OpenSF__Category__c = 'Done';
         update doneCol;
