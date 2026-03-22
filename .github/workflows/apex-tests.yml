@@ -23,13 +23,60 @@ jobs:
                   sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
                   rm sfdx_auth.txt
 
-            - name: Create Scratch Org
-              run: sf org create scratch --definition-file config/project-scratch-def.json --alias ci-test --duration-days 1 --wait 10
+            - name: Restore cached org auth
+              id: cache-restore
+              uses: actions/cache/restore@v4
+              with:
+                  path: /tmp/cached-org-auth-ci-test.txt
+                  key: scratch-org-${{ github.head_ref || github.ref_name }}-ci-test
+
+            - name: Provision Scratch Org (create or reuse)
+              id: provision
+              run: |
+                  ORG_CREATED="true"
+                  CACHE_HIT="${{ steps.cache-restore.outputs.cache-hit }}"
+                  AUTH_FILE="/tmp/cached-org-auth-ci-test.txt"
+
+                  if [ "$CACHE_HIT" = "true" ] && [ -f "$AUTH_FILE" ]; then
+                    sf org login sfdx-url --sfdx-url-file "$AUTH_FILE" --alias ci-test 2>/dev/null || true
+                    if sf org display --target-org ci-test --json 2>/dev/null | node -e "
+                      let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                        const j=JSON.parse(d);
+                        process.exit((j.result&&j.result.connectedStatus)==='Connected'?0:1);
+                      });
+                    "; then
+                      echo "Cached scratch org is alive — reusing"
+                      ORG_CREATED="false"
+                    else
+                      rm -f "$AUTH_FILE"
+                    fi
+                  fi
+
+                  if [ "$ORG_CREATED" = "true" ]; then
+                    sf org create scratch \
+                      --definition-file config/project-scratch-def.json \
+                      --alias ci-test \
+                      --duration-days 7 \
+                      --wait 10
+                    sf org display --target-org ci-test --verbose --json 2>/dev/null | node -e "
+                      let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                        console.log(JSON.parse(d).result.sfdxAuthUrl);
+                      });
+                    " > "$AUTH_FILE"
+                  fi
+
+                  echo "org_created=$ORG_CREATED" >> "$GITHUB_OUTPUT"
+
+            - name: Save org auth to cache
+              if: steps.provision.outputs.org_created == 'true'
+              uses: actions/cache/save@v4
+              with:
+                  path: /tmp/cached-org-auth-ci-test.txt
+                  key: scratch-org-${{ github.head_ref || github.ref_name }}-ci-test
 
             - name: Prepare Project Config for Source Deploy
               run: |
-                  # Remove extension packages and dependencies — this base scratch org
-                  # only has standard features, not Einstein/Agentforce metadata types.
+                  # Remove extension packages and dependencies for base-only deploy.
                   node -e "
                     const p = require('./sfdx-project.json');
                     p.packageDirectories = p.packageDirectories.filter(d => d.default);
@@ -53,6 +100,7 @@ jobs:
                   exit 1
 
             - name: Assign Permission Set
+              if: steps.provision.outputs.org_created == 'true'
               run: sf org assign permset --name Alex_Admin --target-org ci-test
 
             - name: Run Apex Tests
@@ -167,8 +215,8 @@ jobs:
                     exit 1
                   fi
 
-            - name: Delete Scratch Org
-              if: always()
+            - name: Delete Scratch Org (only on creation failure)
+              if: always() && steps.provision.outputs.org_created == 'true' && failure()
               run: sf org delete scratch --target-org ci-test --no-prompt || true
 
             - name: Upload Apex Test Results

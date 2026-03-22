@@ -48,8 +48,56 @@ jobs:
                   sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
                   rm sfdx_auth.txt
 
-            - name: Create Agentforce Scratch Org
-              run: sf org create scratch --definition-file config/agentforce-project-scratch-def.json --alias ci-agent-test --duration-days 1 --wait 10
+            - name: Restore cached org auth
+              id: cache-restore
+              uses: actions/cache/restore@v4
+              with:
+                  path: /tmp/cached-org-auth-ci-agent-test.txt
+                  key: scratch-org-${{ github.head_ref || github.ref_name }}-ci-agent-test
+
+            - name: Provision Scratch Org (create or reuse)
+              id: provision
+              run: |
+                  ORG_CREATED="true"
+                  CACHE_HIT="${{ steps.cache-restore.outputs.cache-hit }}"
+                  AUTH_FILE="/tmp/cached-org-auth-ci-agent-test.txt"
+
+                  if [ "$CACHE_HIT" = "true" ] && [ -f "$AUTH_FILE" ]; then
+                    sf org login sfdx-url --sfdx-url-file "$AUTH_FILE" --alias ci-agent-test 2>/dev/null || true
+                    if sf org display --target-org ci-agent-test --json 2>/dev/null | node -e "
+                      let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                        const j=JSON.parse(d);
+                        process.exit((j.result&&j.result.connectedStatus)==='Connected'?0:1);
+                      });
+                    "; then
+                      echo "Cached scratch org is alive — reusing"
+                      ORG_CREATED="false"
+                    else
+                      rm -f "$AUTH_FILE"
+                    fi
+                  fi
+
+                  if [ "$ORG_CREATED" = "true" ]; then
+                    sf org create scratch \
+                      --definition-file config/agentforce-project-scratch-def.json \
+                      --alias ci-agent-test \
+                      --duration-days 7 \
+                      --wait 10
+                    sf org display --target-org ci-agent-test --verbose --json 2>/dev/null | node -e "
+                      let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                        console.log(JSON.parse(d).result.sfdxAuthUrl);
+                      });
+                    " > "$AUTH_FILE"
+                  fi
+
+                  echo "org_created=$ORG_CREATED" >> "$GITHUB_OUTPUT"
+
+            - name: Save org auth to cache
+              if: steps.provision.outputs.org_created == 'true'
+              uses: actions/cache/save@v4
+              with:
+                  path: /tmp/cached-org-auth-ci-agent-test.txt
+                  key: scratch-org-${{ github.head_ref || github.ref_name }}-ci-agent-test
 
             - name: Prepare Project Config for Source Deploy
               run: |
@@ -83,6 +131,7 @@ jobs:
               run: sf project deploy start --source-dir force-agentforce --target-org ci-agent-test --ignore-conflicts
 
             - name: Assign Permission Sets
+              if: steps.provision.outputs.org_created == 'true'
               run: |
                   sf org assign permset --name Alex_Admin --target-org ci-agent-test
                   sf org assign permset --name Alex_Agentforce_User --target-org ci-agent-test
@@ -130,8 +179,8 @@ jobs:
                     }
                   "
 
-            - name: Delete Scratch Org
-              if: always()
+            - name: Delete Scratch Org (only on creation failure)
+              if: always() && steps.provision.outputs.org_created == 'true' && failure()
               run: sf org delete scratch --target-org ci-agent-test --no-prompt || true
 
             - name: Upload Apex Results
@@ -161,8 +210,56 @@ jobs:
                   sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
                   rm sfdx_auth.txt
 
-            - name: Create Agentforce Scratch Org
-              run: sf org create scratch --definition-file config/agentforce-project-scratch-def.json --alias ci-agent-eval --duration-days 1 --wait 10
+            - name: Restore cached org auth
+              id: cache-restore
+              uses: actions/cache/restore@v4
+              with:
+                  path: /tmp/cached-org-auth-ci-agent-eval.txt
+                  key: scratch-org-${{ github.head_ref || github.ref_name }}-ci-agent-eval
+
+            - name: Provision Scratch Org (create or reuse)
+              id: provision
+              run: |
+                  ORG_CREATED="true"
+                  CACHE_HIT="${{ steps.cache-restore.outputs.cache-hit }}"
+                  AUTH_FILE="/tmp/cached-org-auth-ci-agent-eval.txt"
+
+                  if [ "$CACHE_HIT" = "true" ] && [ -f "$AUTH_FILE" ]; then
+                    sf org login sfdx-url --sfdx-url-file "$AUTH_FILE" --alias ci-agent-eval 2>/dev/null || true
+                    if sf org display --target-org ci-agent-eval --json 2>/dev/null | node -e "
+                      let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                        const j=JSON.parse(d);
+                        process.exit((j.result&&j.result.connectedStatus)==='Connected'?0:1);
+                      });
+                    "; then
+                      echo "Cached scratch org is alive — reusing"
+                      ORG_CREATED="false"
+                    else
+                      rm -f "$AUTH_FILE"
+                    fi
+                  fi
+
+                  if [ "$ORG_CREATED" = "true" ]; then
+                    sf org create scratch \
+                      --definition-file config/agentforce-project-scratch-def.json \
+                      --alias ci-agent-eval \
+                      --duration-days 7 \
+                      --wait 10
+                    sf org display --target-org ci-agent-eval --verbose --json 2>/dev/null | node -e "
+                      let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                        console.log(JSON.parse(d).result.sfdxAuthUrl);
+                      });
+                    " > "$AUTH_FILE"
+                  fi
+
+                  echo "org_created=$ORG_CREATED" >> "$GITHUB_OUTPUT"
+
+            - name: Save org auth to cache
+              if: steps.provision.outputs.org_created == 'true'
+              uses: actions/cache/save@v4
+              with:
+                  path: /tmp/cached-org-auth-ci-agent-eval.txt
+                  key: scratch-org-${{ github.head_ref || github.ref_name }}-ci-agent-eval
 
             - name: Prepare Project Config for Source Deploy
               run: |
@@ -178,6 +275,7 @@ jobs:
                   sf project deploy start --source-dir force-agentforce --target-org ci-agent-eval --ignore-conflicts
 
             - name: Assign Permission Sets
+              if: steps.provision.outputs.org_created == 'true'
               run: |
                   sf org assign permset --name Alex_Admin --target-org ci-agent-eval
                   sf org assign permset --name Alex_Agentforce_User --target-org ci-agent-eval
@@ -331,8 +429,8 @@ jobs:
                     }
                   "
 
-            - name: Delete Scratch Org
-              if: always()
+            - name: Delete Scratch Org (only on creation failure)
+              if: always() && steps.provision.outputs.org_created == 'true' && failure()
               run: sf org delete scratch --target-org ci-agent-eval --no-prompt || true
 
             - name: Upload Agent Test Results

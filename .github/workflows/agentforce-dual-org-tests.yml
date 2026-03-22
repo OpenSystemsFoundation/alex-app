@@ -107,7 +107,7 @@ jobs:
                   "
 
             - name: Delete Scratch Org
-              if: always()
+              if: always() && steps.org.outputs.org-created == 'true' && failure()
               run: sf org delete scratch --target-org af-dual-standard --no-prompt || true
 
             - name: Upload Results
@@ -137,6 +137,9 @@ jobs:
                   scratch-def: config/dc-agentforce-project-scratch-def.json
                   create-board-data: false
                   deploy-agentforce: true
+                  persistent: true
+                  cache-key: ${{ github.head_ref || github.ref_name }}
+                  duration-days: '7'
 
             - name: Run All Apex Tests
               run: |
@@ -187,7 +190,7 @@ jobs:
                   "
 
             - name: Delete Scratch Org
-              if: always()
+              if: always() && steps.org.outputs.org-created == 'true' && failure()
               run: sf org delete scratch --target-org af-dual-dc --no-prompt || true
 
             - name: Upload Results

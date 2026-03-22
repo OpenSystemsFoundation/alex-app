@@ -2,7 +2,14 @@
     "orgName": "OpenSF",
     "edition": "Partner Developer",
     "language": "en_US",
-    "features": ["ContactsToMultipleAccounts", "Einstein1AIPlatform"],
+    "features": [
+        "ContactsToMultipleAccounts",
+        "Einstein1AIPlatform",
+        "CustomerDataPlatform",
+        "CustomerDataPlatformLite",
+        "EnableSetPasswordInApi",
+        "Communities"
+    ],
     "settings": {
         "mobileSettings": {
             "enableS1EncryptedStoragePref2": false
@@ -10,14 +17,20 @@
         "lightningExperienceSettings": {
             "enableS1DesktopEnabled": true
         },
+        "chatterSettings": {
+            "enableChatter": true
+        },
         "einsteinGptSettings": {
             "enableEinsteinGptPlatform": true
         },
         "agentPlatformSettings": {
             "enableAgentPlatform": true
         },
-        "chatterSettings": {
-            "enableChatter": true
+        "customerDataPlatformSettings": {
+            "enableCustomerDataPlatform": true
+        },
+        "communitiesSettings": {
+            "enableNetworksEnabled": true
         }
     }
 }

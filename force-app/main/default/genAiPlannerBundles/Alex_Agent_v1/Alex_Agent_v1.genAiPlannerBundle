@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Manage kanban boards for agile software teams. Create, edit, search, move, and delete cards. Plan, start, and complete sprints. Provide board analytics. Assign cards to team members. Estimate story points.</description>
+    <localTopicLinks>
+        <genAiPluginName>ambiguous_question_16jQI000000IRRZ</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>board_analytics_16jQI000000IRRZ</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>card_assignment_16jQI000000IRRZ</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>card_management_16jQI000000IRRZ</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>escalation_16jQI000000IRRZ</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>off_topic_16jQI000000IRRZ</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>sprint_planning_16jQI000000IRRZ</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>sprint_tracking_16jQI000000IRRZ</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>story_point_estimation_16jQI000000IRRZ</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>topic_selector_16jQI000000IRRZ</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>velocity_tracking_16jQI000000IRRZ</genAiPluginName>
+    </localTopicLinks>
+    <localTopics>
+        <fullName>sprint_tracking_16jQI000000IRRZ</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Monitor progress and completion of sprints.</description>
+        <developerName>sprint_tracking_16jQI000000IRRZ</developerName>
+        <genAiPluginInstructions>
+            <description>You are an AI Agent.</description>
+            <developerName>instruction0_179QI0000005jUU</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179QI0000005jUU</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>sprint_tracking</localDeveloperName>
+        <masterLabel>Sprint Tracking</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>velocity_tracking_16jQI000000IRRZ</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Track team velocity across multiple sprints.</description>
+        <developerName>velocity_tracking_16jQI000000IRRZ</developerName>
+        <genAiPluginInstructions>
+            <description>You are an AI Agent.</description>
+            <developerName>instruction0_179QI0000005jUV</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179QI0000005jUV</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>velocity_tracking</localDeveloperName>
+        <masterLabel>Velocity Tracking</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>escalation_16jQI000000IRRZ</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Handles requests from users who want to transfer or escalate their conversation to a live human agent.</description>
+        <developerName>escalation_16jQI000000IRRZ</developerName>
+        <genAiPluginInstructions>
+            <description>You are an AI Agent.</description>
+            <developerName>instruction0_179QI0000005jUL</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179QI0000005jUL</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>escalation</localDeveloperName>
+        <masterLabel>Escalation</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>card_assignment_16jQI000000IRRZ</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Assign tasks to specific team members efficiently.</description>
+        <developerName>card_assignment_16jQI000000IRRZ</developerName>
+        <genAiPluginInstructions>
+            <description>You are an AI Agent.</description>
+            <developerName>instruction0_179QI0000005jUO</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179QI0000005jUO</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>card_assignment</localDeveloperName>
+        <masterLabel>Card Assignment</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>topic_selector_16jQI000000IRRZ</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Welcome the user and determine the appropriate topic based on user input</description>
+        <developerName>topic_selector_16jQI000000IRRZ</developerName>
+        <genAiPluginInstructions>
+            <description>You are an AI Agent.</description>
+            <developerName>instruction0_179QI0000005jUP</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179QI0000005jUP</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>topic_selector</localDeveloperName>
+        <masterLabel>Topic Selector</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>sprint_planning_16jQI000000IRRZ</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Plan sprints and define tasks for agile teams.</description>
+        <developerName>sprint_planning_16jQI000000IRRZ</developerName>
+        <genAiPluginInstructions>
+            <description>You are an AI Agent.</description>
+            <developerName>instruction0_179QI0000005jUM</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179QI0000005jUM</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>sprint_planning</localDeveloperName>
+        <masterLabel>Sprint Planning</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>off_topic_16jQI000000IRRZ</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Redirect conversation to relevant topics when user request goes off-topic</description>
+        <developerName>off_topic_16jQI000000IRRZ</developerName>
+        <genAiPluginInstructions>
+            <description>You are an AI Agent.</description>
+            <developerName>instruction0_179QI0000005jUN</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179QI0000005jUN</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>off_topic</localDeveloperName>
+        <masterLabel>Off Topic</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>story_point_estimation_16jQI000000IRRZ</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Estimate effort required for tasks using story points.</description>
+        <developerName>story_point_estimation_16jQI000000IRRZ</developerName>
+        <genAiPluginInstructions>
+            <description>You are an AI Agent.</description>
+            <developerName>instruction0_179QI0000005jUS</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179QI0000005jUS</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>story_point_estimation</localDeveloperName>
+        <masterLabel>Story Point Estimation</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>card_management_16jQI000000IRRZ</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Create, edit, search, move, and delete cards.</description>
+        <developerName>card_management_16jQI000000IRRZ</developerName>
+        <genAiPluginInstructions>
+            <description>You are an AI Agent.</description>
+            <developerName>instruction0_179QI0000005jUT</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179QI0000005jUT</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>card_management</localDeveloperName>
+        <masterLabel>Card Management</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>ambiguous_question_16jQI000000IRRZ</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Redirect conversation to relevant topics when user request is too ambiguous</description>
+        <developerName>ambiguous_question_16jQI000000IRRZ</developerName>
+        <genAiPluginInstructions>
+            <description>You are an AI Agent.</description>
+            <developerName>instruction0_179QI0000005jUQ</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179QI0000005jUQ</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>ambiguous_question</localDeveloperName>
+        <masterLabel>Ambiguous Question</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>board_analytics_16jQI000000IRRZ</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Provide insights on board activity and performance.</description>
+        <developerName>board_analytics_16jQI000000IRRZ</developerName>
+        <genAiPluginInstructions>
+            <description>You are an AI Agent.</description>
+            <developerName>instruction0_179QI0000005jUR</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_179QI0000005jUR</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>board_analytics</localDeveloperName>
+        <masterLabel>Board Analytics</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <masterLabel>Alex Agent</masterLabel>
+    <plannerType>Atlas__ConcurrentMultiAgentOrchestration</plannerType>
+</GenAiPlannerBundle>

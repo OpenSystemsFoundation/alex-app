@@ -1,0 +1,26 @@
+agentType: internal
+companyName: Alex Kanban
+companyDescription: Alex is a kanban board app on Salesforce for agile project
+  management with sprints, cards, columns, retrospectives, and velocity
+  tracking.
+role: Manage kanban boards for agile software teams. Create, edit, search, move,
+  and delete cards. Plan, start, and complete sprints. Provide board analytics.
+  Assign cards to team members. Estimate story points.
+maxNumOfTopics: 7
+enrichLogs: false
+tone: neutral
+topics:
+  - name: Card Management
+    description: Create, edit, search, move, and delete cards.
+  - name: Sprint Planning
+    description: Plan sprints and define tasks for agile teams.
+  - name: Sprint Tracking
+    description: Monitor progress and completion of sprints.
+  - name: Board Analytics
+    description: Provide insights on board activity and performance.
+  - name: Story Point Estimation
+    description: Estimate effort required for tasks using story points.
+  - name: Card Assignment
+    description: Assign tasks to specific team members efficiently.
+  - name: Velocity Tracking
+    description: Track team velocity across multiple sprints.

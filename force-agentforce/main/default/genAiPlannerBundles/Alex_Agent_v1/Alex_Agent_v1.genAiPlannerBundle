@@ -1,0 +1,534 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>AI agent for managing Alex Kanban boards through natural language. Handles card management, sprint planning, board insights, team assignments, and story point estimation.</description>
+    <localTopicLinks>
+        <genAiPluginName>Card_Management</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>Sprint_Management</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>Board_Insights</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>Team_Assignment</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>Estimation</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>off_topic</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>ambiguous_question</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>topic_selector</genAiPluginName>
+    </localTopicLinks>
+    <localTopics>
+        <fullName>Card_Management</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Create, edit, search, move, and delete cards on the kanban board.</description>
+        <developerName>Card_Management</developerName>
+        <genAiPluginInstructions>
+            <description>Use this topic when the user wants to work with individual cards. If the user mentions a card by name rather than ID, use Search Cards first to find it.</description>
+            <developerName>instruction0_card_mgmt</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_card_mgmt</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localActionLinks>
+            <functionName>Create_Card</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Update_Card</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Delete_Card</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Move_Card</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Search_Cards</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Get_Card_Details</functionName>
+        </localActionLinks>
+        <localActions>
+            <fullName>Create_Card</fullName>
+            <description>Creates a new card on the kanban board.</description>
+            <developerName>Create_Card</developerName>
+            <invocationTarget>AgentCreateCard</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Create_Card</localDeveloperName>
+            <masterLabel>Create Card</masterLabel>
+            <progressIndicatorMessage>Creating card</progressIndicatorMessage>
+            <source>AgentCreateCard</source>
+        </localActions>
+        <localActions>
+            <fullName>Update_Card</fullName>
+            <description>Updates an existing card&apos;s details.</description>
+            <developerName>Update_Card</developerName>
+            <invocationTarget>AgentUpdateCard</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Update_Card</localDeveloperName>
+            <masterLabel>Update Card</masterLabel>
+            <progressIndicatorMessage>Updating card</progressIndicatorMessage>
+            <source>AgentUpdateCard</source>
+        </localActions>
+        <localActions>
+            <fullName>Delete_Card</fullName>
+            <description>Deletes a card from the board.</description>
+            <developerName>Delete_Card</developerName>
+            <invocationTarget>AgentDeleteCard</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>true</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Delete_Card</localDeveloperName>
+            <masterLabel>Delete Card</masterLabel>
+            <progressIndicatorMessage>Deleting card</progressIndicatorMessage>
+            <source>AgentDeleteCard</source>
+        </localActions>
+        <localActions>
+            <fullName>Move_Card</fullName>
+            <description>Moves a card to a different column.</description>
+            <developerName>Move_Card</developerName>
+            <invocationTarget>AgentMoveCard</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Move_Card</localDeveloperName>
+            <masterLabel>Move Card</masterLabel>
+            <progressIndicatorMessage>Moving card</progressIndicatorMessage>
+            <source>AgentMoveCard</source>
+        </localActions>
+        <localActions>
+            <fullName>Search_Cards</fullName>
+            <description>Searches for cards by keyword.</description>
+            <developerName>Search_Cards</developerName>
+            <invocationTarget>AgentSearchCards</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Search_Cards</localDeveloperName>
+            <masterLabel>Search Cards</masterLabel>
+            <progressIndicatorMessage>Searching cards</progressIndicatorMessage>
+            <source>AgentSearchCards</source>
+        </localActions>
+        <localActions>
+            <fullName>Get_Card_Details</fullName>
+            <description>Gets full details of a specific card.</description>
+            <developerName>Get_Card_Details</developerName>
+            <invocationTarget>AgentGetCardDetails</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Get_Card_Details</localDeveloperName>
+            <masterLabel>Get Card Details</masterLabel>
+            <progressIndicatorMessage>Loading card details</progressIndicatorMessage>
+            <source>AgentGetCardDetails</source>
+        </localActions>
+        <localDeveloperName>Card_Management</localDeveloperName>
+        <masterLabel>Card Management</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>Sprint_Management</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Plan, run, and complete sprints. Add or remove cards from sprints.</description>
+        <developerName>Sprint_Management</developerName>
+        <genAiPluginInstructions>
+            <description>Use this topic when the user wants to manage sprints including creating, starting, completing, and managing sprint cards.</description>
+            <developerName>instruction0_sprint_mgmt</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_sprint_mgmt</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localActionLinks>
+            <functionName>Create_Sprint</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Start_Sprint</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Complete_Sprint</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Add_Cards_To_Sprint</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Remove_Card_From_Sprint</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Get_Sprint_Status</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Get_Backlog</functionName>
+        </localActionLinks>
+        <localActions>
+            <fullName>Create_Sprint</fullName>
+            <description>Creates a new sprint for a board.</description>
+            <developerName>Create_Sprint</developerName>
+            <invocationTarget>AgentCreateSprint</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Create_Sprint</localDeveloperName>
+            <masterLabel>Create Sprint</masterLabel>
+            <progressIndicatorMessage>Creating sprint</progressIndicatorMessage>
+            <source>AgentCreateSprint</source>
+        </localActions>
+        <localActions>
+            <fullName>Start_Sprint</fullName>
+            <description>Starts a sprint.</description>
+            <developerName>Start_Sprint</developerName>
+            <invocationTarget>AgentStartSprint</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>true</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Start_Sprint</localDeveloperName>
+            <masterLabel>Start Sprint</masterLabel>
+            <progressIndicatorMessage>Starting sprint</progressIndicatorMessage>
+            <source>AgentStartSprint</source>
+        </localActions>
+        <localActions>
+            <fullName>Complete_Sprint</fullName>
+            <description>Completes the active sprint.</description>
+            <developerName>Complete_Sprint</developerName>
+            <invocationTarget>AgentCompleteSprint</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>true</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Complete_Sprint</localDeveloperName>
+            <masterLabel>Complete Sprint</masterLabel>
+            <progressIndicatorMessage>Completing sprint</progressIndicatorMessage>
+            <source>AgentCompleteSprint</source>
+        </localActions>
+        <localActions>
+            <fullName>Add_Cards_To_Sprint</fullName>
+            <description>Adds cards to a sprint.</description>
+            <developerName>Add_Cards_To_Sprint</developerName>
+            <invocationTarget>AgentAddCardsToSprint</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Add_Cards_To_Sprint</localDeveloperName>
+            <masterLabel>Add Cards To Sprint</masterLabel>
+            <progressIndicatorMessage>Adding cards to sprint</progressIndicatorMessage>
+            <source>AgentAddCardsToSprint</source>
+        </localActions>
+        <localActions>
+            <fullName>Remove_Card_From_Sprint</fullName>
+            <description>Removes a card from its sprint.</description>
+            <developerName>Remove_Card_From_Sprint</developerName>
+            <invocationTarget>AgentRemoveCardFromSprint</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Remove_Card_From_Sprint</localDeveloperName>
+            <masterLabel>Remove Card From Sprint</masterLabel>
+            <progressIndicatorMessage>Removing card from sprint</progressIndicatorMessage>
+            <source>AgentRemoveCardFromSprint</source>
+        </localActions>
+        <localActions>
+            <fullName>Get_Sprint_Status</fullName>
+            <description>Gets sprint progress and status.</description>
+            <developerName>Get_Sprint_Status</developerName>
+            <invocationTarget>AgentGetSprintStatus</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Get_Sprint_Status</localDeveloperName>
+            <masterLabel>Get Sprint Status</masterLabel>
+            <progressIndicatorMessage>Loading sprint status</progressIndicatorMessage>
+            <source>AgentGetSprintStatus</source>
+        </localActions>
+        <localActions>
+            <fullName>Get_Backlog</fullName>
+            <description>Gets the board backlog cards.</description>
+            <developerName>Get_Backlog</developerName>
+            <invocationTarget>AgentGetBacklog</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Get_Backlog</localDeveloperName>
+            <masterLabel>Get Backlog</masterLabel>
+            <progressIndicatorMessage>Loading backlog</progressIndicatorMessage>
+            <source>AgentGetBacklog</source>
+        </localActions>
+        <localDeveloperName>Sprint_Management</localDeveloperName>
+        <masterLabel>Sprint Management</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>Board_Insights</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Get board summaries, burndown charts, velocity metrics, and sprint capacity analysis.</description>
+        <developerName>Board_Insights</developerName>
+        <genAiPluginInstructions>
+            <description>Use this topic for board analytics, metrics, burndown, velocity, and capacity analysis.</description>
+            <developerName>instruction0_board_insights</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_board_insights</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localActionLinks>
+            <functionName>Get_Board_Summary</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Get_Burndown</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Get_Velocity</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Get_Board_Layout</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Analyze_Sprint_Capacity</functionName>
+        </localActionLinks>
+        <localActions>
+            <fullName>Get_Board_Summary</fullName>
+            <description>Gets an overview summary of the board.</description>
+            <developerName>Get_Board_Summary</developerName>
+            <invocationTarget>AgentGetBoardSummary</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Get_Board_Summary</localDeveloperName>
+            <masterLabel>Get Board Summary</masterLabel>
+            <progressIndicatorMessage>Loading board summary</progressIndicatorMessage>
+            <source>AgentGetBoardSummary</source>
+        </localActions>
+        <localActions>
+            <fullName>Get_Burndown</fullName>
+            <description>Gets sprint burndown data.</description>
+            <developerName>Get_Burndown</developerName>
+            <invocationTarget>AgentGetBurndown</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Get_Burndown</localDeveloperName>
+            <masterLabel>Get Burndown</masterLabel>
+            <progressIndicatorMessage>Loading burndown</progressIndicatorMessage>
+            <source>AgentGetBurndown</source>
+        </localActions>
+        <localActions>
+            <fullName>Get_Velocity</fullName>
+            <description>Gets team velocity across sprints.</description>
+            <developerName>Get_Velocity</developerName>
+            <invocationTarget>AgentGetVelocity</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Get_Velocity</localDeveloperName>
+            <masterLabel>Get Velocity</masterLabel>
+            <progressIndicatorMessage>Calculating velocity</progressIndicatorMessage>
+            <source>AgentGetVelocity</source>
+        </localActions>
+        <localActions>
+            <fullName>Get_Board_Layout</fullName>
+            <description>Gets board column layout.</description>
+            <developerName>Get_Board_Layout</developerName>
+            <invocationTarget>AgentGetBoardLayout</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Get_Board_Layout</localDeveloperName>
+            <masterLabel>Get Board Layout</masterLabel>
+            <progressIndicatorMessage>Loading board layout</progressIndicatorMessage>
+            <source>AgentGetBoardLayout</source>
+        </localActions>
+        <localActions>
+            <fullName>Analyze_Sprint_Capacity</fullName>
+            <description>Analyzes sprint capacity based on velocity.</description>
+            <developerName>Analyze_Sprint_Capacity</developerName>
+            <invocationTarget>AgentAnalyzeSprintCapacity</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Analyze_Sprint_Capacity</localDeveloperName>
+            <masterLabel>Analyze Sprint Capacity</masterLabel>
+            <progressIndicatorMessage>Analyzing capacity</progressIndicatorMessage>
+            <source>AgentAnalyzeSprintCapacity</source>
+        </localActions>
+        <localDeveloperName>Board_Insights</localDeveloperName>
+        <masterLabel>Board Insights</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>Team_Assignment</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Assign cards to team members, search for users, and check workload distribution.</description>
+        <developerName>Team_Assignment</developerName>
+        <genAiPluginInstructions>
+            <description>Use this topic for assigning work, searching users, and checking workload distribution.</description>
+            <developerName>instruction0_team_assign</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_team_assign</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localActionLinks>
+            <functionName>Assign_Card</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Search_Users</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Get_User_Workload</functionName>
+        </localActionLinks>
+        <localActions>
+            <fullName>Assign_Card</fullName>
+            <description>Assigns a card to a user.</description>
+            <developerName>Assign_Card</developerName>
+            <invocationTarget>AgentAssignCard</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Assign_Card</localDeveloperName>
+            <masterLabel>Assign Card</masterLabel>
+            <progressIndicatorMessage>Assigning card</progressIndicatorMessage>
+            <source>AgentAssignCard</source>
+        </localActions>
+        <localActions>
+            <fullName>Search_Users</fullName>
+            <description>Searches for users by name.</description>
+            <developerName>Search_Users</developerName>
+            <invocationTarget>AgentSearchUsers</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Search_Users</localDeveloperName>
+            <masterLabel>Search Users</masterLabel>
+            <progressIndicatorMessage>Searching users</progressIndicatorMessage>
+            <source>AgentSearchUsers</source>
+        </localActions>
+        <localActions>
+            <fullName>Get_User_Workload</fullName>
+            <description>Gets a user&apos;s current workload.</description>
+            <developerName>Get_User_Workload</developerName>
+            <invocationTarget>AgentGetUserWorkload</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Get_User_Workload</localDeveloperName>
+            <masterLabel>Get User Workload</masterLabel>
+            <progressIndicatorMessage>Loading workload</progressIndicatorMessage>
+            <source>AgentGetUserWorkload</source>
+        </localActions>
+        <localDeveloperName>Team_Assignment</localDeveloperName>
+        <masterLabel>Team Assignment</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>Estimation</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Estimate story points for cards and analyze sprint capacity for planning.</description>
+        <developerName>Estimation</developerName>
+        <genAiPluginInstructions>
+            <description>Use this topic for story point estimation and sprint capacity analysis.</description>
+            <developerName>instruction0_estimation</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_estimation</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localActionLinks>
+            <functionName>Estimate_Story_Points</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>Analyze_Sprint_Capacity</functionName>
+        </localActionLinks>
+        <localActions>
+            <fullName>Estimate_Story_Points</fullName>
+            <description>Estimates story points for a card.</description>
+            <developerName>Estimate_Story_Points</developerName>
+            <invocationTarget>AgentEstimateStoryPoints</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Estimate_Story_Points</localDeveloperName>
+            <masterLabel>Estimate Story Points</masterLabel>
+            <progressIndicatorMessage>Estimating points</progressIndicatorMessage>
+            <source>AgentEstimateStoryPoints</source>
+        </localActions>
+        <localActions>
+            <fullName>Analyze_Sprint_Capacity</fullName>
+            <description>Analyzes sprint capacity based on velocity.</description>
+            <developerName>Analyze_Sprint_Capacity</developerName>
+            <invocationTarget>AgentAnalyzeSprintCapacity</invocationTarget>
+            <invocationTargetType>apex</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Analyze_Sprint_Capacity</localDeveloperName>
+            <masterLabel>Analyze Sprint Capacity</masterLabel>
+            <progressIndicatorMessage>Analyzing capacity</progressIndicatorMessage>
+            <source>AgentAnalyzeSprintCapacity</source>
+        </localActions>
+        <localDeveloperName>Estimation</localDeveloperName>
+        <masterLabel>Estimation</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>off_topic</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Redirect conversation to relevant topics when user request goes off-topic</description>
+        <developerName>off_topic</developerName>
+        <genAiPluginInstructions>
+            <description>Redirect the conversation to relevant kanban board topics politely. Never answer general knowledge questions.</description>
+            <developerName>instruction0_off_topic</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_off_topic</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>off_topic</localDeveloperName>
+        <masterLabel>Off Topic</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>ambiguous_question</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Redirect conversation to relevant topics when user request is too ambiguous</description>
+        <developerName>ambiguous_question</developerName>
+        <genAiPluginInstructions>
+            <description>Help the user provide clearer requests. Suggest specific actions like creating cards, checking sprint status, or viewing analytics.</description>
+            <developerName>instruction0_ambiguous</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_ambiguous</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>ambiguous_question</localDeveloperName>
+        <masterLabel>Ambiguous Question</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <localTopics>
+        <fullName>topic_selector</fullName>
+        <canEscalate>false</canEscalate>
+        <description>Welcome the user and determine the appropriate topic based on user input</description>
+        <developerName>topic_selector</developerName>
+        <genAiPluginInstructions>
+            <description>Select the best topic based on conversation history and user intent. Route card requests to Card Management, sprint requests to Sprint Management, analytics to Board Insights, assignments to Team Assignment, and sizing to Estimation.</description>
+            <developerName>instruction0_topic_selector</developerName>
+            <language>en_US</language>
+            <masterLabel>instruction0_topic_selector</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localDeveloperName>topic_selector</localDeveloperName>
+        <masterLabel>Topic Selector</masterLabel>
+        <pluginType>Topic</pluginType>
+    </localTopics>
+    <masterLabel>Alex Agent</masterLabel>
+    <plannerType>Atlas__ConcurrentMultiAgentOrchestration</plannerType>
+</GenAiPlannerBundle>

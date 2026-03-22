@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata">
-    <masterLabel>Estimation</masterLabel>
     <description
     >Estimate story points for cards and analyze sprint capacity for planning.</description>
-    <scope
-    >Use this topic when the user wants help with estimation or sizing. This includes estimating story points for a card based on its details, analyzing whether a sprint is right-sized based on historical velocity, or suggesting how much work the team can handle. Also use this when the user asks "how many points should this be", "is this sprint too big", or "estimate this card".</scope>
+    <developerName>Estimation</developerName>
     <genAiFunctions>
-        <genAiFunction>Estimate_Story_Points</genAiFunction>
-        <genAiFunction>Analyze_Sprint_Capacity</genAiFunction>
+        <functionName>Estimate_Story_Points</functionName>
     </genAiFunctions>
+    <genAiFunctions>
+        <functionName>Analyze_Sprint_Capacity</functionName>
+    </genAiFunctions>
+    <language>en_US</language>
+    <masterLabel>Estimation</masterLabel>
+    <pluginType>Topic</pluginType>
+    <scope
+    >Use this topic when the user wants help with estimation or sizing. This includes estimating story points for a card based on its details, analyzing whether a sprint is right-sized based on historical velocity, or suggesting how much work the team can handle. Also use this when the user asks &quot;how many points should this be&quot;, &quot;is this sprint too big&quot;, or &quot;estimate this card&quot;.</scope>
 </GenAiPlugin>

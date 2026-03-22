@@ -1,13 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata">
-    <masterLabel>Team Assignment</masterLabel>
     <description
     >Assign cards to team members, search for users, and check workload distribution.</description>
-    <scope
-    >Use this topic when the user wants to assign work to team members, find users, or check how work is distributed. This includes assigning a card to someone, setting a peer reviewer, searching for users by name, or checking a team member's current workload and story point allocation. Also use this when the user asks "who has bandwidth", "assign this to", or "what is [person] working on".</scope>
+    <developerName>Team_Assignment</developerName>
     <genAiFunctions>
-        <genAiFunction>Assign_Card</genAiFunction>
-        <genAiFunction>Search_Users</genAiFunction>
-        <genAiFunction>Get_User_Workload</genAiFunction>
+        <functionName>Assign_Card</functionName>
     </genAiFunctions>
+    <genAiFunctions>
+        <functionName>Search_Users</functionName>
+    </genAiFunctions>
+    <genAiFunctions>
+        <functionName>Get_User_Workload</functionName>
+    </genAiFunctions>
+    <language>en_US</language>
+    <masterLabel>Team Assignment</masterLabel>
+    <pluginType>Topic</pluginType>
+    <scope
+    >Use this topic when the user wants to assign work to team members, find users, or check how work is distributed. This includes assigning a card to someone, setting a peer reviewer, searching for users by name, or checking a team member&apos;s current workload and story point allocation. Also use this when the user asks &quot;who has bandwidth&quot;, &quot;assign this to&quot;, or &quot;what is [person] working on&quot;.</scope>
 </GenAiPlugin>

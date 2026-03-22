@@ -1,0 +1,61 @@
+{
+    "nodes": [
+        {
+            "id": "topic_selector",
+            "type": "start_agent",
+            "label": "Topic Selector",
+            "description": "Welcome the user and determine the appropriate topic based on user input"
+        },
+        {
+            "id": "Card_Management",
+            "type": "topic",
+            "label": "Card Management",
+            "description": "Create, edit, search, move, and delete cards on the kanban board."
+        },
+        {
+            "id": "Sprint_Management",
+            "type": "topic",
+            "label": "Sprint Management",
+            "description": "Plan, run, and complete sprints. Add or remove cards from sprints."
+        },
+        {
+            "id": "Board_Insights",
+            "type": "topic",
+            "label": "Board Insights",
+            "description": "Get board summaries, burndown charts, velocity metrics, and sprint capacity analysis."
+        },
+        {
+            "id": "Team_Assignment",
+            "type": "topic",
+            "label": "Team Assignment",
+            "description": "Assign cards to team members, search for users, and check workload distribution."
+        },
+        {
+            "id": "Estimation",
+            "type": "topic",
+            "label": "Estimation",
+            "description": "Estimate story points for cards and analyze sprint capacity for planning."
+        },
+        {
+            "id": "off_topic",
+            "type": "topic",
+            "label": "Off Topic",
+            "description": "Redirect conversation to relevant topics when user request goes off-topic"
+        },
+        {
+            "id": "ambiguous_question",
+            "type": "topic",
+            "label": "Ambiguous Question",
+            "description": "Redirect conversation to relevant topics when user request is too ambiguous"
+        }
+    ],
+    "edges": [
+        { "source": "topic_selector", "target": "Card_Management" },
+        { "source": "topic_selector", "target": "Sprint_Management" },
+        { "source": "topic_selector", "target": "Board_Insights" },
+        { "source": "topic_selector", "target": "Team_Assignment" },
+        { "source": "topic_selector", "target": "Estimation" },
+        { "source": "topic_selector", "target": "off_topic" },
+        { "source": "topic_selector", "target": "ambiguous_question" }
+    ]
+}
