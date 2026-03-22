@@ -18,6 +18,9 @@
         "einsteinGptSettings": {
             "enableEinsteinGptPlatform": true
         },
+        "agentPlatformSettings": {
+            "enableAgentPlatform": true
+        },
         "customerDataPlatformSettings": {
             "enableCustomerDataPlatform": true
         },

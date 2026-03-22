@@ -1,0 +1,118 @@
+name: 'Setup Agentforce Scratch Org'
+description: 'Creates an Agentforce-enabled scratch org, deploys both Alex + Agentforce packages, assigns permsets, and returns a login URL'
+
+inputs:
+    org-alias:
+        description: 'Alias for the scratch org'
+        required: true
+    sfdx-auth-url:
+        description: 'DevHub SFDX auth URL'
+        required: true
+    scratch-def:
+        description: 'Which Agentforce scratch def to use'
+        required: false
+        default: 'config/agentforce-project-scratch-def.json'
+    create-board-data:
+        description: 'Whether to create filled kanban board data'
+        required: false
+        default: 'true'
+    duration-days:
+        description: 'Scratch org duration in days'
+        required: false
+        default: '1'
+    deploy-agentforce:
+        description: 'Whether to deploy the Agentforce extension package'
+        required: false
+        default: 'true'
+
+outputs:
+    login-url:
+        description: 'Salesforce frontdoor login URL'
+        value: ${{ steps.login.outputs.url }}
+    username:
+        description: 'Scratch org username'
+        value: ${{ steps.org-info.outputs.username }}
+    instance-url:
+        description: 'Scratch org instance URL'
+        value: ${{ steps.org-info.outputs.instance_url }}
+
+runs:
+    using: 'composite'
+    steps:
+        - name: Install Salesforce CLI
+          shell: bash
+          run: npm install -g @salesforce/cli
+
+        - name: Authenticate DevHub
+          shell: bash
+          run: |
+              echo "${{ inputs.sfdx-auth-url }}" > /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
+              sf org login sfdx-url \
+                --sfdx-url-file /tmp/sfdx_auth_${{ inputs.org-alias }}.txt \
+                --alias devhub \
+                --set-default-dev-hub 2>/dev/null || true
+              rm /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
+
+        - name: Create Agentforce Scratch Org
+          shell: bash
+          run: |
+              echo "Creating Agentforce scratch org with: ${{ inputs.scratch-def }}"
+              sf org create scratch \
+                --definition-file ${{ inputs.scratch-def }} \
+                --alias ${{ inputs.org-alias }} \
+                --duration-days ${{ inputs.duration-days }} \
+                --wait 15
+
+        - name: Deploy Base Package (force-app)
+          shell: bash
+          run: sf project deploy start --source-dir force-app --target-org ${{ inputs.org-alias }} --ignore-conflicts
+
+        - name: Deploy Agentforce Package (force-agentforce)
+          if: inputs.deploy-agentforce == 'true'
+          shell: bash
+          run: sf project deploy start --source-dir force-agentforce --target-org ${{ inputs.org-alias }} --ignore-conflicts
+
+        - name: Assign Permission Sets
+          shell: bash
+          run: |
+              sf org assign permset --name Alex_Admin --target-org ${{ inputs.org-alias }}
+              if [ "${{ inputs.deploy-agentforce }}" = "true" ]; then
+                sf org assign permset --name Alex_Agentforce_User --target-org ${{ inputs.org-alias }} || true
+              fi
+
+        - name: Create Board Data
+          if: inputs.create-board-data == 'true'
+          shell: bash
+          run: sf apex run --file scripts/apex/CreateFilledKanbanBoard.apex --target-org ${{ inputs.org-alias }}
+
+        - name: Get Org Info
+          id: org-info
+          shell: bash
+          run: |
+              ORG_INFO=$(sf org display --target-org ${{ inputs.org-alias }} --json 2>&1 || true)
+              USERNAME=$(echo "$ORG_INFO" | node -e "
+                let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                  try{const j=JSON.parse(d);console.log(j.result.username||'unknown')}
+                  catch(e){console.log('unknown')}
+                });
+              ")
+              INSTANCE=$(echo "$ORG_INFO" | node -e "
+                let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                  try{const j=JSON.parse(d);console.log(j.result.instanceUrl||'unknown')}
+                  catch(e){console.log('unknown')}
+                });
+              ")
+              echo "username=$USERNAME" >> "$GITHUB_OUTPUT"
+              echo "instance_url=$INSTANCE" >> "$GITHUB_OUTPUT"
+
+        - name: Get Login URL
+          id: login
+          shell: bash
+          run: |
+              LOGIN_URL=$(sf org open --target-org ${{ inputs.org-alias }} --json 2>/dev/null | node -e "
+                let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                  const j=JSON.parse(d);
+                  console.log(j.result.url);
+                });
+              ")
+              echo "url=$LOGIN_URL" >> "$GITHUB_OUTPUT"
