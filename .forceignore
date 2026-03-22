@@ -11,7 +11,8 @@
 **/*.tmp
 
 # Test Files and Directories (not part of package)
-**/__tests__/
+**/__tests__/**
+**/__tests__
 **/*.test.js
 **/*.spec.js
 **/*.test.ts
