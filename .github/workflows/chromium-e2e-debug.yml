@@ -90,3 +90,14 @@ jobs:
             create-retro-data: false
             grep: ${{ inputs.grep || '' }}
             debug: ${{ inputs.debug || false }}
+
+    card-files:
+        name: Card File Attachments
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: card-files
+            specs: 'card-files.spec.ts card-panel.spec.ts'
+            create-retro-data: false
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}

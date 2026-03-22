@@ -469,6 +469,38 @@ public with sharing class KanbanBoardController {
     }
 
     // =========================================================================
+    // Card File Attachment Methods
+    // =========================================================================
+
+    /**
+     * Get files attached to a card
+     */
+    @AuraEnabled
+    public static List<CardFileService.CardFileDTO> getCardFiles(Id cardId) {
+        try {
+            return CardFileService.getCardFiles(cardId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading card files: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Delete a file attached to a card
+     */
+    @AuraEnabled
+    public static void deleteCardFile(Id contentDocumentId) {
+        try {
+            CardFileService.deleteFile(contentDocumentId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error deleting file: ' + e.getMessage()
+            );
+        }
+    }
+
+    // =========================================================================
     // Record Linking Methods
     // =========================================================================
 
