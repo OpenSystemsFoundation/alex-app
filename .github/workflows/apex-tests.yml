@@ -110,6 +110,34 @@ jobs:
                     }
 
                     console.log('');
+
+                    // Write to GitHub Step Summary
+                    const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+                    if(summaryFile){
+                      const lines = ['## Apex Test Results',''];
+                      lines.push('| # | Result | Class | Method | Time |');
+                      lines.push('|---|--------|-------|--------|------|');
+                      tests.forEach((t,i)=>{
+                        const cls=(t.ApexClass&&t.ApexClass.Name)||t.FullName||'Unknown';
+                        const method=t.MethodName||'unknown';
+                        const ms=t.RunTime!=null?t.RunTime+'ms':'--';
+                        const icon=t.Outcome==='Pass'?'✅':'❌';
+                        lines.push('| '+(i+1)+' | '+icon+' | '+cls+' | '+method+' | '+ms+' |');
+                      });
+                      lines.push('','**Summary:** '+passed.length+' passed, '+failed.length+' failed, Coverage: '+(summary.orgWideCoverage||'N/A'));
+                      if(failed.length>0){
+                        lines.push('','### Failed Tests','');
+                        failed.forEach((t,i)=>{
+                          const cls=(t.ApexClass&&t.ApexClass.Name)||t.FullName||'Unknown';
+                          lines.push('**'+(i+1)+') '+cls+'.'+t.MethodName+'**');
+                          lines.push('- Message: '+t.Message);
+                          if(t.StackTrace) lines.push('- Stack: `'+t.StackTrace.replace(/\n/g,' → ')+'`');
+                          lines.push('');
+                        });
+                      }
+                      require('fs').appendFileSync(summaryFile, lines.join('\n'));
+                    }
+
                     if(failed.length>0||(summary.outcome&&summary.outcome!=='Passed')){process.exit(1)}
                   "
 

@@ -64,25 +64,6 @@ public with sharing class EpicService {
             }
         }
 
-        // Also count backlog children (no column = no category)
-        for (AggregateResult ar : [
-            SELECT
-                OpenSF__Epic__c epicId,
-                COUNT(Id) cardCount,
-                SUM(OpenSF__StoryPoints__c) totalPoints
-            FROM OpenSF__Card__c
-            WHERE OpenSF__Epic__c IN :epicIds AND OpenSF__Column__c = NULL
-            GROUP BY OpenSF__Epic__c
-        ]) {
-            Id epicId = (Id) ar.get('epicId');
-            Integer count = (Integer) ar.get('cardCount');
-            Decimal points = (Decimal) ar.get('totalPoints');
-
-            EpicStats stats = statsMap.get(epicId);
-            stats.totalCards += count;
-            stats.totalPoints += (points != null ? points : 0);
-        }
-
         // Build summary DTOs
         List<KanbanBoardDTO.EpicSummaryDTO> summaries = new List<KanbanBoardDTO.EpicSummaryDTO>();
         for (OpenSF__Card__c epic : epics) {

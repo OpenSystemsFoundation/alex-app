@@ -31,6 +31,11 @@ public class EpicServiceTest {
         );
 
         // Create child cards linked to the epic
+        // Bypass triggers during bulk setup to avoid excessive DML in test context
+        TriggerHandler.bypass('CardTriggerHandler');
+        TriggerHandler.bypass('ColumnTriggerHandler');
+
+        List<OpenSF__Card__c> childCards = new List<OpenSF__Card__c>();
         String pos = LexoRank.initial();
         for (Integer i = 0; i < 3; i++) {
             pos = LexoRank.between(pos, null);
@@ -43,7 +48,7 @@ public class EpicServiceTest {
             );
             child.OpenSF__Epic__c = epic.Id;
             child.OpenSF__StoryPoints__c = 3;
-            update child;
+            childCards.add(child);
         }
 
         // Create a done child card
@@ -57,7 +62,16 @@ public class EpicServiceTest {
         );
         doneChild.OpenSF__Epic__c = epic.Id;
         doneChild.OpenSF__StoryPoints__c = 5;
-        update doneChild;
+        childCards.add(doneChild);
+
+        update childCards;
+
+        // Manually set the epic count since triggers were bypassed
+        epic.OpenSF__EpicCardsCount__c = 4;
+        update epic;
+
+        TriggerHandler.clearBypass('CardTriggerHandler');
+        TriggerHandler.clearBypass('ColumnTriggerHandler');
 
         // Create a card with no epic
         TestFactory.createCard(todoCol.Id, 'Orphan Card');
