@@ -123,3 +123,13 @@ jobs:
             create-retro-data: false
             grep: ${{ inputs.grep || '' }}
             debug: ${{ inputs.debug || false }}
+
+    card-linking:
+        name: Card Linking
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: card-linking
+            specs: 'card-linking.spec.ts'
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}

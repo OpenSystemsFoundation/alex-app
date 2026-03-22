@@ -757,6 +757,89 @@ public with sharing class KanbanBoardDTO {
     }
 
     /**
+     * Card Link DTO for card-to-card relationships
+     */
+    public class CardLinkDTO {
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public Id sourceCardId;
+        @AuraEnabled
+        public String sourceCardName;
+        @AuraEnabled
+        public String sourceCardSubject;
+        @AuraEnabled
+        public Id targetCardId;
+        @AuraEnabled
+        public String targetCardName;
+        @AuraEnabled
+        public String targetCardSubject;
+        @AuraEnabled
+        public String linkType;
+        @AuraEnabled
+        public String targetCardStatus;
+        @AuraEnabled
+        public String targetCardType;
+
+        public CardLinkDTO(OpenSF__CardLink__c link, Id viewingCardId) {
+            this.Id = link.Id;
+            this.sourceCardId = link.OpenSF__SourceCard__c;
+            this.targetCardId = link.OpenSF__TargetCard__c;
+            this.linkType = link.OpenSF__LinkType__c;
+
+            try {
+                this.sourceCardName = link.OpenSF__SourceCard__r.Name;
+                this.sourceCardSubject = link.OpenSF__SourceCard__r.OpenSF__Subject__c;
+            } catch (Exception e) {
+                this.sourceCardName = null;
+                this.sourceCardSubject = null;
+            }
+            try {
+                this.targetCardName = link.OpenSF__TargetCard__r.Name;
+                this.targetCardSubject = link.OpenSF__TargetCard__r.OpenSF__Subject__c;
+                this.targetCardStatus = link.OpenSF__TargetCard__r.OpenSF__Status__c;
+                this.targetCardType = link.OpenSF__TargetCard__r.OpenSF__CardType__c;
+            } catch (Exception e) {
+                this.targetCardName = null;
+                this.targetCardSubject = null;
+            }
+
+            // If viewing from target side, swap perspective
+            if (viewingCardId == link.OpenSF__TargetCard__c) {
+                this.linkType = KanbanEnums.inverseLinkType(
+                    link.OpenSF__LinkType__c
+                );
+                // Swap: show source card as the "other" card
+                this.targetCardId = link.OpenSF__SourceCard__c;
+                this.targetCardName = this.sourceCardName;
+                this.targetCardSubject = this.sourceCardSubject;
+                try {
+                    this.targetCardStatus = link.OpenSF__SourceCard__r.OpenSF__Status__c;
+                    this.targetCardType = link.OpenSF__SourceCard__r.OpenSF__CardType__c;
+                } catch (Exception e) {
+                    this.targetCardStatus = null;
+                    this.targetCardType = null;
+                }
+                this.sourceCardId = viewingCardId;
+            }
+        }
+    }
+
+    /**
+     * Convert list of card links
+     */
+    public static List<CardLinkDTO> convertCardLinks(
+        List<OpenSF__CardLink__c> links,
+        Id viewingCardId
+    ) {
+        List<CardLinkDTO> result = new List<CardLinkDTO>();
+        for (OpenSF__CardLink__c link : links) {
+            result.add(new CardLinkDTO(link, viewingCardId));
+        }
+        return result;
+    }
+
+    /**
      * Convert list of linked records
      */
     public static List<LinkedRecordDTO> convertLinkedRecords(
