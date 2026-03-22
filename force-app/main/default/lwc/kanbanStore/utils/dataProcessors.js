@@ -11,6 +11,24 @@
 // subsequent enrichCardData calls (e.g. from stateHelpers).
 let _cardTypeIcons = null;
 
+// Cached epic summaries map — set from store subscription, used by enrichCardData
+let _epicSummaryMap = null;
+
+/**
+ * Set the epic summary map (called when epic summaries are loaded).
+ * @param {Array} summaries - Array of EpicSummaryDTO
+ */
+export const setEpicSummaryMap = (summaries) => {
+    if (!summaries || summaries.length === 0) {
+        _epicSummaryMap = null;
+        return;
+    }
+    _epicSummaryMap = new Map();
+    summaries.forEach((s) => {
+        _epicSummaryMap.set(s.id, s);
+    });
+};
+
 /**
  * Set the card-type → icon-name map (called once at board load).
  * @param {Object|null} iconMap - Map of cardType → SLDS icon name
@@ -107,6 +125,23 @@ export const enrichCardData = (card, cardTypeIcons) => {
         });
     }
 
+    // Derive epic progress for epic-type cards
+    let epicProgress = null;
+    if (card.cardType === 'Epic' && _epicSummaryMap) {
+        const summary = _epicSummaryMap.get(card.Id);
+        if (summary) {
+            const pct = summary.progressPercent || 0;
+            epicProgress = {
+                totalCards: summary.totalCards || 0,
+                completedCards: summary.completedCards || 0,
+                totalPoints: summary.totalPoints || 0,
+                completedPoints: summary.completedPoints || 0,
+                progressPercent: `width: ${pct}%`,
+                progressPercentValue: pct
+            };
+        }
+    }
+
     return {
         ...card,
         priorityClass: getPriorityClass(card.priority),
@@ -121,7 +156,13 @@ export const enrichCardData = (card, cardTypeIcons) => {
         communityCardUrl: `/card/${card.Id}`,
         cardTypeIconName: iconName || null,
         customFieldEntries,
-        hasCustomFields: customFieldEntries.length > 0
+        hasCustomFields: customFieldEntries.length > 0,
+        isEpic: card.cardType === 'Epic',
+        epicProgress,
+        hasEpicProgress: epicProgress !== null && epicProgress.totalCards > 0,
+        hasEpic: !!card.epicId,
+        epicLabel: card.epic?.subject || null,
+        epicColor: card.epic?.color || null
     };
 };
 

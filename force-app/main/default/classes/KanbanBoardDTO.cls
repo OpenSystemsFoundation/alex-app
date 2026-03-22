@@ -209,10 +209,90 @@ public with sharing class KanbanBoardDTO {
      */
     public class EpicDTO {
         @AuraEnabled
+        public Id id;
+        @AuraEnabled
         public String subject;
+        @AuraEnabled
+        public String color;
 
         public EpicDTO(OpenSF__Card__c epic) {
+            this.id = epic.Id;
             this.subject = epic.OpenSF__Subject__c;
+            try {
+                this.color = epic.OpenSF__Color__c;
+            } catch (Exception e) {
+                this.color = null;
+            }
+        }
+    }
+
+    /**
+     * Epic summary DTO with progress tracking for board-level epic lists
+     */
+    public class EpicSummaryDTO {
+        @AuraEnabled
+        public Id id;
+        @AuraEnabled
+        public String subject;
+        @AuraEnabled
+        public String color;
+        @AuraEnabled
+        public String status;
+        @AuraEnabled
+        public Integer totalCards;
+        @AuraEnabled
+        public Integer completedCards;
+        @AuraEnabled
+        public Decimal totalPoints;
+        @AuraEnabled
+        public Decimal completedPoints;
+        @AuraEnabled
+        public Integer progressPercent;
+        @AuraEnabled
+        public List<EpicChildCardDTO> childCards;
+    }
+
+    /**
+     * Lightweight DTO for child cards within an epic
+     */
+    public class EpicChildCardDTO {
+        @AuraEnabled
+        public Id id;
+        @AuraEnabled
+        public String name;
+        @AuraEnabled
+        public String subject;
+        @AuraEnabled
+        public String status;
+        @AuraEnabled
+        public String cardType;
+        @AuraEnabled
+        public String priority;
+        @AuraEnabled
+        public String columnCategory;
+        @AuraEnabled
+        public Decimal storyPoints;
+        @AuraEnabled
+        public String assigneeName;
+
+        public EpicChildCardDTO(OpenSF__Card__c card) {
+            this.id = card.Id;
+            this.name = card.Name;
+            this.subject = card.OpenSF__Subject__c;
+            this.status = card.OpenSF__Status__c;
+            this.cardType = card.OpenSF__CardType__c;
+            this.priority = card.OpenSF__Priority__c;
+            this.storyPoints = card.OpenSF__StoryPoints__c;
+            try {
+                this.columnCategory = card.OpenSF__Column__r.OpenSF__Category__c;
+            } catch (Exception e) {
+                this.columnCategory = null;
+            }
+            try {
+                this.assigneeName = card.OpenSF__Assignee__r.Name;
+            } catch (Exception e) {
+                this.assigneeName = null;
+            }
         }
     }
 

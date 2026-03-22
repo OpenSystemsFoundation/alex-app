@@ -27,6 +27,12 @@ export const appStateReducer = (state, action) => {
                 subscriptionStatus: action.payload
             };
 
+        case types.SET_EPIC_SUMMARIES:
+            return {
+                ...state,
+                epicSummaries: action.payload || []
+            };
+
         default:
             return state;
     }

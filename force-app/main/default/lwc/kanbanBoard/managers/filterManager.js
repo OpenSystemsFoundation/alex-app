@@ -65,6 +65,7 @@ export default class FilterManager {
             this.component._boardSearchTerm.trim() ||
             this.component._boardFilterPriority !== 'All' ||
             this.component._boardFilterCardType !== 'All' ||
+            this.component._boardFilterEpic !== 'All' ||
             this.component._boardHideCompleted
         );
     }
@@ -132,9 +133,14 @@ export default class FilterManager {
         const search = this.component._boardSearchTerm.toLowerCase().trim();
         const priority = this.component._boardFilterPriority;
         const cardType = this.component._boardFilterCardType;
+        const epicFilter = this.component._boardFilterEpic;
         const hideCompleted = this.component._boardHideCompleted;
         const hasFilter =
-            search || priority !== 'All' || cardType !== 'All' || hideCompleted;
+            search ||
+            priority !== 'All' ||
+            cardType !== 'All' ||
+            epicFilter !== 'All' ||
+            hideCompleted;
         const activeIdx = this.component._mobileActiveColumnIndex;
 
         // Auto-expire done cards for non-Sprint boards based on retention days
@@ -224,6 +230,15 @@ export default class FilterManager {
                     return false;
                 }
 
+                // Epic filter
+                if (epicFilter !== 'All') {
+                    if (epicFilter === '__none__') {
+                        if (card.epicId) return false;
+                    } else if (card.epicId !== epicFilter) {
+                        return false;
+                    }
+                }
+
                 return true;
             });
 
@@ -271,6 +286,14 @@ export default class FilterManager {
     }
 
     /**
+     * Handles epic filter dropdown change
+     * @param {Event} event - Change event from epic combobox
+     */
+    handleEpicFilter(event) {
+        this.component._boardFilterEpic = event.target.value;
+    }
+
+    /**
      * Toggles the hide-completed filter on/off
      */
     handleToggleHideCompleted() {
@@ -285,6 +308,7 @@ export default class FilterManager {
         this.component._boardSearchTerm = '';
         this.component._boardFilterPriority = 'All';
         this.component._boardFilterCardType = 'All';
+        this.component._boardFilterEpic = 'All';
         this.component._boardHideCompleted = false;
         if (this._searchDebounceTimer) {
             // eslint-disable-next-line @lwc/lwc/no-async-operation

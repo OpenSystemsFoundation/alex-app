@@ -218,6 +218,7 @@ public with sharing class KanbanBoardService {
                     OpenSF__PeerReviewer__r.SmallPhotoUrl,
                     OpenSF__Epic__c,
                     OpenSF__Epic__r.OpenSF__Subject__c,
+                    OpenSF__Epic__r.OpenSF__Color__c,
                     OpenSF__Locked__c,
                     OpenSF__NeedsRefinement__c,
                     OpenSF__DoneDate__c,

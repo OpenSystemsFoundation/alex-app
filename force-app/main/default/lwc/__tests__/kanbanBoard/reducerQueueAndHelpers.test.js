@@ -37,7 +37,8 @@ jest.mock('c/kanbanStore', () => ({
     })),
     clearError: jest.fn(() => ({ type: 'CLEAR_ERROR' })),
     createCardAsync: jest.fn(),
-    deleteCardAsync: jest.fn()
+    deleteCardAsync: jest.fn(),
+    loadEpicSummariesAsync: jest.fn(() => async () => [])
 }));
 
 // Mock the Apex import (default export is a function)

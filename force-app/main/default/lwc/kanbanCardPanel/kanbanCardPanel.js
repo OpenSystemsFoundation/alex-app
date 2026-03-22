@@ -2,6 +2,7 @@ import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { updateCardAsync, deleteCardAsync } from 'c/kanbanStore';
 import getModalSettings from '@salesforce/apex/KanbanBoardController.getModalSettings';
+import getEpicDetail from '@salesforce/apex/KanbanBoardController.getEpicDetail';
 
 const FIELD_METADATA = {
     OpenSF__Subject__c: { fullWidth: true, isTextarea: false },
@@ -102,7 +103,18 @@ const DELETE_CONFIRM_TIMEOUT = 3000;
 
 export default class KanbanCardPanel extends LightningElement {
     /** @type {CardDTO} The card data to display in the panel */
-    @api card;
+    _card;
+    @api
+    get card() {
+        return this._card;
+    }
+    set card(value) {
+        this._card = value;
+        this.epicDetail = null;
+        if (value?.cardType === 'Epic' && value?.Id) {
+            this.loadEpicDetail(value.Id);
+        }
+    }
     /** @type {import('c/kanbanStore').Store} The Redux-style store instance */
     @api store;
     /** @type {boolean} Whether the panel is currently visible */
@@ -112,6 +124,8 @@ export default class KanbanCardPanel extends LightningElement {
     @track formFields = [];
     @track deleteConfirmState = false;
     @track panelWidth = 400;
+    @track epicDetail = null;
+    @track epicDetailLoading = false;
 
     _resizing = false;
     _deleteTimer;
@@ -192,6 +206,59 @@ export default class KanbanCardPanel extends LightningElement {
         return this.formFields.filter(
             (f) => f.fieldName !== 'OpenSF__Description__c'
         );
+    }
+
+    get isEpicCard() {
+        return this.card?.cardType === 'Epic' || this.card?.OpenSF__CardType__c === 'Epic';
+    }
+
+    get hasEpicChildCards() {
+        return (
+            this.epicDetail?.childCards &&
+            this.epicDetail.childCards.length > 0
+        );
+    }
+
+    get epicProgressPercent() {
+        return this.epicDetail?.progressPercent || 0;
+    }
+
+    get epicProgressStyle() {
+        return `width: ${this.epicProgressPercent}%`;
+    }
+
+    get epicProgressLabel() {
+        if (!this.epicDetail) return '';
+        return `${this.epicDetail.completedCards} of ${this.epicDetail.totalCards} cards completed (${this.epicProgressPercent}%)`;
+    }
+
+    get epicPointsLabel() {
+        if (!this.epicDetail) return '';
+        return `${this.epicDetail.completedPoints || 0} / ${this.epicDetail.totalPoints || 0} points`;
+    }
+
+    async loadEpicDetail(epicId) {
+        this.epicDetailLoading = true;
+        try {
+            this.epicDetail = await getEpicDetail({ epicId });
+        } catch (error) {
+            // eslint-disable-next-line no-console
+            console.warn('Failed to load epic detail:', error);
+            this.epicDetail = null;
+        } finally {
+            this.epicDetailLoading = false;
+        }
+    }
+
+    handleChildCardClick(event) {
+        const cardId = event.currentTarget.dataset.cardId;
+        if (cardId) {
+            this.dispatchEvent(
+                new CustomEvent('navigatetocard', {
+                    detail: { cardId }
+                })
+            );
+        }
     }
 
     get cardType() {

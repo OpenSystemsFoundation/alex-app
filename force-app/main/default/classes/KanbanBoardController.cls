@@ -280,6 +280,40 @@ public with sharing class KanbanBoardController {
     }
 
     // =========================================================================
+    // Epic Management Methods
+    // =========================================================================
+
+    /**
+     * Get epic summaries with progress data for a board
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.EpicSummaryDTO> getEpicSummaries(
+        Id boardId
+    ) {
+        try {
+            return EpicService.getEpicSummaries(boardId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading epic summaries: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Get detailed epic data with child cards list
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.EpicSummaryDTO getEpicDetail(Id epicId) {
+        try {
+            return EpicService.getEpicDetail(epicId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading epic detail: ' + e.getMessage()
+            );
+        }
+    }
+
+    // =========================================================================
     // Sprint Management Methods
     // =========================================================================
 

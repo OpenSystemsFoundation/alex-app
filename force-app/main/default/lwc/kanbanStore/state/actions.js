@@ -356,3 +356,12 @@ export const toggleBacklogCardSelection = (cardId) => ({
     type: types.TOGGLE_BACKLOG_CARD_SELECTION,
     payload: { cardId }
 });
+
+// ===================================================================
+// Epic Action Creators
+// ===================================================================
+
+export const setEpicSummaries = (epicSummaries) => ({
+    type: types.SET_EPIC_SUMMARIES,
+    payload: epicSummaries
+});
