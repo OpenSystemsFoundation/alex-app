@@ -26,6 +26,16 @@ on:
                 required: false
                 type: boolean
                 default: false
+            persistent:
+                description: 'Reuse scratch org across runs (true) or ephemeral (false)'
+                required: false
+                type: boolean
+                default: false
+            cache-key:
+                description: 'Cache key prefix for persistent orgs (e.g. branch ref)'
+                required: false
+                type: string
+                default: ''
 
 jobs:
     run:
@@ -53,6 +63,9 @@ jobs:
                   org-alias: e2e-${{ inputs.suite-name }}
                   sfdx-auth-url: ${{ secrets.SFDX_AUTH_URL }}
                   create-retro-data: ${{ inputs.create-retro-data }}
+                  persistent: ${{ inputs.persistent }}
+                  cache-key: ${{ inputs.cache-key }}
+                  duration-days: ${{ inputs.persistent && '7' || '1' }}
 
             - name: Run Playwright Tests
               id: playwright
@@ -112,7 +125,7 @@ jobs:
                   retention-days: 7
 
             - name: Delete Scratch Org
-              if: always()
+              if: always() && inputs.persistent != true
               run: sf org delete scratch --target-org e2e-${{ inputs.suite-name }} --no-prompt || true
 
             - name: Fail if tests failed

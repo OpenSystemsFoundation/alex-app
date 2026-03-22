@@ -4,6 +4,10 @@ name: Chromium E2E Debug
 # Add suites below as you develop new features, then promote
 # passing tests to e2e-tests.yml (PR-to-main) when stable.
 #
+# Scratch orgs are PERSISTENT — cached per branch+suite and reused
+# across pushes. Only source is redeployed on subsequent runs.
+# Orgs are cleaned up by the e2e-cleanup.yml workflow on PR close.
+#
 # Usage:
 #   1. Create specs in e2e/specs/ for the feature you're building
 #   2. Add a job below that references those specs via e2e-suite.yml
@@ -44,7 +48,7 @@ concurrency:
 jobs:
     # ---------------------------------------------------------------
     # Add feature-specific suites here during development.
-    # Each suite gets its own scratch org for full isolation.
+    # Each suite reuses a persistent scratch org cached per branch.
     #
     # Example:
     #
@@ -56,6 +60,8 @@ jobs:
     #           suite-name: my-feature
     #           specs: 'my-feature.spec.ts'
     #           create-retro-data: false
+    #           persistent: true
+    #           cache-key: ${{ github.ref_name }}
     #           grep: ${{ inputs.grep || '' }}
     #           debug: ${{ inputs.debug || false }}
     #
@@ -68,6 +74,8 @@ jobs:
     #       with:
     #           suite-name: my-feature-sync
     #           specs: 'my-feature-sync.spec.ts'
+    #           persistent: true
+    #           cache-key: ${{ github.ref_name }}
     #           grep: ${{ inputs.grep || '' }}
     #           debug: ${{ inputs.debug || false }}
     # ---------------------------------------------------------------

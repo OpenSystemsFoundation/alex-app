@@ -28,6 +28,8 @@ jobs:
             suite-name: board-core
             specs: 'kanban-board.spec.ts board-filters.spec.ts card-panel.spec.ts board-toolbar.spec.ts'
             create-retro-data: false
+            persistent: true
+            cache-key: ${{ github.head_ref || github.ref_name }}
 
     backlog-sprint:
         name: Backlog & Sprint
@@ -37,6 +39,8 @@ jobs:
             suite-name: backlog-sprint
             specs: 'backlog-view.spec.ts sprint-management.spec.ts'
             create-retro-data: false
+            persistent: true
+            cache-key: ${{ github.head_ref || github.ref_name }}
 
     admin:
         name: Admin Panel
@@ -46,6 +50,8 @@ jobs:
             suite-name: admin
             specs: 'admin-management.spec.ts'
             create-retro-data: false
+            persistent: true
+            cache-key: ${{ github.head_ref || github.ref_name }}
 
     retro-analytics:
         name: Retro & Analytics
@@ -55,6 +61,8 @@ jobs:
             suite-name: retro-analytics
             specs: 'analytics.spec.ts retrospective.spec.ts'
             create-retro-data: true
+            persistent: true
+            cache-key: ${{ github.head_ref || github.ref_name }}
 
     planning-poker:
         name: Planning Poker
@@ -64,6 +72,8 @@ jobs:
             suite-name: planning-poker
             specs: 'planning-poker.spec.ts'
             create-retro-data: false
+            persistent: true
+            cache-key: ${{ github.head_ref || github.ref_name }}
 
     unhappy-paths:
         name: Unhappy Paths
@@ -73,6 +83,8 @@ jobs:
             suite-name: unhappy-paths
             specs: 'unhappy-paths.spec.ts'
             create-retro-data: true
+            persistent: true
+            cache-key: ${{ github.head_ref || github.ref_name }}
 
     multi-user:
         name: Multi-User Sync
@@ -81,6 +93,8 @@ jobs:
         with:
             suite-name: multi-user
             specs: 'card-sync.spec.ts drag-drop-sync.spec.ts'
+            persistent: true
+            cache-key: ${{ github.head_ref || github.ref_name }}
 
     collect-results:
         name: Collect Results
