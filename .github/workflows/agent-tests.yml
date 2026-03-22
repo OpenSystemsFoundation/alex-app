@@ -62,7 +62,22 @@ jobs:
                   "
 
             - name: Deploy Base Package
-              run: sf project deploy start --source-dir force-app --target-org ci-agent-test --ignore-conflicts
+              run: |
+                  sf project deploy start --source-dir force-app --target-org ci-agent-test --ignore-conflicts --json 2>&1 | tee /tmp/deploy-base.json || true
+                  # Check for deploy failure and extract error details
+                  node -e "
+                    const raw = require('fs').readFileSync('/tmp/deploy-base.json', 'utf8');
+                    const idx = raw.indexOf('{');
+                    if (idx < 0) { console.log(raw); process.exit(1); }
+                    const j = JSON.parse(raw.substring(idx));
+                    if (j.status !== 0) {
+                      console.error('Deploy failed:', j.message || 'unknown');
+                      const files = (j.result && j.result.details && j.result.details.componentFailures) || [];
+                      files.forEach(f => console.error('  -', f.fullName, ':', f.problem));
+                      process.exit(1);
+                    }
+                    console.log('Deploy succeeded:', (j.result && j.result.numberComponentsDeployed) || '?', 'components');
+                  "
 
             - name: Deploy Agentforce Package
               run: sf project deploy start --source-dir force-agentforce --target-org ci-agent-test --ignore-conflicts
