@@ -316,10 +316,11 @@
                                                     class="slds-truncate"
                                                 >
                                                     <a
-                                                        href={file.downloadUrl}
-                                                        target="_blank"
+                                                        href="#"
                                                         class="slds-text-link"
-                                                        title={file.title}
+                                                        title="Preview file"
+                                                        data-file-id={file.contentDocumentId}
+                                                        onclick={handlePreviewFile}
                                                         >{file.title}.{file.fileExtension}</a
                                                     >
                                                     <p
@@ -329,14 +330,27 @@
                                                     </p>
                                                 </div>
                                             </div>
-                                            <lightning-button-icon
-                                                icon-name="utility:delete"
-                                                alternative-text="Delete file"
-                                                variant="bare"
-                                                size="small"
-                                                data-file-id={file.contentDocumentId}
-                                                onclick={handleDeleteFile}
-                                            ></lightning-button-icon>
+                                            <div
+                                                class="slds-grid slds-grid_vertical-align-center"
+                                            >
+                                                <lightning-button-icon
+                                                    icon-name="utility:download"
+                                                    alternative-text="Download file"
+                                                    variant="bare"
+                                                    size="small"
+                                                    data-url={file.downloadUrl}
+                                                    onclick={handleDownloadFile}
+                                                    class="slds-var-m-right_xx-small"
+                                                ></lightning-button-icon>
+                                                <lightning-button-icon
+                                                    icon-name="utility:delete"
+                                                    alternative-text="Delete file"
+                                                    variant="bare"
+                                                    size="small"
+                                                    data-file-id={file.contentDocumentId}
+                                                    onclick={handleDeleteFile}
+                                                ></lightning-button-icon>
+                                            </div>
                                         </div>
                                     </li>
                                 </template>
