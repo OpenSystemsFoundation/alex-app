@@ -8,6 +8,9 @@ const SF_TIMEOUT = 45_000;
  *
  * Tests the Team__c and TeamMember__c data layer via Apex execution
  * to validate the LeSS multi-team foundation deployed to the scratch org.
+ *
+ * NOTE: Anonymous Apex in a namespaced org requires the OpenSF. prefix
+ * on all class references (e.g., OpenSF.TeamService, OpenSF.KanbanBoardDTO).
  */
 test.describe('Team Management', () => {
     test.beforeEach(async () => {
@@ -21,7 +24,7 @@ test.describe('Team Management', () => {
     }) => {
         const teamName = `E2E-Team-${Date.now()}`;
         const output = sfApexRun(`
-KanbanBoardDTO.TeamDTO team = TeamService.createTeam(
+OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'E2E test team description',
     '#FF5733'
@@ -54,13 +57,13 @@ System.debug('E2E_TEAM_COLOR:' + team.avatarColor);
     }) => {
         const teamName = `E2E-Member-Team-${Date.now()}`;
         const output = sfApexRun(`
-KanbanBoardDTO.TeamDTO team = TeamService.createTeam(
+OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'For member tests',
     '#3366FF'
 );
 Id userId = UserInfo.getUserId();
-KanbanBoardDTO.TeamMemberDTO member = TeamService.addTeamMember(
+OpenSF.KanbanBoardDTO.TeamMemberDTO member = OpenSF.TeamService.addTeamMember(
     team.Id,
     userId,
     'Scrum Master',
@@ -83,16 +86,16 @@ System.debug('E2E_MEMBER_STATUS:' + member.status);
     }) => {
         const teamName = `E2E-Dup-Team-${Date.now()}`;
         const output = sfApexRun(`
-KanbanBoardDTO.TeamDTO team = TeamService.createTeam(
+OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'For duplicate test',
     '#33FF57'
 );
 Id userId = UserInfo.getUserId();
-TeamService.addTeamMember(team.Id, userId, 'Developer', 50);
+OpenSF.TeamService.addTeamMember(team.Id, userId, 'Developer', 50);
 
 try {
-    TeamService.addTeamMember(team.Id, userId, 'QA', 50);
+    OpenSF.TeamService.addTeamMember(team.Id, userId, 'QA', 50);
     System.debug('E2E_DUPLICATE:NOT_CAUGHT');
 } catch (AuraHandledException e) {
     System.debug('E2E_DUPLICATE:CAUGHT');
@@ -109,20 +112,20 @@ try {
     }) => {
         const teamName = `E2E-Remove-Team-${Date.now()}`;
         const output = sfApexRun(`
-KanbanBoardDTO.TeamDTO team = TeamService.createTeam(
+OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'For removal test',
     '#5733FF'
 );
 Id userId = UserInfo.getUserId();
-KanbanBoardDTO.TeamMemberDTO member = TeamService.addTeamMember(
+OpenSF.KanbanBoardDTO.TeamMemberDTO member = OpenSF.TeamService.addTeamMember(
     team.Id,
     userId,
     'Developer',
     100
 );
 
-TeamService.removeTeamMember(member.Id);
+OpenSF.TeamService.removeTeamMember(member.Id);
 
 OpenSF__TeamMember__c updated = [
     SELECT OpenSF__Status__c
@@ -140,7 +143,7 @@ System.debug('E2E_REMOVED_STATUS:' + updated.OpenSF__Status__c);
     }) => {
         const teamName = `E2E-Update-Team-${Date.now()}`;
         const output = sfApexRun(`
-KanbanBoardDTO.TeamDTO team = TeamService.createTeam(
+OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'Original description',
     '#AABBCC'
@@ -151,7 +154,7 @@ updates.put('name', '${teamName}-Updated');
 updates.put('description', 'Updated description');
 updates.put('defaultVelocity', 42);
 
-KanbanBoardDTO.TeamDTO updated = TeamService.updateTeam(team.Id, updates);
+OpenSF.KanbanBoardDTO.TeamDTO updated = OpenSF.TeamService.updateTeam(team.Id, updates);
 System.debug('E2E_UPDATED_NAME:' + updated.Name);
 System.debug('E2E_UPDATED_DESC:' + updated.description);
 System.debug('E2E_UPDATED_VEL:' + updated.defaultVelocity);
@@ -167,12 +170,12 @@ System.debug('E2E_UPDATED_VEL:' + updated.defaultVelocity);
     }) => {
         const teamName = `E2E-Deactivate-Team-${Date.now()}`;
         const output = sfApexRun(`
-KanbanBoardDTO.TeamDTO team = TeamService.createTeam(
+OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'To be deactivated',
     '#DDDDDD'
 );
-TeamService.deactivateTeam(team.Id);
+OpenSF.TeamService.deactivateTeam(team.Id);
 
 OpenSF__Team__c result = [
     SELECT OpenSF__Status__c
@@ -190,15 +193,15 @@ System.debug('E2E_DEACTIVATED_STATUS:' + result.OpenSF__Status__c);
     }) => {
         const teamName = `E2E-WithMembers-${Date.now()}`;
         const output = sfApexRun(`
-KanbanBoardDTO.TeamDTO team = TeamService.createTeam(
+OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'Team with members',
     '#EEEEFF'
 );
 Id userId = UserInfo.getUserId();
-TeamService.addTeamMember(team.Id, userId, 'Tech Lead', 100);
+OpenSF.TeamService.addTeamMember(team.Id, userId, 'Tech Lead', 100);
 
-KanbanBoardDTO.TeamDTO result = TeamService.getTeamWithMembers(team.Id);
+OpenSF.KanbanBoardDTO.TeamDTO result = OpenSF.TeamService.getTeamWithMembers(team.Id);
 System.debug('E2E_TEAM_NAME:' + result.Name);
 System.debug('E2E_MEMBER_COUNT:' + result.members.size());
 System.debug('E2E_MEMBER_ROLE:' + result.members[0].role);
@@ -214,14 +217,14 @@ System.debug('E2E_MEMBER_ROLE:' + result.members[0].role);
     }) => {
         const ts = Date.now();
         const output = sfApexRun(`
-TeamService.createTeam('E2E-Active-${ts}', 'Active team', '#111111');
-KanbanBoardDTO.TeamDTO inactive = TeamService.createTeam('E2E-Inactive-${ts}', 'Inactive team', '#222222');
-TeamService.deactivateTeam(inactive.Id);
+OpenSF.TeamService.createTeam('E2E-Active-${ts}', 'Active team', '#111111');
+OpenSF.KanbanBoardDTO.TeamDTO inactive = OpenSF.TeamService.createTeam('E2E-Inactive-${ts}', 'Inactive team', '#222222');
+OpenSF.TeamService.deactivateTeam(inactive.Id);
 
-List<KanbanBoardDTO.TeamDTO> teams = TeamService.getActiveTeams();
+List<OpenSF.KanbanBoardDTO.TeamDTO> teams = OpenSF.TeamService.getActiveTeams();
 Boolean foundActive = false;
 Boolean foundInactive = false;
-for (KanbanBoardDTO.TeamDTO t : teams) {
+for (OpenSF.KanbanBoardDTO.TeamDTO t : teams) {
     if (t.Name == 'E2E-Active-${ts}') foundActive = true;
     if (t.Name == 'E2E-Inactive-${ts}') foundInactive = true;
 }
@@ -239,7 +242,7 @@ System.debug('E2E_FOUND_INACTIVE:' + foundInactive);
     }) => {
         const teamName = `E2E-BoardTeam-${Date.now()}`;
         const output = sfApexRun(`
-KanbanBoardDTO.TeamDTO team = TeamService.createTeam(
+OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'Board association test',
     '#FFAA00'
@@ -271,7 +274,7 @@ update board;
         const teamName = `E2E-CardTeam-${Date.now()}`;
         const cardId = boardData.cards[0].Id;
         const output = sfApexRun(`
-KanbanBoardDTO.TeamDTO team = TeamService.createTeam(
+OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'Card assignment test',
     '#00AAFF'
@@ -297,18 +300,18 @@ update card;
 
     test('KanbanEnums team values are correct', async ({ boardPage }) => {
         const output = sfApexRun(`
-System.debug('E2E_TS_ACTIVE:' + KanbanEnums.teamStatusValue(KanbanEnums.TeamStatus.ACTIVE));
-System.debug('E2E_TS_INACTIVE:' + KanbanEnums.teamStatusValue(KanbanEnums.TeamStatus.INACTIVE));
-System.debug('E2E_TS_ARCHIVED:' + KanbanEnums.teamStatusValue(KanbanEnums.TeamStatus.ARCHIVED));
-System.debug('E2E_MR_DEV:' + KanbanEnums.teamMemberRoleValue(KanbanEnums.TeamMemberRole.DEVELOPER));
-System.debug('E2E_MR_SM:' + KanbanEnums.teamMemberRoleValue(KanbanEnums.TeamMemberRole.SCRUM_MASTER));
-System.debug('E2E_MR_PO:' + KanbanEnums.teamMemberRoleValue(KanbanEnums.TeamMemberRole.PRODUCT_OWNER));
-System.debug('E2E_MR_TL:' + KanbanEnums.teamMemberRoleValue(KanbanEnums.TeamMemberRole.TECH_LEAD));
-System.debug('E2E_MR_QA:' + KanbanEnums.teamMemberRoleValue(KanbanEnums.TeamMemberRole.QA));
-System.debug('E2E_MR_DES:' + KanbanEnums.teamMemberRoleValue(KanbanEnums.TeamMemberRole.DESIGNER));
-System.debug('E2E_MS_ACTIVE:' + KanbanEnums.teamMemberStatusValue(KanbanEnums.TeamMemberStatus.ACTIVE));
-System.debug('E2E_MS_LEAVE:' + KanbanEnums.teamMemberStatusValue(KanbanEnums.TeamMemberStatus.ON_LEAVE));
-System.debug('E2E_MS_INACTIVE:' + KanbanEnums.teamMemberStatusValue(KanbanEnums.TeamMemberStatus.INACTIVE));
+System.debug('E2E_TS_ACTIVE:' + OpenSF.KanbanEnums.teamStatusValue(OpenSF.KanbanEnums.TeamStatus.ACTIVE));
+System.debug('E2E_TS_INACTIVE:' + OpenSF.KanbanEnums.teamStatusValue(OpenSF.KanbanEnums.TeamStatus.INACTIVE));
+System.debug('E2E_TS_ARCHIVED:' + OpenSF.KanbanEnums.teamStatusValue(OpenSF.KanbanEnums.TeamStatus.ARCHIVED));
+System.debug('E2E_MR_DEV:' + OpenSF.KanbanEnums.teamMemberRoleValue(OpenSF.KanbanEnums.TeamMemberRole.DEVELOPER));
+System.debug('E2E_MR_SM:' + OpenSF.KanbanEnums.teamMemberRoleValue(OpenSF.KanbanEnums.TeamMemberRole.SCRUM_MASTER));
+System.debug('E2E_MR_PO:' + OpenSF.KanbanEnums.teamMemberRoleValue(OpenSF.KanbanEnums.TeamMemberRole.PRODUCT_OWNER));
+System.debug('E2E_MR_TL:' + OpenSF.KanbanEnums.teamMemberRoleValue(OpenSF.KanbanEnums.TeamMemberRole.TECH_LEAD));
+System.debug('E2E_MR_QA:' + OpenSF.KanbanEnums.teamMemberRoleValue(OpenSF.KanbanEnums.TeamMemberRole.QA));
+System.debug('E2E_MR_DES:' + OpenSF.KanbanEnums.teamMemberRoleValue(OpenSF.KanbanEnums.TeamMemberRole.DESIGNER));
+System.debug('E2E_MS_ACTIVE:' + OpenSF.KanbanEnums.teamMemberStatusValue(OpenSF.KanbanEnums.TeamMemberStatus.ACTIVE));
+System.debug('E2E_MS_LEAVE:' + OpenSF.KanbanEnums.teamMemberStatusValue(OpenSF.KanbanEnums.TeamMemberStatus.ON_LEAVE));
+System.debug('E2E_MS_INACTIVE:' + OpenSF.KanbanEnums.teamMemberStatusValue(OpenSF.KanbanEnums.TeamMemberStatus.INACTIVE));
 `);
 
         expect(output).toContain('E2E_TS_ACTIVE:Active');
@@ -330,29 +333,29 @@ System.debug('E2E_MS_INACTIVE:' + KanbanEnums.teamMemberStatusValue(KanbanEnums.
     }) => {
         const teamName = `E2E-ActiveMembers-${Date.now()}`;
         const output = sfApexRun(`
-KanbanBoardDTO.TeamDTO team = TeamService.createTeam(
+OpenSF.KanbanBoardDTO.TeamDTO team = OpenSF.TeamService.createTeam(
     '${teamName}',
     'Active member filter test',
     '#AABB00'
 );
 Id userId = UserInfo.getUserId();
-KanbanBoardDTO.TeamMemberDTO member = TeamService.addTeamMember(
+OpenSF.KanbanBoardDTO.TeamMemberDTO member = OpenSF.TeamService.addTeamMember(
     team.Id, userId, 'Developer', 100
 );
 
 // Check active count before removal
-List<OpenSF__TeamMember__c> activeBefore = TeamSelector.getActiveTeamMembers(team.Id);
+List<OpenSF__TeamMember__c> activeBefore = OpenSF.TeamSelector.getActiveTeamMembers(team.Id);
 System.debug('E2E_ACTIVE_BEFORE:' + activeBefore.size());
 
 // Soft-delete the member
-TeamService.removeTeamMember(member.Id);
+OpenSF.TeamService.removeTeamMember(member.Id);
 
 // Check active count after removal
-List<OpenSF__TeamMember__c> activeAfter = TeamSelector.getActiveTeamMembers(team.Id);
+List<OpenSF__TeamMember__c> activeAfter = OpenSF.TeamSelector.getActiveTeamMembers(team.Id);
 System.debug('E2E_ACTIVE_AFTER:' + activeAfter.size());
 
 // All members (including inactive)
-List<OpenSF__TeamMember__c> allMembers = TeamSelector.getTeamMembers(team.Id);
+List<OpenSF__TeamMember__c> allMembers = OpenSF.TeamSelector.getTeamMembers(team.Id);
 System.debug('E2E_ALL_MEMBERS:' + allMembers.size());
 `);
 
