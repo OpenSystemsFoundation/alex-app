@@ -209,13 +209,15 @@ export default class KanbanCardPanel extends LightningElement {
     }
 
     get isEpicCard() {
-        return this.card?.cardType === 'Epic' || this.card?.OpenSF__CardType__c === 'Epic';
+        return (
+            this.card?.cardType === 'Epic' ||
+            this.card?.OpenSF__CardType__c === 'Epic'
+        );
     }
 
     get hasEpicChildCards() {
         return (
-            this.epicDetail?.childCards &&
-            this.epicDetail.childCards.length > 0
+            this.epicDetail?.childCards && this.epicDetail.childCards.length > 0
         );
     }
 

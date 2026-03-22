@@ -80,11 +80,7 @@ public class EpicServiceTest {
             summary.subject,
             'Epic subject should match'
         );
-        System.assertEquals(
-            4,
-            summary.totalCards,
-            'Should have 4 child cards'
-        );
+        System.assertEquals(4, summary.totalCards, 'Should have 4 child cards');
         System.assertEquals(
             1,
             summary.completedCards,
@@ -133,12 +129,12 @@ public class EpicServiceTest {
         );
         Test.stopTest();
 
-        System.assertEquals('Test Epic', detail.subject, 'Subject should match');
         System.assertEquals(
-            4,
-            detail.totalCards,
-            'Should have 4 child cards'
+            'Test Epic',
+            detail.subject,
+            'Subject should match'
         );
+        System.assertEquals(4, detail.totalCards, 'Should have 4 child cards');
         System.assertNotEquals(
             null,
             detail.childCards,
@@ -153,7 +149,11 @@ public class EpicServiceTest {
         // Verify child card DTO fields
         KanbanBoardDTO.EpicChildCardDTO firstChild = detail.childCards[0];
         System.assertNotEquals(null, firstChild.id, 'Child ID should exist');
-        System.assertNotEquals(null, firstChild.name, 'Child name should exist');
+        System.assertNotEquals(
+            null,
+            firstChild.name,
+            'Child name should exist'
+        );
     }
 
     @isTest
@@ -188,7 +188,11 @@ public class EpicServiceTest {
         );
         Test.stopTest();
 
-        System.assertEquals(1, summaries.size(), 'Controller should return epics');
+        System.assertEquals(
+            1,
+            summaries.size(),
+            'Controller should return epics'
+        );
     }
 
     @isTest
@@ -230,9 +234,7 @@ public class EpicServiceTest {
         OpenSF__Card__c child = [
             SELECT Id, OpenSF__Epic__c
             FROM OpenSF__Card__c
-            WHERE
-                OpenSF__Epic__c = :epic.Id
-                AND OpenSF__CardType__c = 'Story'
+            WHERE OpenSF__Epic__c = :epic.Id AND OpenSF__CardType__c = 'Story'
             LIMIT 1
         ];
 
@@ -273,11 +275,7 @@ public class EpicServiceTest {
         Test.stopTest();
 
         System.assertEquals(1, epics.size(), 'Should find 1 epic');
-        System.assertEquals(
-            4,
-            children.size(),
-            'Should find 4 child cards'
-        );
+        System.assertEquals(4, children.size(), 'Should find 4 child cards');
     }
 
     @isTest
@@ -300,10 +298,6 @@ public class EpicServiceTest {
         Test.stopTest();
 
         System.assertEquals(epic.Id, dto.id, 'ID should match');
-        System.assertEquals(
-            'Test Epic',
-            dto.subject,
-            'Subject should match'
-        );
+        System.assertEquals('Test Epic', dto.subject, 'Subject should match');
     }
 }

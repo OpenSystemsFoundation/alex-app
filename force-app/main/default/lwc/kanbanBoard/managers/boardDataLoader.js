@@ -41,9 +41,7 @@ export default class BoardDataLoader {
 
             // Load epic summaries in parallel (non-blocking)
             store
-                .dispatch(
-                    loadEpicSummariesAsync(this.component._recordId)
-                )
+                .dispatch(loadEpicSummariesAsync(this.component._recordId))
                 .catch(() => {
                     /* non-critical */
                 });

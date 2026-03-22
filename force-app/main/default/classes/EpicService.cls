@@ -38,9 +38,7 @@ public with sharing class EpicService {
                 SUM(OpenSF__StoryPoints__c) totalPoints
             FROM OpenSF__Card__c
             WHERE OpenSF__Epic__c IN :epicIds
-            GROUP BY
-                OpenSF__Epic__c,
-                OpenSF__Column__r.OpenSF__Category__c
+            GROUP BY OpenSF__Epic__c, OpenSF__Column__r.OpenSF__Category__c
         ]) {
             Id epicId = (Id) ar.get('epicId');
             String category = (String) ar.get('category');
@@ -68,12 +66,12 @@ public with sharing class EpicService {
 
         // Also count backlog children (no column = no category)
         for (AggregateResult ar : [
-            SELECT OpenSF__Epic__c epicId, COUNT(Id) cardCount,
+            SELECT
+                OpenSF__Epic__c epicId,
+                COUNT(Id) cardCount,
                 SUM(OpenSF__StoryPoints__c) totalPoints
             FROM OpenSF__Card__c
-            WHERE
-                OpenSF__Epic__c IN :epicIds
-                AND OpenSF__Column__c = NULL
+            WHERE OpenSF__Epic__c IN :epicIds AND OpenSF__Column__c = NULL
             GROUP BY OpenSF__Epic__c
         ]) {
             Id epicId = (Id) ar.get('epicId');
@@ -101,9 +99,10 @@ public with sharing class EpicService {
             summary.completedPoints = stats.completedPoints;
             summary.progressPercent = stats.totalCards > 0
                 ? Math.round(
-                      ((Decimal) stats.completedCards / stats.totalCards) * 100
-                  )
-                    .intValue()
+                          ((Decimal) stats.completedCards / stats.totalCards) *
+                          100
+                      )
+                      .intValue()
                 : 0;
 
             summaries.add(summary);
@@ -167,9 +166,10 @@ public with sharing class EpicService {
 
         summary.progressPercent = summary.totalCards > 0
             ? Math.round(
-                  ((Decimal) summary.completedCards / summary.totalCards) * 100
-              )
-                .intValue()
+                      ((Decimal) summary.completedCards / summary.totalCards) *
+                      100
+                  )
+                  .intValue()
             : 0;
 
         return summary;

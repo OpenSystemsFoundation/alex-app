@@ -295,7 +295,8 @@ public with sharing class KanbanBoardSelector {
             FROM OpenSF__Card__c
             WHERE
                 (OpenSF__Column__r.OpenSF__Board__c = :boardId
-                OR (OpenSF__Board__c = :boardId AND OpenSF__Column__c = NULL))
+                OR (OpenSF__Board__c = :boardId
+                AND OpenSF__Column__c = NULL))
                 AND OpenSF__CardType__c = 'Epic'
             WITH USER_MODE
             ORDER BY OpenSF__Subject__c ASC NULLS LAST

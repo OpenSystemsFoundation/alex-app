@@ -289,7 +289,12 @@ describe('dataProcessors', () => {
 
         it('should not include epicProgress for non-epic cards', () => {
             setEpicSummaryMap([
-                { id: 'epic1', totalCards: 10, completedCards: 3, progressPercent: 30 }
+                {
+                    id: 'epic1',
+                    totalCards: 10,
+                    completedCards: 3,
+                    progressPercent: 30
+                }
             ]);
 
             const card = enrichCardData({
