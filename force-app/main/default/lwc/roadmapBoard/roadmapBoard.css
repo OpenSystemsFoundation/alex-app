@@ -203,7 +203,9 @@
     border-radius: 6px;
     padding: 0.75rem;
     cursor: grab;
-    transition: box-shadow 0.15s ease, transform 0.15s ease;
+    transition:
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
     position: relative;
 }
 

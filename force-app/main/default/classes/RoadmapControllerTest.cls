@@ -389,7 +389,11 @@ private class RoadmapControllerTest {
             FROM OpenSF__EpicDependency__c
             WHERE Id = :dep.Id
         ];
-        System.assertEquals(0, remaining.size(), 'Dependency should be deleted');
+        System.assertEquals(
+            0,
+            remaining.size(),
+            'Dependency should be deleted'
+        );
     }
 
     @isTest

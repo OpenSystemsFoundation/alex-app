@@ -352,9 +352,7 @@ public with sharing class RoadmapService {
     /**
      * Get timeline data: roadmap items with dependencies for Gantt view
      */
-    public static RoadmapController.TimelineData getTimelineData(
-        Id boardId
-    ) {
+    public static RoadmapController.TimelineData getTimelineData(Id boardId) {
         RoadmapController.TimelineData data = new RoadmapController.TimelineData();
         data.items = getRoadmapItems(boardId);
         data.dependencies = getDependencies(boardId);

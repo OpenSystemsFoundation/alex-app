@@ -34,7 +34,9 @@
                             alternative-text="Previous Year"
                         ></lightning-icon>
                     </button>
-                    <span class="year-label">{selectedYear}</span>
+                    <span class="year-label"
+                        >{selectedYear}</span
+                    >
                     <button
                         class="slds-button slds-button_icon slds-button_icon-border"
                         title="Next Year"
@@ -64,7 +66,10 @@
         <!-- Loading State -->
         <template lwc:if={isLoading}>
             <div class="roadmap-loading">
-                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                <lightning-spinner
+                    alternative-text="Loading"
+                    size="medium"
+                ></lightning-spinner>
             </div>
         </template>
 
@@ -73,12 +78,25 @@
             <!-- Horizon View: Now / Next / Future -->
             <template lwc:if={isHorizonView}>
                 <div class="roadmap-lanes">
-                    <template for:each={horizonLanes} for:item="lane">
-                        <div key={lane.key} class="roadmap-lane">
+                    <template
+                        for:each={horizonLanes}
+                        for:item="lane"
+                    >
+                        <div
+                            key={lane.key}
+                            class="roadmap-lane"
+                        >
                             <div class={lane.headerClass}>
-                                <h2 class="lane-title">{lane.label}</h2>
-                                <span class="lane-count">{lane.count}</span>
-                                <span class="lane-description">{lane.description}</span>
+                                <h2 class="lane-title">
+                                    {lane.label}
+                                </h2>
+                                <span class="lane-count"
+                                    >{lane.count}</span
+                                >
+                                <span
+                                    class="lane-description"
+                                    >{lane.description}</span
+                                >
                             </div>
                             <div
                                 class="lane-items"
@@ -86,13 +104,27 @@
                                 ondrop={handleDrop}
                                 ondragover={handleDragOver}
                             >
-                                <template lwc:if={lane.isEmpty}>
+                                <template
+                                    lwc:if={lane.isEmpty}
+                                >
                                     <div class="lane-empty">
-                                        <p>No epics in {lane.label}</p>
-                                        <p class="lane-empty-hint">Drag epics here or click Add Epic</p>
+                                        <p>
+                                            No epics in
+                                            {lane.label}
+                                        </p>
+                                        <p
+                                            class="lane-empty-hint"
+                                        >
+                                            Drag epics here
+                                            or click Add
+                                            Epic
+                                        </p>
                                     </div>
                                 </template>
-                                <template for:each={lane.items} for:item="item">
+                                <template
+                                    for:each={lane.items}
+                                    for:item="item"
+                                >
                                     <div
                                         key={item.Id}
                                         class={item.cardClass}
@@ -100,41 +132,84 @@
                                         data-id={item.Id}
                                         ondragstart={handleDragStart}
                                     >
-                                        <div class="epic-card__header">
+                                        <div
+                                            class="epic-card__header"
+                                        >
                                             <span
                                                 class="epic-card__color-dot"
                                                 style={item.colorStyle}
                                             ></span>
-                                            <span class="epic-card__title">{item.epicSubject}</span>
-                                            <span class={item.statusBadgeClass}>{item.status}</span>
+                                            <span
+                                                class="epic-card__title"
+                                                >{item.epicSubject}</span
+                                            >
+                                            <span
+                                                class={item.statusBadgeClass}
+                                                >{item.status}</span
+                                            >
                                         </div>
-                                        <div class="epic-card__body">
-                                            <template lwc:if={item.epicDescription}>
-                                                <p class="epic-card__desc">{item.epicDescriptionTruncated}</p>
+                                        <div
+                                            class="epic-card__body"
+                                        >
+                                            <template
+                                                lwc:if={item.epicDescription}
+                                            >
+                                                <p
+                                                    class="epic-card__desc"
+                                                >
+                                                    {item.epicDescriptionTruncated}
+                                                </p>
                                             </template>
-                                            <div class="epic-card__meta">
-                                                <template lwc:if={item.epicStoryPoints}>
-                                                    <span class="epic-card__points">{item.epicStoryPoints} pts</span>
+                                            <div
+                                                class="epic-card__meta"
+                                            >
+                                                <template
+                                                    lwc:if={item.epicStoryPoints}
+                                                >
+                                                    <span
+                                                        class="epic-card__points"
+                                                        >{item.epicStoryPoints}
+                                                        pts</span
+                                                    >
                                                 </template>
-                                                <template lwc:if={item.epicChildCount}>
-                                                    <span class="epic-card__children">{item.epicChildCount} stories</span>
+                                                <template
+                                                    lwc:if={item.epicChildCount}
+                                                >
+                                                    <span
+                                                        class="epic-card__children"
+                                                        >{item.epicChildCount}
+                                                        stories</span
+                                                    >
                                                 </template>
-                                                <template lwc:if={item.epicAssigneeName}>
-                                                    <span class="epic-card__assignee">{item.epicAssigneeName}</span>
+                                                <template
+                                                    lwc:if={item.epicAssigneeName}
+                                                >
+                                                    <span
+                                                        class="epic-card__assignee"
+                                                        >{item.epicAssigneeName}</span
+                                                    >
                                                 </template>
                                             </div>
-                                            <template lwc:if={item.hasDates}>
-                                                <div class="epic-card__dates">
+                                            <template
+                                                lwc:if={item.hasDates}
+                                            >
+                                                <div
+                                                    class="epic-card__dates"
+                                                >
                                                     <lightning-icon
                                                         icon-name="utility:date_input"
                                                         size="xx-small"
                                                         alternative-text="Dates"
                                                     ></lightning-icon>
-                                                    <span>{item.dateRange}</span>
+                                                    <span
+                                                        >{item.dateRange}</span
+                                                    >
                                                 </div>
                                             </template>
                                         </div>
-                                        <div class="epic-card__actions">
+                                        <div
+                                            class="epic-card__actions"
+                                        >
                                             <button
                                                 class="slds-button slds-button_icon slds-button_icon-x-small"
                                                 title="Edit"
@@ -171,11 +246,21 @@
             <!-- Quarter View: Q1 / Q2 / Q3 / Q4 -->
             <template lwc:if={isQuarterView}>
                 <div class="roadmap-quarters">
-                    <template for:each={quarterLanes} for:item="lane">
-                        <div key={lane.key} class="roadmap-quarter">
+                    <template
+                        for:each={quarterLanes}
+                        for:item="lane"
+                    >
+                        <div
+                            key={lane.key}
+                            class="roadmap-quarter"
+                        >
                             <div class="quarter-header">
-                                <h2 class="quarter-title">{lane.label}</h2>
-                                <span class="lane-count">{lane.count}</span>
+                                <h2 class="quarter-title">
+                                    {lane.label}
+                                </h2>
+                                <span class="lane-count"
+                                    >{lane.count}</span
+                                >
                             </div>
                             <div
                                 class="lane-items"
@@ -183,12 +268,20 @@
                                 ondrop={handleDrop}
                                 ondragover={handleDragOver}
                             >
-                                <template lwc:if={lane.isEmpty}>
+                                <template
+                                    lwc:if={lane.isEmpty}
+                                >
                                     <div class="lane-empty">
-                                        <p>No epics in {lane.label}</p>
+                                        <p>
+                                            No epics in
+                                            {lane.label}
+                                        </p>
                                     </div>
                                 </template>
-                                <template for:each={lane.items} for:item="item">
+                                <template
+                                    for:each={lane.items}
+                                    for:item="item"
+                                >
                                     <div
                                         key={item.Id}
                                         class={item.cardClass}
@@ -196,35 +289,67 @@
                                         data-id={item.Id}
                                         ondragstart={handleDragStart}
                                     >
-                                        <div class="epic-card__header">
+                                        <div
+                                            class="epic-card__header"
+                                        >
                                             <span
                                                 class="epic-card__color-dot"
                                                 style={item.colorStyle}
                                             ></span>
-                                            <span class="epic-card__title">{item.epicSubject}</span>
-                                            <span class={item.statusBadgeClass}>{item.status}</span>
+                                            <span
+                                                class="epic-card__title"
+                                                >{item.epicSubject}</span
+                                            >
+                                            <span
+                                                class={item.statusBadgeClass}
+                                                >{item.status}</span
+                                            >
                                         </div>
-                                        <div class="epic-card__body">
-                                            <div class="epic-card__meta">
-                                                <template lwc:if={item.epicStoryPoints}>
-                                                    <span class="epic-card__points">{item.epicStoryPoints} pts</span>
+                                        <div
+                                            class="epic-card__body"
+                                        >
+                                            <div
+                                                class="epic-card__meta"
+                                            >
+                                                <template
+                                                    lwc:if={item.epicStoryPoints}
+                                                >
+                                                    <span
+                                                        class="epic-card__points"
+                                                        >{item.epicStoryPoints}
+                                                        pts</span
+                                                    >
                                                 </template>
-                                                <template lwc:if={item.epicChildCount}>
-                                                    <span class="epic-card__children">{item.epicChildCount} stories</span>
+                                                <template
+                                                    lwc:if={item.epicChildCount}
+                                                >
+                                                    <span
+                                                        class="epic-card__children"
+                                                        >{item.epicChildCount}
+                                                        stories</span
+                                                    >
                                                 </template>
                                             </div>
-                                            <template lwc:if={item.hasDates}>
-                                                <div class="epic-card__dates">
+                                            <template
+                                                lwc:if={item.hasDates}
+                                            >
+                                                <div
+                                                    class="epic-card__dates"
+                                                >
                                                     <lightning-icon
                                                         icon-name="utility:date_input"
                                                         size="xx-small"
                                                         alternative-text="Dates"
                                                     ></lightning-icon>
-                                                    <span>{item.dateRange}</span>
+                                                    <span
+                                                        >{item.dateRange}</span
+                                                    >
                                                 </div>
                                             </template>
                                         </div>
-                                        <div class="epic-card__actions">
+                                        <div
+                                            class="epic-card__actions"
+                                        >
                                             <button
                                                 class="slds-button slds-button_icon slds-button_icon-x-small"
                                                 title="Edit"
@@ -282,64 +407,143 @@
                         ></lightning-icon>
                     </button>
                     <div class="slds-modal__header">
-                        <h2 id="add-epic-heading" class="slds-modal__title">
+                        <h2
+                            id="add-epic-heading"
+                            class="slds-modal__title"
+                        >
                             Add Epic to Roadmap
                         </h2>
                     </div>
-                    <div class="slds-modal__content slds-p-around_medium">
-                        <template lwc:if={hasAvailableEpics}>
-                            <div class="slds-form-element slds-m-bottom_medium">
-                                <label class="slds-form-element__label">Select Epic</label>
-                                <div class="slds-form-element__control">
+                    <div
+                        class="slds-modal__content slds-p-around_medium"
+                    >
+                        <template
+                            lwc:if={hasAvailableEpics}
+                        >
+                            <div
+                                class="slds-form-element slds-m-bottom_medium"
+                            >
+                                <label
+                                    class="slds-form-element__label"
+                                    >Select Epic</label
+                                >
+                                <div
+                                    class="slds-form-element__control"
+                                >
                                     <select
                                         class="slds-select add-modal-select"
                                         onchange={handleEpicSelect}
                                     >
-                                        <option value="">-- Select an Epic --</option>
-                                        <template for:each={availableEpics} for:item="epic">
-                                            <option key={epic.Id} value={epic.Id}>
+                                        <option value="">
+                                            -- Select an
+                                            Epic --
+                                        </option>
+                                        <template
+                                            for:each={availableEpics}
+                                            for:item="epic"
+                                        >
+                                            <option
+                                                key={epic.Id}
+                                                value={epic.Id}
+                                            >
                                                 {epic.subject}
                                             </option>
                                         </template>
                                     </select>
                                 </div>
                             </div>
-                            <template lwc:if={isHorizonView}>
-                                <div class="slds-form-element slds-m-bottom_medium">
-                                    <label class="slds-form-element__label">Horizon</label>
-                                    <div class="slds-form-element__control">
+                            <template
+                                lwc:if={isHorizonView}
+                            >
+                                <div
+                                    class="slds-form-element slds-m-bottom_medium"
+                                >
+                                    <label
+                                        class="slds-form-element__label"
+                                        >Horizon</label
+                                    >
+                                    <div
+                                        class="slds-form-element__control"
+                                    >
                                         <select
                                             class="slds-select add-modal-horizon"
                                             onchange={handleHorizonSelect}
                                         >
-                                            <option value="Now">Now</option>
-                                            <option value="Next">Next</option>
-                                            <option value="Future">Future</option>
+                                            <option
+                                                value="Now"
+                                            >
+                                                Now
+                                            </option>
+                                            <option
+                                                value="Next"
+                                            >
+                                                Next
+                                            </option>
+                                            <option
+                                                value="Future"
+                                            >
+                                                Future
+                                            </option>
                                         </select>
                                     </div>
                                 </div>
                             </template>
-                            <template lwc:if={isQuarterView}>
-                                <div class="slds-form-element slds-m-bottom_medium">
-                                    <label class="slds-form-element__label">Quarter</label>
-                                    <div class="slds-form-element__control">
+                            <template
+                                lwc:if={isQuarterView}
+                            >
+                                <div
+                                    class="slds-form-element slds-m-bottom_medium"
+                                >
+                                    <label
+                                        class="slds-form-element__label"
+                                        >Quarter</label
+                                    >
+                                    <div
+                                        class="slds-form-element__control"
+                                    >
                                         <select
                                             class="slds-select add-modal-quarter"
                                             onchange={handleQuarterSelect}
                                         >
-                                            <option value="Q1">Q1</option>
-                                            <option value="Q2">Q2</option>
-                                            <option value="Q3">Q3</option>
-                                            <option value="Q4">Q4</option>
+                                            <option
+                                                value="Q1"
+                                            >
+                                                Q1
+                                            </option>
+                                            <option
+                                                value="Q2"
+                                            >
+                                                Q2
+                                            </option>
+                                            <option
+                                                value="Q3"
+                                            >
+                                                Q3
+                                            </option>
+                                            <option
+                                                value="Q4"
+                                            >
+                                                Q4
+                                            </option>
                                         </select>
                                     </div>
                                 </div>
                             </template>
-                            <div class="slds-grid slds-gutters_small slds-m-bottom_medium">
+                            <div
+                                class="slds-grid slds-gutters_small slds-m-bottom_medium"
+                            >
                                 <div class="slds-col">
-                                    <div class="slds-form-element">
-                                        <label class="slds-form-element__label">Start Date</label>
-                                        <div class="slds-form-element__control">
+                                    <div
+                                        class="slds-form-element"
+                                    >
+                                        <label
+                                            class="slds-form-element__label"
+                                            >Start
+                                            Date</label
+                                        >
+                                        <div
+                                            class="slds-form-element__control"
+                                        >
                                             <input
                                                 type="date"
                                                 class="slds-input add-modal-start-date"
@@ -349,9 +553,17 @@
                                     </div>
                                 </div>
                                 <div class="slds-col">
-                                    <div class="slds-form-element">
-                                        <label class="slds-form-element__label">Target Date</label>
-                                        <div class="slds-form-element__control">
+                                    <div
+                                        class="slds-form-element"
+                                    >
+                                        <label
+                                            class="slds-form-element__label"
+                                            >Target
+                                            Date</label
+                                        >
+                                        <div
+                                            class="slds-form-element__control"
+                                        >
                                             <input
                                                 type="date"
                                                 class="slds-input add-modal-target-date"
@@ -363,9 +575,17 @@
                             </div>
                         </template>
                         <template lwc:else>
-                            <div class="slds-illustration slds-illustration_small">
-                                <p class="slds-text-body_regular slds-text-align_center">
-                                    No available epics. Create Epic cards on your board first, or all epics are already on the roadmap.
+                            <div
+                                class="slds-illustration slds-illustration_small"
+                            >
+                                <p
+                                    class="slds-text-body_regular slds-text-align_center"
+                                >
+                                    No available epics.
+                                    Create Epic cards on
+                                    your board first, or all
+                                    epics are already on the
+                                    roadmap.
                                 </p>
                             </div>
                         </template>
@@ -377,7 +597,9 @@
                         >
                             Cancel
                         </button>
-                        <template lwc:if={hasAvailableEpics}>
+                        <template
+                            lwc:if={hasAvailableEpics}
+                        >
                             <button
                                 class="slds-button slds-button_brand"
                                 onclick={handleAddEpic}
@@ -389,7 +611,9 @@
                     </div>
                 </div>
             </section>
-            <div class="slds-backdrop slds-backdrop_open"></div>
+            <div
+                class="slds-backdrop slds-backdrop_open"
+            ></div>
         </template>
 
         <!-- Edit Item Modal -->
@@ -415,31 +639,66 @@
                         ></lightning-icon>
                     </button>
                     <div class="slds-modal__header">
-                        <h2 id="edit-item-heading" class="slds-modal__title">
+                        <h2
+                            id="edit-item-heading"
+                            class="slds-modal__title"
+                        >
                             Edit Roadmap Item
                         </h2>
                     </div>
-                    <div class="slds-modal__content slds-p-around_medium">
-                        <div class="slds-form-element slds-m-bottom_medium">
-                            <label class="slds-form-element__label">Status</label>
-                            <div class="slds-form-element__control">
+                    <div
+                        class="slds-modal__content slds-p-around_medium"
+                    >
+                        <div
+                            class="slds-form-element slds-m-bottom_medium"
+                        >
+                            <label
+                                class="slds-form-element__label"
+                                >Status</label
+                            >
+                            <div
+                                class="slds-form-element__control"
+                            >
                                 <select
                                     class="slds-select edit-modal-status"
                                     value={editItemStatus}
                                     onchange={handleEditStatusChange}
                                 >
-                                    <option value="On Track">On Track</option>
-                                    <option value="At Risk">At Risk</option>
-                                    <option value="Off Track">Off Track</option>
-                                    <option value="Complete">Complete</option>
+                                    <option
+                                        value="On Track"
+                                    >
+                                        On Track
+                                    </option>
+                                    <option value="At Risk">
+                                        At Risk
+                                    </option>
+                                    <option
+                                        value="Off Track"
+                                    >
+                                        Off Track
+                                    </option>
+                                    <option
+                                        value="Complete"
+                                    >
+                                        Complete
+                                    </option>
                                 </select>
                             </div>
                         </div>
-                        <div class="slds-grid slds-gutters_small slds-m-bottom_medium">
+                        <div
+                            class="slds-grid slds-gutters_small slds-m-bottom_medium"
+                        >
                             <div class="slds-col">
-                                <div class="slds-form-element">
-                                    <label class="slds-form-element__label">Start Date</label>
-                                    <div class="slds-form-element__control">
+                                <div
+                                    class="slds-form-element"
+                                >
+                                    <label
+                                        class="slds-form-element__label"
+                                        >Start Date</label
+                                    >
+                                    <div
+                                        class="slds-form-element__control"
+                                    >
                                         <input
                                             type="date"
                                             class="slds-input edit-modal-start-date"
@@ -450,9 +709,16 @@
                                 </div>
                             </div>
                             <div class="slds-col">
-                                <div class="slds-form-element">
-                                    <label class="slds-form-element__label">Target Date</label>
-                                    <div class="slds-form-element__control">
+                                <div
+                                    class="slds-form-element"
+                                >
+                                    <label
+                                        class="slds-form-element__label"
+                                        >Target Date</label
+                                    >
+                                    <div
+                                        class="slds-form-element__control"
+                                    >
                                         <input
                                             type="date"
                                             class="slds-input edit-modal-target-date"
@@ -480,7 +746,9 @@
                     </div>
                 </div>
             </section>
-            <div class="slds-backdrop slds-backdrop_open"></div>
+            <div
+                class="slds-backdrop slds-backdrop_open"
+            ></div>
         </template>
     </div>
 </template>
