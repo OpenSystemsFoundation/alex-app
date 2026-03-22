@@ -27,7 +27,19 @@ jobs:
               run: sf org create scratch --definition-file config/project-scratch-def.json --alias ci-test --duration-days 1 --wait 10
 
             - name: Deploy Source
-              run: sf project deploy start --target-org ci-test --ignore-conflicts
+              id: deploy
+              run: |
+                  sf project deploy start --target-org ci-test --ignore-conflicts 2>&1 | tee /tmp/deploy-output.txt
+              continue-on-error: true
+
+            - name: Report deploy failure
+              if: steps.deploy.outcome == 'failure'
+              run: |
+                  echo "## Deploy Source Failed" >> $GITHUB_STEP_SUMMARY
+                  echo '```' >> $GITHUB_STEP_SUMMARY
+                  tail -50 /tmp/deploy-output.txt >> $GITHUB_STEP_SUMMARY
+                  echo '```' >> $GITHUB_STEP_SUMMARY
+                  exit 1
 
             - name: Assign Permission Set
               run: sf org assign permset --name Alex_Admin --target-org ci-test
@@ -98,6 +110,34 @@ jobs:
                     }
 
                     console.log('');
+
+                    // Write to GitHub Step Summary
+                    const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+                    if(summaryFile){
+                      const lines = ['## Apex Test Results',''];
+                      lines.push('| # | Result | Class | Method | Time |');
+                      lines.push('|---|--------|-------|--------|------|');
+                      tests.forEach((t,i)=>{
+                        const cls=(t.ApexClass&&t.ApexClass.Name)||t.FullName||'Unknown';
+                        const method=t.MethodName||'unknown';
+                        const ms=t.RunTime!=null?t.RunTime+'ms':'--';
+                        const icon=t.Outcome==='Pass'?'✅':'❌';
+                        lines.push('| '+(i+1)+' | '+icon+' | '+cls+' | '+method+' | '+ms+' |');
+                      });
+                      lines.push('','**Summary:** '+passed.length+' passed, '+failed.length+' failed, Coverage: '+(summary.orgWideCoverage||'N/A'));
+                      if(failed.length>0){
+                        lines.push('','### Failed Tests','');
+                        failed.forEach((t,i)=>{
+                          const cls=(t.ApexClass&&t.ApexClass.Name)||t.FullName||'Unknown';
+                          lines.push('**'+(i+1)+') '+cls+'.'+t.MethodName+'**');
+                          lines.push('- Message: '+t.Message);
+                          if(t.StackTrace) lines.push('- Stack: `'+t.StackTrace.replace(/\n/g,' → ')+'`');
+                          lines.push('');
+                        });
+                      }
+                      require('fs').appendFileSync(summaryFile, lines.join('\n'));
+                    }
+
                     if(failed.length>0||(summary.outcome&&summary.outcome!=='Passed')){process.exit(1)}
                   "
 

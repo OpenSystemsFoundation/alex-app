@@ -101,6 +101,7 @@ export default class KanbanBoard extends LightningElement {
     @track _boardSearchTerm = '';
     @track _boardFilterPriority = 'All';
     @track _boardFilterCardType = 'All';
+    @track _boardFilterEpic = 'All';
     @track _boardHideCompleted = false;
     _searchDebounceTimer = null;
 
@@ -205,6 +206,26 @@ export default class KanbanBoard extends LightningElement {
 
     get cardTypeFilterOptions() {
         return this.filterManager.cardTypeFilterOptions;
+    }
+
+    get epicFilterOptions() {
+        const summaries = this._storeState?.epicSummaries || [];
+        if (summaries.length === 0) {
+            return [{ label: 'All Epics', value: 'All' }];
+        }
+        return [
+            { label: 'All Epics', value: 'All' },
+            ...summaries.map((e) => ({
+                label: e.subject || 'Untitled Epic',
+                value: e.id
+            })),
+            { label: 'No Epic', value: '__none__' }
+        ];
+    }
+
+    get hasEpics() {
+        const summaries = this._storeState?.epicSummaries;
+        return summaries != null && summaries.length > 0;
     }
 
     get showHideDoneToggle() {
@@ -940,6 +961,10 @@ export default class KanbanBoard extends LightningElement {
 
     handleCardTypeFilter(event) {
         this.filterManager.handleCardTypeFilter(event);
+    }
+
+    handleEpicFilter(event) {
+        this.filterManager.handleEpicFilter(event);
     }
 
     handleToggleHideCompleted() {

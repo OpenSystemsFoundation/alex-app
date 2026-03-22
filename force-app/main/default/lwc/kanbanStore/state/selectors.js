@@ -387,6 +387,32 @@ export const isBacklogSyncing = (state) => {
     return state.backlogSyncing || false;
 };
 
+// ===================================================================
+// Epic Selectors
+// ===================================================================
+
+/**
+ * Get epic summaries for the board
+ */
+export const getEpicSummaries = (state) => {
+    return state.epicSummaries || [];
+};
+
+/**
+ * Get epic filter options for dropdowns (derived from summaries)
+ */
+export const getEpicFilterOptions = (state) => {
+    const summaries = state.epicSummaries || [];
+    return [
+        { label: 'All Epics', value: 'All' },
+        ...summaries.map((e) => ({
+            label: e.subject || 'Untitled Epic',
+            value: e.id
+        })),
+        { label: 'No Epic', value: '__none__' }
+    ];
+};
+
 /**
  * Get planning sprint cards (card-to-sprint associations for Planning sprints)
  */

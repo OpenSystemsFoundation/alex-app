@@ -23,6 +23,7 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
         this.newCards = (List<OpenSF__Card__c>) this.newList;
         updateColumnCounts(this.newCards, null);
         trackColumnHistory(this.newCards, null);
+        updateEpicCardCounts(this.newCards, null);
         publishCardEvents(
             this.newCards,
             KanbanEnums.cardEventTypeValue(
@@ -36,6 +37,7 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
         this.oldCardMap = (Map<Id, OpenSF__Card__c>) this.oldMap;
         updateColumnCounts(this.newCards, this.oldCardMap);
         trackColumnHistory(this.newCards, this.oldCardMap);
+        updateEpicCardCounts(this.newCards, this.oldCardMap);
         publishCardEvents(
             this.newCards,
             KanbanEnums.cardEventTypeValue(
@@ -49,6 +51,7 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
         this.oldCards = (List<OpenSF__Card__c>) this.oldList;
         updateColumnCounts(null, null, this.oldCards);
         closeColumnHistory(this.oldCards);
+        updateEpicCardCounts(null, (Map<Id, OpenSF__Card__c>) this.oldMap);
         publishCardEvents(
             this.oldCards,
             KanbanEnums.cardEventTypeValue(
@@ -339,6 +342,82 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
                     newCard.OpenSF__Status__c
                 );
             }
+        }
+    }
+
+    /**
+     * Update EpicCardsCount__c on parent epic cards when child cards
+     * are inserted, updated (epic reassigned), or deleted.
+     */
+    private void updateEpicCardCounts(
+        List<OpenSF__Card__c> newCards,
+        Map<Id, OpenSF__Card__c> oldCardMap
+    ) {
+        Set<Id> affectedEpicIds = new Set<Id>();
+
+        if (newCards != null) {
+            for (OpenSF__Card__c card : newCards) {
+                if (card.OpenSF__Epic__c != null) {
+                    affectedEpicIds.add(card.OpenSF__Epic__c);
+                }
+                // If epic changed, also update the old epic
+                if (oldCardMap != null && oldCardMap.containsKey(card.Id)) {
+                    Id oldEpicId = oldCardMap.get(card.Id).OpenSF__Epic__c;
+                    if (
+                        oldEpicId != null &&
+                        oldEpicId != card.OpenSF__Epic__c
+                    ) {
+                        affectedEpicIds.add(oldEpicId);
+                    }
+                }
+            }
+        }
+
+        // Handle deleted cards — old values come from oldCardMap
+        if (newCards == null && oldCardMap != null) {
+            for (OpenSF__Card__c oldCard : oldCardMap.values()) {
+                if (oldCard.OpenSF__Epic__c != null) {
+                    affectedEpicIds.add(oldCard.OpenSF__Epic__c);
+                }
+            }
+        }
+
+        if (affectedEpicIds.isEmpty()) {
+            return;
+        }
+
+        // Count children for each affected epic
+        Map<Id, Integer> epicChildCounts = new Map<Id, Integer>();
+        for (Id epicId : affectedEpicIds) {
+            epicChildCounts.put(epicId, 0);
+        }
+        for (AggregateResult ar : [
+            SELECT OpenSF__Epic__c, COUNT(Id) childCount
+            FROM OpenSF__Card__c
+            WHERE OpenSF__Epic__c IN :affectedEpicIds
+            GROUP BY OpenSF__Epic__c
+        ]) {
+            Id epicId = (Id) ar.get('OpenSF__Epic__c');
+            Integer count = (Integer) ar.get('childCount');
+            epicChildCounts.put(epicId, count);
+        }
+
+        List<OpenSF__Card__c> epicsToUpdate = new List<OpenSF__Card__c>();
+        for (Id epicId : affectedEpicIds) {
+            Integer count = epicChildCounts.get(epicId);
+            epicsToUpdate.add(
+                new OpenSF__Card__c(
+                    Id = epicId,
+                    OpenSF__EpicCardsCount__c = count
+                )
+            );
+        }
+
+        if (!epicsToUpdate.isEmpty()) {
+            // Bypass this trigger to prevent recursion since epics are also Card__c
+            TriggerHandler.bypass('CardTriggerHandler');
+            update epicsToUpdate;
+            TriggerHandler.clearBypass('CardTriggerHandler');
         }
     }
 

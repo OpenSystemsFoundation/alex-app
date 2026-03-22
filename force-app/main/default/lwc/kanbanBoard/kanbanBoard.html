@@ -157,6 +157,25 @@
                         </option>
                     </template>
                 </select>
+                <template lwc:if={hasEpics}>
+                    <select
+                        class="board-filter-select"
+                        onchange={handleEpicFilter}
+                        value={_boardFilterEpic}
+                    >
+                        <template
+                            for:each={epicFilterOptions}
+                            for:item="opt"
+                        >
+                            <option
+                                key={opt.value}
+                                value={opt.value}
+                            >
+                                {opt.label}
+                            </option>
+                        </template>
+                    </select>
+                </template>
                 <template lwc:if={showHideDoneToggle}>
                     <button
                         class={hideCompletedClass}
@@ -358,6 +377,22 @@
                                                     >
                                                         {card.subject}
                                                     </p>
+                                                    <template
+                                                        lwc:if={card.hasEpicProgress}
+                                                    >
+                                                        <div
+                                                            class="epic-progress"
+                                                        >
+                                                            <div
+                                                                class="epic-progress__bar"
+                                                            >
+                                                                <div
+                                                                    class="epic-progress__fill"
+                                                                    style={card.epicProgress.progressPercent}
+                                                                ></div>
+                                                            </div>
+                                                        </div>
+                                                    </template>
                                                     <template
                                                         lwc:if={card.hasStoryPoints}
                                                     >
@@ -618,6 +653,49 @@
                                                                 </p>
                                                             </template>
 
+                                                            <!-- Epic Progress Bar (for epic-type cards) -->
+                                                            <template
+                                                                lwc:if={card.hasEpicProgress}
+                                                            >
+                                                                <div
+                                                                    class="epic-progress"
+                                                                >
+                                                                    <div
+                                                                        class="epic-progress__bar"
+                                                                    >
+                                                                        <div
+                                                                            class="epic-progress__fill"
+                                                                            style={card.epicProgress.progressPercent}
+                                                                        ></div>
+                                                                    </div>
+                                                                    <span
+                                                                        class="epic-progress__label"
+                                                                    >
+                                                                        {card.epicProgress.completedCards}/{card.epicProgress.totalCards}
+                                                                        cards
+                                                                    </span>
+                                                                </div>
+                                                            </template>
+
+                                                            <!-- Epic Label (for child cards belonging to an epic) -->
+                                                            <template
+                                                                lwc:if={card.hasEpic}
+                                                            >
+                                                                <div
+                                                                    class="epic-label"
+                                                                >
+                                                                    <lightning-icon
+                                                                        icon-name="utility:layers"
+                                                                        size="xx-small"
+                                                                        class="epic-label__icon"
+                                                                    ></lightning-icon>
+                                                                    <span
+                                                                        class="epic-label__text slds-truncate"
+                                                                        >{card.epicLabel}</span
+                                                                    >
+                                                                </div>
+                                                            </template>
+
                                                             <!-- Custom Fields -->
                                                             <template
                                                                 lwc:if={card.hasCustomFields}
@@ -861,6 +939,49 @@
                                                                 >
                                                                     {card.subject}
                                                                 </p>
+                                                            </template>
+
+                                                            <!-- Epic Progress Bar (community) -->
+                                                            <template
+                                                                lwc:if={card.hasEpicProgress}
+                                                            >
+                                                                <div
+                                                                    class="epic-progress"
+                                                                >
+                                                                    <div
+                                                                        class="epic-progress__bar"
+                                                                    >
+                                                                        <div
+                                                                            class="epic-progress__fill"
+                                                                            style={card.epicProgress.progressPercent}
+                                                                        ></div>
+                                                                    </div>
+                                                                    <span
+                                                                        class="epic-progress__label"
+                                                                    >
+                                                                        {card.epicProgress.completedCards}/{card.epicProgress.totalCards}
+                                                                        cards
+                                                                    </span>
+                                                                </div>
+                                                            </template>
+
+                                                            <!-- Epic Label (community) -->
+                                                            <template
+                                                                lwc:if={card.hasEpic}
+                                                            >
+                                                                <div
+                                                                    class="epic-label"
+                                                                >
+                                                                    <lightning-icon
+                                                                        icon-name="utility:layers"
+                                                                        size="xx-small"
+                                                                        class="epic-label__icon"
+                                                                    ></lightning-icon>
+                                                                    <span
+                                                                        class="epic-label__text slds-truncate"
+                                                                        >{card.epicLabel}</span
+                                                                    >
+                                                                </div>
                                                             </template>
 
                                                             <!-- Card Icons -->

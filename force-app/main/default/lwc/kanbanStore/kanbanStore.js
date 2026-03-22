@@ -37,7 +37,11 @@
 // Re-export everything from the modular structure
 export { createStore, KanbanStore } from './core/store';
 export * from './state/actions';
-export { enrichCardData, setCardTypeIconMap } from './utils/dataProcessors';
+export {
+    enrichCardData,
+    setCardTypeIconMap,
+    setEpicSummaryMap
+} from './utils/dataProcessors';
 
 // Direct exports for convenience
 export { loadBoardData } from './thunks/boardThunks';
@@ -69,6 +73,10 @@ export {
     loadCycleTimeAnalyticsAsync,
     loadCumulativeFlowDataAsync
 } from './thunks/analyticsThunks';
+export {
+    loadEpicSummariesAsync,
+    loadEpicDetailAsync
+} from './thunks/epicThunks';
 
 // Undo/Redo exports
 export { createUndoManager } from './undo/undoManager';
@@ -83,6 +91,7 @@ import * as thunks from './thunks/boardThunks';
 import * as cardThunks from './thunks/cardThunks';
 import * as sprintThunks from './thunks/sprintThunks';
 import * as analyticsThunks from './thunks/analyticsThunks';
+import * as epicThunks from './thunks/epicThunks';
 
 export {
     actions,
@@ -91,5 +100,6 @@ export {
     thunks,
     cardThunks,
     sprintThunks,
-    analyticsThunks
+    analyticsThunks,
+    epicThunks
 };

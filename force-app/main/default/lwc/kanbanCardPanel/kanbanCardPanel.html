@@ -108,6 +108,144 @@
                     </div>
                 </lightning-record-edit-form>
 
+                <!-- Epic Detail Section (only for Epic-type cards) -->
+                <template lwc:if={isEpicCard}>
+                    <div
+                        class="epic-detail-section slds-var-m-top_small"
+                    >
+                        <h3
+                            class="slds-text-heading_small slds-var-m-bottom_x-small"
+                        >
+                            <lightning-icon
+                                icon-name="utility:layers"
+                                size="xx-small"
+                                class="slds-var-m-right_xx-small"
+                            ></lightning-icon>
+                            Epic Progress
+                        </h3>
+
+                        <template
+                            lwc:if={epicDetailLoading}
+                        >
+                            <lightning-spinner
+                                alternative-text="Loading epic details"
+                                size="small"
+                            ></lightning-spinner>
+                        </template>
+
+                        <template lwc:if={epicDetail}>
+                            <!-- Progress Bar -->
+                            <div
+                                class="epic-detail__progress slds-var-m-bottom_x-small"
+                            >
+                                <div
+                                    class="epic-detail__progress-bar"
+                                >
+                                    <div
+                                        class="epic-detail__progress-fill"
+                                        style={epicProgressStyle}
+                                    ></div>
+                                </div>
+                                <div
+                                    class="slds-grid slds-grid_align-spread slds-var-m-top_xxx-small"
+                                >
+                                    <span
+                                        class="slds-text-body_small"
+                                        >{epicProgressLabel}</span
+                                    >
+                                    <span
+                                        class="slds-text-body_small"
+                                        >{epicPointsLabel}</span
+                                    >
+                                </div>
+                            </div>
+
+                            <!-- Child Cards List -->
+                            <template
+                                lwc:if={hasEpicChildCards}
+                            >
+                                <div
+                                    class="epic-detail__children"
+                                >
+                                    <template
+                                        for:each={epicDetail.childCards}
+                                        for:item="child"
+                                    >
+                                        <div
+                                            key={child.id}
+                                            class="epic-child-card"
+                                            data-card-id={child.id}
+                                            onclick={handleChildCardClick}
+                                        >
+                                            <div
+                                                class="epic-child-card__header"
+                                            >
+                                                <span
+                                                    class="epic-child-card__name slds-truncate"
+                                                    >{child.name}</span
+                                                >
+                                                <template
+                                                    lwc:if={child.storyPoints}
+                                                >
+                                                    <span
+                                                        class="epic-child-card__sp"
+                                                        >{child.storyPoints}</span
+                                                    >
+                                                </template>
+                                            </div>
+                                            <div
+                                                class="epic-child-card__meta"
+                                            >
+                                                <span
+                                                    class="epic-child-card__subject slds-truncate"
+                                                    >{child.subject}</span
+                                                >
+                                            </div>
+                                            <div
+                                                class="epic-child-card__badges"
+                                            >
+                                                <template
+                                                    lwc:if={child.status}
+                                                >
+                                                    <span
+                                                        class="epic-child-badge"
+                                                        >{child.status}</span
+                                                    >
+                                                </template>
+                                                <template
+                                                    lwc:if={child.cardType}
+                                                >
+                                                    <span
+                                                        class="epic-child-badge"
+                                                        >{child.cardType}</span
+                                                    >
+                                                </template>
+                                                <template
+                                                    lwc:if={child.assigneeName}
+                                                >
+                                                    <span
+                                                        class="epic-child-badge"
+                                                        >{child.assigneeName}</span
+                                                    >
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <template lwc:else>
+                                <p
+                                    class="slds-text-body_small slds-text-color_weak"
+                                >
+                                    No child cards linked to
+                                    this epic yet.
+                                </p>
+                            </template>
+                        </template>
+                    </div>
+                </template>
+
                 <!-- Files Section -->
                 <div
                     class="card-panel__files slds-var-m-top_medium"

@@ -77,6 +77,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__PeerReviewer__r.Name,
                 OpenSF__Epic__c,
                 OpenSF__Epic__r.OpenSF__Subject__c,
+                OpenSF__Epic__r.OpenSF__Color__c,
                 OpenSF__Locked__c,
                 OpenSF__NeedsRefinement__c,
                 OpenSF__SequenceNumber__c,
@@ -116,6 +117,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__PeerReviewer__r.Name,
                 OpenSF__Epic__c,
                 OpenSF__Epic__r.OpenSF__Subject__c,
+                OpenSF__Epic__r.OpenSF__Color__c,
                 OpenSF__Locked__c,
                 OpenSF__NeedsRefinement__c,
                 OpenSF__SequenceNumber__c,
@@ -225,6 +227,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__PeerReviewer__r.Name,
                 OpenSF__Epic__c,
                 OpenSF__Epic__r.OpenSF__Subject__c,
+                OpenSF__Epic__r.OpenSF__Color__c,
                 OpenSF__Locked__c,
                 OpenSF__NeedsRefinement__c,
                 OpenSF__SequenceNumber__c,
@@ -263,6 +266,7 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__PeerReviewer__r.Name,
                 OpenSF__Epic__c,
                 OpenSF__Epic__r.OpenSF__Subject__c,
+                OpenSF__Epic__r.OpenSF__Color__c,
                 OpenSF__Locked__c,
                 OpenSF__NeedsRefinement__c,
                 OpenSF__SequenceNumber__c,
@@ -271,6 +275,51 @@ public with sharing class KanbanBoardSelector {
                 LastModifiedById
             FROM OpenSF__Card__c
             WHERE OpenSF__Board__c = :boardId AND OpenSF__Column__c = NULL
+            WITH USER_MODE
+            ORDER BY OpenSF__LexoRankPosition__c ASC NULLS LAST
+        ];
+    }
+
+    /**
+     * Get all Epic-type cards for a board (board cards + backlog cards)
+     */
+    public static List<OpenSF__Card__c> getEpicsByBoardId(Id boardId) {
+        return [
+            SELECT
+                Id,
+                Name,
+                OpenSF__Subject__c,
+                OpenSF__Color__c,
+                OpenSF__Status__c,
+                OpenSF__EpicCardsCount__c
+            FROM OpenSF__Card__c
+            WHERE
+                (OpenSF__Column__r.OpenSF__Board__c = :boardId
+                OR (OpenSF__Board__c = :boardId
+                AND OpenSF__Column__c = NULL))
+                AND OpenSF__CardType__c = 'Epic'
+            WITH USER_MODE
+            ORDER BY OpenSF__Subject__c ASC NULLS LAST
+        ];
+    }
+
+    /**
+     * Get child cards of a specific epic with column category info
+     */
+    public static List<OpenSF__Card__c> getChildCardsByEpicId(Id epicId) {
+        return [
+            SELECT
+                Id,
+                Name,
+                OpenSF__Subject__c,
+                OpenSF__Status__c,
+                OpenSF__CardType__c,
+                OpenSF__Priority__c,
+                OpenSF__StoryPoints__c,
+                OpenSF__Column__r.OpenSF__Category__c,
+                OpenSF__Assignee__r.Name
+            FROM OpenSF__Card__c
+            WHERE OpenSF__Epic__c = :epicId
             WITH USER_MODE
             ORDER BY OpenSF__LexoRankPosition__c ASC NULLS LAST
         ];

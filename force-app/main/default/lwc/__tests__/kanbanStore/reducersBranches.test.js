@@ -86,6 +86,25 @@ describe('appStateReducer', () => {
         expect(result.subscriptionStatus).toBe('connected');
     });
 
+    it('handles SET_EPIC_SUMMARIES', () => {
+        const state = { ...initialState };
+        const summaries = [{ id: 'e1', subject: 'Epic One', totalCards: 5 }];
+        const result = appStateReducer(state, {
+            type: 'SET_EPIC_SUMMARIES',
+            payload: summaries
+        });
+        expect(result.epicSummaries).toEqual(summaries);
+    });
+
+    it('handles SET_EPIC_SUMMARIES with null payload', () => {
+        const state = { ...initialState, epicSummaries: [{ id: 'e1' }] };
+        const result = appStateReducer(state, {
+            type: 'SET_EPIC_SUMMARIES',
+            payload: null
+        });
+        expect(result.epicSummaries).toEqual([]);
+    });
+
     it('returns state for unknown action', () => {
         const state = { ...initialState };
         const result = appStateReducer(state, { type: 'UNKNOWN' });

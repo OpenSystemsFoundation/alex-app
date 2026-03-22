@@ -48,7 +48,9 @@ export const initialState = {
     sprintCards: [],
     planningSprintCards: [], // SprintCard junctions for Planning sprints
     backlogVisible: false,
-    selectedBacklogCards: []
+    selectedBacklogCards: [],
+    // Epic state
+    epicSummaries: []
 };
 
 // Re-export all domain reducers for direct import (used by tests)

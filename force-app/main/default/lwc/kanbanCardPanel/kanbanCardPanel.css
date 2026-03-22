@@ -123,3 +123,87 @@
     background-color: rgb(243, 243, 243);
     border-radius: 4px;
 }
+
+/* Epic Detail Section */
+.epic-detail-section {
+    border-top: 1px solid rgb(221, 219, 218);
+    padding-top: 0.5rem;
+}
+
+.epic-detail__progress-bar {
+    height: 8px;
+    background: rgb(229, 231, 235);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.epic-detail__progress-fill {
+    height: 100%;
+    background: rgb(46, 160, 67);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.epic-detail__children {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.epic-child-card {
+    padding: 0.375rem 0.5rem;
+    border: 1px solid rgb(229, 231, 235);
+    border-radius: 4px;
+    margin-bottom: 0.25rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.epic-child-card:hover {
+    background: rgb(243, 244, 246);
+}
+
+.epic-child-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.epic-child-card__name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(1, 118, 211);
+}
+
+.epic-child-card__sp {
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: rgb(229, 231, 235);
+    padding: 0 4px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.epic-child-card__meta {
+    margin-top: 1px;
+}
+
+.epic-child-card__subject {
+    font-size: 0.7rem;
+    color: rgb(107, 114, 128);
+}
+
+.epic-child-card__badges {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.125rem;
+    flex-wrap: wrap;
+}
+
+.epic-child-badge {
+    font-size: 0.6rem;
+    padding: 0 4px;
+    background: rgb(243, 244, 246);
+    border-radius: 3px;
+    color: rgb(75, 85, 99);
+}

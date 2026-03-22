@@ -5,7 +5,8 @@
 import {
     processColumnsData,
     processCardsData,
-    enrichCardData
+    enrichCardData,
+    setEpicSummaryMap
 } from '../../kanbanStore/utils/dataProcessors';
 
 describe('dataProcessors', () => {
@@ -225,6 +226,99 @@ describe('dataProcessors', () => {
                     assignee: { name: 'John Paul Jones' }
                 }).assigneeInitials
             ).toBe('JP');
+        });
+
+        it('should set isEpic true for Epic-type cards', () => {
+            const card = enrichCardData({ Id: 'card1', cardType: 'Epic' });
+            expect(card.isEpic).toBe(true);
+        });
+
+        it('should set isEpic false for non-Epic cards', () => {
+            const card = enrichCardData({ Id: 'card1', cardType: 'Story' });
+            expect(card.isEpic).toBe(false);
+        });
+
+        it('should set hasEpic and epicLabel for cards with an epic', () => {
+            const card = enrichCardData({
+                Id: 'card1',
+                epicId: 'epic1',
+                epic: { subject: 'My Epic', color: '#FF0000' }
+            });
+            expect(card.hasEpic).toBe(true);
+            expect(card.epicLabel).toBe('My Epic');
+            expect(card.epicColor).toBe('#FF0000');
+        });
+
+        it('should set hasEpic false for cards without an epic', () => {
+            const card = enrichCardData({
+                Id: 'card1',
+                epicId: null,
+                epic: null
+            });
+            expect(card.hasEpic).toBe(false);
+            expect(card.epicLabel).toBeNull();
+        });
+
+        it('should include epicProgress when epic summary map is set', () => {
+            setEpicSummaryMap([
+                {
+                    id: 'epic1',
+                    subject: 'Test Epic',
+                    totalCards: 10,
+                    completedCards: 3,
+                    totalPoints: 30,
+                    completedPoints: 9,
+                    progressPercent: 30
+                }
+            ]);
+
+            const card = enrichCardData({
+                Id: 'epic1',
+                cardType: 'Epic'
+            });
+
+            expect(card.hasEpicProgress).toBe(true);
+            expect(card.epicProgress.totalCards).toBe(10);
+            expect(card.epicProgress.completedCards).toBe(3);
+            expect(card.epicProgress.progressPercent).toBe('width: 30%');
+            expect(card.epicProgress.progressPercentValue).toBe(30);
+
+            // Cleanup
+            setEpicSummaryMap(null);
+        });
+
+        it('should not include epicProgress for non-epic cards', () => {
+            setEpicSummaryMap([
+                {
+                    id: 'epic1',
+                    totalCards: 10,
+                    completedCards: 3,
+                    progressPercent: 30
+                }
+            ]);
+
+            const card = enrichCardData({
+                Id: 'card1',
+                cardType: 'Story'
+            });
+
+            expect(card.hasEpicProgress).toBe(false);
+            expect(card.epicProgress).toBeNull();
+
+            setEpicSummaryMap(null);
+        });
+
+        it('should handle empty epic summary map', () => {
+            setEpicSummaryMap([]);
+
+            const card = enrichCardData({
+                Id: 'epic1',
+                cardType: 'Epic'
+            });
+
+            expect(card.hasEpicProgress).toBe(false);
+
+            setEpicSummaryMap(null);
         });
     });
 });
