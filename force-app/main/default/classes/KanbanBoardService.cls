@@ -194,44 +194,16 @@ public with sharing class KanbanBoardService {
             result.syncTimestamp = DateTime.now();
             result.hasChanges = false;
 
-            // Query for cards modified since lastSyncTime (all fields needed by CardDTO)
-            List<OpenSF__Card__c> modifiedCards = [
-                SELECT
-                    Id,
-                    Name,
-                    OpenSF__Subject__c,
-                    OpenSF__Description__c,
-                    OpenSF__Priority__c,
-                    OpenSF__Status__c,
-                    OpenSF__CardType__c,
-                    OpenSF__Color__c,
-                    OpenSF__DueDate__c,
-                    OpenSF__StoryPoints__c,
-                    OpenSF__Column__c,
-                    OpenSF__Board__c,
-                    OpenSF__LexoRankPosition__c,
-                    OpenSF__Assignee__c,
-                    OpenSF__Assignee__r.Name,
-                    OpenSF__Assignee__r.SmallPhotoUrl,
-                    OpenSF__PeerReviewer__c,
-                    OpenSF__PeerReviewer__r.Name,
-                    OpenSF__PeerReviewer__r.SmallPhotoUrl,
-                    OpenSF__Epic__c,
-                    OpenSF__Epic__r.OpenSF__Subject__c,
-                    OpenSF__Epic__r.OpenSF__Color__c,
-                    OpenSF__Locked__c,
-                    OpenSF__NeedsRefinement__c,
-                    OpenSF__DoneDate__c,
-                    OpenSF__SequenceNumber__c,
-                    LastModifiedDate,
-                    LastModifiedById
-                FROM OpenSF__Card__c
-                WHERE
-                    OpenSF__Column__r.OpenSF__Board__c = :boardId
-                    AND LastModifiedDate > :lastSyncTime
-                WITH USER_MODE
-                ORDER BY LastModifiedDate ASC
-            ];
+            // Query for cards modified since lastSyncTime (reuse standard card fields)
+            List<OpenSF__Card__c> modifiedCards = Database.query(
+                'SELECT ' +
+                    KanbanBoardSelector.CARD_FIELDS +
+                    ' FROM OpenSF__Card__c' +
+                    ' WHERE OpenSF__Column__r.OpenSF__Board__c = :boardId' +
+                    ' AND LastModifiedDate > :lastSyncTime' +
+                    ' WITH USER_MODE' +
+                    ' ORDER BY LastModifiedDate ASC'
+            );
 
             if (!modifiedCards.isEmpty()) {
                 result.cards = KanbanBoardDTO.convertCards(modifiedCards);
