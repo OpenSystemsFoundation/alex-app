@@ -67,7 +67,12 @@ private class AgentEstimationActionsTest {
     }
 
     static OpenSF__Card__c getCard(String subject) {
-        return [SELECT Id FROM OpenSF__Card__c WHERE OpenSF__Subject__c = :subject LIMIT 1];
+        return [
+            SELECT Id
+            FROM OpenSF__Card__c
+            WHERE OpenSF__Subject__c = :subject
+            LIMIT 1
+        ];
     }
 
     @IsTest
@@ -84,12 +89,30 @@ private class AgentEstimationActionsTest {
         Test.stopTest();
 
         AgentEstimateStoryPoints.Response res = responses[0];
-        System.assertNotEquals(null, res.estimatedPoints, 'Estimated points should not be null');
-        System.assert(res.estimatedPoints > 0, 'Estimated points should be positive');
-        System.assertNotEquals(null, res.confidence, 'Confidence should be set');
+        System.assertNotEquals(
+            null,
+            res.estimatedPoints,
+            'Estimated points should not be null'
+        );
+        System.assert(
+            res.estimatedPoints > 0,
+            'Estimated points should be positive'
+        );
+        System.assertNotEquals(
+            null,
+            res.confidence,
+            'Confidence should be set'
+        );
         System.assertNotEquals(null, res.reasoning, 'Reasoning should be set');
-        System.assertEquals(3, res.currentPoints, 'Current points should match existing value');
-        System.assert(res.message.contains('Estimated'), 'Message should indicate estimation');
+        System.assertEquals(
+            3,
+            res.currentPoints,
+            'Current points should match existing value'
+        );
+        System.assert(
+            res.message.contains('Estimated'),
+            'Message should indicate estimation'
+        );
     }
 
     @IsTest
@@ -118,8 +141,14 @@ private class AgentEstimationActionsTest {
 
         AgentEstimateStoryPoints.Response res = responses[0];
         // Epic base is 13, High priority +2 = 15, mapped to fibonacci 13
-        System.assert(res.estimatedPoints >= 13, 'Epic should have high estimated points');
-        System.assert(res.reasoning.contains('Epic'), 'Reasoning should mention Epic type');
+        System.assert(
+            res.estimatedPoints >= 13,
+            'Epic should have high estimated points'
+        );
+        System.assert(
+            res.reasoning.contains('Epic'),
+            'Reasoning should mention Epic type'
+        );
     }
 
     @IsTest
@@ -147,9 +176,15 @@ private class AgentEstimationActionsTest {
         Test.stopTest();
 
         AgentEstimateStoryPoints.Response res = responses[0];
-        System.assert(res.reasoning.contains('integration/API/migration'), 'Reasoning should flag complexity keywords');
+        System.assert(
+            res.reasoning.contains('integration/API/migration'),
+            'Reasoning should flag complexity keywords'
+        );
         // Story base 5 + High +2 + complexity +3 = 10, mapped to 8
-        System.assert(res.estimatedPoints >= 8, 'Complex card should have higher estimate');
+        System.assert(
+            res.estimatedPoints >= 8,
+            'Complex card should have higher estimate'
+        );
     }
 
     @IsTest
@@ -176,15 +211,23 @@ private class AgentEstimationActionsTest {
         Test.stopTest();
 
         AgentEstimateStoryPoints.Response res = responses[0];
-        System.assert(res.reasoning.contains('simple/minor/typo/text change'), 'Reasoning should flag simplicity keywords');
+        System.assert(
+            res.reasoning.contains('simple/minor/typo/text change'),
+            'Reasoning should flag simplicity keywords'
+        );
         // Task base 2 + Low -1 + simplicity -2 + no desc -1 = -2, clamped to 1
-        System.assert(res.estimatedPoints <= 2, 'Simple card should have low estimate');
+        System.assert(
+            res.estimatedPoints <= 2,
+            'Simple card should have low estimate'
+        );
     }
 
     @IsTest
     static void testEstimateStoryPointsCardNotFound() {
         // Use a fabricated ID that does not exist
-        Id fakeCardId = OpenSF__Card__c.SObjectType.getDescribe().getKeyPrefix() + '000000000000';
+        Id fakeCardId =
+            OpenSF__Card__c.SObjectType.getDescribe().getKeyPrefix() +
+            '000000000000';
 
         AgentEstimateStoryPoints.Request req = new AgentEstimateStoryPoints.Request();
         req.cardId = fakeCardId;
@@ -196,8 +239,15 @@ private class AgentEstimationActionsTest {
         Test.stopTest();
 
         AgentEstimateStoryPoints.Response res = responses[0];
-        System.assertEquals(null, res.estimatedPoints, 'Estimated points should be null for missing card');
-        System.assert(res.message.contains('Card not found'), 'Message should indicate card not found');
+        System.assertEquals(
+            null,
+            res.estimatedPoints,
+            'Estimated points should be null for missing card'
+        );
+        System.assert(
+            res.message.contains('Card not found'),
+            'Message should indicate card not found'
+        );
     }
 
     @IsTest
@@ -240,11 +290,31 @@ private class AgentEstimationActionsTest {
         Test.stopTest();
 
         AgentAnalyzeSprintCapacity.Response res = responses[0];
-        System.assertEquals(18.0, res.averageVelocity, 'Average velocity should be (16+20)/2 = 18.0');
-        System.assertNotEquals(null, res.suggestedPointCapacity, 'Suggested capacity should be set');
-        System.assertNotEquals(null, res.backlogCardCount, 'Backlog card count should be set');
-        System.assertNotEquals(null, res.teamCanHandle, 'Capacity assessment should be set');
-        System.assertNotEquals(null, res.historicalSprints, 'Historical sprints JSON should not be null');
+        System.assertEquals(
+            18.0,
+            res.averageVelocity,
+            'Average velocity should be (16+20)/2 = 18.0'
+        );
+        System.assertNotEquals(
+            null,
+            res.suggestedPointCapacity,
+            'Suggested capacity should be set'
+        );
+        System.assertNotEquals(
+            null,
+            res.backlogCardCount,
+            'Backlog card count should be set'
+        );
+        System.assertNotEquals(
+            null,
+            res.teamCanHandle,
+            'Capacity assessment should be set'
+        );
+        System.assertNotEquals(
+            null,
+            res.historicalSprints,
+            'Historical sprints JSON should not be null'
+        );
     }
 
     @IsTest
@@ -261,8 +331,19 @@ private class AgentEstimationActionsTest {
         Test.stopTest();
 
         AgentAnalyzeSprintCapacity.Response res = responses[0];
-        System.assertEquals(0, res.averageVelocity, 'Average velocity should be 0 with no history');
-        System.assertEquals('Under Capacity', res.teamCanHandle, 'Should report Under Capacity with no velocity data');
-        System.assert(res.message.contains('No completed sprints'), 'Message should indicate no completed sprints');
+        System.assertEquals(
+            0,
+            res.averageVelocity,
+            'Average velocity should be 0 with no history'
+        );
+        System.assertEquals(
+            'Under Capacity',
+            res.teamCanHandle,
+            'Should report Under Capacity with no velocity data'
+        );
+        System.assert(
+            res.message.contains('No completed sprints'),
+            'Message should indicate no completed sprints'
+        );
     }
 }

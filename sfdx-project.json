@@ -8,7 +8,7 @@
             "default": true,
             "package": "Alex - A Kanban App",
             "versionDescription": "Manage your workflows with Alex, a Kanban App. Install for Admin only and assign Alex permission sets to Admins/Users.",
-            "definitionFile": "config/default-project-scratch-def.json"
+            "definitionFile": "config/project-scratch-def.json"
         },
         {
             "path": "force-agentforce",

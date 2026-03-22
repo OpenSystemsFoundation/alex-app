@@ -3,20 +3,27 @@
  * column layout for a board.
  */
 public with sharing class AgentGetBoardLayout {
-
     public class Request {
-        @InvocableVariable(required=true description='The ID of the board to get layout for')
+        @InvocableVariable(
+            required=true
+            description='The ID of the board to get layout for'
+        )
         public Id boardId;
     }
 
     public class Response {
-        @InvocableVariable(description='JSON array of column details: [{id, name, color, category, status, cardCount, position}]')
+        @InvocableVariable(
+            description='JSON array of column details: [{id, name, color, category, status, cardCount, position}]'
+        )
         public String columns;
         @InvocableVariable(description='Status or error message')
         public String message;
     }
 
-    @InvocableMethod(label='Get Board Layout' description='Retrieves the full column layout for a board')
+    @InvocableMethod(
+        label='Get Board Layout'
+        description='Retrieves the full column layout for a board'
+    )
     public static List<Response> execute(List<Request> requests) {
         List<Response> responses = new List<Response>();
         for (Request req : requests) {
@@ -29,8 +36,14 @@ public with sharing class AgentGetBoardLayout {
         Response res = new Response();
         try {
             List<OpenSF__Column__c> cols = [
-                SELECT Id, OpenSF__ColumnHeader__c, OpenSF__Color__c, OpenSF__Category__c,
-                    OpenSF__Status__c, OpenSF__CardCount__c, OpenSF__LexoRankPosition__c
+                SELECT
+                    Id,
+                    OpenSF__ColumnHeader__c,
+                    OpenSF__Color__c,
+                    OpenSF__Category__c,
+                    OpenSF__Status__c,
+                    OpenSF__CardCount__c,
+                    OpenSF__LexoRankPosition__c
                 FROM OpenSF__Column__c
                 WHERE OpenSF__Board__c = :req.boardId
                 WITH USER_MODE
@@ -51,7 +64,12 @@ public with sharing class AgentGetBoardLayout {
                 colMap.put('color', col.OpenSF__Color__c);
                 colMap.put('category', col.OpenSF__Category__c);
                 colMap.put('status', col.OpenSF__Status__c);
-                colMap.put('cardCount', col.OpenSF__CardCount__c != null ? (Integer) col.OpenSF__CardCount__c : 0);
+                colMap.put(
+                    'cardCount',
+                    col.OpenSF__CardCount__c != null
+                        ? (Integer) col.OpenSF__CardCount__c
+                        : 0
+                );
                 colMap.put('position', col.OpenSF__LexoRankPosition__c);
                 colList.add(colMap);
             }

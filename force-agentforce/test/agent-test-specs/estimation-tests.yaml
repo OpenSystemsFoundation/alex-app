@@ -10,77 +10,77 @@ description: Validates Estimation topic routing, action selection, and response 
 agentName: Alex_Agent
 
 testCases:
-  # --- Estimate Story Points ---
-  - utterance: "How many story points should the login bug be?"
-    expectedTopic: Estimation
-    expectedActions:
-      - Estimate_Story_Points
-    expectedOutcome: "A story point estimate is returned with a fibonacci value, confidence level, and reasoning."
+    # --- Estimate Story Points ---
+    - utterance: 'How many story points should the login bug be?'
+      expectedTopic: Estimation
+      expectedActions:
+          - Estimate_Story_Points
+      expectedOutcome: 'A story point estimate is returned with a fibonacci value, confidence level, and reasoning.'
 
-  - utterance: "Estimate the effort for the API integration card"
-    expectedTopic: Estimation
-    expectedActions:
-      - Estimate_Story_Points
-    expectedOutcome: "A story point estimate is returned based on the card's complexity, type, and priority."
+    - utterance: 'Estimate the effort for the API integration card'
+      expectedTopic: Estimation
+      expectedActions:
+          - Estimate_Story_Points
+      expectedOutcome: "A story point estimate is returned based on the card's complexity, type, and priority."
 
-  - utterance: "Size the dark mode feature"
-    expectedTopic: Estimation
-    expectedActions:
-      - Estimate_Story_Points
-    expectedOutcome: "A story point estimate is provided with reasoning about the feature's scope."
+    - utterance: 'Size the dark mode feature'
+      expectedTopic: Estimation
+      expectedActions:
+          - Estimate_Story_Points
+      expectedOutcome: "A story point estimate is provided with reasoning about the feature's scope."
 
-  - utterance: "This card feels like a lot of work, what do you think?"
-    expectedTopic: Estimation
-    expectedActions:
-      - Estimate_Story_Points
-    expectedOutcome: "A story point estimate with reasoning is returned to validate the user's intuition."
+    - utterance: 'This card feels like a lot of work, what do you think?'
+      expectedTopic: Estimation
+      expectedActions:
+          - Estimate_Story_Points
+      expectedOutcome: "A story point estimate with reasoning is returned to validate the user's intuition."
 
-  - utterance: "What's the right point value for a simple typo fix?"
-    expectedTopic: Estimation
-    expectedActions:
-      - Estimate_Story_Points
-    expectedOutcome: "A low story point estimate (1-2 points) is returned for a simple fix."
+    - utterance: "What's the right point value for a simple typo fix?"
+      expectedTopic: Estimation
+      expectedActions:
+          - Estimate_Story_Points
+      expectedOutcome: 'A low story point estimate (1-2 points) is returned for a simple fix.'
 
-  - utterance: "Estimate points for the database migration epic"
-    expectedTopic: Estimation
-    expectedActions:
-      - Estimate_Story_Points
-    expectedOutcome: "A higher story point estimate is returned reflecting the complexity of a database migration."
+    - utterance: 'Estimate points for the database migration epic'
+      expectedTopic: Estimation
+      expectedActions:
+          - Estimate_Story_Points
+      expectedOutcome: 'A higher story point estimate is returned reflecting the complexity of a database migration.'
 
-  # --- Analyze Sprint Capacity ---
-  - utterance: "Is this sprint right-sized?"
-    expectedTopic: Estimation
-    expectedActions:
-      - Analyze_Sprint_Capacity
-    expectedOutcome: "Sprint capacity analysis shows whether current load matches historical velocity."
+    # --- Analyze Sprint Capacity ---
+    - utterance: 'Is this sprint right-sized?'
+      expectedTopic: Estimation
+      expectedActions:
+          - Analyze_Sprint_Capacity
+      expectedOutcome: 'Sprint capacity analysis shows whether current load matches historical velocity.'
 
-  - utterance: "Based on our velocity, how many more points can we add?"
-    expectedTopic: Estimation
-    expectedActions:
-      - Analyze_Sprint_Capacity
-    expectedOutcome: "Remaining capacity is calculated by comparing current sprint load to average velocity."
+    - utterance: 'Based on our velocity, how many more points can we add?'
+      expectedTopic: Estimation
+      expectedActions:
+          - Analyze_Sprint_Capacity
+      expectedOutcome: 'Remaining capacity is calculated by comparing current sprint load to average velocity.'
 
-  - utterance: "Should we pull in more work or is the sprint full?"
-    expectedTopic: Estimation
-    expectedActions:
-      - Analyze_Sprint_Capacity
-    expectedOutcome: "Capacity assessment is returned with a recommendation on whether to add more work."
+    - utterance: 'Should we pull in more work or is the sprint full?'
+      expectedTopic: Estimation
+      expectedActions:
+          - Analyze_Sprint_Capacity
+      expectedOutcome: 'Capacity assessment is returned with a recommendation on whether to add more work.'
 
-  - utterance: "Analyze whether 34 story points is realistic for our two-week sprint"
-    expectedTopic: Estimation
-    expectedActions:
-      - Analyze_Sprint_Capacity
-    expectedOutcome: "Comparison of 34 points against historical velocity with over/under/right-sized assessment."
+    - utterance: 'Analyze whether 34 story points is realistic for our two-week sprint'
+      expectedTopic: Estimation
+      expectedActions:
+          - Analyze_Sprint_Capacity
+      expectedOutcome: 'Comparison of 34 points against historical velocity with over/under/right-sized assessment.'
 
-  # --- Edge Cases / Ambiguous ---
-  - utterance: "Help me plan how much to put in the next sprint"
-    expectedTopic: Estimation
-    expectedActions:
-      - Analyze_Sprint_Capacity
-    expectedOutcome: "Velocity-based capacity analysis is returned to guide sprint planning."
+    # --- Edge Cases / Ambiguous ---
+    - utterance: 'Help me plan how much to put in the next sprint'
+      expectedTopic: Estimation
+      expectedActions:
+          - Analyze_Sprint_Capacity
+      expectedOutcome: 'Velocity-based capacity analysis is returned to guide sprint planning.'
 
-  - utterance: "Is 40 points too ambitious for this team?"
-    expectedTopic: Estimation
-    expectedActions:
-      - Analyze_Sprint_Capacity
-    expectedOutcome: "Capacity analysis compares 40 points against historical velocity and provides an assessment."
+    - utterance: 'Is 40 points too ambitious for this team?'
+      expectedTopic: Estimation
+      expectedActions:
+          - Analyze_Sprint_Capacity
+      expectedOutcome: 'Capacity analysis compares 40 points against historical velocity and provides an assessment.'

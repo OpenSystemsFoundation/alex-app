@@ -67,7 +67,11 @@ private class AgentSprintActionsTest {
     }
 
     static List<OpenSF__Card__c> getCards() {
-        return [SELECT Id, OpenSF__StoryPoints__c FROM OpenSF__Card__c ORDER BY OpenSF__Subject__c];
+        return [
+            SELECT Id, OpenSF__StoryPoints__c
+            FROM OpenSF__Card__c
+            ORDER BY OpenSF__Subject__c
+        ];
     }
 
     static OpenSF__Sprint__c createPlanningSprint(Id boardId) {
@@ -103,7 +107,11 @@ private class AgentSprintActionsTest {
 
         AgentCreateSprint.Response res = responses[0];
         System.assertNotEquals(null, res.sprintId, 'Sprint Id should be set');
-        System.assertEquals(1, res.sprintNumber, 'First sprint should be number 1');
+        System.assertEquals(
+            1,
+            res.sprintNumber,
+            'First sprint should be number 1'
+        );
         System.assert(res.message.contains('successfully'), 'Should succeed');
 
         OpenSF__Sprint__c created = [
@@ -159,8 +167,15 @@ private class AgentSprintActionsTest {
         Test.stopTest();
 
         AgentStartSprint.Response res = responses[0];
-        System.assertEquals(false, res.success, 'Should fail for non-Planning sprint');
-        System.assert(res.message.contains('Planning'), 'Message should mention Planning status');
+        System.assertEquals(
+            false,
+            res.success,
+            'Should fail for non-Planning sprint'
+        );
+        System.assert(
+            res.message.contains('Planning'),
+            'Message should mention Planning status'
+        );
     }
 
     @IsTest
@@ -218,15 +233,28 @@ private class AgentSprintActionsTest {
         Test.stopTest();
 
         AgentAddCardsToSprint.Response res = responses[0];
-        System.assertEquals(cards.size(), res.addedCount, 'All cards should be added');
-        System.assert(res.totalSprintPoints >= 0, 'Total sprint points should be calculated');
+        System.assertEquals(
+            cards.size(),
+            res.addedCount,
+            'All cards should be added'
+        );
+        System.assert(
+            res.totalSprintPoints >= 0,
+            'Total sprint points should be calculated'
+        );
 
         Integer linkCount = [
             SELECT COUNT()
             FROM OpenSF__SprintCard__c
-            WHERE OpenSF__Sprint__c = :sprint.Id AND OpenSF__RemovedDate__c = NULL
+            WHERE
+                OpenSF__Sprint__c = :sprint.Id
+                AND OpenSF__RemovedDate__c = NULL
         ];
-        System.assertEquals(cards.size(), linkCount, 'SprintCard records should exist');
+        System.assertEquals(
+            cards.size(),
+            linkCount,
+            'SprintCard records should exist'
+        );
     }
 
     @IsTest
@@ -262,7 +290,11 @@ private class AgentSprintActionsTest {
             FROM OpenSF__SprintCard__c
             WHERE Id = :sc.Id
         ];
-        System.assertNotEquals(null, updated.OpenSF__RemovedDate__c, 'RemovedDate should be set');
+        System.assertNotEquals(
+            null,
+            updated.OpenSF__RemovedDate__c,
+            'RemovedDate should be set'
+        );
     }
 
     @IsTest
@@ -286,7 +318,11 @@ private class AgentSprintActionsTest {
         AgentGetSprintStatus.Response res = responses[0];
         System.assertNotEquals(null, res.sprintId, 'Sprint Id should be set');
         System.assertEquals('Active', res.status);
-        System.assertNotEquals(null, res.daysRemaining, 'Days remaining should be calculated');
+        System.assertNotEquals(
+            null,
+            res.daysRemaining,
+            'Days remaining should be calculated'
+        );
     }
 
     @IsTest
@@ -304,7 +340,10 @@ private class AgentSprintActionsTest {
 
         AgentGetSprintStatus.Response res = responses[0];
         System.assertEquals(null, res.sprintId, 'Sprint Id should be null');
-        System.assert(res.message.contains('No active sprint'), 'Should indicate no active sprint');
+        System.assert(
+            res.message.contains('No active sprint'),
+            'Should indicate no active sprint'
+        );
     }
 
     @IsTest
@@ -322,8 +361,15 @@ private class AgentSprintActionsTest {
         Test.stopTest();
 
         AgentGetBacklog.Response res = responses[0];
-        System.assert(res.totalCount >= 1, 'Should find at least one backlog card');
-        System.assertNotEquals(null, res.cards, 'Cards list should not be null');
+        System.assert(
+            res.totalCount >= 1,
+            'Should find at least one backlog card'
+        );
+        System.assertNotEquals(
+            null,
+            res.cards,
+            'Cards list should not be null'
+        );
     }
 
     @IsTest
@@ -332,7 +378,10 @@ private class AgentSprintActionsTest {
 
         // Update card2 (backlog card) to need refinement
         OpenSF__Card__c card2 = [
-            SELECT Id FROM OpenSF__Card__c WHERE OpenSF__Subject__c = 'Test Card 2' LIMIT 1
+            SELECT Id
+            FROM OpenSF__Card__c
+            WHERE OpenSF__Subject__c = 'Test Card 2'
+            LIMIT 1
         ];
         card2.OpenSF__NeedsRefinement__c = true;
         update card2;
@@ -348,9 +397,16 @@ private class AgentSprintActionsTest {
         Test.stopTest();
 
         AgentGetBacklog.Response res = responses[0];
-        System.assert(res.totalCount >= 1, 'Should find at least one card needing refinement');
+        System.assert(
+            res.totalCount >= 1,
+            'Should find at least one card needing refinement'
+        );
         for (AgentGetBacklog.BacklogCardResult bcr : res.cards) {
-            System.assertEquals(true, bcr.needsRefinement, 'All returned cards should need refinement');
+            System.assertEquals(
+                true,
+                bcr.needsRefinement,
+                'All returned cards should need refinement'
+            );
         }
     }
 }

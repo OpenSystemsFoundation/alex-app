@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
     <masterLabel>Delete Card</masterLabel>
-    <description>Permanently deletes a card from the kanban board. This action cannot be undone.</description>
+    <description
+    >Permanently deletes a card from the kanban board. This action cannot be undone.</description>
     <functionType>InvocableApex</functionType>
     <invocableActionName>AgentDeleteCard</invocableActionName>
     <invocableActionType>apex</invocableActionType>

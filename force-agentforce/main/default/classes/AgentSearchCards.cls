@@ -4,10 +4,15 @@
  */
 public with sharing class AgentSearchCards {
     public class Request {
-        @InvocableVariable(required=true description='The Id of the board to search')
+        @InvocableVariable(
+            required=true
+            description='The Id of the board to search'
+        )
         public Id boardId;
 
-        @InvocableVariable(description='Free-text search (matches subject or description)')
+        @InvocableVariable(
+            description='Free-text search (matches subject or description)'
+        )
         public String searchText;
 
         @InvocableVariable(description='Filter by priority')
@@ -16,7 +21,9 @@ public with sharing class AgentSearchCards {
         @InvocableVariable(description='Filter by card type')
         public String cardType;
 
-        @InvocableVariable(description='Filter by assignee name (partial match)')
+        @InvocableVariable(
+            description='Filter by assignee name (partial match)'
+        )
         public String assigneeName;
 
         @InvocableVariable(description='Filter by status')
@@ -78,12 +85,13 @@ public with sharing class AgentSearchCards {
     private static Response search(Request req) {
         Response res = new Response();
         try {
-            String query = 'SELECT Id, Name, OpenSF__Subject__c, OpenSF__Priority__c, '
-                + 'OpenSF__Status__c, OpenSF__CardType__c, OpenSF__StoryPoints__c, '
-                + 'OpenSF__Assignee__r.Name, OpenSF__Column__r.OpenSF__ColumnHeader__c '
-                + 'FROM OpenSF__Card__c WHERE '
-                + '(OpenSF__Column__r.OpenSF__Board__c = :boardId '
-                + 'OR (OpenSF__Board__c = :boardId AND OpenSF__Column__c = null))';
+            String query =
+                'SELECT Id, Name, OpenSF__Subject__c, OpenSF__Priority__c, ' +
+                'OpenSF__Status__c, OpenSF__CardType__c, OpenSF__StoryPoints__c, ' +
+                'OpenSF__Assignee__r.Name, OpenSF__Column__r.OpenSF__ColumnHeader__c ' +
+                'FROM OpenSF__Card__c WHERE ' +
+                '(OpenSF__Column__r.OpenSF__Board__c = :boardId ' +
+                'OR (OpenSF__Board__c = :boardId AND OpenSF__Column__c = null))';
 
             Id boardId = req.boardId;
             String searchText = null;
@@ -127,14 +135,20 @@ public with sharing class AgentSearchCards {
                 cr.status = c.OpenSF__Status__c;
                 cr.cardType = c.OpenSF__CardType__c;
                 cr.storyPoints = c.OpenSF__StoryPoints__c;
-                cr.assigneeName = c.OpenSF__Assignee__r != null ? c.OpenSF__Assignee__r.Name : null;
-                cr.columnName = c.OpenSF__Column__r != null ? c.OpenSF__Column__r.OpenSF__ColumnHeader__c : null;
+                cr.assigneeName = c.OpenSF__Assignee__r != null
+                    ? c.OpenSF__Assignee__r.Name
+                    : null;
+                cr.columnName = c.OpenSF__Column__r != null
+                    ? c.OpenSF__Column__r.OpenSF__ColumnHeader__c
+                    : null;
                 results.add(cr);
             }
 
             res.cards = results;
             res.totalFound = results.size();
-            res.message = results.isEmpty() ? 'No cards found matching the criteria.' : results.size() + ' card(s) found.';
+            res.message = results.isEmpty()
+                ? 'No cards found matching the criteria.'
+                : results.size() + ' card(s) found.';
         } catch (Exception e) {
             res.cards = new List<CardResult>();
             res.totalFound = 0;

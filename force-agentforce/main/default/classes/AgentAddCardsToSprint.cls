@@ -15,7 +15,9 @@ public with sharing class AgentAddCardsToSprint {
         @InvocableVariable(description='Number of cards successfully added')
         public Integer addedCount;
 
-        @InvocableVariable(description='Total story points in the sprint after adding')
+        @InvocableVariable(
+            description='Total story points in the sprint after adding'
+        )
         public Decimal totalSprintPoints;
 
         @InvocableVariable(description='Status message')
@@ -72,18 +74,17 @@ public with sharing class AgentAddCardsToSprint {
             // Create SprintCard junction records
             List<OpenSF__SprintCard__c> newLinks = new List<OpenSF__SprintCard__c>();
             for (OpenSF__Card__c card : cards) {
-                newLinks.add(new OpenSF__SprintCard__c(
-                    OpenSF__Sprint__c = req.sprintId,
-                    OpenSF__Card__c = card.Id,
-                    OpenSF__AddedDate__c = Date.today(),
-                    OpenSF__StoryPointsAtAdd__c = card.OpenSF__StoryPoints__c
-                ));
+                newLinks.add(
+                    new OpenSF__SprintCard__c(
+                        OpenSF__Sprint__c = req.sprintId,
+                        OpenSF__Card__c = card.Id,
+                        OpenSF__AddedDate__c = Date.today(),
+                        OpenSF__StoryPointsAtAdd__c = card.OpenSF__StoryPoints__c
+                    )
+                );
             }
 
-            insert Security.stripInaccessible(
-                    AccessType.CREATABLE,
-                    newLinks
-                )
+            insert Security.stripInaccessible(AccessType.CREATABLE, newLinks)
                 .getRecords();
 
             // Recalculate total sprint points
@@ -105,7 +106,10 @@ public with sharing class AgentAddCardsToSprint {
             res.totalSprintPoints = totalPoints;
             res.message = cards.size() + ' card(s) added to the sprint.';
             if (!alreadyInSprint.isEmpty()) {
-                res.message += ' ' + alreadyInSprint.size() + ' card(s) were already in the sprint and skipped.';
+                res.message +=
+                    ' ' +
+                    alreadyInSprint.size() +
+                    ' card(s) were already in the sprint and skipped.';
             }
         } catch (Exception e) {
             res.addedCount = 0;

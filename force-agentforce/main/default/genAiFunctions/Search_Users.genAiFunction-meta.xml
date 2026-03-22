@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
     <masterLabel>Search Users</masterLabel>
-    <description>Searches for active Salesforce users by name or email. Returns matching users with their names and email addresses.</description>
+    <description
+    >Searches for active Salesforce users by name or email. Returns matching users with their names and email addresses.</description>
     <functionType>InvocableApex</functionType>
     <invocableActionName>AgentSearchUsers</invocableActionName>
     <invocableActionType>apex</invocableActionType>

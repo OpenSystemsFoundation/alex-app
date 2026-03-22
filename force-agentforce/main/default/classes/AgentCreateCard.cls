@@ -4,22 +4,34 @@
  */
 public with sharing class AgentCreateCard {
     public class Request {
-        @InvocableVariable(required=true description='The Id of the board to create the card on')
+        @InvocableVariable(
+            required=true
+            description='The Id of the board to create the card on'
+        )
         public Id boardId;
 
-        @InvocableVariable(description='Column name to place the card in. If blank, card is created in the backlog.')
+        @InvocableVariable(
+            description='Column name to place the card in. If blank, card is created in the backlog.'
+        )
         public String columnName;
 
-        @InvocableVariable(required=true description='Subject / title of the card')
+        @InvocableVariable(
+            required=true
+            description='Subject / title of the card'
+        )
         public String subject;
 
         @InvocableVariable(description='Description of the card')
         public String description;
 
-        @InvocableVariable(description='Priority (e.g. Critical, High, Medium, Low)')
+        @InvocableVariable(
+            description='Priority (e.g. Critical, High, Medium, Low)'
+        )
         public String priority;
 
-        @InvocableVariable(description='Card type (e.g. Story, Bug, Task, Epic)')
+        @InvocableVariable(
+            description='Card type (e.g. Story, Bug, Task, Epic)'
+        )
         public String cardType;
 
         @InvocableVariable(description='Story points estimate')
@@ -68,7 +80,10 @@ public with sharing class AgentCreateCard {
                     LIMIT 1
                 ];
                 if (columns.isEmpty()) {
-                    res.message = 'Column "' + req.columnName + '" not found on this board.';
+                    res.message =
+                        'Column "' +
+                        req.columnName +
+                        '" not found on this board.';
                     return res;
                 }
                 columnId = columns[0].Id;

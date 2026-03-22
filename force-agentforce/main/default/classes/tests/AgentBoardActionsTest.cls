@@ -81,8 +81,16 @@ private class AgentBoardActionsTest {
 
         AgentGetBoardSummary.Response res = responses[0];
         System.assertEquals(3, res.columnCount, 'Board should have 3 columns');
-        System.assertEquals('Sprint', res.boardType, 'Board type should be Sprint');
-        System.assertNotEquals(null, res.columns, 'Columns JSON should not be null');
+        System.assertEquals(
+            'Sprint',
+            res.boardType,
+            'Board type should be Sprint'
+        );
+        System.assertNotEquals(
+            null,
+            res.columns,
+            'Columns JSON should not be null'
+        );
         System.assert(res.message.contains('Successfully'), 'Should succeed');
     }
 
@@ -121,9 +129,20 @@ private class AgentBoardActionsTest {
         Test.stopTest();
 
         AgentGetBurndown.Response res = responses[0];
-        System.assertNotEquals(null, res.snapshots, 'Snapshots should not be null');
-        System.assertNotEquals('[]', res.snapshots, 'Snapshots should not be empty');
-        System.assert(res.message.contains('1 burndown snapshots'), 'Should report snapshot count');
+        System.assertNotEquals(
+            null,
+            res.snapshots,
+            'Snapshots should not be null'
+        );
+        System.assertNotEquals(
+            '[]',
+            res.snapshots,
+            'Snapshots should not be empty'
+        );
+        System.assert(
+            res.message.contains('1 burndown snapshots'),
+            'Should report snapshot count'
+        );
     }
 
     @IsTest
@@ -165,9 +184,20 @@ private class AgentBoardActionsTest {
         Test.stopTest();
 
         AgentGetVelocity.Response res = responses[0];
-        System.assertEquals(19.0, res.averageVelocity, 'Average velocity should be (18+20)/2 = 19.0');
-        System.assertNotEquals(null, res.sprints, 'Sprints JSON should not be null');
-        System.assert(res.message.contains('2 sprints'), 'Should report sprint count');
+        System.assertEquals(
+            19.0,
+            res.averageVelocity,
+            'Average velocity should be (18+20)/2 = 19.0'
+        );
+        System.assertNotEquals(
+            null,
+            res.sprints,
+            'Sprints JSON should not be null'
+        );
+        System.assert(
+            res.message.contains('2 sprints'),
+            'Should report sprint count'
+        );
     }
 
     @IsTest
@@ -184,8 +214,19 @@ private class AgentBoardActionsTest {
         Test.stopTest();
 
         AgentGetBoardLayout.Response res = responses[0];
-        System.assertNotEquals(null, res.columns, 'Columns JSON should not be null');
-        System.assertNotEquals('[]', res.columns, 'Columns should not be empty');
-        System.assert(res.message.contains('3 columns'), 'Should report 3 columns');
+        System.assertNotEquals(
+            null,
+            res.columns,
+            'Columns JSON should not be null'
+        );
+        System.assertNotEquals(
+            '[]',
+            res.columns,
+            'Columns should not be empty'
+        );
+        System.assert(
+            res.message.contains('3 columns'),
+            'Should report 3 columns'
+        );
     }
 }

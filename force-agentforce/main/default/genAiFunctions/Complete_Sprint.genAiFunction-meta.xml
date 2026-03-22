@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
     <masterLabel>Complete Sprint</masterLabel>
-    <description>Completes the active sprint. Calculates velocity and handles incomplete cards by moving them to the backlog.</description>
+    <description
+    >Completes the active sprint. Calculates velocity and handles incomplete cards by moving them to the backlog.</description>
     <functionType>InvocableApex</functionType>
     <invocableActionName>AgentCompleteSprint</invocableActionName>
     <invocableActionType>apex</invocableActionType>

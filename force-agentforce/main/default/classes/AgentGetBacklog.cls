@@ -7,7 +7,9 @@ public with sharing class AgentGetBacklog {
         @InvocableVariable(required=true description='The Id of the board')
         public Id boardId;
 
-        @InvocableVariable(description='If true, only return cards that need refinement')
+        @InvocableVariable(
+            description='If true, only return cards that need refinement'
+        )
         public Boolean needsRefinementOnly;
     }
 
@@ -18,7 +20,9 @@ public with sharing class AgentGetBacklog {
         @InvocableVariable(description='Total number of backlog cards')
         public Integer totalCount;
 
-        @InvocableVariable(description='Total story points across all backlog cards')
+        @InvocableVariable(
+            description='Total story points across all backlog cards'
+        )
         public Decimal totalStoryPoints;
 
         @InvocableVariable(description='Status message')
@@ -90,12 +94,13 @@ public with sharing class AgentGetBacklog {
 
             // Build dynamic query for backlog cards
             Id boardId = req.boardId;
-            String query = 'SELECT Id, OpenSF__Subject__c, OpenSF__Priority__c, '
-                + 'OpenSF__CardType__c, OpenSF__StoryPoints__c, '
-                + 'OpenSF__NeedsRefinement__c, OpenSF__Assignee__r.Name '
-                + 'FROM OpenSF__Card__c '
-                + 'WHERE OpenSF__Board__c = :boardId '
-                + 'AND OpenSF__Column__c = NULL';
+            String query =
+                'SELECT Id, OpenSF__Subject__c, OpenSF__Priority__c, ' +
+                'OpenSF__CardType__c, OpenSF__StoryPoints__c, ' +
+                'OpenSF__NeedsRefinement__c, OpenSF__Assignee__r.Name ' +
+                'FROM OpenSF__Card__c ' +
+                'WHERE OpenSF__Board__c = :boardId ' +
+                'AND OpenSF__Column__c = NULL';
 
             if (!activeSprintCardIds.isEmpty()) {
                 query += ' AND Id NOT IN :activeSprintCardIds';
@@ -120,7 +125,9 @@ public with sharing class AgentGetBacklog {
                 bcr.cardType = card.OpenSF__CardType__c;
                 bcr.storyPoints = card.OpenSF__StoryPoints__c;
                 bcr.needsRefinement = card.OpenSF__NeedsRefinement__c;
-                bcr.assigneeName = card.OpenSF__Assignee__r != null ? card.OpenSF__Assignee__r.Name : null;
+                bcr.assigneeName = card.OpenSF__Assignee__r != null
+                    ? card.OpenSF__Assignee__r.Name
+                    : null;
                 results.add(bcr);
 
                 if (card.OpenSF__StoryPoints__c != null) {
@@ -133,7 +140,10 @@ public with sharing class AgentGetBacklog {
             res.totalStoryPoints = totalPts;
             res.message = results.isEmpty()
                 ? 'No backlog cards found.'
-                : results.size() + ' backlog card(s) found with ' + totalPts + ' total story points.';
+                : results.size() +
+                  ' backlog card(s) found with ' +
+                  totalPts +
+                  ' total story points.';
         } catch (Exception e) {
             res.cards = new List<BacklogCardResult>();
             res.totalCount = 0;

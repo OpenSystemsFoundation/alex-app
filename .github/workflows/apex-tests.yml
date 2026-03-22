@@ -27,7 +27,7 @@ jobs:
               run: sf org create scratch --definition-file config/project-scratch-def.json --alias ci-test --duration-days 1 --wait 10
 
             - name: Deploy Source
-              run: sf project deploy start --target-org ci-test --ignore-conflicts
+              run: sf project deploy start --source-dir force-app --target-org ci-test --ignore-conflicts
 
             - name: Assign Permission Set
               run: sf org assign permset --name Alex_Admin --target-org ci-test

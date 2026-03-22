@@ -4,21 +4,30 @@
  */
 public with sharing class AgentCompleteSprint {
     public class Request {
-        @InvocableVariable(required=true description='The Id of the sprint to complete')
+        @InvocableVariable(
+            required=true
+            description='The Id of the sprint to complete'
+        )
         public Id sprintId;
 
-        @InvocableVariable(description='Whether to move incomplete cards to backlog (default true)')
+        @InvocableVariable(
+            description='Whether to move incomplete cards to backlog (default true)'
+        )
         public Boolean moveIncompleteToBacklog;
     }
 
     public class Response {
-        @InvocableVariable(description='Whether the sprint was completed successfully')
+        @InvocableVariable(
+            description='Whether the sprint was completed successfully'
+        )
         public Boolean success;
 
         @InvocableVariable(description='Story points completed in this sprint')
         public Decimal completedPoints;
 
-        @InvocableVariable(description='Total story points committed to this sprint')
+        @InvocableVariable(
+            description='Total story points committed to this sprint'
+        )
         public Decimal totalPoints;
 
         @InvocableVariable(description='Sprint velocity (completed / total)')
@@ -43,10 +52,16 @@ public with sharing class AgentCompleteSprint {
     private static Response completeSprint(Request req) {
         Response res = new Response();
         try {
-            Boolean moveToBacklog = req.moveIncompleteToBacklog != null ? req.moveIncompleteToBacklog : true;
+            Boolean moveToBacklog = req.moveIncompleteToBacklog != null
+                ? req.moveIncompleteToBacklog
+                : true;
 
             List<OpenSF__Sprint__c> sprints = [
-                SELECT Id, OpenSF__Status__c, OpenSF__Board__c, OpenSF__TotalStoryPoints__c
+                SELECT
+                    Id,
+                    OpenSF__Status__c,
+                    OpenSF__Board__c,
+                    OpenSF__TotalStoryPoints__c
                 FROM OpenSF__Sprint__c
                 WHERE Id = :req.sprintId
                 WITH USER_MODE
@@ -63,7 +78,9 @@ public with sharing class AgentCompleteSprint {
 
             if (sprint.OpenSF__Status__c != 'Active') {
                 res.success = false;
-                res.message = 'Only active sprints can be completed. Current status: ' + sprint.OpenSF__Status__c;
+                res.message =
+                    'Only active sprints can be completed. Current status: ' +
+                    sprint.OpenSF__Status__c;
                 return res;
             }
 
@@ -96,10 +113,12 @@ public with sharing class AgentCompleteSprint {
                     completedPts += pts;
                 } else if (moveToBacklog) {
                     // Move incomplete card to backlog (remove from column)
-                    cardsToBacklog.add(new OpenSF__Card__c(
-                        Id = sc.OpenSF__Card__c,
-                        OpenSF__Column__c = null
-                    ));
+                    cardsToBacklog.add(
+                        new OpenSF__Card__c(
+                            Id = sc.OpenSF__Card__c,
+                            OpenSF__Column__c = null
+                        )
+                    );
                 }
             }
 
@@ -148,7 +167,14 @@ public with sharing class AgentCompleteSprint {
             res.completedPoints = completedPts;
             res.totalPoints = totalPts;
             res.velocity = velocityVal;
-            res.message = 'Sprint completed. ' + completedPts + ' of ' + totalPts + ' points completed (' + velocityVal + '% velocity).';
+            res.message =
+                'Sprint completed. ' +
+                completedPts +
+                ' of ' +
+                totalPts +
+                ' points completed (' +
+                velocityVal +
+                '% velocity).';
         } catch (Exception e) {
             res.success = false;
             res.message = 'Error completing sprint: ' + e.getMessage();

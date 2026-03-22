@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
     <masterLabel>Create Card</masterLabel>
-    <description>Creates a new card on the kanban board. Can create in a specific column or in the backlog. Supports setting subject, description, priority, card type, story points, and due date.</description>
+    <description
+    >Creates a new card on the kanban board. Can create in a specific column or in the backlog. Supports setting subject, description, priority, card type, story points, and due date.</description>
     <functionType>InvocableApex</functionType>
     <invocableActionName>AgentCreateCard</invocableActionName>
     <invocableActionType>apex</invocableActionType>

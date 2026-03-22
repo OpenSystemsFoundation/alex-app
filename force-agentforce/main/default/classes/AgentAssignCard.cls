@@ -3,13 +3,20 @@
  * as either the Assignee or Peer Reviewer.
  */
 public with sharing class AgentAssignCard {
-
     public class Request {
-        @InvocableVariable(required=true description='The ID of the card to assign')
+        @InvocableVariable(
+            required=true
+            description='The ID of the card to assign'
+        )
         public Id cardId;
-        @InvocableVariable(required=true description='Name of the user to assign (partial match supported)')
+        @InvocableVariable(
+            required=true
+            description='Name of the user to assign (partial match supported)'
+        )
         public String assigneeName;
-        @InvocableVariable(description='If true, set as Peer Reviewer instead of Assignee')
+        @InvocableVariable(
+            description='If true, set as Peer Reviewer instead of Assignee'
+        )
         public Boolean setPeerReviewer;
     }
 
@@ -22,7 +29,10 @@ public with sharing class AgentAssignCard {
         public String message;
     }
 
-    @InvocableMethod(label='Assign Card' description='Assigns a user to a card as Assignee or Peer Reviewer')
+    @InvocableMethod(
+        label='Assign Card'
+        description='Assigns a user to a card as Assignee or Peer Reviewer'
+    )
     public static List<Response> execute(List<Request> requests) {
         List<Response> responses = new List<Response>();
         for (Request req : requests) {
@@ -47,22 +57,26 @@ public with sharing class AgentAssignCard {
                 return res;
             }
 
-            String searchPattern = '%' + String.escapeSingleQuotes(req.assigneeName) + '%';
+            String searchPattern =
+                '%' +
+                String.escapeSingleQuotes(req.assigneeName) +
+                '%';
             List<User> users = [
                 SELECT Id, Name
                 FROM User
-                WHERE Name LIKE :searchPattern
-                    AND IsActive = true
+                WHERE Name LIKE :searchPattern AND IsActive = TRUE
                 WITH USER_MODE
                 LIMIT 1
             ];
             if (users.isEmpty()) {
-                res.message = 'No active user found matching name: ' + req.assigneeName;
+                res.message =
+                    'No active user found matching name: ' + req.assigneeName;
                 return res;
             }
 
             User matchedUser = users[0];
-            Boolean isPeerReviewer = req.setPeerReviewer != null && req.setPeerReviewer;
+            Boolean isPeerReviewer =
+                req.setPeerReviewer != null && req.setPeerReviewer;
 
             OpenSF__Card__c cardToUpdate = new OpenSF__Card__c(Id = req.cardId);
             if (isPeerReviewer) {
@@ -80,7 +94,14 @@ public with sharing class AgentAssignCard {
             String role = isPeerReviewer ? 'Peer Reviewer' : 'Assignee';
             res.success = true;
             res.assignedUserName = matchedUser.Name;
-            res.message = 'Successfully set ' + matchedUser.Name + ' as ' + role + ' on card ' + cards[0].Name + '.';
+            res.message =
+                'Successfully set ' +
+                matchedUser.Name +
+                ' as ' +
+                role +
+                ' on card ' +
+                cards[0].Name +
+                '.';
         } catch (Exception e) {
             res.message = 'Error assigning card: ' + e.getMessage();
         }

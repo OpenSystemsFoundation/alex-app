@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
     <label>Alex Agentforce User</label>
-    <description>Grants access to the Alex AI Agent and all Agentforce actions for managing kanban boards through natural language.</description>
+    <description
+    >Grants access to the Alex AI Agent and all Agentforce actions for managing kanban boards through natural language.</description>
     <hasActivationRequired>false</hasActivationRequired>
     <license>Salesforce</license>
     <customPermissions>

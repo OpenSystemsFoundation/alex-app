@@ -4,10 +4,16 @@
  */
 public with sharing class AgentMoveCard {
     public class Request {
-        @InvocableVariable(required=true description='The Id of the card to move')
+        @InvocableVariable(
+            required=true
+            description='The Id of the card to move'
+        )
         public Id cardId;
 
-        @InvocableVariable(required=true description='The name of the target column')
+        @InvocableVariable(
+            required=true
+            description='The name of the target column'
+        )
         public String targetColumnName;
 
         @InvocableVariable(required=true description='The Id of the board')
@@ -21,7 +27,9 @@ public with sharing class AgentMoveCard {
         @InvocableVariable(description='Status message')
         public String message;
 
-        @InvocableVariable(description='The name of the column the card was moved to')
+        @InvocableVariable(
+            description='The name of the column the card was moved to'
+        )
         public String newColumnName;
     }
 
@@ -52,7 +60,10 @@ public with sharing class AgentMoveCard {
 
             if (columns.isEmpty()) {
                 res.success = false;
-                res.message = 'Column "' + req.targetColumnName + '" not found on this board.';
+                res.message =
+                    'Column "' +
+                    req.targetColumnName +
+                    '" not found on this board.';
                 return res;
             }
 
@@ -75,7 +86,10 @@ public with sharing class AgentMoveCard {
 
             res.success = true;
             res.newColumnName = targetColumn.OpenSF__ColumnHeader__c;
-            res.message = 'Card moved to "' + targetColumn.OpenSF__ColumnHeader__c + '" successfully.';
+            res.message =
+                'Card moved to "' +
+                targetColumn.OpenSF__ColumnHeader__c +
+                '" successfully.';
         } catch (Exception e) {
             res.success = false;
             res.message = 'Error moving card: ' + e.getMessage();

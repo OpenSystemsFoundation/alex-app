@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata">
     <masterLabel>Sprint Management</masterLabel>
-    <description>Plan, run, and complete sprints. Add or remove cards from sprints.</description>
-    <scope>Use this topic when the user wants to manage sprints. This includes creating new sprints, starting or completing sprints, adding cards to a sprint, removing cards from a sprint, checking sprint status and progress, or viewing the backlog. Also use this when the user asks about sprint goals, dates, or how many points are completed.</scope>
+    <description
+    >Plan, run, and complete sprints. Add or remove cards from sprints.</description>
+    <scope
+    >Use this topic when the user wants to manage sprints. This includes creating new sprints, starting or completing sprints, adding cards to a sprint, removing cards from a sprint, checking sprint status and progress, or viewing the backlog. Also use this when the user asks about sprint goals, dates, or how many points are completed.</scope>
     <genAiFunctions>
         <genAiFunction>Create_Sprint</genAiFunction>
         <genAiFunction>Start_Sprint</genAiFunction>

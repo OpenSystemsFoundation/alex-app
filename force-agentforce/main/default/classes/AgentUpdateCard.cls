@@ -4,7 +4,10 @@
  */
 public with sharing class AgentUpdateCard {
     public class Request {
-        @InvocableVariable(required=true description='The Id of the card to update')
+        @InvocableVariable(
+            required=true
+            description='The Id of the card to update'
+        )
         public Id cardId;
 
         @InvocableVariable(description='New subject / title')

@@ -10,104 +10,104 @@ description: Validates Board Insights topic routing, action selection, and respo
 agentName: Alex_Agent
 
 testCases:
-  # --- Get Board Summary ---
-  - utterance: "Give me an overview of the board"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Get_Board_Summary
-    expectedOutcome: "A board overview is returned with column names, card counts per column, board type, and active sprint information."
+    # --- Get Board Summary ---
+    - utterance: 'Give me an overview of the board'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Get_Board_Summary
+      expectedOutcome: 'A board overview is returned with column names, card counts per column, board type, and active sprint information.'
 
-  - utterance: "How does the board look right now?"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Get_Board_Summary
-    expectedOutcome: "Current board state is returned with card distribution across columns."
+    - utterance: 'How does the board look right now?'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Get_Board_Summary
+      expectedOutcome: 'Current board state is returned with card distribution across columns.'
 
-  - utterance: "Summarize what's on the board"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Get_Board_Summary
-    expectedOutcome: "A summary of all columns and their card counts is returned."
+    - utterance: "Summarize what's on the board"
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Get_Board_Summary
+      expectedOutcome: 'A summary of all columns and their card counts is returned.'
 
-  # --- Get Burndown ---
-  - utterance: "Show me the burndown chart"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Get_Burndown
-    expectedOutcome: "Daily burndown data is returned showing total, remaining, and completed story points over time."
+    # --- Get Burndown ---
+    - utterance: 'Show me the burndown chart'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Get_Burndown
+      expectedOutcome: 'Daily burndown data is returned showing total, remaining, and completed story points over time.'
 
-  - utterance: "What does the burndown look like for this sprint?"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Get_Burndown
-    expectedOutcome: "Sprint burndown data with daily snapshots is returned."
+    - utterance: 'What does the burndown look like for this sprint?'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Get_Burndown
+      expectedOutcome: 'Sprint burndown data with daily snapshots is returned.'
 
-  - utterance: "Are we on track to finish the sprint?"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Get_Burndown
-    expectedOutcome: "Burndown data is returned to show whether the team is tracking toward completing the sprint."
+    - utterance: 'Are we on track to finish the sprint?'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Get_Burndown
+      expectedOutcome: 'Burndown data is returned to show whether the team is tracking toward completing the sprint.'
 
-  # --- Get Velocity ---
-  - utterance: "What's our velocity?"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Get_Velocity
-    expectedOutcome: "Historical sprint velocity is returned with completed points per sprint and average velocity."
+    # --- Get Velocity ---
+    - utterance: "What's our velocity?"
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Get_Velocity
+      expectedOutcome: 'Historical sprint velocity is returned with completed points per sprint and average velocity.'
 
-  - utterance: "Show me velocity across the last few sprints"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Get_Velocity
-    expectedOutcome: "Velocity data for recent sprints is returned with trend information."
+    - utterance: 'Show me velocity across the last few sprints'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Get_Velocity
+      expectedOutcome: 'Velocity data for recent sprints is returned with trend information.'
 
-  - utterance: "How many story points do we usually complete?"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Get_Velocity
-    expectedOutcome: "Average velocity and historical sprint completion data is returned."
+    - utterance: 'How many story points do we usually complete?'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Get_Velocity
+      expectedOutcome: 'Average velocity and historical sprint completion data is returned.'
 
-  # --- Get Board Layout ---
-  - utterance: "What columns does the board have?"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Get_Board_Layout
-    expectedOutcome: "Column layout is returned with names, colors, categories, and statuses."
+    # --- Get Board Layout ---
+    - utterance: 'What columns does the board have?'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Get_Board_Layout
+      expectedOutcome: 'Column layout is returned with names, colors, categories, and statuses.'
 
-  - utterance: "Show me the board structure"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Get_Board_Layout
-    expectedOutcome: "Board column configuration is returned."
+    - utterance: 'Show me the board structure'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Get_Board_Layout
+      expectedOutcome: 'Board column configuration is returned.'
 
-  # --- Analyze Sprint Capacity ---
-  - utterance: "Can we take on more work this sprint?"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Analyze_Sprint_Capacity
-    expectedOutcome: "Capacity analysis is returned showing whether the sprint is under, over, or right-sized based on velocity."
+    # --- Analyze Sprint Capacity ---
+    - utterance: 'Can we take on more work this sprint?'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Analyze_Sprint_Capacity
+      expectedOutcome: 'Capacity analysis is returned showing whether the sprint is under, over, or right-sized based on velocity.'
 
-  - utterance: "Is this sprint too big?"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Analyze_Sprint_Capacity
-    expectedOutcome: "Sprint capacity analysis comparing current load to historical velocity is returned."
+    - utterance: 'Is this sprint too big?'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Analyze_Sprint_Capacity
+      expectedOutcome: 'Sprint capacity analysis comparing current load to historical velocity is returned.'
 
-  - utterance: "How much more can the team handle?"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Analyze_Sprint_Capacity
-    expectedOutcome: "Remaining capacity based on velocity data is returned with a recommendation."
+    - utterance: 'How much more can the team handle?'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Analyze_Sprint_Capacity
+      expectedOutcome: 'Remaining capacity based on velocity data is returned with a recommendation.'
 
-  # --- Edge Cases ---
-  - utterance: "How are we doing?"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Get_Board_Summary
-    expectedOutcome: "A general overview of board status is returned."
+    # --- Edge Cases ---
+    - utterance: 'How are we doing?'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Get_Board_Summary
+      expectedOutcome: 'A general overview of board status is returned.'
 
-  - utterance: "Give me the metrics for the team"
-    expectedTopic: Board_Insights
-    expectedActions:
-      - Get_Velocity
-    expectedOutcome: "Team velocity and performance metrics are returned."
+    - utterance: 'Give me the metrics for the team'
+      expectedTopic: Board_Insights
+      expectedActions:
+          - Get_Velocity
+      expectedOutcome: 'Team velocity and performance metrics are returned.'

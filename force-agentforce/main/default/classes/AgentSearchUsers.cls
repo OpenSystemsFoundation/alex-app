@@ -3,14 +3,18 @@
  * by name or email.
  */
 public with sharing class AgentSearchUsers {
-
     public class Request {
-        @InvocableVariable(required=true description='Search term to match against user name or email')
+        @InvocableVariable(
+            required=true
+            description='Search term to match against user name or email'
+        )
         public String searchTerm;
     }
 
     public class Response {
-        @InvocableVariable(description='JSON array of matching users: [{id, name, email}]')
+        @InvocableVariable(
+            description='JSON array of matching users: [{id, name, email}]'
+        )
         public String users;
         @InvocableVariable(description='Total number of users found')
         public Integer totalFound;
@@ -18,7 +22,10 @@ public with sharing class AgentSearchUsers {
         public String message;
     }
 
-    @InvocableMethod(label='Search Users' description='Searches for active users by name or email')
+    @InvocableMethod(
+        label='Search Users'
+        description='Searches for active users by name or email'
+    )
     public static List<Response> execute(List<Request> requests) {
         List<Response> responses = new List<Response>();
         for (Request req : requests) {
@@ -30,12 +37,17 @@ public with sharing class AgentSearchUsers {
     private static Response searchUsers(Request req) {
         Response res = new Response();
         try {
-            String searchPattern = '%' + String.escapeSingleQuotes(req.searchTerm) + '%';
+            String searchPattern =
+                '%' +
+                String.escapeSingleQuotes(req.searchTerm) +
+                '%';
             List<User> matchedUsers = [
                 SELECT Id, Name, Email
                 FROM User
-                WHERE (Name LIKE :searchPattern OR Email LIKE :searchPattern)
-                    AND IsActive = true
+                WHERE
+                    (Name LIKE :searchPattern
+                    OR Email LIKE :searchPattern)
+                    AND IsActive = TRUE
                 WITH USER_MODE
                 ORDER BY Name ASC
                 LIMIT 50
@@ -54,7 +66,10 @@ public with sharing class AgentSearchUsers {
             res.totalFound = matchedUsers.size();
             res.message = matchedUsers.isEmpty()
                 ? 'No active users found matching: ' + req.searchTerm
-                : 'Found ' + matchedUsers.size() + ' user(s) matching: ' + req.searchTerm;
+                : 'Found ' +
+                  matchedUsers.size() +
+                  ' user(s) matching: ' +
+                  req.searchTerm;
         } catch (Exception e) {
             res.message = 'Error searching users: ' + e.getMessage();
         }

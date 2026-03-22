@@ -88,7 +88,10 @@ public with sharing class AgentGetSprintStatus {
 
             // Count sprint cards and completed cards
             List<OpenSF__SprintCard__c> sprintCards = [
-                SELECT Id, OpenSF__CompletedInSprint__c, OpenSF__Card__r.OpenSF__StoryPoints__c
+                SELECT
+                    Id,
+                    OpenSF__CompletedInSprint__c,
+                    OpenSF__Card__r.OpenSF__StoryPoints__c
                 FROM OpenSF__SprintCard__c
                 WHERE
                     OpenSF__Sprint__c = :sprint.Id
@@ -133,8 +136,18 @@ public with sharing class AgentGetSprintStatus {
             res.totalCards = totalCardCount;
             res.completedCards = completedCardCount;
             res.daysRemaining = daysLeft;
-            res.message = 'Sprint status retrieved. ' + completedCardCount + '/' + totalCardCount + ' cards completed, '
-                + completedPts + '/' + totalPts + ' points, ' + daysLeft + ' days remaining.';
+            res.message =
+                'Sprint status retrieved. ' +
+                completedCardCount +
+                '/' +
+                totalCardCount +
+                ' cards completed, ' +
+                completedPts +
+                '/' +
+                totalPts +
+                ' points, ' +
+                daysLeft +
+                ' days remaining.';
         } catch (Exception e) {
             res.message = 'Error retrieving sprint status: ' + e.getMessage();
         }

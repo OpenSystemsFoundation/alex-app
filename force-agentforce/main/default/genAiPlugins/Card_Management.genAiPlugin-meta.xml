@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata">
     <masterLabel>Card Management</masterLabel>
-    <description>Create, edit, search, move, and delete cards on the kanban board.</description>
-    <scope>Use this topic when the user wants to work with individual cards on the board. This includes creating new cards in columns or the backlog, editing card details like subject, description, priority, type, story points, due date, or color, moving cards between columns, searching for specific cards, viewing card details, or deleting cards. If the user mentions a card by name rather than ID, use Search Cards first to find it.</scope>
+    <description
+    >Create, edit, search, move, and delete cards on the kanban board.</description>
+    <scope
+    >Use this topic when the user wants to work with individual cards on the board. This includes creating new cards in columns or the backlog, editing card details like subject, description, priority, type, story points, due date, or color, moving cards between columns, searching for specific cards, viewing card details, or deleting cards. If the user mentions a card by name rather than ID, use Search Cards first to find it.</scope>
     <genAiFunctions>
         <genAiFunction>Create_Card</genAiFunction>
         <genAiFunction>Update_Card</genAiFunction>

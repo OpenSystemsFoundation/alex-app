@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
     <masterLabel>Update Card</masterLabel>
-    <description>Updates fields on an existing card. Can modify subject, description, priority, card type, story points, due date, color, and refinement status.</description>
+    <description
+    >Updates fields on an existing card. Can modify subject, description, priority, card type, story points, due date, color, and refinement status.</description>
     <functionType>InvocableApex</functionType>
     <invocableActionName>AgentUpdateCard</invocableActionName>
     <invocableActionType>apex</invocableActionType>

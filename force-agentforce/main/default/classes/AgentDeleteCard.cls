@@ -3,7 +3,10 @@
  */
 public with sharing class AgentDeleteCard {
     public class Request {
-        @InvocableVariable(required=true description='The Id of the card to delete')
+        @InvocableVariable(
+            required=true
+            description='The Id of the card to delete'
+        )
         public Id cardId;
     }
 

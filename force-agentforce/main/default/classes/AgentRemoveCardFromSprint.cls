@@ -7,7 +7,10 @@ public with sharing class AgentRemoveCardFromSprint {
         @InvocableVariable(required=true description='The Id of the sprint')
         public Id sprintId;
 
-        @InvocableVariable(required=true description='The Id of the card to remove')
+        @InvocableVariable(
+            required=true
+            description='The Id of the card to remove'
+        )
         public Id cardId;
     }
 

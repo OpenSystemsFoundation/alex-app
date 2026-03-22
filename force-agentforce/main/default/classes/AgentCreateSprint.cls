@@ -57,7 +57,10 @@ public with sharing class AgentCreateSprint {
             ];
 
             Decimal nextNumber = 1;
-            if (!existingSprints.isEmpty() && existingSprints[0].OpenSF__SprintNumber__c != null) {
+            if (
+                !existingSprints.isEmpty() &&
+                existingSprints[0].OpenSF__SprintNumber__c != null
+            ) {
                 nextNumber = existingSprints[0].OpenSF__SprintNumber__c + 1;
             }
 

@@ -67,7 +67,12 @@ private class AgentCardActionsTest {
     }
 
     static OpenSF__Card__c getCard(String subject) {
-        return [SELECT Id FROM OpenSF__Card__c WHERE OpenSF__Subject__c = :subject LIMIT 1];
+        return [
+            SELECT Id
+            FROM OpenSF__Card__c
+            WHERE OpenSF__Subject__c = :subject
+            LIMIT 1
+        ];
     }
 
     @IsTest
@@ -92,7 +97,10 @@ private class AgentCardActionsTest {
         System.assertEquals(1, responses.size(), 'Should return one response');
         AgentCreateCard.Response res = responses[0];
         System.assertNotEquals(null, res.cardId, 'Card Id should be set');
-        System.assert(res.message.contains('successfully'), 'Message should indicate success');
+        System.assert(
+            res.message.contains('successfully'),
+            'Message should indicate success'
+        );
 
         OpenSF__Card__c created = [
             SELECT OpenSF__Subject__c, OpenSF__Column__c
@@ -100,7 +108,11 @@ private class AgentCardActionsTest {
             WHERE Id = :res.cardId
         ];
         System.assertEquals('New Card In Column', created.OpenSF__Subject__c);
-        System.assertNotEquals(null, created.OpenSF__Column__c, 'Card should be in a column');
+        System.assertNotEquals(
+            null,
+            created.OpenSF__Column__c,
+            'Card should be in a column'
+        );
     }
 
     @IsTest
@@ -127,7 +139,11 @@ private class AgentCardActionsTest {
             FROM OpenSF__Card__c
             WHERE Id = :res.cardId
         ];
-        System.assertEquals(null, created.OpenSF__Column__c, 'Backlog card should have no column');
+        System.assertEquals(
+            null,
+            created.OpenSF__Column__c,
+            'Backlog card should have no column'
+        );
     }
 
     @IsTest
@@ -146,8 +162,15 @@ private class AgentCardActionsTest {
         Test.stopTest();
 
         AgentCreateCard.Response res = responses[0];
-        System.assertEquals(null, res.cardId, 'Card Id should be null on failure');
-        System.assert(res.message.contains('not found'), 'Message should indicate column not found');
+        System.assertEquals(
+            null,
+            res.cardId,
+            'Card Id should be null on failure'
+        );
+        System.assert(
+            res.message.contains('not found'),
+            'Message should indicate column not found'
+        );
     }
 
     @IsTest
@@ -170,7 +193,10 @@ private class AgentCardActionsTest {
         System.assertEquals(true, res.success, 'Update should succeed');
 
         OpenSF__Card__c updated = [
-            SELECT OpenSF__Subject__c, OpenSF__Priority__c, OpenSF__StoryPoints__c
+            SELECT
+                OpenSF__Subject__c,
+                OpenSF__Priority__c,
+                OpenSF__StoryPoints__c
             FROM OpenSF__Card__c
             WHERE Id = :card.Id
         ];
@@ -197,7 +223,9 @@ private class AgentCardActionsTest {
         System.assertEquals(true, res.success, 'Delete should succeed');
 
         List<OpenSF__Card__c> remaining = [
-            SELECT Id FROM OpenSF__Card__c WHERE Id = :cardId
+            SELECT Id
+            FROM OpenSF__Card__c
+            WHERE Id = :cardId
         ];
         System.assertEquals(0, remaining.size(), 'Card should be deleted');
     }
@@ -220,14 +248,21 @@ private class AgentCardActionsTest {
 
         AgentMoveCard.Response res = responses[0];
         System.assertEquals(true, res.success, 'Move should succeed');
-        System.assertEquals('Done', res.newColumnName, 'Should be moved to Done');
+        System.assertEquals(
+            'Done',
+            res.newColumnName,
+            'Should be moved to Done'
+        );
 
         OpenSF__Card__c moved = [
             SELECT OpenSF__Column__r.OpenSF__ColumnHeader__c
             FROM OpenSF__Card__c
             WHERE Id = :card.Id
         ];
-        System.assertEquals('Done', moved.OpenSF__Column__r.OpenSF__ColumnHeader__c);
+        System.assertEquals(
+            'Done',
+            moved.OpenSF__Column__r.OpenSF__ColumnHeader__c
+        );
     }
 
     @IsTest
@@ -248,7 +283,10 @@ private class AgentCardActionsTest {
 
         AgentMoveCard.Response res = responses[0];
         System.assertEquals(false, res.success, 'Move should fail');
-        System.assert(res.message.contains('not found'), 'Message should indicate column not found');
+        System.assert(
+            res.message.contains('not found'),
+            'Message should indicate column not found'
+        );
     }
 
     @IsTest
@@ -285,9 +323,16 @@ private class AgentCardActionsTest {
         Test.stopTest();
 
         AgentSearchCards.Response res = responses[0];
-        System.assert(res.totalFound >= 1, 'Should find at least one High priority card');
+        System.assert(
+            res.totalFound >= 1,
+            'Should find at least one High priority card'
+        );
         for (AgentSearchCards.CardResult cr : res.cards) {
-            System.assertEquals('High', cr.priority, 'All results should be High priority');
+            System.assertEquals(
+                'High',
+                cr.priority,
+                'All results should be High priority'
+            );
         }
     }
 

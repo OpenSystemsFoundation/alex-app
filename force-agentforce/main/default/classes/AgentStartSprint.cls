@@ -4,15 +4,22 @@
  */
 public with sharing class AgentStartSprint {
     public class Request {
-        @InvocableVariable(required=true description='The Id of the sprint to start')
+        @InvocableVariable(
+            required=true
+            description='The Id of the sprint to start'
+        )
         public Id sprintId;
     }
 
     public class Response {
-        @InvocableVariable(description='Whether the sprint was started successfully')
+        @InvocableVariable(
+            description='Whether the sprint was started successfully'
+        )
         public Boolean success;
 
-        @InvocableVariable(description='Total story points committed to the sprint')
+        @InvocableVariable(
+            description='Total story points committed to the sprint'
+        )
         public Decimal totalStoryPoints;
 
         @InvocableVariable(description='Status message')
@@ -52,7 +59,9 @@ public with sharing class AgentStartSprint {
 
             if (sprint.OpenSF__Status__c != 'Planning') {
                 res.success = false;
-                res.message = 'Sprint must be in Planning status to start. Current status: ' + sprint.OpenSF__Status__c;
+                res.message =
+                    'Sprint must be in Planning status to start. Current status: ' +
+                    sprint.OpenSF__Status__c;
                 return res;
             }
 
@@ -118,7 +127,10 @@ public with sharing class AgentStartSprint {
 
             res.success = true;
             res.totalStoryPoints = totalPoints;
-            res.message = 'Sprint started successfully with ' + totalPoints + ' story points.';
+            res.message =
+                'Sprint started successfully with ' +
+                totalPoints +
+                ' story points.';
         } catch (Exception e) {
             res.success = false;
             res.message = 'Error starting sprint: ' + e.getMessage();

@@ -3,7 +3,10 @@
  */
 public with sharing class AgentGetCardDetails {
     public class Request {
-        @InvocableVariable(required=true description='The Id of the card to retrieve')
+        @InvocableVariable(
+            required=true
+            description='The Id of the card to retrieve'
+        )
         public Id cardId;
     }
 
@@ -122,10 +125,18 @@ public with sharing class AgentGetCardDetails {
             res.needsRefinement = card.OpenSF__NeedsRefinement__c;
             res.locked = card.OpenSF__Locked__c;
             res.boardId = card.OpenSF__Board__c;
-            res.assigneeName = card.OpenSF__Assignee__r != null ? card.OpenSF__Assignee__r.Name : null;
-            res.peerReviewerName = card.OpenSF__PeerReviewer__r != null ? card.OpenSF__PeerReviewer__r.Name : null;
-            res.epicSubject = card.OpenSF__Epic__r != null ? card.OpenSF__Epic__r.OpenSF__Subject__c : null;
-            res.columnName = card.OpenSF__Column__r != null ? card.OpenSF__Column__r.OpenSF__ColumnHeader__c : null;
+            res.assigneeName = card.OpenSF__Assignee__r != null
+                ? card.OpenSF__Assignee__r.Name
+                : null;
+            res.peerReviewerName = card.OpenSF__PeerReviewer__r != null
+                ? card.OpenSF__PeerReviewer__r.Name
+                : null;
+            res.epicSubject = card.OpenSF__Epic__r != null
+                ? card.OpenSF__Epic__r.OpenSF__Subject__c
+                : null;
+            res.columnName = card.OpenSF__Column__r != null
+                ? card.OpenSF__Column__r.OpenSF__ColumnHeader__c
+                : null;
             res.message = 'Card details retrieved successfully.';
         } catch (Exception e) {
             res.message = 'Error retrieving card details: ' + e.getMessage();

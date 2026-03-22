@@ -4,15 +4,15 @@ on:
     push:
         branches: [main]
         paths:
-            - "force-agentforce/**"
+            - 'force-agentforce/**'
     pull_request:
         branches: [main]
         paths:
-            - "force-agentforce/**"
+            - 'force-agentforce/**'
     workflow_dispatch:
         inputs:
             test_suite:
-                description: "Test suite to run (blank = all)"
+                description: 'Test suite to run (blank = all)'
                 required: false
                 type: choice
                 options:
@@ -23,9 +23,9 @@ on:
                     - Team_Assignment_Tests
                     - Estimation_Tests
             pass_rate_threshold:
-                description: "Minimum pass rate percentage (default: 80)"
+                description: 'Minimum pass rate percentage (default: 80)'
                 required: false
-                default: "80"
+                default: '80'
                 type: string
 
 env:

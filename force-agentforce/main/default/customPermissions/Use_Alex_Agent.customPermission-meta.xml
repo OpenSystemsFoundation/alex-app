@@ -1,6 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
     <label>Use Alex Agent</label>
-    <description>Grants access to the Alex AI Agent for managing kanban boards through natural language.</description>
+    <description
+    >Grants access to the Alex AI Agent for managing kanban boards through natural language.</description>
     <isLicensed>false</isLicensed>
 </CustomPermission>

@@ -67,13 +67,22 @@ private class AgentAssignmentActionsTest {
     }
 
     static OpenSF__Card__c getCard(String subject) {
-        return [SELECT Id FROM OpenSF__Card__c WHERE OpenSF__Subject__c = :subject LIMIT 1];
+        return [
+            SELECT Id
+            FROM OpenSF__Card__c
+            WHERE OpenSF__Subject__c = :subject
+            LIMIT 1
+        ];
     }
 
     @IsTest
     static void testAssignCard() {
         OpenSF__Card__c card = getCard('Test Card 1');
-        User currentUser = [SELECT Id, Name FROM User WHERE Id = :UserInfo.getUserId()];
+        User currentUser = [
+            SELECT Id, Name
+            FROM User
+            WHERE Id = :UserInfo.getUserId()
+        ];
 
         AgentAssignCard.Request req = new AgentAssignCard.Request();
         req.cardId = card.Id;
@@ -87,20 +96,32 @@ private class AgentAssignmentActionsTest {
 
         AgentAssignCard.Response res = responses[0];
         System.assertEquals(true, res.success, 'Assignment should succeed');
-        System.assertEquals(currentUser.Name, res.assignedUserName, 'Assigned user name should match');
+        System.assertEquals(
+            currentUser.Name,
+            res.assignedUserName,
+            'Assigned user name should match'
+        );
 
         OpenSF__Card__c updated = [
             SELECT OpenSF__Assignee__c
             FROM OpenSF__Card__c
             WHERE Id = :card.Id
         ];
-        System.assertEquals(currentUser.Id, updated.OpenSF__Assignee__c, 'Card assignee should be set');
+        System.assertEquals(
+            currentUser.Id,
+            updated.OpenSF__Assignee__c,
+            'Card assignee should be set'
+        );
     }
 
     @IsTest
     static void testAssignCardAsPeerReviewer() {
         OpenSF__Card__c card = getCard('Test Card 1');
-        User currentUser = [SELECT Id, Name FROM User WHERE Id = :UserInfo.getUserId()];
+        User currentUser = [
+            SELECT Id, Name
+            FROM User
+            WHERE Id = :UserInfo.getUserId()
+        ];
 
         AgentAssignCard.Request req = new AgentAssignCard.Request();
         req.cardId = card.Id;
@@ -114,15 +135,26 @@ private class AgentAssignmentActionsTest {
         Test.stopTest();
 
         AgentAssignCard.Response res = responses[0];
-        System.assertEquals(true, res.success, 'Peer reviewer assignment should succeed');
-        System.assert(res.message.contains('Peer Reviewer'), 'Message should mention Peer Reviewer');
+        System.assertEquals(
+            true,
+            res.success,
+            'Peer reviewer assignment should succeed'
+        );
+        System.assert(
+            res.message.contains('Peer Reviewer'),
+            'Message should mention Peer Reviewer'
+        );
 
         OpenSF__Card__c updated = [
             SELECT OpenSF__PeerReviewer__c
             FROM OpenSF__Card__c
             WHERE Id = :card.Id
         ];
-        System.assertEquals(currentUser.Id, updated.OpenSF__PeerReviewer__c, 'Card peer reviewer should be set');
+        System.assertEquals(
+            currentUser.Id,
+            updated.OpenSF__PeerReviewer__c,
+            'Card peer reviewer should be set'
+        );
     }
 
     @IsTest
@@ -140,13 +172,24 @@ private class AgentAssignmentActionsTest {
         Test.stopTest();
 
         AgentAssignCard.Response res = responses[0];
-        System.assertEquals(false, res.success, 'Should fail for non-existent user');
-        System.assert(res.message.contains('No active user found'), 'Message should indicate user not found');
+        System.assertEquals(
+            false,
+            res.success,
+            'Should fail for non-existent user'
+        );
+        System.assert(
+            res.message.contains('No active user found'),
+            'Message should indicate user not found'
+        );
     }
 
     @IsTest
     static void testSearchUsers() {
-        User currentUser = [SELECT Id, Name FROM User WHERE Id = :UserInfo.getUserId()];
+        User currentUser = [
+            SELECT Id, Name
+            FROM User
+            WHERE Id = :UserInfo.getUserId()
+        ];
 
         AgentSearchUsers.Request req = new AgentSearchUsers.Request();
         req.searchTerm = currentUser.Name;
@@ -158,16 +201,30 @@ private class AgentAssignmentActionsTest {
         Test.stopTest();
 
         AgentSearchUsers.Response res = responses[0];
-        System.assert(res.totalFound >= 1, 'Should find at least the current user');
-        System.assertNotEquals(null, res.users, 'Users JSON should not be null');
-        System.assert(res.message.contains('Found'), 'Message should indicate users found');
+        System.assert(
+            res.totalFound >= 1,
+            'Should find at least the current user'
+        );
+        System.assertNotEquals(
+            null,
+            res.users,
+            'Users JSON should not be null'
+        );
+        System.assert(
+            res.message.contains('Found'),
+            'Message should indicate users found'
+        );
     }
 
     @IsTest
     static void testGetUserWorkload() {
         OpenSF__Board__c board = getBoard();
         OpenSF__Card__c card = getCard('Test Card 1');
-        User currentUser = [SELECT Id, Name FROM User WHERE Id = :UserInfo.getUserId()];
+        User currentUser = [
+            SELECT Id, Name
+            FROM User
+            WHERE Id = :UserInfo.getUserId()
+        ];
 
         // Assign a card to the current user
         card.OpenSF__Assignee__c = currentUser.Id;
@@ -184,9 +241,23 @@ private class AgentAssignmentActionsTest {
         Test.stopTest();
 
         AgentGetUserWorkload.Response res = responses[0];
-        System.assertEquals(currentUser.Name, res.userName, 'User name should match');
-        System.assert(res.totalCards >= 1, 'Should find at least one assigned card');
-        System.assert(res.totalStoryPoints >= 5, 'Should include story points from assigned card');
-        System.assertNotEquals(null, res.cardsByStatus, 'Cards by status JSON should not be null');
+        System.assertEquals(
+            currentUser.Name,
+            res.userName,
+            'User name should match'
+        );
+        System.assert(
+            res.totalCards >= 1,
+            'Should find at least one assigned card'
+        );
+        System.assert(
+            res.totalStoryPoints >= 5,
+            'Should include story points from assigned card'
+        );
+        System.assertNotEquals(
+            null,
+            res.cardsByStatus,
+            'Cards by status JSON should not be null'
+        );
     }
 }
