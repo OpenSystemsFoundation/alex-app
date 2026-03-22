@@ -191,10 +191,8 @@ runs:
           shell: bash
           run: |
               ERROR_LOG="/tmp/setup-error-${{ inputs.org-alias }}.log"
-              if ! sf project deploy start --source-dir force-agentforce --target-org ${{ inputs.org-alias }} --ignore-conflicts 2>&1 | tee -a "$ERROR_LOG"; then
-                echo "Deploy agentforce failed" >> "$ERROR_LOG"
-                exit 1
-              fi
+              set -o pipefail
+              sf project deploy start --source-dir force-agentforce --target-org ${{ inputs.org-alias }} --ignore-conflicts 2>&1 | tee -a "$ERROR_LOG"
 
         - name: Assign Permission Sets
           if: steps.provision.outputs.org_created == 'true'
