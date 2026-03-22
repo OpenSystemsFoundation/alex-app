@@ -34,6 +34,8 @@ export function createUndoManager() {
     let _paused = false;
     /** @type {Set<Function>} */
     const _subscribers = new Set();
+    /** Card IDs temporarily exempt from stale-marking after undo/redo */
+    const _graceCardIds = new Set();
 
     function _notify() {
         const snapshot = { canUndo: canUndo(), canRedo: canRedo() };
@@ -179,9 +181,13 @@ export function createUndoManager() {
     /**
      * Mark entries referencing a given cardId as stale.
      * Called when a platform event from another client modifies the card.
+     * Skips marking while paused (undo/redo in flight) or during the
+     * grace period after an undo/redo (our own platform event echo).
      * @param {string} cardId
      */
     function markStale(cardId) {
+        if (_paused) return; // Our own undo/redo in flight
+        if (_graceCardIds.has(cardId)) return; // Our own echo still arriving
         let changed = false;
         _stack.forEach((entry) => {
             const rc = entry.reverseContext || {};
@@ -192,6 +198,17 @@ export function createUndoManager() {
             }
         });
         if (changed) _notify();
+    }
+
+    /**
+     * Temporarily exempt a cardId from stale-marking (grace period for
+     * platform event echoes after undo/redo). Expires after 5 seconds.
+     * @param {string} cardId
+     */
+    function addGrace(cardId) {
+        _graceCardIds.add(cardId);
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        setTimeout(() => _graceCardIds.delete(cardId), 5000);
     }
 
     /** @returns {boolean} */
@@ -212,6 +229,7 @@ export function createUndoManager() {
         pause,
         resume,
         isPaused,
-        markStale
+        markStale,
+        addGrace
     };
 }

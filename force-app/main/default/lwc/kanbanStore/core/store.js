@@ -223,6 +223,11 @@ class KanbanStore {
 
         const thunk = def.buildReverseThunk(entry.reverseContext, this);
 
+        // Grace period so our own platform event echo doesn't mark entries stale
+        const cardId =
+            entry.reverseContext?.cardId || entry.forwardContext?.cardId;
+        if (cardId) this.undoManager.addGrace(cardId);
+
         this.undoManager.pause();
         try {
             await this.dispatch(thunk);
@@ -249,6 +254,11 @@ class KanbanStore {
         if (!def) return false;
 
         const thunk = def.buildForwardThunk(entry.forwardContext, this);
+
+        // Grace period so our own platform event echo doesn't mark entries stale
+        const cardId =
+            entry.forwardContext?.cardId || entry.reverseContext?.cardId;
+        if (cardId) this.undoManager.addGrace(cardId);
 
         this.undoManager.pause();
         try {
