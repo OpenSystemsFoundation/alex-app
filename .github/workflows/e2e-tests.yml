@@ -1,142 +1,210 @@
-name: E2E Tests (Playwright)
+name: E2E Tests
 
 on:
     pull_request:
         branches: [main]
+        paths:
+            - 'e2e/**'
+            - 'force-app/**'
+            - '.github/workflows/e2e-*.yml'
+            - '.github/actions/setup-e2e-org/**'
+            - 'playwright.config.ts'
     workflow_dispatch:
         inputs:
             branch:
                 description: 'Branch to test'
                 required: false
 
+concurrency:
+    group: e2e-pr-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
 jobs:
-    e2e:
-        name: E2E (${{ matrix.browser }})
+    board-core:
+        name: Board Core
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: board-core
+            specs: 'kanban-board.spec.ts board-filters.spec.ts card-panel.spec.ts board-toolbar.spec.ts'
+            create-retro-data: false
+
+    backlog-sprint:
+        name: Backlog & Sprint
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: backlog-sprint
+            specs: 'backlog-view.spec.ts sprint-management.spec.ts'
+            create-retro-data: false
+
+    admin:
+        name: Admin Panel
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: admin
+            specs: 'admin-management.spec.ts'
+            create-retro-data: false
+
+    retro-analytics:
+        name: Retro & Analytics
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: retro-analytics
+            specs: 'analytics.spec.ts retrospective.spec.ts'
+            create-retro-data: true
+
+    planning-poker:
+        name: Planning Poker
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: planning-poker
+            specs: 'planning-poker.spec.ts'
+            create-retro-data: false
+
+    unhappy-paths:
+        name: Unhappy Paths
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: unhappy-paths
+            specs: 'unhappy-paths.spec.ts'
+            create-retro-data: true
+
+    multi-user:
+        name: Multi-User Sync
+        uses: ./.github/workflows/e2e-multi-user.yml
+        secrets: inherit
+        with:
+            suite-name: multi-user
+            specs: 'card-sync.spec.ts drag-drop-sync.spec.ts'
+
+    collect-results:
+        name: Collect Results
         runs-on: ubuntu-latest
-        strategy:
-            fail-fast: false
-            matrix:
-                browser: [chromium, firefox, webkit]
+        needs:
+            - board-core
+            - backlog-sprint
+            - admin
+            - retro-analytics
+            - planning-poker
+            - unhappy-paths
+            - multi-user
+        if: always()
+        timeout-minutes: 5
+
         steps:
-            - uses: actions/checkout@v4
+            - name: Download all suite outputs
+              uses: actions/download-artifact@v4
               with:
-                  ref: ${{ inputs.branch || github.ref }}
+                  pattern: e2e-output-*
+                  path: suite-outputs
 
-            - uses: actions/setup-node@v4
-              with:
-                  node-version: '22'
-
-            - name: Install dependencies
-              run: npm ci
-
-            - name: Install Salesforce CLI
-              run: npm install -g @salesforce/cli
-
-            - name: Install Playwright
-              run: npx playwright install --with-deps ${{ matrix.browser }}
-
-            - name: Authenticate DevHub
-              run: |
-                  echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
-                  sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
-                  rm sfdx_auth.txt
-
-            - name: Create Scratch Org
-              run: |
-                  sf org create scratch \
-                    --definition-file config/project-scratch-def.json \
-                    --alias e2e-test \
-                    --duration-days 1 \
-                    --wait 10
-
-            - name: Deploy Source
-              run: sf project deploy start --target-org e2e-test --ignore-conflicts
-
-            - name: Assign Permission Sets
-              run: sf org assign permset --name Alex_Admin --target-org e2e-test
-
-            - name: Create Sample Data
-              run: |
-                  sf apex run --file scripts/apex/CreateFilledKanbanBoard.apex --target-org e2e-test
-
-            - name: Get Login URL
-              id: login
-              run: |
-                  LOGIN_URL=$(sf org open --target-org e2e-test --json 2>/dev/null | node -e "
-                    let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
-                      const j=JSON.parse(d);
-                      console.log(j.result.url);
-                    });
-                  ")
-                  echo "url=$LOGIN_URL" >> "$GITHUB_OUTPUT"
-
-            - name: Run Playwright Tests
-              id: playwright
-              env:
-                  SCRATCH_ORG_URL: ${{ steps.login.outputs.url }}
-              run: |
-                  set +e
-                  npx playwright test --project=${{ matrix.browser }} --retries=0 --grep-invert="Visual Regression" 2>&1 | tee /tmp/playwright-output.txt
-                  echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
-
-            - name: Post E2E Results to PR
-              if: always() && github.event_name == 'pull_request'
+            - name: Post results to PR
+              if: github.event_name == 'pull_request'
               uses: actions/github-script@v7
               with:
                   script: |
                       const fs = require('fs');
-                      const output = fs.existsSync('/tmp/playwright-output.txt')
-                        ? fs.readFileSync('/tmp/playwright-output.txt', 'utf8')
-                        : 'No output captured';
-                      const maxLen = 60000;
-                      const truncated = output.length > maxLen
-                        ? '…truncated…\n' + output.slice(-maxLen)
-                        : output;
-                      const status = '${{ steps.playwright.outputs.exit_code }}' === '0' ? '✅' : '❌';
-                      const body = `### ${status} E2E Results — ${{ matrix.browser }}\n\n<details><summary>Playwright output</summary>\n\n\`\`\`\n${truncated}\n\`\`\`\n\n</details>`;
+                      const path = require('path');
+
+                      const suites = [
+                        'board-core', 'backlog-sprint', 'admin',
+                        'retro-analytics', 'planning-poker',
+                        'unhappy-paths', 'multi-user'
+                      ];
+
+                      let totalPassed = 0, totalFailed = 0, totalSkipped = 0, totalFlaky = 0;
+                      let allPassed = true;
+                      let body = '';
+
+                      for (const suite of suites) {
+                        const file = path.join('suite-outputs', `e2e-output-${suite}`, 'playwright-output.txt');
+                        if (fs.existsSync(file)) {
+                          const output = fs.readFileSync(file, 'utf8');
+                          const tail = output.split('\n').slice(-50).join('\n');
+
+                          const passedM = output.match(/(\d+) passed/);
+                          const failedM = output.match(/(\d+) failed/);
+                          const skippedM = output.match(/(\d+) skipped/);
+                          const flakyM = output.match(/(\d+) flaky/);
+
+                          const p = passedM ? parseInt(passedM[1]) : 0;
+                          const f = failedM ? parseInt(failedM[1]) : 0;
+                          const s = skippedM ? parseInt(skippedM[1]) : 0;
+                          const fl = flakyM ? parseInt(flakyM[1]) : 0;
+
+                          totalPassed += p; totalFailed += f;
+                          totalSkipped += s; totalFlaky += fl;
+                          if (f > 0) allPassed = false;
+
+                          const icon = f > 0 ? 'FAIL' : 'PASS';
+                          body += `### [${icon}] ${suite} -- ${p} passed, ${f} failed, ${s} skipped\n`;
+                          body += `<details><summary>Output</summary>\n\n\`\`\`\n${tail}\n\`\`\`\n\n</details>\n\n`;
+                        } else {
+                          body += `### [SKIP] ${suite} -- No output\n\n`;
+                          allPassed = false;
+                        }
+                      }
+
+                      const status = allPassed ? 'PASS' : 'FAIL';
+                      const summary = `**${totalPassed} passed** | **${totalFailed} failed** | **${totalSkipped} skipped** | **${totalFlaky} flaky**`;
+                      const comment = `### [${status}] E2E Tests (7 feature suites)\n\n${summary}\n\n${body}`;
+
+                      const maxLen = 65000;
+                      const truncated = comment.length > maxLen
+                        ? comment.slice(0, maxLen) + '\n\n...truncated...'
+                        : comment;
+
+                      // Update existing comment or create new one
+                      const marker = 'E2E Tests (7 feature suites)';
                       const { data: comments } = await github.rest.issues.listComments({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
                         issue_number: context.issue.number,
                       });
-                      const marker = `E2E Results — ${{ matrix.browser }}`;
-                      const existing = comments.find(c => c.body.includes(marker));
+                      const existing = comments.find(c => c.body && c.body.includes(marker));
                       if (existing) {
                         await github.rest.issues.updateComment({
                           owner: context.repo.owner,
                           repo: context.repo.repo,
                           comment_id: existing.id,
-                          body,
+                          body: truncated,
                         });
                       } else {
                         await github.rest.issues.createComment({
                           owner: context.repo.owner,
                           repo: context.repo.repo,
                           issue_number: context.issue.number,
-                          body,
+                          body: truncated,
                         });
                       }
 
-            - name: Fail if tests failed
-              if: always() && steps.playwright.outputs.exit_code != '0'
+            - name: Post Workflow Summary
+              if: always()
+              run: |
+                  echo "## E2E Test Results -- 7 Feature Suites" >> "$GITHUB_STEP_SUMMARY"
+                  echo "" >> "$GITHUB_STEP_SUMMARY"
+                  for suite in board-core backlog-sprint admin retro-analytics planning-poker unhappy-paths multi-user; do
+                    FILE="suite-outputs/e2e-output-${suite}/playwright-output.txt"
+                    if [ -f "$FILE" ]; then
+                      SUMMARY=$(tail -3 "$FILE" | head -1)
+                      echo "### ${suite}: ${SUMMARY}" >> "$GITHUB_STEP_SUMMARY"
+                    else
+                      echo "### ${suite}: No output" >> "$GITHUB_STEP_SUMMARY"
+                    fi
+                  done
+
+            - name: Fail if any suite failed
+              if: |
+                  needs.board-core.result == 'failure' ||
+                  needs.backlog-sprint.result == 'failure' ||
+                  needs.admin.result == 'failure' ||
+                  needs.retro-analytics.result == 'failure' ||
+                  needs.planning-poker.result == 'failure' ||
+                  needs.unhappy-paths.result == 'failure' ||
+                  needs.multi-user.result == 'failure'
               run: exit 1
-
-            - name: Upload Test Report
-              uses: actions/upload-artifact@v4
-              if: always()
-              with:
-                  name: playwright-report-${{ matrix.browser }}
-                  path: playwright-report/
-                  retention-days: 14
-
-            - name: Upload Traces
-              uses: actions/upload-artifact@v4
-              if: failure()
-              with:
-                  name: playwright-traces-${{ matrix.browser }}
-                  path: test-results/
-                  retention-days: 7
-
-            - name: Delete Scratch Org
-              if: always()
-              run: sf org delete scratch --target-org e2e-test --no-prompt || true

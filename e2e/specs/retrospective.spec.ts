@@ -3,47 +3,41 @@ import {
     test as multiTest,
     expect as multiExpect
 } from '../fixtures/multi-user';
+import { createIsolatedRetro, type RetroData } from '../helpers/sf-data';
 
 const SF_TIMEOUT = 45_000;
+
+/** Selector that matches retro board regardless of namespace prefix */
+const RETRO_BOARD = '.retro-board-wrapper';
 
 /**
  * Retrospective Board — single-user tests.
  *
- * Tests the retro board UI: loading, card creation, voting,
- * status advancement, and action items.
+ * Uses deterministic data: creates an isolated retro per test run
+ * and navigates directly to the record page by ID.
  */
 test.describe('Retrospective Board — single user', () => {
-    test.beforeEach(async () => {
+    let retroData: RetroData;
+
+    test.beforeEach(async ({ boardData }) => {
         if (!process.env.SCRATCH_ORG_URL) {
             test.skip(true, 'SCRATCH_ORG_URL not set — skipping');
         }
+        retroData = createIsolatedRetro(boardData.boardId);
     });
 
     test('retro board component loads on record page', async ({
         boardPage,
         boardData
     }) => {
-        // Navigate to a retrospective record page (if one exists)
         const baseUrl = boardData.baseUrl;
-
-        // Try navigating to retro list view first to check if retros exist
         await boardPage.page.goto(
-            `${baseUrl}/lightning/o/OpenSF__Retrospective__c/list`,
+            `${baseUrl}/lightning/r/OpenSF__Retrospective__c/${retroData.retroId}/view`,
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        // Check if list view loaded
-        const listLoaded = await boardPage.page
-            .locator('.slds-page-header')
-            .isVisible({ timeout: SF_TIMEOUT })
-            .catch(() => false);
-
-        if (!listLoaded) {
-            test.skip(true, 'Retrospective list view not accessible');
-        }
-
-        // Just verify we can navigate to the object
-        await expect(boardPage.page.locator('body')).toBeVisible();
+        const retroBoard = boardPage.page.locator(RETRO_BOARD);
+        await expect(retroBoard).toBeAttached({ timeout: SF_TIMEOUT });
     });
 
     test('retro board renders columns based on template', async ({
@@ -51,41 +45,21 @@ test.describe('Retrospective Board — single user', () => {
         boardData
     }) => {
         const baseUrl = boardData.baseUrl;
-
-        // Navigate to retro tab if available
         await boardPage.page.goto(
-            `${baseUrl}/lightning/o/OpenSF__Retrospective__c/list`,
+            `${baseUrl}/lightning/r/OpenSF__Retrospective__c/${retroData.retroId}/view`,
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        // Look for any retro records to click into
-        const retroLink = boardPage.page.locator('a[data-refid="recordId"]');
-        const hasRetro = await retroLink
-            .first()
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-
-        if (!hasRetro) {
-            test.skip(true, 'No retrospective records found');
-        }
-
-        await retroLink.first().click();
-        await boardPage.page.waitForTimeout(3000);
-
-        // The retro board component should render
-        const retroBoard = boardPage.page.locator('opensf-retro-board');
-        const retroLoaded = await retroBoard
+        const retroBoard = boardPage.page.locator(RETRO_BOARD);
+        const loaded = await retroBoard
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
-
-        if (!retroLoaded) {
+        if (!loaded) {
             test.skip(true, 'Retro board component not rendered');
         }
 
-        // Should have retro columns (Start/Stop/Continue or similar)
-        const columns = boardPage.page.locator(
-            'opensf-retro-board .retro-column'
-        );
+        // Start_Stop_Continue template should have 3 columns
+        const columns = boardPage.page.locator('.retro-column');
         const hasColumns = await columns
             .first()
             .isVisible({ timeout: 10_000 })
@@ -98,44 +72,27 @@ test.describe('Retrospective Board — single user', () => {
 
     test('retro board shows status badge', async ({ boardPage, boardData }) => {
         const baseUrl = boardData.baseUrl;
-
         await boardPage.page.goto(
-            `${baseUrl}/lightning/o/OpenSF__Retrospective__c/list`,
+            `${baseUrl}/lightning/r/OpenSF__Retrospective__c/${retroData.retroId}/view`,
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const retroLink = boardPage.page.locator('a[data-refid="recordId"]');
-        const hasRetro = await retroLink
-            .first()
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-
-        if (!hasRetro) {
-            test.skip(true, 'No retrospective records found');
-        }
-
-        await retroLink.first().click();
-        await boardPage.page.waitForTimeout(3000);
-
-        const retroBoard = boardPage.page.locator('opensf-retro-board');
+        const retroBoard = boardPage.page.locator(RETRO_BOARD);
         const loaded = await retroBoard
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
-
         if (!loaded) {
             test.skip(true, 'Retro board not rendered');
         }
 
-        // Should have a status badge
-        const statusBadge = boardPage.page.locator(
-            'opensf-retro-board .retro-status-badge'
-        );
+        const statusBadge = boardPage.page.locator('.retro-status-badge');
         const hasBadge = await statusBadge
             .isVisible({ timeout: 5_000 })
             .catch(() => false);
 
         if (hasBadge) {
             await expect(statusBadge).toBeVisible();
+            await expect(statusBadge).toContainText('Active');
         }
     });
 
@@ -144,36 +101,20 @@ test.describe('Retrospective Board — single user', () => {
         boardData
     }) => {
         const baseUrl = boardData.baseUrl;
-
         await boardPage.page.goto(
-            `${baseUrl}/lightning/o/OpenSF__Retrospective__c/list`,
+            `${baseUrl}/lightning/r/OpenSF__Retrospective__c/${retroData.retroId}/view`,
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const retroLink = boardPage.page.locator('a[data-refid="recordId"]');
-        const hasRetro = await retroLink
-            .first()
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-
-        if (!hasRetro) {
-            test.skip(true, 'No retrospective records found');
-        }
-
-        await retroLink.first().click();
-        await boardPage.page.waitForTimeout(3000);
-
-        const retroBoard = boardPage.page.locator('opensf-retro-board');
+        const retroBoard = boardPage.page.locator(RETRO_BOARD);
         const loaded = await retroBoard
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
-
         if (!loaded) {
             test.skip(true, 'Retro board not rendered');
         }
 
-        // Should have textareas for adding cards
-        const textarea = boardPage.page.locator('opensf-retro-board textarea');
+        const textarea = boardPage.page.locator(`${RETRO_BOARD} textarea`);
         const hasTextarea = await textarea
             .first()
             .isVisible({ timeout: 5_000 })
@@ -184,42 +125,72 @@ test.describe('Retrospective Board — single user', () => {
         }
     });
 
-    test('refresh button is present and clickable', async ({
+    test('can add a retro card to a column', async ({
         boardPage,
         boardData
     }) => {
         const baseUrl = boardData.baseUrl;
-
         await boardPage.page.goto(
-            `${baseUrl}/lightning/o/OpenSF__Retrospective__c/list`,
+            `${baseUrl}/lightning/r/OpenSF__Retrospective__c/${retroData.retroId}/view`,
             { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
         );
 
-        const retroLink = boardPage.page.locator('a[data-refid="recordId"]');
-        const hasRetro = await retroLink
-            .first()
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-
-        if (!hasRetro) {
-            test.skip(true, 'No retrospective records found');
-        }
-
-        await retroLink.first().click();
-        await boardPage.page.waitForTimeout(3000);
-
-        const retroBoard = boardPage.page.locator('opensf-retro-board');
+        const retroBoard = boardPage.page.locator(RETRO_BOARD);
         const loaded = await retroBoard
             .isVisible({ timeout: SF_TIMEOUT })
             .catch(() => false);
-
         if (!loaded) {
             test.skip(true, 'Retro board not rendered');
         }
 
-        // Refresh button
+        const cards = boardPage.page.locator('.retro-card');
+        const initialCount = await cards.count().catch(() => 0);
+
+        const textarea = boardPage.page.locator(`${RETRO_BOARD} textarea`);
+        const hasTextarea = await textarea
+            .first()
+            .isVisible({ timeout: 5_000 })
+            .catch(() => false);
+        if (!hasTextarea) {
+            test.skip(true, 'No textarea found');
+        }
+
+        await textarea.first().fill('E2E deterministic retro card');
+        const addBtn = boardPage.page.locator('button.retro-add-btn');
+        if (
+            await addBtn
+                .first()
+                .isVisible({ timeout: 5_000 })
+                .catch(() => false)
+        ) {
+            await addBtn.first().click();
+            await boardPage.page.waitForTimeout(3000);
+        }
+
+        const afterCount = await cards.count().catch(() => 0);
+        expect(afterCount).toBeGreaterThan(initialCount);
+    });
+
+    test('refresh button reloads retro data', async ({
+        boardPage,
+        boardData
+    }) => {
+        const baseUrl = boardData.baseUrl;
+        await boardPage.page.goto(
+            `${baseUrl}/lightning/r/OpenSF__Retrospective__c/${retroData.retroId}/view`,
+            { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
+        );
+
+        const retroBoard = boardPage.page.locator(RETRO_BOARD);
+        const loaded = await retroBoard
+            .isVisible({ timeout: SF_TIMEOUT })
+            .catch(() => false);
+        if (!loaded) {
+            test.skip(true, 'Retro board not rendered');
+        }
+
         const refreshBtn = boardPage.page.locator(
-            'opensf-retro-board button.topbar-icon-btn'
+            `${RETRO_BOARD} button.topbar-icon-btn`
         );
         const hasRefresh = await refreshBtn
             .first()
@@ -228,14 +199,44 @@ test.describe('Retrospective Board — single user', () => {
 
         if (hasRefresh) {
             await expect(refreshBtn.first()).toBeEnabled();
+            await refreshBtn.first().click();
+            await boardPage.page.waitForTimeout(2000);
+            await expect(retroBoard).toBeVisible();
+        }
+    });
+
+    test('votes remaining indicator shows correct count', async ({
+        boardPage,
+        boardData
+    }) => {
+        const baseUrl = boardData.baseUrl;
+        await boardPage.page.goto(
+            `${baseUrl}/lightning/r/OpenSF__Retrospective__c/${retroData.retroId}/view`,
+            { waitUntil: 'domcontentloaded', timeout: SF_TIMEOUT }
+        );
+
+        const retroBoard = boardPage.page.locator(RETRO_BOARD);
+        const loaded = await retroBoard
+            .isVisible({ timeout: SF_TIMEOUT })
+            .catch(() => false);
+        if (!loaded) {
+            test.skip(true, 'Retro board not rendered');
+        }
+
+        const votesIndicator = boardPage.page.locator(
+            '.retro-header__votes-remaining'
+        );
+        const hasVotes = await votesIndicator
+            .isVisible({ timeout: 5_000 })
+            .catch(() => false);
+        if (hasVotes) {
+            await expect(votesIndicator).toContainText(/\d+ votes/);
         }
     });
 });
 
 /**
  * Retrospective Board — multi-user tests.
- *
- * Tests that cards and votes sync between participants in real-time.
  */
 multiTest.describe('Retrospective — multi-user sync', () => {
     multiTest.beforeEach(async () => {
@@ -248,36 +249,9 @@ multiTest.describe('Retrospective — multi-user sync', () => {
         'card created by User A appears for User B after refresh',
         async ({ userA, userB, boardData }) => {
             const baseUrl = boardData.baseUrl;
-            const retroListUrl = `${baseUrl}/lightning/o/OpenSF__Retrospective__c/list`;
+            const retro = createIsolatedRetro(boardData.boardId);
+            const retroUrl = `${baseUrl}/lightning/r/OpenSF__Retrospective__c/${retro.retroId}/view`;
 
-            // Both users navigate to retro list
-            await userA.page.goto(retroListUrl, {
-                waitUntil: 'domcontentloaded',
-                timeout: SF_TIMEOUT
-            });
-
-            // Check if retros exist
-            const retroLink = userA.page.locator('a[data-refid="recordId"]');
-            const hasRetro = await retroLink
-                .first()
-                .isVisible({ timeout: 10_000 })
-                .catch(() => false);
-
-            if (!hasRetro) {
-                multiTest.skip(true, 'No retrospective records found');
-            }
-
-            // Get the retro URL from User A
-            const retroHref = await retroLink.first().getAttribute('href');
-            if (!retroHref) {
-                multiTest.skip(true, 'Could not get retro URL');
-            }
-
-            const retroUrl = retroHref!.startsWith('http')
-                ? retroHref!
-                : `${baseUrl}${retroHref}`;
-
-            // Both users navigate to same retro
             await userA.page.goto(retroUrl, {
                 waitUntil: 'domcontentloaded',
                 timeout: SF_TIMEOUT
@@ -287,9 +261,8 @@ multiTest.describe('Retrospective — multi-user sync', () => {
                 timeout: SF_TIMEOUT
             });
 
-            // Wait for retro boards to load
-            const retroA = userA.page.locator('opensf-retro-board');
-            const retroB = userB.page.locator('opensf-retro-board');
+            const retroA = userA.page.locator(RETRO_BOARD);
+            const retroB = userB.page.locator(RETRO_BOARD);
 
             const aLoaded = await retroA
                 .isVisible({ timeout: SF_TIMEOUT })
@@ -302,14 +275,10 @@ multiTest.describe('Retrospective — multi-user sync', () => {
                 multiTest.skip(true, 'Retro board not rendered for both users');
             }
 
-            // Count initial cards for User B
-            const initialCards = userB.page.locator(
-                'opensf-retro-board .retro-card'
-            );
+            const initialCards = userB.page.locator('.retro-card');
             const initialCount = await initialCards.count().catch(() => 0);
 
-            // User A adds a card
-            const textarea = userA.page.locator('opensf-retro-board textarea');
+            const textarea = userA.page.locator(`${RETRO_BOARD} textarea`);
             const hasTextarea = await textarea
                 .first()
                 .isVisible({ timeout: 5_000 })
@@ -319,10 +288,8 @@ multiTest.describe('Retrospective — multi-user sync', () => {
                 multiTest.skip(true, 'No textarea found for adding cards');
             }
 
-            await textarea.first().fill('Multi-user test card');
-            const addBtn = userA.page.locator(
-                'opensf-retro-board button.retro-add-btn'
-            );
+            await textarea.first().fill('Multi-user deterministic test card');
+            const addBtn = userA.page.locator('button.retro-add-btn');
             if (
                 await addBtn
                     .first()
@@ -333,9 +300,8 @@ multiTest.describe('Retrospective — multi-user sync', () => {
                 await userA.page.waitForTimeout(2000);
             }
 
-            // User B refreshes to see the new card
             const refreshBtn = userB.page.locator(
-                'opensf-retro-board button.topbar-icon-btn'
+                `${RETRO_BOARD} button.topbar-icon-btn`
             );
             if (
                 await refreshBtn
@@ -347,10 +313,7 @@ multiTest.describe('Retrospective — multi-user sync', () => {
                 await userB.page.waitForTimeout(3000);
             }
 
-            // User B should see at least one more card
-            const updatedCards = userB.page.locator(
-                'opensf-retro-board .retro-card'
-            );
+            const updatedCards = userB.page.locator('.retro-card');
             const updatedCount = await updatedCards.count().catch(() => 0);
 
             multiExpect(updatedCount).toBeGreaterThanOrEqual(initialCount);

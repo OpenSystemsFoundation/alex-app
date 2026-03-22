@@ -1,0 +1,85 @@
+name: Chromium E2E Debug
+
+# Iterative E2E debug workflow for feature branches.
+# Add suites below as you develop new features, then promote
+# passing tests to e2e-tests.yml (PR-to-main) when stable.
+#
+# Usage:
+#   1. Create specs in e2e/specs/ for the feature you're building
+#   2. Add a job below that references those specs via e2e-suite.yml
+#   3. Push to your claude/* branch -- results posted as commit comments
+#   4. Read results: gh api repos/OWNER/REPO/commits/SHA/comments
+#   5. Fix, push, repeat until green
+#   6. Promote stable tests to e2e-tests.yml
+#
+# Available reusable workflows:
+#   ./.github/workflows/e2e-suite.yml       -- single-user suite
+#   ./.github/workflows/e2e-multi-user.yml  -- multi-user suite (2 users, 1 org)
+
+on:
+    push:
+        branches:
+            - 'claude/**'
+        paths:
+            - 'e2e/**'
+            - 'force-app/**'
+            - '.github/workflows/e2e-*.yml'
+            - '.github/workflows/chromium-e2e-debug.yml'
+            - '.github/actions/setup-e2e-org/**'
+            - 'playwright.config.ts'
+    workflow_dispatch:
+        inputs:
+            grep:
+                description: 'Filter tests by name (Playwright --grep)'
+                required: false
+            debug:
+                description: 'Enable Playwright debug traces for all tests'
+                type: boolean
+                default: false
+
+concurrency:
+    group: e2e-debug-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    # ---------------------------------------------------------------
+    # Add feature-specific suites here during development.
+    # Each suite gets its own scratch org for full isolation.
+    #
+    # Example:
+    #
+    #   my-feature:
+    #       name: My Feature
+    #       uses: ./.github/workflows/e2e-suite.yml
+    #       secrets: inherit
+    #       with:
+    #           suite-name: my-feature
+    #           specs: 'my-feature.spec.ts'
+    #           create-retro-data: false
+    #           grep: ${{ inputs.grep || '' }}
+    #           debug: ${{ inputs.debug || false }}
+    #
+    # For multi-user tests:
+    #
+    #   my-feature-sync:
+    #       name: My Feature Sync
+    #       uses: ./.github/workflows/e2e-multi-user.yml
+    #       secrets: inherit
+    #       with:
+    #           suite-name: my-feature-sync
+    #           specs: 'my-feature-sync.spec.ts'
+    #           grep: ${{ inputs.grep || '' }}
+    #           debug: ${{ inputs.debug || false }}
+    # ---------------------------------------------------------------
+
+    no-suites:
+        name: No debug suites configured
+        runs-on: ubuntu-latest
+        timeout-minutes: 1
+        steps:
+            - name: Info
+              run: |
+                  echo "No debug E2E suites are configured."
+                  echo "Add suites to .github/workflows/chromium-e2e-debug.yml to start testing."
+                  echo ""
+                  echo "See the workflow file comments for examples."

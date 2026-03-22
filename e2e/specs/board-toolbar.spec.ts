@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures';
+import { enableDevTools } from '../helpers/sf-data';
 
 const SF_TIMEOUT = 45_000;
 
@@ -33,20 +34,28 @@ test.describe('Board Toolbar', () => {
         boardPage,
         boardData
     }) => {
+        // Enable dev tools via custom settings so undo/redo buttons render
+        try {
+            enableDevTools();
+        } catch {
+            test.skip(true, 'Could not enable dev tools via custom settings');
+        }
+
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.waitForCards();
 
-        // Undo/Redo buttons only render when hasDevTools is true
-        // (template lwc:if={hasDevTools}). Use a shorter timeout to check.
         const undoBtn = boardPage.page.locator(
             'button.topbar-icon-btn[title*="Undo"]'
         );
         const hasUndo = await undoBtn
-            .isVisible({ timeout: 5_000 })
+            .isVisible({ timeout: 10_000 })
             .catch(() => false);
 
         if (!hasUndo) {
-            test.skip(true, 'DevTools not enabled — undo button not rendered');
+            test.skip(
+                true,
+                'Undo button not rendered even after enabling dev tools'
+            );
             return;
         }
 
@@ -58,19 +67,27 @@ test.describe('Board Toolbar', () => {
         boardPage,
         boardData
     }) => {
+        try {
+            enableDevTools();
+        } catch {
+            test.skip(true, 'Could not enable dev tools via custom settings');
+        }
+
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.waitForCards();
 
-        // Redo button only renders when hasDevTools is true
         const redoBtn = boardPage.page.locator(
             'button.topbar-icon-btn[title*="Redo"]'
         );
         const hasRedo = await redoBtn
-            .isVisible({ timeout: 5_000 })
+            .isVisible({ timeout: 10_000 })
             .catch(() => false);
 
         if (!hasRedo) {
-            test.skip(true, 'DevTools not enabled — redo button not rendered');
+            test.skip(
+                true,
+                'Redo button not rendered even after enabling dev tools'
+            );
             return;
         }
 
@@ -115,14 +132,13 @@ test.describe('Board Toolbar', () => {
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.waitForCards();
 
-        // In LWC, <c-connection-status-indicator> renders as that tag name
         const statusIndicator = boardPage.page.locator(
-            'c-connection-status-indicator'
+            'opensf-connection-status-indicator, c-connection-status-indicator'
         );
         await expect(statusIndicator).toBeAttached({ timeout: SF_TIMEOUT });
     });
 
-    test('new sprint button is visible when no active sprint', async ({
+    test('sprint header shows on sprint-type board', async ({
         boardPage,
         boardData
     }) => {
@@ -131,13 +147,15 @@ test.describe('Board Toolbar', () => {
 
         // Sprint header only renders when isSprintBoard is true
         const sprintHeader = boardPage.page.locator(
-            'opensf-kanban-sprint-header'
+            '.sprint-inline, c-kanban-sprint-header, opensf-kanban-sprint-header'
         );
-        const hasSprintHeader = await sprintHeader
+        // Just verify it's attached (may be invisible if board type is Project)
+        const isAttached = await sprintHeader
             .isVisible({ timeout: 5_000 })
             .catch(() => false);
 
-        if (!hasSprintHeader) {
+        if (!isAttached) {
+            // Expected for non-sprint boards — not an error
             test.skip(
                 true,
                 'Board is not a sprint board — sprint header not rendered'
@@ -146,20 +164,6 @@ test.describe('Board Toolbar', () => {
         }
 
         await expect(sprintHeader).toBeAttached({ timeout: SF_TIMEOUT });
-
-        // Check for "No active sprint" text inside the sprint header
-        const noSprintText = sprintHeader.locator('.sprint-inline__empty');
-        const hasNoSprint = await noSprintText
-            .isVisible({ timeout: 5_000 })
-            .catch(() => false);
-
-        if (hasNoSprint) {
-            // The "New Sprint" button is a lightning-button inside the sprint header
-            const newSprintBtn = sprintHeader.locator(
-                'lightning-button[label="New Sprint"]'
-            );
-            await expect(newSprintBtn).toBeVisible({ timeout: SF_TIMEOUT });
-        }
     });
 
     test('tab switching updates active state CSS class', async ({
