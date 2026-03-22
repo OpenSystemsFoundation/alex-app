@@ -63,6 +63,15 @@ runs:
                 --duration-days ${{ inputs.duration-days }} \
                 --wait 15
 
+        - name: Prepare Project Config for Source Deploy
+          shell: bash
+          run: |
+              node -e "
+                const p = require('./sfdx-project.json');
+                p.packageDirectories.forEach(d => { delete d.dependencies; });
+                require('fs').writeFileSync('sfdx-project.json', JSON.stringify(p, null, 4));
+              "
+
         - name: Deploy Base Package (force-app)
           shell: bash
           run: sf project deploy start --source-dir force-app --target-org ${{ inputs.org-alias }} --ignore-conflicts

@@ -51,6 +51,16 @@ jobs:
             - name: Create Agentforce Scratch Org
               run: sf org create scratch --definition-file config/agentforce-project-scratch-def.json --alias ci-agent-test --duration-days 1 --wait 10
 
+            - name: Prepare Project Config for Source Deploy
+              run: |
+                  # Remove package dependencies that are only needed for package version creation.
+                  # Source deploys don't need inter-package dependency resolution.
+                  node -e "
+                    const p = require('./sfdx-project.json');
+                    p.packageDirectories.forEach(d => { delete d.dependencies; });
+                    require('fs').writeFileSync('sfdx-project.json', JSON.stringify(p, null, 4));
+                  "
+
             - name: Deploy Base Package
               run: sf project deploy start --source-dir force-app --target-org ci-agent-test --ignore-conflicts
 
@@ -138,6 +148,14 @@ jobs:
 
             - name: Create Agentforce Scratch Org
               run: sf org create scratch --definition-file config/agentforce-project-scratch-def.json --alias ci-agent-eval --duration-days 1 --wait 10
+
+            - name: Prepare Project Config for Source Deploy
+              run: |
+                  node -e "
+                    const p = require('./sfdx-project.json');
+                    p.packageDirectories.forEach(d => { delete d.dependencies; });
+                    require('fs').writeFileSync('sfdx-project.json', JSON.stringify(p, null, 4));
+                  "
 
             - name: Deploy All Source
               run: |
