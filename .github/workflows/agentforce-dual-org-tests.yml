@@ -54,6 +54,9 @@ jobs:
                   scratch-def: config/agentforce-project-scratch-def.json
                   create-board-data: false
                   deploy-agentforce: true
+                  persistent: true
+                  cache-key: ${{ github.head_ref || github.ref_name }}
+                  duration-days: '7'
 
             - name: Run All Apex Tests
               run: |

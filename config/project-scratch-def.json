@@ -2,7 +2,11 @@
     "orgName": "OpenSF",
     "edition": "Partner Developer",
     "language": "en_US",
-    "features": ["ContactsToMultipleAccounts"],
+    "features": [
+        "ContactsToMultipleAccounts",
+        "Einstein1AIPlatform",
+        "Communities"
+    ],
     "settings": {
         "mobileSettings": {
             "enableS1EncryptedStoragePref2": false
@@ -12,6 +16,15 @@
         },
         "chatterSettings": {
             "enableChatter": true
+        },
+        "einsteinGptSettings": {
+            "enableEinsteinGptPlatform": true
+        },
+        "agentPlatformSettings": {
+            "enableAgentPlatform": true
+        },
+        "communitiesSettings": {
+            "enableNetworksEnabled": true
         }
     }
 }

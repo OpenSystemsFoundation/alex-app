@@ -79,7 +79,7 @@ export default class CardLinkedCards extends NavigationMixin(LightningElement) {
     }
 
     get hasLinks() {
-        return this.links.length > 0;
+        return this.links && this.links.length > 0;
     }
 
     get linkCount() {
@@ -115,6 +115,7 @@ export default class CardLinkedCards extends NavigationMixin(LightningElement) {
     }
 
     get displayLinks() {
+        if (!this.links) return [];
         return this.links.map((link) => ({
             ...link,
             icon: LINK_TYPE_ICONS[link.linkType] || 'utility:link',
