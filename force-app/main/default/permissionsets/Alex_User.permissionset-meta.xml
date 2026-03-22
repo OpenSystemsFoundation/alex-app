@@ -352,6 +352,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>TeamMember__c.Member__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>TeamMember__c.Role__c</field>
         <readable>true</readable>
     </fieldPermissions>

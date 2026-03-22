@@ -86,9 +86,9 @@ public with sharing class TeamSelector {
                 Id,
                 Name,
                 OpenSF__Team__c,
-                OpenSF__User__c,
-                OpenSF__User__r.Name,
-                OpenSF__User__r.SmallPhotoUrl,
+                OpenSF__Member__c,
+                OpenSF__Member__r.Name,
+                OpenSF__Member__r.SmallPhotoUrl,
                 OpenSF__Role__c,
                 OpenSF__Allocation__c,
                 OpenSF__JoinDate__c,
@@ -97,7 +97,7 @@ public with sharing class TeamSelector {
             FROM OpenSF__TeamMember__c
             WHERE OpenSF__Team__c = :teamId
             WITH USER_MODE
-            ORDER BY OpenSF__User__r.Name ASC
+            ORDER BY OpenSF__Member__r.Name ASC
         ];
     }
 
@@ -113,9 +113,9 @@ public with sharing class TeamSelector {
                 Id,
                 Name,
                 OpenSF__Team__c,
-                OpenSF__User__c,
-                OpenSF__User__r.Name,
-                OpenSF__User__r.SmallPhotoUrl,
+                OpenSF__Member__c,
+                OpenSF__Member__r.Name,
+                OpenSF__Member__r.SmallPhotoUrl,
                 OpenSF__Role__c,
                 OpenSF__Allocation__c,
                 OpenSF__JoinDate__c,
@@ -126,7 +126,7 @@ public with sharing class TeamSelector {
                 OpenSF__Team__c = :teamId
                 AND OpenSF__Status__c = :activeStatus
             WITH USER_MODE
-            ORDER BY OpenSF__User__r.Name ASC
+            ORDER BY OpenSF__Member__r.Name ASC
         ];
     }
 
@@ -142,12 +142,12 @@ public with sharing class TeamSelector {
                 Name,
                 OpenSF__Team__c,
                 OpenSF__Team__r.Name,
-                OpenSF__User__c,
+                OpenSF__Member__c,
                 OpenSF__Role__c,
                 OpenSF__Allocation__c,
                 OpenSF__Status__c
             FROM OpenSF__TeamMember__c
-            WHERE OpenSF__User__c = :userId
+            WHERE OpenSF__Member__c = :userId
             WITH USER_MODE
             ORDER BY OpenSF__Team__r.Name ASC
         ];
@@ -168,7 +168,7 @@ public with sharing class TeamSelector {
             FROM OpenSF__TeamMember__c
             WHERE
                 OpenSF__Team__c = :teamId
-                AND OpenSF__User__c = :userId
+                AND OpenSF__Member__c = :userId
                 AND OpenSF__Status__c = :activeStatus
             WITH USER_MODE
             LIMIT 1

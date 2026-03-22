@@ -101,7 +101,8 @@ public with sharing class TeamService {
                 m.OpenSF__Status__c ==
                 KanbanEnums.teamMemberStatusValue(
                     KanbanEnums.TeamMemberStatus.ACTIVE
-                ) && m.OpenSF__Allocation__c != null
+                ) &&
+                m.OpenSF__Allocation__c != null
             ) {
                 totalAllocation += m.OpenSF__Allocation__c;
             }
@@ -109,14 +110,15 @@ public with sharing class TeamService {
         if (totalAllocation > 100) {
             throw new AuraHandledException(
                 'Total allocation across all teams would exceed 100%. Current allocation: ' +
-                    (totalAllocation - (allocation != null ? allocation : 100)) +
+                    (totalAllocation -
+                    (allocation != null ? allocation : 100)) +
                     '%'
             );
         }
 
         OpenSF__TeamMember__c member = new OpenSF__TeamMember__c(
             OpenSF__Team__c = teamId,
-            OpenSF__User__c = userId,
+            OpenSF__Member__c = userId,
             OpenSF__Role__c = role != null
                 ? role
                 : KanbanEnums.teamMemberRoleValue(

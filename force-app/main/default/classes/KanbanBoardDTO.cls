@@ -597,19 +597,19 @@ public with sharing class KanbanBoardDTO {
             this.Id = member.Id;
             this.Name = member.Name;
             this.teamId = member.OpenSF__Team__c;
-            this.userId = member.OpenSF__User__c;
+            this.userId = member.OpenSF__Member__c;
             this.role = member.OpenSF__Role__c;
             this.allocation = member.OpenSF__Allocation__c;
             this.joinDate = member.OpenSF__JoinDate__c;
             this.status = member.OpenSF__Status__c;
             this.weeklyCapacityHours = member.OpenSF__WeeklyCapacityHours__c;
             try {
-                this.userName = member.OpenSF__User__r.Name;
+                this.userName = member.OpenSF__Member__r.Name;
             } catch (Exception e) {
                 this.userName = null;
             }
             try {
-                this.userPhotoUrl = member.OpenSF__User__r.SmallPhotoUrl;
+                this.userPhotoUrl = member.OpenSF__Member__r.SmallPhotoUrl;
             } catch (Exception e) {
                 this.userPhotoUrl = null;
             }
@@ -619,9 +619,7 @@ public with sharing class KanbanBoardDTO {
     /**
      * Convert list of teams
      */
-    public static List<TeamDTO> convertTeams(
-        List<OpenSF__Team__c> teams
-    ) {
+    public static List<TeamDTO> convertTeams(List<OpenSF__Team__c> teams) {
         List<TeamDTO> result = new List<TeamDTO>();
         for (OpenSF__Team__c team : teams) {
             result.add(new TeamDTO(team));

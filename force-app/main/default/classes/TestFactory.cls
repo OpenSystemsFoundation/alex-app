@@ -444,7 +444,7 @@ public class TestFactory {
     ) {
         OpenSF__TeamMember__c member = new OpenSF__TeamMember__c(
             OpenSF__Team__c = teamId,
-            OpenSF__User__c = userId,
+            OpenSF__Member__c = userId,
             OpenSF__Role__c = role,
             OpenSF__Allocation__c = 100,
             OpenSF__JoinDate__c = Date.today(),
