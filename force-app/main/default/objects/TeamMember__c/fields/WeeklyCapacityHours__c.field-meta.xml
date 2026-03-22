@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>WeeklyCapacityHours__c</fullName>
+    <defaultValue>40</defaultValue>
+    <description>Available working hours per week for this team member.</description>
+    <externalId>false</externalId>
+    <label>Weekly Capacity Hours</label>
+    <precision>3</precision>
+    <required>false</required>
+    <scale>1</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

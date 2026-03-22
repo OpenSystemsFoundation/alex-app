@@ -152,6 +152,105 @@ public class KanbanEnums {
     }
 
     /**
+     * Team status values
+     */
+    public enum TeamStatus {
+        ACTIVE,
+        INACTIVE,
+        ARCHIVED
+    }
+
+    /**
+     * Team member role values
+     */
+    public enum TeamMemberRole {
+        DEVELOPER,
+        QA,
+        DESIGNER,
+        SCRUM_MASTER,
+        PRODUCT_OWNER,
+        TECH_LEAD
+    }
+
+    /**
+     * Team member status values
+     */
+    public enum TeamMemberStatus {
+        ACTIVE,
+        ON_LEAVE,
+        INACTIVE
+    }
+
+    /**
+     * Convert TeamStatus enum to the picklist API value stored in the database
+     */
+    public static String teamStatusValue(TeamStatus status) {
+        switch on status {
+            when ACTIVE {
+                return 'Active';
+            }
+            when INACTIVE {
+                return 'Inactive';
+            }
+            when ARCHIVED {
+                return 'Archived';
+            }
+            when else {
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Convert TeamMemberRole enum to the picklist API value stored in the database
+     */
+    public static String teamMemberRoleValue(TeamMemberRole role) {
+        switch on role {
+            when DEVELOPER {
+                return 'Developer';
+            }
+            when QA {
+                return 'QA';
+            }
+            when DESIGNER {
+                return 'Designer';
+            }
+            when SCRUM_MASTER {
+                return 'Scrum Master';
+            }
+            when PRODUCT_OWNER {
+                return 'Product Owner';
+            }
+            when TECH_LEAD {
+                return 'Tech Lead';
+            }
+            when else {
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Convert TeamMemberStatus enum to the picklist API value stored in the database
+     */
+    public static String teamMemberStatusValue(TeamMemberStatus status) {
+        switch on status {
+            when ACTIVE {
+                return 'Active';
+            }
+            when ON_LEAVE {
+                return 'On Leave';
+            }
+            when INACTIVE {
+                return 'Inactive';
+            }
+            when else {
+                return null;
+            }
+        }
+    }
+
+    /**
      * Convert SprintEventType enum to the string stored in platform event fields
      */
     public static String sprintEventTypeValue(SprintEventType eventType) {
