@@ -47,3 +47,17 @@
 .template-btn {
     flex-shrink: 0;
 }
+
+.card-panel__files {
+    border-top: 1px solid rgb(221, 219, 218);
+    padding-top: 0.75rem;
+}
+
+.card-file-item {
+    padding: 0.35rem 0;
+}
+
+.card-file-item:hover {
+    background-color: rgb(243, 243, 243);
+    border-radius: 4px;
+}

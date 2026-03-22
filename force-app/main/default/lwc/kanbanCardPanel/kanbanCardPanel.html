@@ -107,6 +107,101 @@
                         </div>
                     </div>
                 </lightning-record-edit-form>
+
+                <!-- Files Section -->
+                <div class="card-panel__files slds-var-m-top_medium">
+                    <div
+                        class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-var-m-bottom_x-small"
+                    >
+                        <h3
+                            class="slds-text-title_caps slds-text-color_weak"
+                        >
+                            Files
+                            <template lwc:if={fileCount}>
+                                ({fileCount})
+                            </template>
+                        </h3>
+                        <button
+                            class="slds-button slds-button_icon slds-button_icon-border-filled"
+                            title="Toggle files section"
+                            onclick={toggleFilesSection}
+                        >
+                            <lightning-icon
+                                icon-name={filesToggleIcon}
+                                size="xx-small"
+                                alternative-text="Toggle"
+                            ></lightning-icon>
+                        </button>
+                    </div>
+                    <template lwc:if={filesExpanded}>
+                        <lightning-file-upload
+                            label="Upload Files"
+                            name="fileUploader"
+                            accept={acceptedFormats}
+                            record-id={card.Id}
+                            onuploadfinished={handleUploadFinished}
+                            multiple
+                        ></lightning-file-upload>
+                        <template lwc:if={hasFiles}>
+                            <ul class="slds-has-dividers_bottom-space slds-var-m-top_small">
+                                <template
+                                    for:each={files}
+                                    for:item="file"
+                                >
+                                    <li
+                                        key={file.contentDocumentId}
+                                        class="slds-item card-file-item"
+                                    >
+                                        <div
+                                            class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center"
+                                        >
+                                            <div
+                                                class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate"
+                                            >
+                                                <lightning-icon
+                                                    icon-name={file.iconName}
+                                                    size="small"
+                                                    class="slds-var-m-right_x-small"
+                                                ></lightning-icon>
+                                                <div
+                                                    class="slds-truncate"
+                                                >
+                                                    <a
+                                                        href={file.downloadUrl}
+                                                        target="_blank"
+                                                        class="slds-text-link"
+                                                        title={file.title}
+                                                        >{file.title}.{file.fileExtension}</a
+                                                    >
+                                                    <p
+                                                        class="slds-text-body_small slds-text-color_weak"
+                                                    >
+                                                        {file.formattedSize}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <lightning-button-icon
+                                                icon-name="utility:delete"
+                                                alternative-text="Delete file"
+                                                variant="bare"
+                                                size="small"
+                                                data-file-id={file.contentDocumentId}
+                                                onclick={handleDeleteFile}
+                                            ></lightning-button-icon>
+                                        </div>
+                                    </li>
+                                </template>
+                            </ul>
+                        </template>
+                        <template lwc:if={noFiles}>
+                            <p
+                                class="slds-text-body_small slds-text-color_weak slds-var-m-top_small slds-align_absolute-center"
+                            >
+                                No files attached
+                            </p>
+                        </template>
+                    </template>
+                </div>
             </div>
 
             <!-- Panel Footer -->

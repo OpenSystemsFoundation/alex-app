@@ -2,6 +2,8 @@ import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { updateCardAsync, deleteCardAsync } from 'c/kanbanStore';
 import getModalSettings from '@salesforce/apex/KanbanBoardController.getModalSettings';
+import getCardFiles from '@salesforce/apex/KanbanBoardController.getCardFiles';
+import deleteCardFile from '@salesforce/apex/KanbanBoardController.deleteCardFile';
 
 const FIELD_METADATA = {
     OpenSF__Subject__c: { fullWidth: true, isTextarea: false },
@@ -112,11 +114,25 @@ export default class KanbanCardPanel extends LightningElement {
     @track formFields = [];
     @track deleteConfirmState = false;
     @track panelWidth = 400;
+    @track files = [];
+    @track filesExpanded = true;
+    @track _filesLoaded = false;
 
     _resizing = false;
     _deleteTimer;
     _boundHandleResize;
     _boundHandleResizeEnd;
+    _lastLoadedCardId;
+
+    renderedCallback() {
+        if (
+            this.isOpen &&
+            this.card?.Id &&
+            this._lastLoadedCardId !== this.card.Id
+        ) {
+            this.loadFiles();
+        }
+    }
 
     @wire(getModalSettings)
     wiredModalSettings({ data, error }) {
@@ -328,8 +344,158 @@ export default class KanbanCardPanel extends LightningElement {
         this.handleClose();
     }
 
+    // =========================================================================
+    // File Attachment Methods
+    // =========================================================================
+
+    get acceptedFormats() {
+        return [
+            '.pdf',
+            '.png',
+            '.jpg',
+            '.jpeg',
+            '.gif',
+            '.doc',
+            '.docx',
+            '.xls',
+            '.xlsx',
+            '.csv',
+            '.txt',
+            '.zip',
+            '.ppt',
+            '.pptx',
+            '.svg'
+        ];
+    }
+
+    get hasFiles() {
+        return this.files && this.files.length > 0;
+    }
+
+    get noFiles() {
+        return this._filesLoaded && (!this.files || this.files.length === 0);
+    }
+
+    get fileCount() {
+        return this.files ? this.files.length : 0;
+    }
+
+    get filesToggleIcon() {
+        return this.filesExpanded
+            ? 'utility:chevrondown'
+            : 'utility:chevronright';
+    }
+
+    toggleFilesSection() {
+        this.filesExpanded = !this.filesExpanded;
+    }
+
+    async loadFiles() {
+        if (!this.card?.Id) {
+            return;
+        }
+        try {
+            const rawFiles = await getCardFiles({ cardId: this.card.Id });
+            this.files = rawFiles.map((f) => ({
+                ...f,
+                iconName: this._getFileIcon(f.fileExtension),
+                downloadUrl: `/sfc/servlet.shepherd/document/download/${f.contentDocumentId}`,
+                formattedSize: this._formatFileSize(f.contentSize)
+            }));
+            this._filesLoaded = true;
+            this._lastLoadedCardId = this.card.Id;
+        } catch (error) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error loading files',
+                    message: error.body ? error.body.message : 'Unknown error',
+                    variant: 'error'
+                })
+            );
+        }
+    }
+
+    async handleUploadFinished(event) {
+        const uploadedFiles = event.detail.files;
+        this.dispatchEvent(
+            new ShowToastEvent({
+                title: 'Success',
+                message:
+                    uploadedFiles.length +
+                    ' file(s) uploaded',
+                variant: 'success'
+            })
+        );
+        await this.loadFiles();
+    }
+
+    async handleDeleteFile(event) {
+        const fileId = event.currentTarget.dataset.fileId;
+        try {
+            await deleteCardFile({ contentDocumentId: fileId });
+            this.files = this.files.filter(
+                (f) => f.contentDocumentId !== fileId
+            );
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Success',
+                    message: 'File deleted',
+                    variant: 'success'
+                })
+            );
+        } catch (error) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error deleting file',
+                    message: error.body ? error.body.message : 'Unknown error',
+                    variant: 'error'
+                })
+            );
+        }
+    }
+
+    _getFileIcon(extension) {
+        const iconMap = {
+            pdf: 'doctype:pdf',
+            png: 'doctype:image',
+            jpg: 'doctype:image',
+            jpeg: 'doctype:image',
+            gif: 'doctype:image',
+            svg: 'doctype:image',
+            doc: 'doctype:word',
+            docx: 'doctype:word',
+            xls: 'doctype:excel',
+            xlsx: 'doctype:excel',
+            csv: 'doctype:csv',
+            ppt: 'doctype:ppt',
+            pptx: 'doctype:ppt',
+            txt: 'doctype:txt',
+            zip: 'doctype:zip',
+            xml: 'doctype:xml',
+            html: 'doctype:html'
+        };
+        return iconMap[extension?.toLowerCase()] || 'doctype:attachment';
+    }
+
+    _formatFileSize(bytes) {
+        if (!bytes || bytes === 0) {
+            return '0 B';
+        }
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let i = 0;
+        let size = bytes;
+        while (size >= 1024 && i < units.length - 1) {
+            size /= 1024;
+            i++;
+        }
+        return size.toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+    }
+
     handleClose() {
         this.deleteConfirmState = false;
+        this.files = [];
+        this._filesLoaded = false;
+        this._lastLoadedCardId = null;
         if (this._deleteTimer) {
             clearTimeout(this._deleteTimer);
             this._deleteTimer = null;
