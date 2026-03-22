@@ -1,0 +1,41 @@
+<template>
+    <div class="dt-container">
+        <template lwc:if={hasActiveSession}>
+            <c-design-session-board
+                session={activeSession}
+                board-id={boardId}
+                current-phase={currentPhase}
+                active-tool={activeTool}
+                notes={notes}
+                votes={votes}
+                participants={participants}
+                onsessionend={handleSessionEnd}
+                onphasechange={handlePhaseChange}
+                ontoolchange={handleToolChange}
+                onnoteadd={handleNoteAdd}
+                onnoteupdate={handleNoteUpdate}
+                onnotemove={handleNoteMove}
+                onnotedelete={handleNoteDelete}
+                onvotecast={handleVoteCast}>
+            </c-design-session-board>
+        </template>
+        <template lwc:else>
+            <div class="dt-split-view">
+                <div class="dt-sessions-panel">
+                    <c-design-session-list
+                        sessions={sessions}
+                        board-id={boardId}
+                        onsessioncreate={handleSessionCreate}
+                        onsessionjoin={handleSessionJoin}>
+                    </c-design-session-list>
+                </div>
+                <div class="dt-pipeline-panel">
+                    <c-design-card-pipeline
+                        phase-counts={phaseCounts}
+                        board-id={boardId}>
+                    </c-design-card-pipeline>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>

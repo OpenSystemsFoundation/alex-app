@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ParentNote__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>The parent design note for hierarchical grouping.</description>
+    <label>Parent Note</label>
+    <referenceTo>DesignNote__c</referenceTo>
+    <relationshipLabel>Child Notes</relationshipLabel>
+    <relationshipName>ChildNotes</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DesignSession__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>The design session that produced this artifact.</description>
+    <label>Design Session</label>
+    <referenceTo>DesignSession__c</referenceTo>
+    <relationshipLabel>Artifacts</relationshipLabel>
+    <relationshipName>Artifacts</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

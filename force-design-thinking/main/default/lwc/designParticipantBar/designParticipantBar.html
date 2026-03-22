@@ -1,0 +1,11 @@
+<template>
+    <div class="participant-bar">
+        <template for:each={participants} for:item="p">
+            <div key={p.id} class="participant" title={p.name}>
+                <lightning-avatar fallback-icon-name="standard:user" size="small" alternative-text={p.name}></lightning-avatar>
+                <template lwc:if={p.isActive}><span class="active-indicator"></span></template>
+            </div>
+        </template>
+        <span class="participant-count">{participantCountLabel}</span>
+    </div>
+</template>

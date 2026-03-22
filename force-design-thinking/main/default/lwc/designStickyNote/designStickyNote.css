@@ -1,0 +1,24 @@
+.sticky-note {
+    width: 180px;
+    min-height: 100px;
+    padding: 8px;
+    border-radius: 4px;
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.15);
+    cursor: grab;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+    word-wrap: break-word;
+}
+.sticky-note:hover { transform: translateY(-2px); box-shadow: 3px 3px 10px rgba(0,0,0,0.2); }
+.sticky-note.editing { z-index: 10; }
+.note-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.note-author { font-size: 11px; font-weight: 600; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
+.delete-btn { opacity: 0; transition: opacity 0.2s; }
+.sticky-note:hover .delete-btn { opacity: 1; }
+.note-body { flex: 1; }
+.note-text { margin: 0; line-height: 1.4; white-space: pre-wrap; }
+.note-textarea { width: 100%; min-height: 60px; border: none; background: transparent; resize: none; font-family: inherit; font-size: inherit; outline: none; }
+.note-footer { display: flex; justify-content: flex-end; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(0,0,0,0.1); }
+.vote-count { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; }

@@ -1,0 +1,51 @@
+<template>
+    <div class="session-board">
+        <div class="session-board-header">
+            <div class="header-left">
+                <lightning-button-icon
+                    icon-name="utility:back"
+                    alternative-text="Leave"
+                    onclick={handleLeave}
+                    variant="border-filled"
+                ></lightning-button-icon>
+                <h2 class="session-title">{session.title}</h2>
+                <lightning-badge label={session.status}></lightning-badge>
+            </div>
+            <div class="header-center">
+                <c-design-participant-bar
+                    participants={participants}
+                ></c-design-participant-bar>
+            </div>
+            <div class="header-right">
+                <c-design-timer
+                    is-facilitator={isFacilitator}
+                ></c-design-timer>
+            </div>
+        </div>
+        <c-design-phase-nav
+            current-phase={currentPhase}
+            onphasechange={handlePhaseChange}
+            is-facilitator={isFacilitator}
+        ></c-design-phase-nav>
+        <c-design-tool-picker
+            current-phase={currentPhase}
+            active-tool={activeTool}
+            ontoolchange={handleToolChange}
+        ></c-design-tool-picker>
+        <div class="tool-workspace">
+            <c-design-tool-canvas
+                active-tool={activeTool}
+                current-phase={currentPhase}
+                notes={notes}
+                votes={votes}
+                session={session}
+                onnoteadd={handleNoteAdd}
+                onnoteupdate={handleNoteUpdate}
+                onnotemove={handleNoteMove}
+                onnotedelete={handleNoteDelete}
+                onvotecast={handleVoteCast}
+            >
+            </c-design-tool-canvas>
+        </div>
+    </div>
+</template>

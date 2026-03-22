@@ -1,0 +1,29 @@
+.tool-picker {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #f7f9fb;
+    border-bottom: 1px solid #e5e5e5;
+    flex-wrap: wrap;
+}
+.tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid #e5e5e5;
+    border-radius: 20px;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+.tool-btn:hover {
+    border-color: #0176d3;
+    background: #eef4ff;
+}
+.tool-btn.active {
+    border-color: #0176d3;
+    background: #0176d3;
+    color: white;
+}

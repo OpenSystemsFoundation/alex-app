@@ -1,0 +1,69 @@
+<template>
+    <div class="session-list">
+        <div class="session-list-header">
+            <h2 class="slds-text-heading_small">Design Sessions</h2>
+            <lightning-button
+                label="New Session"
+                variant="brand"
+                icon-name="utility:add"
+                onclick={handleCreate}
+            ></lightning-button>
+        </div>
+        <template lwc:if={showCreateForm}>
+            <div class="create-form">
+                <lightning-input
+                    label="Session Title"
+                    value={newTitle}
+                    onchange={handleTitleChange}
+                    placeholder="e.g. Sprint 5 Refinement"
+                ></lightning-input>
+                <div class="create-actions">
+                    <lightning-button
+                        label="Cancel"
+                        onclick={handleCancelCreate}
+                    ></lightning-button>
+                    <lightning-button
+                        label="Create"
+                        variant="brand"
+                        onclick={handleSubmitCreate}
+                    ></lightning-button>
+                </div>
+            </div>
+        </template>
+        <div class="session-cards">
+            <template for:each={sessions} for:item="session">
+                <div
+                    key={session.id}
+                    class="session-card"
+                    onclick={handleJoin}
+                    data-session-id={session.id}
+                >
+                    <div class="session-card-header">
+                        <span class="session-name">{session.name}</span>
+                        <lightning-badge
+                            label={session.status}
+                            class={session.statusClass}
+                        ></lightning-badge>
+                    </div>
+                    <p class="session-title">{session.title}</p>
+                    <div class="session-meta">
+                        <span>Phase: {session.currentPhase}</span>
+                        <span>By: {session.facilitatorName}</span>
+                    </div>
+                </div>
+            </template>
+            <template lwc:if={noSessions}>
+                <div class="empty-state">
+                    <lightning-icon
+                        icon-name="utility:light_bulb"
+                        size="large"
+                    ></lightning-icon>
+                    <p>
+                        No design sessions yet. Create one to start refining
+                        ideas.
+                    </p>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>
