@@ -1,0 +1,345 @@
+/* Roadmap Container */
+.roadmap-container {
+    padding: 1rem;
+    background: var(--lwc-colorBackground, #f3f3f3);
+    min-height: 400px;
+}
+
+/* Header */
+.roadmap-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.roadmap-header__left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.roadmap-header__right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.roadmap-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--lwc-colorTextDefault, #181818);
+    margin: 0;
+}
+
+.year-label {
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0 0.5rem;
+    color: var(--lwc-colorTextDefault, #181818);
+}
+
+/* View Toggle */
+.view-toggle-btn {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--lwc-colorBorder, #c9c9c9);
+    background: var(--lwc-colorBackgroundAlt, #fff);
+    color: var(--lwc-colorTextDefault, #181818);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.view-toggle-btn:first-child {
+    border-radius: 4px 0 0 4px;
+}
+
+.view-toggle-btn:last-child {
+    border-radius: 0 4px 4px 0;
+}
+
+.view-toggle-btn--active {
+    background: var(--lwc-brandPrimary, #0176d3);
+    color: #fff;
+    border-color: var(--lwc-brandPrimary, #0176d3);
+}
+
+.roadmap-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Loading */
+.roadmap-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+}
+
+/* Horizon Lanes */
+.roadmap-lanes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    min-height: 300px;
+}
+
+.roadmap-lane {
+    background: var(--lwc-colorBackgroundAlt, #fff);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Lane Headers */
+.lane-header {
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.lane-header--now {
+    background: linear-gradient(135deg, #0176d3, #1b96ff);
+    color: #fff;
+}
+
+.lane-header--next {
+    background: linear-gradient(135deg, #9050e9, #b78def);
+    color: #fff;
+}
+
+.lane-header--future {
+    background: linear-gradient(135deg, #747474, #939393);
+    color: #fff;
+}
+
+.lane-title {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.lane-count {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.lane-description {
+    font-size: 0.75rem;
+    opacity: 0.85;
+    margin-left: auto;
+}
+
+/* Quarter Lanes */
+.roadmap-quarters {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    min-height: 300px;
+}
+
+.roadmap-quarter {
+    background: var(--lwc-colorBackgroundAlt, #fff);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.quarter-header {
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #0176d3, #1b96ff);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.quarter-title {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Lane Items (drop zone) */
+.lane-items {
+    padding: 0.75rem;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.lane-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+    color: var(--lwc-colorTextWeak, #706e6b);
+    text-align: center;
+    font-size: 0.8125rem;
+}
+
+.lane-empty-hint {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    opacity: 0.7;
+}
+
+/* Epic Card */
+.epic-card {
+    background: var(--lwc-colorBackgroundAlt, #fff);
+    border: 1px solid var(--lwc-colorBorder, #e5e5e5);
+    border-radius: 6px;
+    padding: 0.75rem;
+    cursor: grab;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+    position: relative;
+}
+
+.epic-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+}
+
+.epic-card:active {
+    cursor: grabbing;
+}
+
+.epic-card--on-track {
+    border-left: 3px solid #2e844a;
+}
+
+.epic-card--at-risk {
+    border-left: 3px solid #fe9339;
+}
+
+.epic-card--off-track {
+    border-left: 3px solid #ea001e;
+}
+
+.epic-card--complete {
+    border-left: 3px solid #0176d3;
+    opacity: 0.8;
+}
+
+/* Epic Card Header */
+.epic-card__header {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-bottom: 0.375rem;
+}
+
+.epic-card__color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.epic-card__title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--lwc-colorTextDefault, #181818);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Status Badge */
+.status-badge {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.status-badge--on-track {
+    background: #e3f6e8;
+    color: #2e844a;
+}
+
+.status-badge--at-risk {
+    background: #fef0e0;
+    color: #a96404;
+}
+
+.status-badge--off-track {
+    background: #fde4e4;
+    color: #ba0517;
+}
+
+.status-badge--complete {
+    background: #e1f0fb;
+    color: #0176d3;
+}
+
+/* Epic Card Body */
+.epic-card__body {
+    font-size: 0.75rem;
+    color: var(--lwc-colorTextWeak, #706e6b);
+}
+
+.epic-card__desc {
+    margin: 0 0 0.375rem 0;
+    line-height: 1.4;
+}
+
+.epic-card__meta {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.25rem;
+}
+
+.epic-card__points,
+.epic-card__children,
+.epic-card__assignee {
+    background: var(--lwc-colorBackground, #f3f3f3);
+    padding: 0.0625rem 0.375rem;
+    border-radius: 3px;
+    font-size: 0.6875rem;
+}
+
+.epic-card__dates {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.375rem;
+    font-size: 0.6875rem;
+    color: var(--lwc-colorTextWeak, #706e6b);
+}
+
+/* Epic Card Actions */
+.epic-card__actions {
+    position: absolute;
+    top: 0.375rem;
+    right: 0.375rem;
+    display: none;
+    gap: 0.125rem;
+}
+
+.epic-card:hover .epic-card__actions {
+    display: flex;
+}
+
+/* Modal Styles */
+.add-modal-select,
+.add-modal-horizon,
+.add-modal-quarter {
+    width: 100%;
+}
