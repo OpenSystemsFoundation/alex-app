@@ -189,10 +189,7 @@ runs:
         - name: Deploy Agentforce Package (force-agentforce)
           if: inputs.deploy-agentforce == 'true'
           shell: bash
-          run: |
-              ERROR_LOG="/tmp/setup-error-${{ inputs.org-alias }}.log"
-              set -o pipefail
-              sf project deploy start --source-dir force-agentforce --target-org ${{ inputs.org-alias }} --ignore-conflicts 2>&1 | tee -a "$ERROR_LOG"
+          run: sf project deploy start --source-dir force-agentforce --target-org ${{ inputs.org-alias }} --ignore-conflicts
 
         - name: Assign Permission Sets
           if: steps.provision.outputs.org_created == 'true'
