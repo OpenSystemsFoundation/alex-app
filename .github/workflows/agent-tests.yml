@@ -235,6 +235,12 @@ jobs:
                     BODY+="### Apex Test Results\n\`\`\`\n$(cat /tmp/test-results.txt)\n\`\`\`\n\n"
                   elif [ "${{ steps.run-tests.outcome }}" = "skipped" ]; then
                     BODY+="### Apex Tests\nSkipped (earlier step failed)\n\n"
+                  elif [ "${{ steps.run-tests.outcome }}" = "failure" ]; then
+                    if [ -f agent-results/apex-test-run.json ]; then
+                      BODY+="### Apex Tests Failed (raw output)\n\`\`\`\n$(tail -60 agent-results/apex-test-run.json)\n\`\`\`\n\n"
+                    else
+                      BODY+="### Apex Tests Failed\nTest step failed but no results file was produced.\n\n"
+                    fi
                   fi
 
                   BODY+="**Job status:** ${{ job.status }}"

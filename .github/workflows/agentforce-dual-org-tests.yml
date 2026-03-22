@@ -111,10 +111,15 @@ jobs:
                   BODY+="**Branch:** \`${{ github.ref_name }}\`\n\n"
 
                   if [ "${{ steps.org.outcome }}" = "failure" ]; then
-                    BODY+="### Org Setup Failed\nThe setup-agentforce-org composite action failed. Check if:\n"
-                    BODY+="- DevHub auth URL (SFDX_AUTH_URL secret) is valid\n"
-                    BODY+="- Scratch org limits haven't been exceeded\n"
-                    BODY+="- The scratch def file is valid\n\n"
+                    ERROR_FILE="${{ steps.org.outputs.error-log }}"
+                    if [ -f "$ERROR_FILE" ] && [ -s "$ERROR_FILE" ]; then
+                      BODY+="### Org Setup Failed\n\`\`\`\n$(tail -50 "$ERROR_FILE")\n\`\`\`\n\n"
+                    else
+                      BODY+="### Org Setup Failed\nThe setup-agentforce-org composite action failed. Check if:\n"
+                      BODY+="- DevHub auth URL (SFDX_AUTH_URL secret) is valid\n"
+                      BODY+="- Scratch org limits haven't been exceeded\n"
+                      BODY+="- The scratch def file is valid\n\n"
+                    fi
                   fi
 
                   if [ -f /tmp/test-results-standard.txt ]; then
@@ -227,10 +232,15 @@ jobs:
                   BODY+="**Branch:** \`${{ github.ref_name }}\`\n\n"
 
                   if [ "${{ steps.org.outcome }}" = "failure" ]; then
-                    BODY+="### Org Setup Failed\nThe setup-agentforce-org composite action failed. Check if:\n"
-                    BODY+="- DevHub auth URL (SFDX_AUTH_URL secret) is valid\n"
-                    BODY+="- Scratch org limits haven't been exceeded\n"
-                    BODY+="- The scratch def file is valid\n\n"
+                    ERROR_FILE="${{ steps.org.outputs.error-log }}"
+                    if [ -f "$ERROR_FILE" ] && [ -s "$ERROR_FILE" ]; then
+                      BODY+="### Org Setup Failed\n\`\`\`\n$(tail -50 "$ERROR_FILE")\n\`\`\`\n\n"
+                    else
+                      BODY+="### Org Setup Failed\nThe setup-agentforce-org composite action failed. Check if:\n"
+                      BODY+="- DevHub auth URL (SFDX_AUTH_URL secret) is valid\n"
+                      BODY+="- Scratch org limits haven't been exceeded\n"
+                      BODY+="- The scratch def file is valid\n\n"
+                    fi
                   fi
 
                   if [ -f /tmp/test-results-dc.txt ]; then

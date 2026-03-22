@@ -46,6 +46,9 @@ outputs:
     org-created:
         description: 'Whether a new org was created (true) or an existing one was reused (false)'
         value: ${{ steps.provision.outputs.org_created }}
+    error-log:
+        description: 'Path to error log file if setup failed'
+        value: /tmp/setup-error-${{ inputs.org-alias }}.log
 
 runs:
     using: 'composite'
@@ -59,15 +62,21 @@ runs:
           env:
               SFDX_DISABLE_DNS_CHECK: 'true'
           run: |
+              ERROR_LOG="/tmp/setup-error-${{ inputs.org-alias }}.log"
+              echo "" > "$ERROR_LOG"
               if [ -z "${{ inputs.sfdx-auth-url }}" ]; then
-                echo "::error::SFDX_AUTH_URL is empty — check the repository secret"
+                echo "SFDX_AUTH_URL is empty — check the repository secret" | tee "$ERROR_LOG"
                 exit 1
               fi
               echo "${{ inputs.sfdx-auth-url }}" > /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
-              sf org login sfdx-url \
+              if ! sf org login sfdx-url \
                 --sfdx-url-file /tmp/sfdx_auth_${{ inputs.org-alias }}.txt \
                 --alias devhub \
-                --set-default-dev-hub
+                --set-default-dev-hub 2>&1 | tee -a "$ERROR_LOG"; then
+                echo "DevHub authentication failed" >> "$ERROR_LOG"
+                rm -f /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
+                exit 1
+              fi
               rm /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
 
         - name: Restore cached org auth
@@ -114,14 +123,17 @@ runs:
 
               if [ "$ORG_CREATED" = "true" ]; then
                 echo "::group::Creating new scratch org"
+                ERROR_LOG="/tmp/setup-error-${{ inputs.org-alias }}.log"
+                set -o pipefail
                 if ! sf org create scratch \
                   --definition-file ${{ inputs.scratch-def }} \
                   --alias "$ALIAS" \
                   --duration-days ${{ inputs.duration-days }} \
-                  --wait 15 2>&1; then
-                  echo "::error::Scratch org creation failed for alias=$ALIAS def=${{ inputs.scratch-def }}"
+                  --wait 15 2>&1 | tee -a "$ERROR_LOG"; then
+                  echo "Scratch org creation failed for alias=$ALIAS def=${{ inputs.scratch-def }}" >> "$ERROR_LOG"
                   exit 1
                 fi
+                set +o pipefail
 
                 if [ "$PERSISTENT" = "true" ]; then
                   sf org display --target-org "$ALIAS" --verbose --json 2>/dev/null | node -e "
