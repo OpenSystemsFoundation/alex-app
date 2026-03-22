@@ -35,9 +35,12 @@ export const processColumnsData = (columns) => {
         cards: [],
         columnStyle: col.color ? `border-top: 4px solid ${col.color}` : '',
         columnUrl: `/lightning/r/OpenSF__Column__c/${col.Id}/view`,
+        communityColumnUrl: `/column/${col.Id}`,
         isDone: col.category === 'Done',
         isReleased: col.category === 'Released',
-        isCompleted: col.category === 'Done' || col.category === 'Released'
+        isCompleted: col.category === 'Done' || col.category === 'Released',
+        hasWipLimit: col.wipLimit != null && col.wipLimit > 0,
+        isOverWipLimit: false // updated after cards are distributed
     }));
 };
 
@@ -89,6 +92,21 @@ const formatDate = (dateString) => {
 export const enrichCardData = (card, cardTypeIcons) => {
     const icons = cardTypeIcons || _cardTypeIcons;
     const iconName = card.cardType && icons ? icons[card.cardType] : null;
+    // Build formatted custom fields array for template rendering
+    const customFieldEntries = [];
+    if (card.customFields) {
+        Object.keys(card.customFields).forEach((key) => {
+            const val = card.customFields[key];
+            if (val !== null && val !== undefined && val !== '') {
+                customFieldEntries.push({
+                    key,
+                    value: val,
+                    label: key.replace('__c', '').replace(/_/g, ' ')
+                });
+            }
+        });
+    }
+
     return {
         ...card,
         priorityClass: getPriorityClass(card.priority),
@@ -100,7 +118,10 @@ export const enrichCardData = (card, cardTypeIcons) => {
             card.storyPoints !== null && card.storyPoints !== undefined,
         cardStyle: card.color ? `border-left: 4px solid ${card.color}` : '',
         recordUrl: `/lightning/r/OpenSF__Card__c/${card.Id}/view`,
-        cardTypeIconName: iconName || null
+        communityCardUrl: `/card/${card.Id}`,
+        cardTypeIconName: iconName || null,
+        customFieldEntries,
+        hasCustomFields: customFieldEntries.length > 0
     };
 };
 
@@ -143,6 +164,8 @@ export const processCardsData = (cards, columns, cardTypeIcons) => {
             if (!b.position) return -1;
             return a.position.localeCompare(b.position);
         });
+        // Update WIP limit status after cards are distributed
+        col.isOverWipLimit = col.hasWipLimit && col.cardCount > col.wipLimit;
     });
 
     return processedColumns;

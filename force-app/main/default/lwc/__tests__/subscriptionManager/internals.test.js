@@ -1,4 +1,4 @@
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 import RetryManager from '../../subscriptionManager/retryManager';
 import EventHealthMonitor from '../../subscriptionManager/eventHealthMonitor';
 import SubscriptionManager from 'c/subscriptionManager';

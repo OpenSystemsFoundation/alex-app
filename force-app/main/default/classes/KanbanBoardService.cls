@@ -20,18 +20,128 @@ public with sharing class KanbanBoardService {
             // Backfill any cards missing LexoRank positions
             KanbanCardService.backfillMissingPositions(cards);
 
+            // Load custom field configs
+            List<OpenSF__CardCustomField__mdt> customFieldConfigs = getActiveCardCustomFields();
+            List<KanbanBoardDTO.CardCustomFieldDTO> customFieldDTOs = new List<KanbanBoardDTO.CardCustomFieldDTO>();
+            for (OpenSF__CardCustomField__mdt cf : customFieldConfigs) {
+                customFieldDTOs.add(new KanbanBoardDTO.CardCustomFieldDTO(cf));
+            }
+
             // Convert to DTOs for LWC consumption
             KanbanBoardController.BoardData result = new KanbanBoardController.BoardData();
             result.board = new KanbanBoardDTO.BoardDTO(board);
             result.columns = KanbanBoardDTO.convertColumns(columns);
             result.cards = KanbanBoardDTO.convertCards(cards);
             result.cardTypeIcons = getCardTypeIcons();
+            result.customFieldConfigs = customFieldDTOs;
+
+            // Populate custom field values on cards if configs exist
+            if (!customFieldConfigs.isEmpty() && !cards.isEmpty()) {
+                populateCustomFieldValues(
+                    result.cards,
+                    cards,
+                    customFieldConfigs
+                );
+            }
 
             return result;
         } catch (Exception e) {
             throw new AuraHandledException(
                 'Error loading board: ' + e.getMessage()
             );
+        }
+    }
+
+    /**
+     * Get active CardCustomField__mdt records, sorted by SortOrder__c
+     */
+    public static List<OpenSF__CardCustomField__mdt> getActiveCardCustomFields() {
+        return [
+            SELECT
+                OpenSF__FieldApiName__c,
+                OpenSF__DisplayLabel__c,
+                OpenSF__FieldType__c,
+                OpenSF__SortOrder__c
+            FROM OpenSF__CardCustomField__mdt
+            WHERE OpenSF__Active__c = TRUE
+            ORDER BY OpenSF__SortOrder__c ASC
+        ];
+    }
+
+    /**
+     * Populate custom field values on CardDTOs by dynamically querying
+     * the configured fields from Card__c records.
+     */
+    private static void populateCustomFieldValues(
+        List<KanbanBoardDTO.CardDTO> cardDTOs,
+        List<OpenSF__Card__c> cards,
+        List<OpenSF__CardCustomField__mdt> configs
+    ) {
+        // Build set of namespaced field API names to query
+        Set<String> fieldNames = new Set<String>();
+        for (OpenSF__CardCustomField__mdt cfg : configs) {
+            String apiName = cfg.OpenSF__FieldApiName__c;
+            // Add namespace prefix if not present
+            if (!apiName.startsWith('OpenSF__')) {
+                apiName = 'OpenSF__' + apiName;
+            }
+            fieldNames.add(apiName);
+        }
+
+        // Validate fields exist on Card__c before querying
+        Map<String, Schema.SObjectField> cardFields = OpenSF__Card__c.SObjectType.getDescribe()
+            .fields.getMap();
+        Set<String> validFields = new Set<String>();
+        for (String fn : fieldNames) {
+            if (cardFields.containsKey(fn.toLowerCase())) {
+                validFields.add(fn);
+            }
+        }
+
+        if (validFields.isEmpty()) {
+            return;
+        }
+
+        // Build dynamic SOQL
+        List<String> fieldList = new List<String>(validFields);
+        Set<Id> cardIds = new Set<Id>();
+        for (OpenSF__Card__c c : cards) {
+            cardIds.add(c.Id);
+        }
+
+        String soql =
+            'SELECT Id, ' +
+            String.join(fieldList, ', ') +
+            ' FROM OpenSF__Card__c WHERE Id IN :cardIds WITH USER_MODE';
+        Map<Id, SObject> customFieldMap = new Map<Id, SObject>(
+            Database.query(soql)
+        );
+
+        // Map original API names (without namespace) to namespaced names
+        Map<String, String> nameMap = new Map<String, String>();
+        for (OpenSF__CardCustomField__mdt cfg : configs) {
+            String orig = cfg.OpenSF__FieldApiName__c;
+            String namespaced = orig.startsWith('OpenSF__')
+                ? orig
+                : 'OpenSF__' + orig;
+            if (validFields.contains(namespaced)) {
+                nameMap.put(orig, namespaced);
+            }
+        }
+
+        // Populate custom fields on each CardDTO
+        for (KanbanBoardDTO.CardDTO dto : cardDTOs) {
+            SObject record = customFieldMap.get(dto.Id);
+            if (record == null)
+                continue;
+
+            dto.customFields = new Map<String, Object>();
+            for (String origName : nameMap.keySet()) {
+                String nsName = nameMap.get(origName);
+                Object val = record.get(nsName);
+                // Use the original (un-namespaced) name as key for the frontend
+                dto.customFields.put(origName, val);
+            }
         }
     }
 
@@ -110,6 +220,7 @@ public with sharing class KanbanBoardService {
                     OpenSF__Epic__r.OpenSF__Subject__c,
                     OpenSF__Locked__c,
                     OpenSF__NeedsRefinement__c,
+                    OpenSF__DoneDate__c,
                     OpenSF__SequenceNumber__c,
                     LastModifiedDate,
                     LastModifiedById

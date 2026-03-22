@@ -7,6 +7,9 @@
         <locationY>0</locationY>
         <actionName>emailSimple</actionName>
         <actionType>emailSimple</actionType>
+        <faultConnector>
+            <targetReference>Silent_Fault</targetReference>
+        </faultConnector>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
         <inputParameters>
             <name>emailAddressesArray</name>
@@ -48,6 +51,9 @@
         <locationY>0</locationY>
         <actionName>emailSimple</actionName>
         <actionType>emailSimple</actionType>
+        <faultConnector>
+            <targetReference>Silent_Fault</targetReference>
+        </faultConnector>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
         <inputParameters>
             <name>emailAddressesArray</name>
@@ -82,7 +88,7 @@
         <nameSegment>emailSimple</nameSegment>
         <offset>0</offset>
     </actionCalls>
-    <apiVersion>64.0</apiVersion>
+    <apiVersion>66.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
     <assignments>
         <name>Add_Recipients</name>
@@ -114,6 +120,16 @@
         <connector>
             <targetReference>Filter_Recipients</targetReference>
         </connector>
+    </assignments>
+    <assignments>
+        <name>Silent_Fault</name>
+        <label>Silent Fault Handler</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>RecipientEmails</assignToReference>
+            <operator>RemoveAll</operator>
+        </assignmentItems>
     </assignments>
     <collectionProcessors>
         <description>Filter out blank values for recipient emails</description>
@@ -173,7 +189,7 @@
             </conditions>
             <conditions>
                 <leftValueReference
-                >$Record.OpenSF__LexoRankPosition__c</leftValueReference>
+                >$Record.LexoRankPosition__c</leftValueReference>
                 <operator>IsChanged</operator>
                 <rightValue>
                     <booleanValue>false</booleanValue>
@@ -223,12 +239,12 @@
             <targetReference>Add_Recipients</targetReference>
         </connector>
         <filterFormula
-        >{!$Record.Column__r.Board__r.EmailNotifications__c} = true</filterFormula>
+        >NOT(ISBLANK({!$Record.Column__c})) &amp;&amp; {!$Record.Column__r.Board__r.EmailNotifications__c} = true &amp;&amp; $Setup.KanbanConfig__c.DisableFlowAutomation__c = false</filterFormula>
         <object>Card__c</object>
         <recordTriggerType>CreateAndUpdate</recordTriggerType>
         <triggerType>RecordAfterSave</triggerType>
     </start>
-    <status>Active</status>
+    <status>Draft</status>
     <textTemplates>
         <name>CardCreateEmailBody</name>
         <isViewedAsPlainText>false</isViewedAsPlainText>

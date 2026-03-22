@@ -687,7 +687,10 @@ describe('boardThunks', () => {
                 (c) => typeof c[0] === 'object' && c[0].type === types.SET_BOARD
             );
             expect(setBoardCall).toBeTruthy();
-            expect(setBoardCall[0].payload).toBe(board);
+            expect(setBoardCall[0].payload).toEqual({
+                ...board,
+                customFieldConfigs: []
+            });
 
             // Verify setColumns was dispatched
             const setColumnsCall = dispatch.mock.calls.find(

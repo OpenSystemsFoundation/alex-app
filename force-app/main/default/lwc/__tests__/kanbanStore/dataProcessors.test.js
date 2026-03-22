@@ -20,7 +20,7 @@ describe('dataProcessors', () => {
                 {
                     Id: 'col1',
                     Name: 'To Do',
-                    OpenSF__Position__c: 'a',
+                    position: 'a',
                     color: '#FF0000'
                 }
             ];

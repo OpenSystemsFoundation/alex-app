@@ -388,9 +388,9 @@ private class KanbanBoardControllerTest {
         Boolean hasSubject = false;
         Boolean hasDescription = false;
         for (String field : settings.visibleFields) {
-            if (field == 'OpenSF__Subject__c')
+            if (field == 'OpenSF__Subject__c' || field == 'Subject__c')
                 hasSubject = true;
-            if (field == 'OpenSF__Description__c')
+            if (field == 'OpenSF__Description__c' || field == 'Description__c')
                 hasDescription = true;
         }
         System.assert(

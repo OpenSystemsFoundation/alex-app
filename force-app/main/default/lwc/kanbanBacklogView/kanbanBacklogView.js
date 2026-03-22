@@ -1,19 +1,23 @@
 import { LightningElement, api, track } from 'lwc';
-import { selectors } from 'c/kanbanStore';
 import {
+    selectors,
     setSelectedBacklogCards,
-    toggleBacklogCardSelection
-} from 'c/kanbanStore';
-import {
+    toggleBacklogCardSelection,
     createBacklogCardAsync,
     updateBacklogCardAsync,
     deleteBacklogCardsAsync,
-    reorderBacklogCardAsync
+    reorderBacklogCardAsync,
+    moveCardsToSprintAsync,
+    moveCardAsync,
+    createSprintAsync,
+    addCardsToBacklogSprintAsync,
+    removeCardFromBacklogSprintAsync
 } from 'c/kanbanStore';
-import { moveCardsToSprintAsync } from 'c/kanbanStore';
 
 export default class KanbanBacklogView extends LightningElement {
+    /** @type {import('c/kanbanStore').Store} The Redux-style store instance */
     @api store;
+    /** @type {boolean} Whether to show debug information */
     @api showDebugInfo = false;
 
     @track searchTerm = '';
@@ -22,13 +26,13 @@ export default class KanbanBacklogView extends LightningElement {
     @track viewMode = 'all'; // 'all' | 'refinement'
     @track sortBy = 'priority';
     @track showCreateForm = false;
+    @track showCreateSprintForm = false;
     @track _storeState = null;
+    @track _collapsedSprints = {};
 
     // Inline create form fields
     @track newCardSubject = '';
-    @track newCardPriority = '';
-    @track newCardType = '';
-    @track newCardStoryPoints = null;
+    @track newSprintGoal = '';
 
     // Inline edit state
     @track editingCell = null; // { cardId, field }
@@ -39,6 +43,8 @@ export default class KanbanBacklogView extends LightningElement {
     _dragTargetIndex = null; // Final drop target index (not tracked — no re-render)
 
     _storeUnsubscribe = null;
+    _contextMenuCardId = null;
+    _contextMenuSprintId = null;
 
     connectedCallback() {
         if (this.store) {
@@ -105,12 +111,118 @@ export default class KanbanBacklogView extends LightningElement {
         }));
     }
 
+    get planningSprints() {
+        if (!this._storeState) return [];
+        return selectors.getPlanningSprints(this._storeState);
+    }
+
+    get hasPlanningSprints() {
+        return this.planningSprints.length > 0;
+    }
+
+    _getSprintCardMap() {
+        if (!this._storeState) return new Map();
+        const psc = selectors.getPlanningSprintCards(this._storeState);
+        const map = new Map();
+        for (const sc of psc) {
+            if (!map.has(sc.sprintId)) {
+                map.set(sc.sprintId, new Set());
+            }
+            map.get(sc.sprintId).add(sc.cardId);
+        }
+        return map;
+    }
+
+    _getSprintCardIds(sprintId) {
+        if (!this._storeState) return new Set();
+        const psc = selectors.getPlanningSprintCards(this._storeState);
+        return new Set(
+            psc.filter((sc) => sc.sprintId === sprintId).map((sc) => sc.cardId)
+        );
+    }
+
+    get backlogSections() {
+        const allCards = this.backlogCards;
+        const sections = [];
+        const sprintCardMap = this._getSprintCardMap();
+        const cardsInSprints = new Set();
+
+        // Sprint sections (at top)
+        for (const sprint of this.planningSprints) {
+            const sprintCardIds = sprintCardMap.get(sprint.Id) || new Set();
+            const sprintCards = allCards.filter((c) => sprintCardIds.has(c.Id));
+            sprintCards.forEach((c) => cardsInSprints.add(c.Id));
+
+            const isCollapsed = !!this._collapsedSprints[sprint.Id];
+            sections.push({
+                key: sprint.Id,
+                isSprintSection: true,
+                sprintId: sprint.Id,
+                sprintLabel:
+                    sprint.Name || `Sprint ${sprint.sprintNumber || ''}`,
+                goal: sprint.goal || '',
+                hasGoal: !!sprint.goal,
+                cardCount: sprintCards.length,
+                totalPoints: sprintCards.reduce(
+                    (s, c) => s + (c.storyPoints || 0),
+                    0
+                ),
+                isExpanded: !isCollapsed,
+                isCollapsed,
+                chevronIcon: isCollapsed
+                    ? 'utility:chevronright'
+                    : 'utility:chevrondown',
+                cards: isCollapsed
+                    ? []
+                    : sprintCards.map((card, idx) => ({
+                          ...card,
+                          __sectionIndex: idx,
+                          __sprintId: sprint.Id
+                      }))
+            });
+        }
+
+        // Ungrouped section (below sprints)
+        const ungroupedCards = allCards.filter(
+            (c) => !cardsInSprints.has(c.Id)
+        );
+        const isBacklogCollapsed = !!this._collapsedSprints.ungrouped;
+        sections.push({
+            key: 'ungrouped',
+            isSprintSection: false,
+            isBacklogSection: true,
+            isExpanded: !isBacklogCollapsed,
+            isCollapsed: isBacklogCollapsed,
+            chevronIcon: isBacklogCollapsed
+                ? 'utility:chevronright'
+                : 'utility:chevrondown',
+            cardCount: ungroupedCards.length,
+            totalPoints: ungroupedCards.reduce(
+                (s, c) => s + (c.storyPoints || 0),
+                0
+            ),
+            cards: isBacklogCollapsed
+                ? []
+                : ungroupedCards.map((card, idx) => ({
+                      ...card,
+                      __sectionIndex: idx,
+                      __sprintId: null
+                  }))
+        });
+
+        return sections;
+    }
+
     get hasCards() {
         return this.backlogCards.length > 0;
     }
 
+    get hasContent() {
+        return this.hasCards || this.hasPlanningSprints;
+    }
+
     get showEmptyState() {
-        return !this.hasCards && !this.showCreateForm;
+        return !this.hasContent && !this.showCreateForm;
     }
 
     get cardCount() {
@@ -241,7 +353,7 @@ export default class KanbanBacklogView extends LightningElement {
     }
 
     // ===================================================================
-    // Event Handlers - Create Form
+    // Event Handlers - Create Card Form
     // ===================================================================
 
     get isCreateDisabled() {
@@ -289,6 +401,83 @@ export default class KanbanBacklogView extends LightningElement {
 
     resetCreateForm() {
         this.newCardSubject = '';
+    }
+
+    // ===================================================================
+    // Event Handlers - Create Sprint Form
+    // ===================================================================
+
+    handleToggleCreateSprintForm() {
+        this.showCreateSprintForm = !this.showCreateSprintForm;
+        if (this.showCreateSprintForm) {
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            setTimeout(() => {
+                const input = this.template.querySelector(
+                    '.create-sprint-input'
+                );
+                if (input) {
+                    input.focus();
+                }
+            }, 0);
+        } else {
+            this.newSprintGoal = '';
+        }
+    }
+
+    handleNewSprintGoalChange(event) {
+        this.newSprintGoal = event.target.value;
+    }
+
+    handleCreateSprintKeyDown(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            this.handleCreateSprint();
+        } else if (event.key === 'Escape') {
+            this.showCreateSprintForm = false;
+            this.newSprintGoal = '';
+        }
+    }
+
+    async handleCreateSprint() {
+        if (!this.store || !this.boardId) return;
+
+        try {
+            await this.store.dispatch(
+                createSprintAsync(
+                    this.boardId,
+                    this.newSprintGoal || null,
+                    null,
+                    null
+                )
+            );
+            this.newSprintGoal = '';
+            this.showCreateSprintForm = false;
+        } catch (error) {
+            this.dispatchEvent(
+                new CustomEvent('error', {
+                    detail: { message: 'Failed to create sprint' }
+                })
+            );
+        }
+    }
+
+    handleCancelCreateSprint() {
+        this.showCreateSprintForm = false;
+        this.newSprintGoal = '';
+    }
+
+    // ===================================================================
+    // Event Handlers - Sprint Sections
+    // ===================================================================
+
+    handleSprintHeaderClick(event) {
+        const sprintId = event.currentTarget.dataset.sprintId;
+        if (sprintId) {
+            this._collapsedSprints = {
+                ...this._collapsedSprints,
+                [sprintId]: !this._collapsedSprints[sprintId]
+            };
+        }
     }
 
     // ===================================================================
@@ -451,16 +640,25 @@ export default class KanbanBacklogView extends LightningElement {
     handleContextMenu(event) {
         event.preventDefault();
         const cardId = event.currentTarget.dataset.cardId;
+        const rawSprintId = event.currentTarget.dataset.sprintId;
+        const sprintId =
+            rawSprintId && rawSprintId !== 'null' ? rawSprintId : null;
+        this._contextMenuCardId = cardId;
+        this._contextMenuSprintId = sprintId;
+
         const contextMenu = this.template.querySelector(
             'c-kanban-context-menu'
         );
         if (contextMenu) {
-            this._contextMenuCardId = cardId;
+            contextMenu.menuItems = this._buildContextMenuItems(
+                cardId,
+                sprintId
+            );
             contextMenu.show(event.clientX, event.clientY);
         }
     }
 
-    get contextMenuItems() {
+    _buildContextMenuItems(_cardId, cardSprintId) {
         const items = [
             {
                 label: 'Move to Top',
@@ -471,11 +669,69 @@ export default class KanbanBacklogView extends LightningElement {
                 label: 'Move to Bottom',
                 value: 'moveBottom',
                 icon: 'utility:arrowdown'
-            },
+            }
+        ];
+
+        // Build "Move to Sprint" submenu with all available sprints
+        const sprintSubmenu = [];
+        for (const sprint of this.planningSprints) {
+            if (sprint.Id === cardSprintId) continue;
+            sprintSubmenu.push({
+                label: sprint.Name || `Sprint ${sprint.sprintNumber || ''}`,
+                value: sprint.Id
+            });
+        }
+        if (this.activeSprint) {
+            sprintSubmenu.push({
+                label: `${this.activeSprint.Name || 'Active Sprint'} (Board)`,
+                value: `active:${this.activeSprint.Id}`,
+                dividerBefore: sprintSubmenu.length > 0
+            });
+        }
+        if (sprintSubmenu.length > 0) {
+            items.push({
+                label: 'Move to Sprint',
+                value: 'moveToSprint',
+                icon: 'utility:forward',
+                submenu: sprintSubmenu
+            });
+        }
+
+        // Build "Move to Column" submenu (moves card to active sprint + column)
+        if (this.activeSprint) {
+            const cols = this._storeState?.columns || [];
+            const columnSubmenu = [];
+            for (const col of cols) {
+                columnSubmenu.push({
+                    label: col.columnHeader || col.Name || col.name,
+                    value: col.Id
+                });
+            }
+            if (columnSubmenu.length > 0) {
+                items.push({
+                    label: 'Move to Column',
+                    value: 'moveToColumn',
+                    icon: 'utility:right',
+                    submenu: columnSubmenu
+                });
+            }
+        }
+
+        // Remove from sprint (only if card is in a planning sprint)
+        if (cardSprintId) {
+            items.push({
+                label: 'Remove from Sprint',
+                value: 'removeFromSprint',
+                icon: 'utility:back'
+            });
+        }
+
+        items.push(
             {
                 label: 'Set Priority',
                 value: 'setPriority',
                 icon: 'utility:priority',
+                dividerBefore: true,
                 submenu: [
                     { label: 'High', value: 'High' },
                     { label: 'Medium', value: 'Medium' },
@@ -485,8 +741,7 @@ export default class KanbanBacklogView extends LightningElement {
             {
                 label: 'Toggle Refinement',
                 value: 'toggleRefinement',
-                icon: 'utility:search',
-                dividerBefore: true
+                icon: 'utility:search'
             },
             {
                 label: 'Delete',
@@ -494,35 +749,52 @@ export default class KanbanBacklogView extends LightningElement {
                 icon: 'utility:delete',
                 dividerBefore: true
             }
-        ];
-
-        if (this.hasActiveSprint) {
-            items.unshift({
-                label: 'Move to Sprint',
-                value: 'moveToSprint',
-                icon: 'utility:forward'
-            });
-        }
+        );
 
         return items;
+    }
+
+    get contextMenuItems() {
+        return this._buildContextMenuItems(null, null);
     }
 
     async handleContextMenuSelect(event) {
         const { value, subValue } = event.detail;
         const cardId = this._contextMenuCardId;
+        const sprintId = this._contextMenuSprintId;
         if (!cardId || !this.store) return;
 
         switch (value) {
-            case 'moveTop':
-                await this.store.dispatch(reorderBacklogCardAsync(cardId, 0));
-                break;
-            case 'moveBottom':
+            case 'moveTop': {
+                const topIdx = this._getMoveTopIndex(sprintId);
                 await this.store.dispatch(
-                    reorderBacklogCardAsync(
-                        cardId,
-                        this.backlogCards.length - 1
-                    )
+                    reorderBacklogCardAsync(cardId, topIdx)
                 );
+                break;
+            }
+            case 'moveBottom': {
+                const bottomIdx = this._getMoveBottomIndex(sprintId);
+                await this.store.dispatch(
+                    reorderBacklogCardAsync(cardId, bottomIdx)
+                );
+                break;
+            }
+            case 'moveToSprint':
+                if (subValue) {
+                    await this._handleMoveToSprint(cardId, sprintId, subValue);
+                }
+                break;
+            case 'moveToColumn':
+                if (subValue && this.activeSprint) {
+                    await this._handleMoveToColumn(cardId, sprintId, subValue);
+                }
+                break;
+            case 'removeFromSprint':
+                if (sprintId) {
+                    await this.store.dispatch(
+                        removeCardFromBacklogSprintAsync(sprintId, cardId)
+                    );
+                }
                 break;
             case 'setPriority':
                 if (subValue) {
@@ -542,13 +814,6 @@ export default class KanbanBacklogView extends LightningElement {
                 }
                 break;
             }
-            case 'moveToSprint':
-                if (this.activeSprint) {
-                    await this.store.dispatch(
-                        moveCardsToSprintAsync(this.activeSprint.Id, [cardId])
-                    );
-                }
-                break;
             case 'delete':
                 await this.store.dispatch(deleteBacklogCardsAsync([cardId]));
                 break;
@@ -557,13 +822,80 @@ export default class KanbanBacklogView extends LightningElement {
         }
     }
 
+    async _handleMoveToSprint(cardId, currentSprintId, targetValue) {
+        // Remove from current planning sprint if applicable
+        if (currentSprintId) {
+            await this.store.dispatch(
+                removeCardFromBacklogSprintAsync(currentSprintId, cardId)
+            );
+        }
+
+        if (targetValue.startsWith('active:')) {
+            // Move to active sprint (puts card on the board)
+            const activeSprintId = targetValue.replace('active:', '');
+            await this.store.dispatch(
+                moveCardsToSprintAsync(activeSprintId, [cardId])
+            );
+        } else {
+            // Move to a planning sprint (stays in backlog)
+            await this.store.dispatch(
+                addCardsToBacklogSprintAsync(targetValue, [cardId])
+            );
+        }
+    }
+
+    async _handleMoveToColumn(cardId, currentSprintId, targetColumnId) {
+        // Remove from current planning sprint if applicable
+        if (currentSprintId) {
+            await this.store.dispatch(
+                removeCardFromBacklogSprintAsync(currentSprintId, cardId)
+            );
+        }
+
+        // Move card to the active sprint (this puts it on the board in the first column)
+        await this.store.dispatch(
+            moveCardsToSprintAsync(this.activeSprint.Id, [cardId])
+        );
+
+        // Now move it to the target column
+        await this.store.dispatch(moveCardAsync(cardId, targetColumnId, 0));
+    }
+
+    _getMoveTopIndex(sprintId) {
+        if (!sprintId) return 0;
+        const state = this.store.getState();
+        const allCards = state.backlogCards || [];
+        const sprintCardIds = this._getSprintCardIds(sprintId);
+        for (let i = 0; i < allCards.length; i++) {
+            if (sprintCardIds.has(allCards[i].Id)) return i;
+        }
+        return 0;
+    }
+
+    _getMoveBottomIndex(sprintId) {
+        const state = this.store.getState();
+        const allCards = state.backlogCards || [];
+        if (!sprintId) return allCards.length - 1;
+        const sprintCardIds = this._getSprintCardIds(sprintId);
+        let lastIndex = -1;
+        for (let i = 0; i < allCards.length; i++) {
+            if (sprintCardIds.has(allCards[i].Id)) lastIndex = i;
+        }
+        return lastIndex >= 0 ? lastIndex : allCards.length - 1;
+    }
+
     // ===================================================================
     // Event Handlers - Drag Reorder
     // ===================================================================
 
+    _dragSourceSprintId = null;
+
     handleDragStart(event) {
         const cardId = event.currentTarget.dataset.cardId;
+        const rawSprintId = event.currentTarget.dataset.sprintId;
         this.draggedCardId = cardId;
+        this._dragSourceSprintId =
+            rawSprintId && rawSprintId !== 'null' ? rawSprintId : null;
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', cardId);
 
@@ -615,25 +947,114 @@ export default class KanbanBacklogView extends LightningElement {
     handleDragEnd(event) {
         event.currentTarget.classList.remove('dragging');
         this._clearDropIndicators();
+        this._clearHeaderDropIndicators();
         // If drop didn't fire (e.g. dropped outside), reset drag state
         if (this.draggedCardId) {
             this.draggedCardId = null;
             this.dragOverIndex = null;
             this._dragTargetIndex = null;
+            this._dragSourceSprintId = null;
         }
     }
+
+    // --- Section header drop zone handlers ---
+
+    handleSectionHeaderDragOver(event) {
+        if (!this.draggedCardId) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        event.currentTarget.classList.add('drag-indicator-header');
+    }
+
+    handleSectionHeaderDragLeave(event) {
+        event.currentTarget.classList.remove('drag-indicator-header');
+    }
+
+    _clearHeaderDropIndicators() {
+        const headers = this.template.querySelectorAll('.sprint-header-row');
+        headers.forEach((h) => h.classList.remove('drag-indicator-header'));
+    }
+
+    async handleSectionHeaderDrop(event) {
+        event.preventDefault();
+        this._clearDropIndicators();
+        this._clearHeaderDropIndicators();
+
+        const cardId = this.draggedCardId;
+        const sourceSprintId = this._dragSourceSprintId;
+        this.draggedCardId = null;
+        this.dragOverIndex = null;
+        this._dragTargetIndex = null;
+        this._dragSourceSprintId = null;
+
+        if (!cardId || !this.store) return;
+
+        const rawTargetId = event.currentTarget.dataset.sprintId;
+        const targetSprintId =
+            rawTargetId && rawTargetId !== 'ungrouped' ? rawTargetId : null;
+
+        // No-op if same section
+        if (sourceSprintId === targetSprintId) return;
+
+        try {
+            await this._moveCardBetweenSections(
+                cardId,
+                sourceSprintId,
+                targetSprintId
+            );
+        } catch (error) {
+            this.dispatchEvent(
+                new CustomEvent('error', {
+                    detail: { message: 'Failed to move card' }
+                })
+            );
+        }
+    }
+
+    // --- Card row drop handler (with cross-section support) ---
 
     async handleDrop(event) {
         event.preventDefault();
         this._clearDropIndicators();
+        this._clearHeaderDropIndicators();
 
         const cardId = this.draggedCardId;
         const targetIndex = this._dragTargetIndex;
+        const sourceSprintId = this._dragSourceSprintId;
         this.draggedCardId = null;
         this.dragOverIndex = null;
         this._dragTargetIndex = null;
+        this._dragSourceSprintId = null;
 
-        if (cardId == null || targetIndex == null || !this.store) return;
+        if (cardId == null || !this.store) return;
+
+        // Detect target section from the drop target row
+        const rawTargetSprintId = event.currentTarget.dataset.sprintId;
+        const targetSprintId =
+            rawTargetSprintId && rawTargetSprintId !== 'null'
+                ? rawTargetSprintId
+                : null;
+
+        // Cross-section drop: move card between sprint/backlog sections
+        if (sourceSprintId !== targetSprintId) {
+            try {
+                await this._moveCardBetweenSections(
+                    cardId,
+                    sourceSprintId,
+                    targetSprintId
+                );
+            } catch (error) {
+                this.dispatchEvent(
+                    new CustomEvent('error', {
+                        detail: { message: 'Failed to move card' }
+                    })
+                );
+                return;
+            }
+            // Fall through to reorder the card to the drop position
+        }
+
+        if (targetIndex == null) return;
 
         // Compute the target index in the unfiltered backlog array.
         // _dragTargetIndex is based on the filtered/displayed list.
@@ -643,15 +1064,21 @@ export default class KanbanBacklogView extends LightningElement {
         const oldIndex = allCards.findIndex((c) => c.Id === cardId);
         if (oldIndex === -1) return;
 
-        // Account for the dragged card being removed before re-inserting
+        // Find the anchor card from the drop target row
+        const anchorCardId = event.currentTarget.dataset.cardId;
         let newIndex;
-        if (targetIndex >= this.backlogCards.length) {
-            // Dropped at the end
+        if (anchorCardId) {
+            newIndex = allCards.findIndex((c) => c.Id === anchorCardId);
+            if (newIndex === -1) {
+                newIndex = allCards.length - 1;
+            } else if (newIndex > oldIndex) {
+                newIndex = Math.max(0, newIndex - 1);
+            }
+        } else if (targetIndex >= this.backlogCards.length) {
             newIndex = allCards.length - 1;
         } else {
             const anchorCard = this.backlogCards[targetIndex];
             newIndex = allCards.findIndex((c) => c.Id === anchorCard.Id);
-            // If moving down, the anchor shifts after removing the dragged card
             if (newIndex > oldIndex) {
                 newIndex = Math.max(0, newIndex - 1);
             }
@@ -667,6 +1094,21 @@ export default class KanbanBacklogView extends LightningElement {
                 new CustomEvent('error', {
                     detail: { message: 'Failed to save card position' }
                 })
+            );
+        }
+    }
+
+    async _moveCardBetweenSections(cardId, sourceSprintId, targetSprintId) {
+        // Remove from source sprint if it was in one
+        if (sourceSprintId) {
+            await this.store.dispatch(
+                removeCardFromBacklogSprintAsync(sourceSprintId, cardId)
+            );
+        }
+        // Add to target sprint if dropping into one (not back to ungrouped)
+        if (targetSprintId) {
+            await this.store.dispatch(
+                addCardsToBacklogSprintAsync(targetSprintId, [cardId])
             );
         }
     }

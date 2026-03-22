@@ -25,6 +25,8 @@ public with sharing class KanbanBoardDTO {
         public Boolean salesforceNotifications;
         @AuraEnabled
         public Id activeSprintId;
+        @AuraEnabled
+        public Decimal doneCardRetentionDays;
 
         public BoardDTO(OpenSF__Board__c board) {
             this.Id = board.Id;
@@ -40,6 +42,11 @@ public with sharing class KanbanBoardDTO {
                 this.activeSprintId = board.OpenSF__ActiveSprint__c;
             } catch (Exception e) {
                 this.activeSprintId = null;
+            }
+            try {
+                this.doneCardRetentionDays = board.OpenSF__DoneCardRetentionDays__c;
+            } catch (Exception e) {
+                this.doneCardRetentionDays = 7;
             }
         }
     }
@@ -66,6 +73,8 @@ public with sharing class KanbanBoardDTO {
         public Id boardId;
         @AuraEnabled
         public String category;
+        @AuraEnabled
+        public Decimal wipLimit;
 
         public ColumnDTO(OpenSF__Column__c column) {
             this.Id = column.Id;
@@ -77,6 +86,7 @@ public with sharing class KanbanBoardDTO {
             this.cardCount = column.OpenSF__CardCount__c;
             this.boardId = column.OpenSF__Board__c;
             this.category = column.OpenSF__Category__c;
+            this.wipLimit = column.OpenSF__WipLimit__c;
         }
     }
 
@@ -132,6 +142,10 @@ public with sharing class KanbanBoardDTO {
         public Decimal sequenceNumber;
         @AuraEnabled
         public Boolean needsRefinement;
+        @AuraEnabled
+        public DateTime doneDate;
+        @AuraEnabled
+        public Map<String, Object> customFields;
 
         public CardDTO(OpenSF__Card__c card) {
             this.Id = card.Id;
@@ -155,6 +169,7 @@ public with sharing class KanbanBoardDTO {
             this.lastModifiedById = card.LastModifiedById;
             this.sequenceNumber = card.OpenSF__SequenceNumber__c;
             this.needsRefinement = card.OpenSF__NeedsRefinement__c;
+            this.doneDate = card.OpenSF__DoneDate__c;
 
             // Map nested relationships
             if (card.OpenSF__Assignee__r != null) {
@@ -318,6 +333,140 @@ public with sharing class KanbanBoardDTO {
     }
 
     /**
+     * Card Custom Field configuration DTO
+     */
+    public virtual class CardCustomFieldDTO {
+        @AuraEnabled
+        public String fieldApiName;
+        @AuraEnabled
+        public String displayLabel;
+        @AuraEnabled
+        public String fieldType;
+        @AuraEnabled
+        public Decimal sortOrder;
+
+        public CardCustomFieldDTO() {
+        }
+
+        public CardCustomFieldDTO(OpenSF__CardCustomField__mdt field) {
+            this.fieldApiName = field.OpenSF__FieldApiName__c;
+            this.displayLabel = String.isNotBlank(field.OpenSF__DisplayLabel__c)
+                ? field.OpenSF__DisplayLabel__c
+                : field.OpenSF__FieldApiName__c.replace('__c', '');
+            this.fieldType = field.OpenSF__FieldType__c;
+            this.sortOrder = field.OpenSF__SortOrder__c;
+        }
+    }
+
+    /**
+     * Card Column History DTO for cycle time analytics
+     */
+    public class CardColumnHistoryDTO {
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public Id cardId;
+        @AuraEnabled
+        public Id columnId;
+        @AuraEnabled
+        public String columnName;
+        @AuraEnabled
+        public Id boardId;
+        @AuraEnabled
+        public DateTime enteredAt;
+        @AuraEnabled
+        public DateTime exitedAt;
+        @AuraEnabled
+        public Decimal durationMinutes;
+
+        public CardColumnHistoryDTO(OpenSF__CardColumnHistory__c h) {
+            this.Id = h.Id;
+            this.cardId = h.OpenSF__Card__c;
+            this.columnId = h.OpenSF__Column__c;
+            this.boardId = h.OpenSF__Board__c;
+            this.enteredAt = h.OpenSF__EnteredAt__c;
+            this.exitedAt = h.OpenSF__ExitedAt__c;
+            this.durationMinutes = h.OpenSF__DurationMinutes__c;
+            try {
+                this.columnName = h.OpenSF__Column__r.OpenSF__ColumnHeader__c;
+            } catch (Exception e) {
+                this.columnName = null;
+            }
+        }
+    }
+
+    /**
+     * Cycle time analytics result
+     */
+    public class CycleTimeResult {
+        @AuraEnabled
+        public List<ColumnCycleTime> columnTimes;
+        @AuraEnabled
+        public Decimal averageCycleTimeHours;
+        @AuraEnabled
+        public Decimal averageLeadTimeHours;
+        @AuraEnabled
+        public List<CardCycleTime> cardDetails;
+    }
+
+    public class ColumnCycleTime {
+        @AuraEnabled
+        public Id columnId;
+        @AuraEnabled
+        public String columnName;
+        @AuraEnabled
+        public Decimal averageMinutes;
+        @AuraEnabled
+        public Decimal medianMinutes;
+        @AuraEnabled
+        public Decimal minMinutes;
+        @AuraEnabled
+        public Decimal maxMinutes;
+        @AuraEnabled
+        public Integer cardCount;
+    }
+
+    public class CardCycleTime {
+        @AuraEnabled
+        public Id cardId;
+        @AuraEnabled
+        public String cardName;
+        @AuraEnabled
+        public String cardType;
+        @AuraEnabled
+        public Decimal cycleTimeHours;
+        @AuraEnabled
+        public Decimal leadTimeHours;
+        @AuraEnabled
+        public DateTime createdDate;
+        @AuraEnabled
+        public DateTime completedDate;
+    }
+
+    /**
+     * Cumulative flow data point
+     */
+    public class CumulativeFlowDataPoint {
+        @AuraEnabled
+        public Date snapshotDate;
+        @AuraEnabled
+        public Map<String, Integer> columnCounts;
+    }
+
+    /**
+     * Convert list of card column histories
+     */
+    public static List<CardColumnHistoryDTO> convertHistories(
+        List<OpenSF__CardColumnHistory__c> histories
+    ) {
+        List<CardColumnHistoryDTO> result = new List<CardColumnHistoryDTO>();
+        for (OpenSF__CardColumnHistory__c h : histories) {
+            result.add(new CardColumnHistoryDTO(h));
+        }
+        return result;
+    }
+
+    /**
      * Convert list of boards
      */
     public static List<BoardDTO> convertBoards(List<OpenSF__Board__c> boards) {
@@ -374,6 +523,55 @@ public with sharing class KanbanBoardDTO {
         List<SprintCardDTO> result = new List<SprintCardDTO>();
         for (OpenSF__SprintCard__c sc : sprintCards) {
             result.add(new SprintCardDTO(sc));
+        }
+        return result;
+    }
+
+    /**
+     * Linked Record DTO
+     */
+    public class LinkedRecordDTO {
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public String Name;
+        @AuraEnabled
+        public Id cardId;
+        @AuraEnabled
+        public String recordId;
+        @AuraEnabled
+        public String recordName;
+        @AuraEnabled
+        public String sObjectType;
+        @AuraEnabled
+        public Boolean syncEnabled;
+        @AuraEnabled
+        public String statusMapping;
+        @AuraEnabled
+        public DateTime lastSyncDate;
+
+        public LinkedRecordDTO(OpenSF__LinkedRecord__c rec) {
+            this.Id = rec.Id;
+            this.Name = rec.Name;
+            this.cardId = rec.OpenSF__Card__c;
+            this.recordId = rec.OpenSF__RecordId__c;
+            this.recordName = rec.OpenSF__RecordName__c;
+            this.sObjectType = rec.OpenSF__SObjectType__c;
+            this.syncEnabled = rec.OpenSF__SyncEnabled__c;
+            this.statusMapping = rec.OpenSF__StatusMapping__c;
+            this.lastSyncDate = rec.OpenSF__LastSyncDate__c;
+        }
+    }
+
+    /**
+     * Convert list of linked records
+     */
+    public static List<LinkedRecordDTO> convertLinkedRecords(
+        List<OpenSF__LinkedRecord__c> records
+    ) {
+        List<LinkedRecordDTO> result = new List<LinkedRecordDTO>();
+        for (OpenSF__LinkedRecord__c rec : records) {
+            result.add(new LinkedRecordDTO(rec));
         }
         return result;
     }

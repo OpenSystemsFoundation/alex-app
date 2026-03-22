@@ -9,3 +9,6 @@
 .vscode
 
 coverage/
+
+# Markdown files — doc formatting shouldn't block CI
+*.md

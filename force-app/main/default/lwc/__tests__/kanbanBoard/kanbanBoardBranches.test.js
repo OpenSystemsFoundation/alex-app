@@ -3,7 +3,7 @@
  * Targets uncovered branches: getters with _storeState, event handlers,
  * tab methods, sprint handlers, context menu, backlog handlers, dynamic height
  */
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 import KanbanBoard from 'c/kanbanBoard';
 
 // Mock Apex
@@ -34,7 +34,7 @@ jest.mock(
     { virtual: true }
 );
 
-let mockStoreState = {
+const mockStoreState = {
     columns: [
         {
             Id: 'col1',

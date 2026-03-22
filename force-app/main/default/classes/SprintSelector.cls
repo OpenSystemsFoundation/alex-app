@@ -54,6 +54,9 @@ public with sharing class SprintSelector {
      * Get active Sprint for a Board
      */
     public static OpenSF__Sprint__c getActiveSprintByBoardId(Id boardId) {
+        String activeStatus = KanbanEnums.sprintStatusValue(
+            KanbanEnums.SprintStatus.ACTIVE
+        );
         List<OpenSF__Sprint__c> sprints = [
             SELECT
                 Id,
@@ -68,7 +71,9 @@ public with sharing class SprintSelector {
                 OpenSF__CompletedStoryPoints__c,
                 OpenSF__Velocity__c
             FROM OpenSF__Sprint__c
-            WHERE OpenSF__Board__c = :boardId AND OpenSF__Status__c = 'Active'
+            WHERE
+                OpenSF__Board__c = :boardId
+                AND OpenSF__Status__c = :activeStatus
             WITH USER_MODE
             LIMIT 1
         ];
@@ -116,6 +121,7 @@ public with sharing class SprintSelector {
                 OpenSF__Card__r.OpenSF__Locked__c,
                 OpenSF__Card__r.OpenSF__NeedsRefinement__c,
                 OpenSF__Card__r.OpenSF__SequenceNumber__c,
+                OpenSF__Card__r.OpenSF__DoneDate__c,
                 OpenSF__Card__r.LastModifiedDate,
                 OpenSF__Card__r.LastModifiedById
             FROM OpenSF__SprintCard__c
@@ -132,13 +138,16 @@ public with sharing class SprintSelector {
      */
     public static List<OpenSF__Card__c> getBacklogCardsByBoardId(Id boardId) {
         // Get cards that belong to this board but are not in any active sprint
+        String activeStatus = KanbanEnums.sprintStatusValue(
+            KanbanEnums.SprintStatus.ACTIVE
+        );
         Set<Id> cardsInActiveSprints = new Set<Id>();
         for (OpenSF__SprintCard__c sc : [
             SELECT OpenSF__Card__c
             FROM OpenSF__SprintCard__c
             WHERE
                 OpenSF__Sprint__r.OpenSF__Board__c = :boardId
-                AND OpenSF__Sprint__r.OpenSF__Status__c = 'Active'
+                AND OpenSF__Sprint__r.OpenSF__Status__c = :activeStatus
                 AND OpenSF__RemovedDate__c = NULL
             WITH USER_MODE
         ]) {
@@ -170,6 +179,7 @@ public with sharing class SprintSelector {
                 OpenSF__Locked__c,
                 OpenSF__NeedsRefinement__c,
                 OpenSF__SequenceNumber__c,
+                OpenSF__DoneDate__c,
                 LastModifiedDate,
                 LastModifiedById
             FROM OpenSF__Card__c
@@ -213,6 +223,9 @@ public with sharing class SprintSelector {
         Id boardId,
         Integer limitCount
     ) {
+        String completedStatus = KanbanEnums.sprintStatusValue(
+            KanbanEnums.SprintStatus.COMPLETED
+        );
         return [
             SELECT
                 Id,
@@ -229,7 +242,7 @@ public with sharing class SprintSelector {
             FROM OpenSF__Sprint__c
             WHERE
                 OpenSF__Board__c = :boardId
-                AND OpenSF__Status__c = 'Completed'
+                AND OpenSF__Status__c = :completedStatus
             WITH USER_MODE
             ORDER BY OpenSF__EndDate__c DESC
             LIMIT :limitCount
@@ -240,6 +253,9 @@ public with sharing class SprintSelector {
      * Get all active sprints (for scheduled snapshot job)
      */
     public static List<OpenSF__Sprint__c> getAllActiveSprints() {
+        String activeStatus = KanbanEnums.sprintStatusValue(
+            KanbanEnums.SprintStatus.ACTIVE
+        );
         return [
             SELECT
                 Id,
@@ -254,8 +270,39 @@ public with sharing class SprintSelector {
                 OpenSF__CompletedStoryPoints__c,
                 OpenSF__Velocity__c
             FROM OpenSF__Sprint__c
-            WHERE OpenSF__Status__c = 'Active'
+            WHERE OpenSF__Status__c = :activeStatus
             WITH USER_MODE
+        ];
+    }
+
+    /**
+     * Get SprintCards for Planning sprints on a Board (for backlog sprint management)
+     */
+    public static List<OpenSF__SprintCard__c> getPlanningSprintCardsByBoardId(
+        Id boardId
+    ) {
+        String planningStatus = KanbanEnums.sprintStatusValue(
+            KanbanEnums.SprintStatus.PLANNING
+        );
+        return [
+            SELECT
+                Id,
+                Name,
+                OpenSF__Sprint__c,
+                OpenSF__Card__c,
+                OpenSF__AddedDate__c,
+                OpenSF__RemovedDate__c,
+                OpenSF__StoryPointsAtAdd__c,
+                OpenSF__CompletedInSprint__c,
+                OpenSF__CompletedDate__c,
+                OpenSF__Position__c
+            FROM OpenSF__SprintCard__c
+            WHERE
+                OpenSF__Sprint__r.OpenSF__Board__c = :boardId
+                AND OpenSF__Sprint__r.OpenSF__Status__c = :planningStatus
+                AND OpenSF__RemovedDate__c = NULL
+            WITH USER_MODE
+            ORDER BY OpenSF__Position__c ASC NULLS LAST
         ];
     }
 

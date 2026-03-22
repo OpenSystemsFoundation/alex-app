@@ -85,4 +85,7 @@ playwright/.cache/
 !*.spec.ts
 
 # Playwright Traces
-trace.zipapex-test-results.json
+trace.zip
+apex-test-results.json
+e2e/.auth/
+e2e/specs/*-snapshots/

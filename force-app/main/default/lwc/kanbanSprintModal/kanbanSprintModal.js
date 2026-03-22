@@ -2,9 +2,13 @@ import { LightningElement, api, track } from 'lwc';
 import { createSprintAsync, startSprintAsync } from 'c/kanbanStore';
 
 export default class KanbanSprintModal extends LightningElement {
+    /** @type {import('c/kanbanStore').Store} The Redux-style store instance */
     @api store;
+    /** @type {string} The board ID for sprint creation */
     @api boardId;
-    @api sprint; // null for create, object for edit
+    /** @type {SprintDTO|null} Sprint data for edit mode; null for create */
+    @api sprint;
+    /** @type {boolean} Whether the modal is currently visible */
     @api isOpen = false;
 
     @track goal = '';

@@ -1,4 +1,4 @@
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 import SubscriptionManager from 'c/subscriptionManager';
 import { subscribe, unsubscribe, onError } from 'lightning/empApi';
 

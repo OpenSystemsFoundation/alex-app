@@ -2,7 +2,7 @@
  * Tests for board filter/search and other uncovered branches from merge.
  * Uses DOM event dispatch to trigger handlers (LWC methods are not public).
  */
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 import KanbanBoard from 'c/kanbanBoard';
 
 // Mock Apex
@@ -95,7 +95,9 @@ jest.mock('c/kanbanStore', () => ({
         getSprintCards: jest.fn(() => []),
         isBacklogSyncing: jest.fn(() => false),
         getBacklogCards: jest.fn((s) => s.backlogCards || []),
-        getSelectedBacklogCards: jest.fn((s) => s.selectedBacklogCards || [])
+        getSelectedBacklogCards: jest.fn((s) => s.selectedBacklogCards || []),
+        getPlanningSprints: jest.fn(() => []),
+        getPlanningSprintCards: jest.fn(() => [])
     }
 }));
 

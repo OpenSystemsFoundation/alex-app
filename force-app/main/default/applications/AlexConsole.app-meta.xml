@@ -17,6 +17,8 @@
     <navType>Console</navType>
     <tabs>Board__c</tabs>
     <tabs>Card__c</tabs>
+    <tabs>Admin_Management</tabs>
+    <tabs>Planning_Poker</tabs>
     <tabs>standard-Task</tabs>
     <tabs>standard-report</tabs>
     <tabs>standard-Dashboard</tabs>
@@ -25,10 +27,16 @@
     <utilityBar>AlexConsole_UtilityBar</utilityBar>
     <workspaceConfig>
         <mappings>
+            <tab>Admin_Management</tab>
+        </mappings>
+        <mappings>
             <tab>Board__c</tab>
         </mappings>
         <mappings>
             <tab>Card__c</tab>
+        </mappings>
+        <mappings>
+            <tab>Planning_Poker</tab>
         </mappings>
         <mappings>
             <tab>standard-Dashboard</tab>

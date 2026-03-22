@@ -2,7 +2,7 @@
  * Targeted tests for uncovered handler functions and getters in kanbanBoard.js.
  * Covers: backlog handlers, panel navigate, drag handlers, tab getters, boardName.
  */
-import { createElement } from 'lwc';
+import { createElement } from '@lwc/engine-dom';
 import KanbanBoard from 'c/kanbanBoard';
 
 jest.mock(
@@ -105,7 +105,9 @@ jest.mock('c/kanbanStore', () => ({
         getSprintCards: jest.fn(() => []),
         isBacklogSyncing: jest.fn(() => false),
         getBacklogCards: jest.fn((s) => s.backlogCards || []),
-        getSelectedBacklogCards: jest.fn((s) => s.selectedBacklogCards || [])
+        getSelectedBacklogCards: jest.fn((s) => s.selectedBacklogCards || []),
+        getPlanningSprints: jest.fn(() => []),
+        getPlanningSprintCards: jest.fn(() => [])
     }
 }));
 

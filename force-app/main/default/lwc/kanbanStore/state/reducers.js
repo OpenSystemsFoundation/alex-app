@@ -46,6 +46,7 @@ export const initialState = {
     backlogCards: [],
     backlogSyncing: false, // true while a backlog reorder is in-flight
     sprintCards: [],
+    planningSprintCards: [], // SprintCard junctions for Planning sprints
     backlogVisible: false,
     selectedBacklogCards: []
 };

@@ -1,5 +1,5 @@
 import { LightningElement, api, track, wire } from 'lwc';
-import { createStore, selectors, moveCardToBacklogAsync } from 'c/kanbanStore';
+import { createStore, selectors } from 'c/kanbanStore';
 import getKanbanConfig from '@salesforce/apex/KanbanBoardController.getKanbanConfig';
 import EventHandler from './handlers/eventHandler';
 import RequestTracker from './helpers/requestTracker';
@@ -9,10 +9,68 @@ import BoardDataLoader from './managers/boardDataLoader';
 import DragDropHandler from './handlers/dragDropHandler';
 import CardOperations from './handlers/cardOperations';
 import SubscriptionEventHandler from './handlers/subscriptionEventHandler';
+import FilterManager from './managers/filterManager';
+import SwimlaneManager from './managers/swimlaneManager';
+import MobileNavigationManager from './managers/mobileNavigationManager';
+import ContextMenuManager from './managers/contextMenuManager';
 import { generateClientId } from './helpers/clientIdGenerator';
 
+/**
+ * @typedef {Object} CardDTO
+ * @property {string} id
+ * @property {string} name
+ * @property {string} subject
+ * @property {string} [description]
+ * @property {string} [priority]
+ * @property {string} [status]
+ * @property {string} [cardType]
+ * @property {string} [color]
+ * @property {string} [dueDate]
+ * @property {number} [storyPoints]
+ * @property {string} columnId
+ * @property {string} boardId
+ * @property {string} [lexoRankPosition]
+ * @property {number} [sequenceNumber]
+ * @property {boolean} [locked]
+ * @property {boolean} [needsRefinement]
+ * @property {{id: string, name: string, photoUrl: string}} [assignee]
+ * @property {{id: string, name: string}} [peerReviewer]
+ * @property {{id: string, subject: string}} [epic]
+ */
+
+/**
+ * @typedef {Object} ColumnDTO
+ * @property {string} id
+ * @property {string} name
+ * @property {string} columnHeader
+ * @property {string} boardId
+ * @property {string} [lexoRankPosition]
+ * @property {string} [color]
+ * @property {string} [status]
+ * @property {string} [category]
+ * @property {number} [cardCount]
+ */
+
+/**
+ * @typedef {Object} SprintDTO
+ * @property {string} id
+ * @property {string} name
+ * @property {string} boardId
+ * @property {string} [goal]
+ * @property {string} status - 'Planning' | 'Active' | 'Completed'
+ * @property {string} [startDate]
+ * @property {string} [endDate]
+ * @property {number} [sprintNumber]
+ * @property {number} [totalStoryPoints]
+ * @property {number} [completedStoryPoints]
+ * @property {number} [velocity]
+ */
+
 export default class KanbanBoard extends LightningElement {
-    @api height; // Optional fixed height, if not set uses dynamic calculation
+    /** @type {string|undefined} Optional fixed height; if not set, uses dynamic calculation */
+    @api height;
+    /** @type {boolean} Experience Cloud mode for community portal */
+    @api experienceCloud = false;
 
     // Private properties
     _recordId;
@@ -46,11 +104,20 @@ export default class KanbanBoard extends LightningElement {
     @track _boardHideCompleted = false;
     _searchDebounceTimer = null;
 
+    // Mobile state
+    @track _mobileActiveColumnIndex = 0;
+
     // Sprint UI state
     @track showSprintModal = false;
     @track showSprintComplete = false;
     @track showSprintReports = false;
     @track editSprint = null;
+
+    // Analytics UI state
+    @track showAnalytics = false;
+
+    // Swimlane state
+    @track _swimlaneMode = 'none'; // 'none', 'assignee', 'priority', 'cardType', 'epic'
 
     // Undo/redo state
     @track _canUndo = false;
@@ -81,6 +148,10 @@ export default class KanbanBoard extends LightningElement {
     _dragDropHandler = null;
     _cardOperations = null;
     _subscriptionEventHandler = null;
+    _filterManager = null;
+    _swimlaneManager = null;
+    _mobileNavigationManager = null;
+    _contextMenuManager = null;
 
     // Store accessor
     get store() {
@@ -102,72 +173,15 @@ export default class KanbanBoard extends LightningElement {
     }
 
     get filteredColumns() {
-        const cols = this.columns;
-        if (!cols || cols.length === 0) return [];
-
-        const search = this._boardSearchTerm.toLowerCase().trim();
-        const priority = this._boardFilterPriority;
-        const cardType = this._boardFilterCardType;
-        const hideCompleted = this._boardHideCompleted;
-        const hasFilter =
-            search || priority !== 'All' || cardType !== 'All' || hideCompleted;
-
-        if (!hasFilter) return cols;
-
-        return cols.map((col) => {
-            // Hide Done and Released columns when toggle is on
-            if (hideCompleted && col.isCompleted) {
-                return { ...col, cards: [], cardCount: 0, isHidden: true };
-            }
-
-            const filtered = (col.cards || []).filter((card) => {
-                // Search: match subject, Name, cardType, assignee name
-                if (search) {
-                    const haystack = [
-                        card.subject,
-                        card.Name,
-                        card.cardType,
-                        card.assignee?.name,
-                        card.status
-                    ]
-                        .filter(Boolean)
-                        .join(' ')
-                        .toLowerCase();
-                    if (!haystack.includes(search)) return false;
-                }
-
-                // Priority filter
-                if (priority !== 'All' && card.priority !== priority) {
-                    return false;
-                }
-
-                // Card type filter
-                if (cardType !== 'All' && card.cardType !== cardType) {
-                    return false;
-                }
-
-                return true;
-            });
-
-            return { ...col, cards: filtered, cardCount: filtered.length };
-        });
+        return this.filterManager.getFilteredColumns();
     }
 
     get hasActiveFilters() {
-        return (
-            this._boardSearchTerm.trim() ||
-            this._boardFilterPriority !== 'All' ||
-            this._boardFilterCardType !== 'All' ||
-            this._boardHideCompleted
-        );
+        return this.filterManager.hasActiveFilters;
     }
 
     get filteredCardCount() {
-        if (!this.hasActiveFilters) return null;
-        return this.filteredColumns.reduce(
-            (sum, col) => sum + (col.cardCount || 0),
-            0
-        );
+        return this.filterManager.getFilteredCardCount(this.filteredColumns);
     }
 
     get totalCardCount() {
@@ -178,35 +192,26 @@ export default class KanbanBoard extends LightningElement {
     }
 
     get filterSummary() {
-        if (!this.hasActiveFilters) return '';
-        return `${this.filteredCardCount} of ${this.totalCardCount} cards`;
+        return this.filterManager.getFilterSummary(
+            this.filteredColumns,
+            this.totalCardCount
+        );
     }
 
     get priorityFilterOptions() {
-        return [
-            { label: 'All Priorities', value: 'All' },
-            { label: 'Blocking', value: 'Blocking' },
-            { label: 'High', value: 'High' },
-            { label: 'Medium', value: 'Medium' },
-            { label: 'Low', value: 'Low' },
-            { label: 'Trivial', value: 'Trivial' }
-        ];
+        return this.filterManager.priorityFilterOptions;
     }
 
     get cardTypeFilterOptions() {
-        return [
-            { label: 'All Types', value: 'All' },
-            { label: 'Story', value: 'Story' },
-            { label: 'Bug', value: 'Bug' },
-            { label: 'Task', value: 'Task' },
-            { label: 'Epic', value: 'Epic' }
-        ];
+        return this.filterManager.cardTypeFilterOptions;
+    }
+
+    get showHideDoneToggle() {
+        return this.filterManager.showHideDoneToggle;
     }
 
     get hideCompletedClass() {
-        return this._boardHideCompleted
-            ? 'filter-toggle filter-toggle--active'
-            : 'filter-toggle';
+        return this.filterManager.hideCompletedClass;
     }
 
     get cardsByColumn() {
@@ -292,6 +297,34 @@ export default class KanbanBoard extends LightningElement {
             this._subscriptionEventHandler = new SubscriptionEventHandler(this);
         }
         return this._subscriptionEventHandler;
+    }
+
+    get filterManager() {
+        if (!this._filterManager) {
+            this._filterManager = new FilterManager(this);
+        }
+        return this._filterManager;
+    }
+
+    get swimlaneManager() {
+        if (!this._swimlaneManager) {
+            this._swimlaneManager = new SwimlaneManager(this);
+        }
+        return this._swimlaneManager;
+    }
+
+    get mobileNavigationManager() {
+        if (!this._mobileNavigationManager) {
+            this._mobileNavigationManager = new MobileNavigationManager(this);
+        }
+        return this._mobileNavigationManager;
+    }
+
+    get contextMenuManager() {
+        if (!this._contextMenuManager) {
+            this._contextMenuManager = new ContextMenuManager(this);
+        }
+        return this._contextMenuManager;
     }
 
     @wire(getKanbanConfig)
@@ -449,7 +482,20 @@ export default class KanbanBoard extends LightningElement {
 
         const cardId = event.currentTarget.dataset.cardId;
 
-        if (!cardId || !this.navigationUtil) {
+        if (!cardId) {
+            return;
+        }
+
+        // In Experience Cloud mode, let the browser handle navigation via href
+        if (this.experienceCloud) {
+            const href = event.currentTarget.getAttribute('href');
+            if (href) {
+                window.location.href = href;
+            }
+            return;
+        }
+
+        if (!this.navigationUtil) {
             return;
         }
 
@@ -487,7 +533,20 @@ export default class KanbanBoard extends LightningElement {
 
         const columnId = event.currentTarget.dataset.columnId;
 
-        if (!columnId || !this.navigationUtil) {
+        if (!columnId) {
+            return;
+        }
+
+        // In Experience Cloud mode, let the browser handle navigation via href
+        if (this.experienceCloud) {
+            const href = event.currentTarget.getAttribute('href');
+            if (href) {
+                window.location.href = href;
+            }
+            return;
+        }
+
+        if (!this.navigationUtil) {
             return;
         }
 
@@ -734,6 +793,10 @@ export default class KanbanBoard extends LightningElement {
         return this.columns && this.columns.length > 0;
     }
 
+    get isInternalMode() {
+        return !this.experienceCloud;
+    }
+
     // =============================================================================
     // Tab Getters
     // =============================================================================
@@ -744,6 +807,16 @@ export default class KanbanBoard extends LightningElement {
 
     get isBacklogTabActive() {
         return this.activeTab === 'backlog';
+    }
+
+    // In Experience Cloud mode, always show board (no tabs)
+    get showBoardContent() {
+        return this.experienceCloud || this.isBoardTabActive;
+    }
+
+    // Backlog is internal-only
+    get showBacklogContent() {
+        return !this.experienceCloud && this.isBacklogTabActive;
     }
 
     get boardTabButtonClass() {
@@ -812,40 +885,55 @@ export default class KanbanBoard extends LightningElement {
     // =============================================================================
 
     handleBoardSearch(event) {
-        const value = event.target.value;
-        // Debounce search input for smooth typing
-        if (this._searchDebounceTimer) {
-            // eslint-disable-next-line @lwc/lwc/no-async-operation
-            clearTimeout(this._searchDebounceTimer);
-        }
-        // eslint-disable-next-line @lwc/lwc/no-async-operation
-        this._searchDebounceTimer = setTimeout(() => {
-            this._boardSearchTerm = value;
-        }, 150);
+        this.filterManager.handleBoardSearch(event);
     }
 
     handlePriorityFilter(event) {
-        this._boardFilterPriority = event.target.value;
+        this.filterManager.handlePriorityFilter(event);
     }
 
     handleCardTypeFilter(event) {
-        this._boardFilterCardType = event.target.value;
+        this.filterManager.handleCardTypeFilter(event);
     }
 
     handleToggleHideCompleted() {
-        this._boardHideCompleted = !this._boardHideCompleted;
+        this.filterManager.handleToggleHideCompleted();
     }
 
     handleClearFilters() {
-        this._boardSearchTerm = '';
-        this._boardFilterPriority = 'All';
-        this._boardFilterCardType = 'All';
-        this._boardHideCompleted = false;
-        // Clear the search input element value
-        const searchInput = this.template.querySelector('.board-filter-search');
-        if (searchInput) {
-            searchInput.value = '';
-        }
+        this.filterManager.handleClearFilters();
+    }
+
+    // =============================================================================
+    // Swimlane Logic
+    // =============================================================================
+
+    get swimlaneModeOptions() {
+        return this.swimlaneManager.modeOptions;
+    }
+
+    get hasSwimlanes() {
+        return this.swimlaneManager.isActive;
+    }
+
+    get swimlanes() {
+        return this.swimlaneManager.getSwimlanes(this.filteredColumns);
+    }
+
+    handleSwimlaneChange(event) {
+        this.swimlaneManager.handleModeChange(event);
+    }
+
+    // =============================================================================
+    // Analytics Handlers
+    // =============================================================================
+
+    handleShowAnalytics() {
+        this.showAnalytics = true;
+    }
+
+    handleAnalyticsClose() {
+        this.showAnalytics = false;
     }
 
     handleCreateSprint() {
@@ -893,57 +981,16 @@ export default class KanbanBoard extends LightningElement {
     // Board Context Menu
     // =============================================================================
 
-    _boardContextMenuCardId = null;
-
     get boardContextMenuItems() {
-        return [
-            {
-                label: 'Move to Backlog',
-                value: 'moveToBacklog',
-                icon: 'utility:back'
-            },
-            {
-                label: 'Delete',
-                value: 'delete',
-                icon: 'utility:delete',
-                dividerBefore: true
-            }
-        ];
+        return this.contextMenuManager.defaultMenuItems;
     }
 
     handleBoardCardContextMenu(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        const cardId = event.currentTarget.dataset.cardId;
-        this._boardContextMenuCardId = cardId;
-        const contextMenu = this.template.querySelector(
-            'c-kanban-context-menu'
-        );
-        if (contextMenu) {
-            contextMenu.show(event.clientX, event.clientY);
-        }
+        this.contextMenuManager.handleContextMenu(event);
     }
 
     async handleBoardContextMenuSelect(event) {
-        const { value } = event.detail;
-        const cardId = this._boardContextMenuCardId;
-        if (!cardId || !this.store) return;
-
-        switch (value) {
-            case 'moveToBacklog':
-                await this.store.dispatch(
-                    moveCardToBacklogAsync(
-                        this.activeSprint?.Id || null,
-                        cardId
-                    )
-                );
-                break;
-            case 'delete':
-                this.cardOperations.handleCardDeleted(cardId);
-                break;
-            default:
-                break;
-        }
+        await this.contextMenuManager.handleMenuSelect(event);
     }
 
     // =============================================================================
@@ -982,5 +1029,55 @@ export default class KanbanBoard extends LightningElement {
         if (message && this.toastManager) {
             this.toastManager.showError('Backlog Error', message);
         }
+    }
+
+    // =============================================================================
+    // Mobile Column Navigation
+    // =============================================================================
+
+    get mobileActiveColumnId() {
+        return this.mobileNavigationManager.getActiveColumnId(
+            this.filteredColumns
+        );
+    }
+
+    get mobileColumnCounter() {
+        return this.mobileNavigationManager.getColumnCounter(
+            this.filteredColumns
+        );
+    }
+
+    get isMobileFirstColumn() {
+        return this.mobileNavigationManager.isFirstColumn;
+    }
+
+    get isMobileLastColumn() {
+        return this.mobileNavigationManager.isLastColumn(this.filteredColumns);
+    }
+
+    handleMobileColumnChange(event) {
+        this.mobileNavigationManager.handleColumnChange(
+            event,
+            this.filteredColumns
+        );
+    }
+
+    handleMobilePrevColumn() {
+        this.mobileNavigationManager.handlePrevColumn();
+    }
+
+    handleMobileNextColumn() {
+        this.mobileNavigationManager.handleNextColumn(this.filteredColumns);
+    }
+
+    handleTouchStart(event) {
+        this.mobileNavigationManager.handleTouchStart(event);
+    }
+
+    handleTouchEnd(event) {
+        this.mobileNavigationManager.handleTouchEnd(
+            event,
+            this.filteredColumns
+        );
     }
 }
