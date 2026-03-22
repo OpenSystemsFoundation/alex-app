@@ -59,11 +59,20 @@ runs:
           env:
               SFDX_DISABLE_DNS_CHECK: 'true'
           run: |
-              echo "${{ inputs.sfdx-auth-url }}" > /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
-              sf org login sfdx-url \
+              AUTH_INPUT="${{ inputs.sfdx-auth-url }}"
+              if [ -z "$AUTH_INPUT" ]; then
+                echo "::error::SFDX_AUTH_URL is empty — check the repository secret"
+                exit 1
+              fi
+              echo "$AUTH_INPUT" > /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
+              if ! sf org login sfdx-url \
                 --sfdx-url-file /tmp/sfdx_auth_${{ inputs.org-alias }}.txt \
                 --alias devhub \
-                --set-default-dev-hub 2>/dev/null || true
+                --set-default-dev-hub 2>&1; then
+                echo "::error::DevHub authentication failed"
+                rm -f /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
+                exit 1
+              fi
               rm /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
 
         - name: Restore cached org auth
@@ -110,11 +119,14 @@ runs:
 
               if [ "$ORG_CREATED" = "true" ]; then
                 echo "::group::Creating new scratch org"
-                sf org create scratch \
+                if ! sf org create scratch \
                   --definition-file ${{ inputs.scratch-def }} \
                   --alias "$ALIAS" \
                   --duration-days ${{ inputs.duration-days }} \
-                  --wait 15
+                  --wait 15 2>&1; then
+                  echo "::error::Scratch org creation failed for alias=$ALIAS def=${{ inputs.scratch-def }}"
+                  exit 1
+                fi
 
                 if [ "$PERSISTENT" = "true" ]; then
                   sf org display --target-org "$ALIAS" --verbose --json 2>/dev/null | node -e "

@@ -28,6 +28,8 @@ jobs:
     apex-unit-tests:
         name: Apex Unit Tests (Agentforce Actions)
         runs-on: ubuntu-latest
+        outputs:
+            org_created: ${{ steps.provision.outputs.org_created }}
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -36,9 +38,17 @@ jobs:
               run: npm install -g @salesforce/cli
 
             - name: Authenticate DevHub
+              id: auth
               run: |
                   echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
-                  sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
+                  if ! sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub 2>/tmp/auth-error.txt; then
+                    AUTH_ERR=$(cat /tmp/auth-error.txt)
+                    echo "AUTH_ERROR<<EOF" >> "$GITHUB_ENV"
+                    echo "$AUTH_ERR" >> "$GITHUB_ENV"
+                    echo "EOF" >> "$GITHUB_ENV"
+                    rm sfdx_auth.txt
+                    exit 1
+                  fi
                   rm sfdx_auth.txt
 
             - name: Restore cached org auth
@@ -78,11 +88,16 @@ jobs:
 
                   if [ "$ORG_CREATED" = "true" ]; then
                     echo "::group::Creating new scratch org"
-                    sf org create scratch \
+                    if ! sf org create scratch \
                       --definition-file config/agentforce-project-scratch-def.json \
                       --alias ci-agent-test \
                       --duration-days 7 \
-                      --wait 15
+                      --wait 15 2>&1 | tee /tmp/scratch-create.log; then
+                      echo "SCRATCH_ERROR<<EOF" >> "$GITHUB_ENV"
+                      cat /tmp/scratch-create.log >> "$GITHUB_ENV"
+                      echo "EOF" >> "$GITHUB_ENV"
+                      exit 1
+                    fi
                     sf org display --target-org ci-agent-test --verbose --json 2>/dev/null | node -e "
                       let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
                         console.log(JSON.parse(d).result.sfdxAuthUrl);
@@ -109,6 +124,7 @@ jobs:
                   "
 
             - name: Deploy Base Package
+              id: deploy-base
               run: |
                   sf project deploy start --source-dir force-app --target-org ci-agent-test --ignore-conflicts --json 2>&1 | tee /tmp/deploy-base.json || true
                   node -e "
@@ -117,16 +133,26 @@ jobs:
                     if (idx < 0) { console.log(raw); process.exit(1); }
                     const j = JSON.parse(raw.substring(idx));
                     if (j.status !== 0) {
-                      console.error('Deploy failed:', j.message || 'unknown');
+                      const msg = 'Deploy failed: ' + (j.message || 'unknown');
                       const files = (j.result && j.result.details && j.result.details.componentFailures) || [];
-                      files.forEach(f => console.error('  -', f.fullName, ':', f.problem));
+                      const details = files.map(f => '  - ' + f.fullName + ': ' + f.problem).join('\n');
+                      const fullMsg = msg + '\n' + details;
+                      console.error(fullMsg);
+                      require('fs').writeFileSync('/tmp/deploy-error.txt', fullMsg);
                       process.exit(1);
                     }
                     console.log('Deploy succeeded:', (j.result && j.result.numberComponentsDeployed) || '?', 'components');
                   "
 
             - name: Deploy Agentforce Package
-              run: sf project deploy start --source-dir force-agentforce --target-org ci-agent-test --ignore-conflicts
+              id: deploy-agent
+              run: |
+                  if ! sf project deploy start --source-dir force-agentforce --target-org ci-agent-test --ignore-conflicts 2>&1 | tee /tmp/deploy-agent.log; then
+                    echo "DEPLOY_AGENT_ERROR<<EOF" >> "$GITHUB_ENV"
+                    cat /tmp/deploy-agent.log >> "$GITHUB_ENV"
+                    echo "EOF" >> "$GITHUB_ENV"
+                    exit 1
+                  fi
 
             - name: Assign Permission Sets
               run: |
@@ -134,6 +160,7 @@ jobs:
                   sf org assign permset --name Alex_Agentforce_User --target-org ci-agent-test || true
 
             - name: Run Agentforce Apex Tests
+              id: run-tests
               run: |
                   mkdir -p agent-results
                   sf apex run test \
@@ -153,28 +180,70 @@ jobs:
                     const tests=r.tests||[];
                     const failed=tests.filter(t=>t.Outcome==='Fail');
                     const passed=tests.filter(t=>t.Outcome==='Pass');
-                    console.log('');
-                    console.log('='.repeat(60));
-                    console.log('  AGENTFORCE APEX TEST RESULTS');
-                    console.log('='.repeat(60));
+                    const lines = [];
+                    lines.push('');
+                    lines.push('='.repeat(60));
+                    lines.push('  AGENTFORCE APEX TEST RESULTS');
+                    lines.push('='.repeat(60));
                     tests.forEach((t,i)=>{
                       const cls=(t.ApexClass&&t.ApexClass.Name)||'Unknown';
                       const icon=t.Outcome==='Pass'?'PASS':'FAIL';
-                      console.log('  ['+icon+'] '+cls+'.'+t.MethodName+' ('+(t.RunTime||'--')+'ms)');
+                      lines.push('  ['+icon+'] '+cls+'.'+t.MethodName+' ('+(t.RunTime||'--')+'ms)');
                     });
-                    console.log('-'.repeat(60));
-                    console.log('  Passed: '+passed.length+'/'+tests.length);
-                    console.log('-'.repeat(60));
+                    lines.push('-'.repeat(60));
+                    lines.push('  Passed: '+passed.length+'/'+tests.length);
+                    lines.push('-'.repeat(60));
                     if(failed.length>0){
-                      console.log('');
-                      console.log('  FAILURES:');
+                      lines.push('');
+                      lines.push('  FAILURES:');
                       failed.forEach(t=>{
                         const cls=(t.ApexClass&&t.ApexClass.Name)||'Unknown';
-                        console.log('  - '+cls+'.'+t.MethodName+': '+t.Message);
+                        lines.push('  - '+cls+'.'+t.MethodName+': '+t.Message);
+                        if(t.StackTrace) lines.push('    '+t.StackTrace.split('\\n').join('\\n    '));
                       });
-                      process.exit(1);
                     }
+                    const output = lines.join('\\n');
+                    console.log(output);
+                    fs.writeFileSync('/tmp/test-results.txt', output);
+                    if(failed.length>0) process.exit(1);
                   "
+
+            - name: Post results as commit comment
+              if: always()
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  BODY="## Agentforce Agent Tests — Apex Unit Tests\n\n"
+                  BODY+="**Workflow:** [${{ github.workflow }} #${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n"
+                  BODY+="**Branch:** \`${{ github.ref_name }}\`\n"
+                  BODY+="**Commit:** \`${{ github.sha }}\`\n\n"
+
+                  if [ -f /tmp/auth-error.txt ] && [ -s /tmp/auth-error.txt ]; then
+                    BODY+="### DevHub Authentication Failed\n\`\`\`\n$(cat /tmp/auth-error.txt | head -50)\n\`\`\`\n\n"
+                  fi
+
+                  if [ -f /tmp/scratch-create.log ] && [ -n "${SCRATCH_ERROR:-}" ]; then
+                    BODY+="### Scratch Org Creation Failed\n\`\`\`\n$(cat /tmp/scratch-create.log | head -80)\n\`\`\`\n\n"
+                  fi
+
+                  if [ -f /tmp/deploy-error.txt ]; then
+                    BODY+="### Base Deploy Failed\n\`\`\`\n$(cat /tmp/deploy-error.txt | head -80)\n\`\`\`\n\n"
+                  fi
+
+                  if [ -n "${DEPLOY_AGENT_ERROR:-}" ]; then
+                    BODY+="### Agentforce Deploy Failed\n\`\`\`\n$(cat /tmp/deploy-agent.log | head -80)\n\`\`\`\n\n"
+                  fi
+
+                  if [ -f /tmp/test-results.txt ]; then
+                    BODY+="### Apex Test Results\n\`\`\`\n$(cat /tmp/test-results.txt)\n\`\`\`\n\n"
+                  elif [ "${{ steps.run-tests.outcome }}" = "skipped" ]; then
+                    BODY+="### Apex Tests\nSkipped (earlier step failed)\n\n"
+                  fi
+
+                  BODY+="**Job status:** ${{ job.status }}"
+
+                  printf '%s' "$BODY" | gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
+                    -f "body=$(printf '%s' "$BODY")" --silent || echo "Warning: Failed to post commit comment"
 
             - name: Delete Scratch Org (only on creation failure)
               if: always() && steps.provision.outputs.org_created == 'true' && failure()
@@ -244,11 +313,16 @@ jobs:
 
                   if [ "$ORG_CREATED" = "true" ]; then
                     echo "::group::Creating new scratch org"
-                    sf org create scratch \
+                    if ! sf org create scratch \
                       --definition-file config/agentforce-project-scratch-def.json \
                       --alias ci-agent-eval \
                       --duration-days 7 \
-                      --wait 15
+                      --wait 15 2>&1 | tee /tmp/scratch-create.log; then
+                      echo "SCRATCH_ERROR<<EOF" >> "$GITHUB_ENV"
+                      cat /tmp/scratch-create.log >> "$GITHUB_ENV"
+                      echo "EOF" >> "$GITHUB_ENV"
+                      exit 1
+                    fi
                     sf org display --target-org ci-agent-eval --verbose --json 2>/dev/null | node -e "
                       let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
                         console.log(JSON.parse(d).result.sfdxAuthUrl);
@@ -275,9 +349,10 @@ jobs:
                   "
 
             - name: Deploy All Source
+              id: deploy
               run: |
-                  sf project deploy start --source-dir force-app --target-org ci-agent-eval --ignore-conflicts
-                  sf project deploy start --source-dir force-agentforce --target-org ci-agent-eval --ignore-conflicts
+                  sf project deploy start --source-dir force-app --target-org ci-agent-eval --ignore-conflicts 2>&1 | tee /tmp/deploy-base.log
+                  sf project deploy start --source-dir force-agentforce --target-org ci-agent-eval --ignore-conflicts 2>&1 | tee /tmp/deploy-agent.log
 
             - name: Assign Permission Sets
               run: |
@@ -285,21 +360,30 @@ jobs:
                   sf org assign permset --name Alex_Agentforce_User --target-org ci-agent-eval || true
 
             - name: Create Agent Test Definitions
+              id: create-tests
               run: |
                   mkdir -p agent-results/evaluations
                   SPECS="force-agentforce/test/agent-test-specs"
+                  CREATION_LOG=""
                   if [ "${{ inputs.test_suite }}" = "" ] || [ "${{ inputs.test_suite }}" = "all" ]; then
                     for spec in $SPECS/*.yaml; do
                       echo "Creating test from $spec..."
-                      sf agent test create --spec "$spec" --target-org ci-agent-eval || echo "Warning: Failed to create test from $spec"
+                      if OUTPUT=$(sf agent test create --spec "$spec" --target-org ci-agent-eval 2>&1); then
+                        CREATION_LOG+="OK: $spec\n"
+                      else
+                        CREATION_LOG+="FAIL: $spec — $OUTPUT\n"
+                        echo "Warning: Failed to create test from $spec"
+                      fi
                     done
                   else
                     SUITE="${{ inputs.test_suite }}"
                     SPEC_FILE=$(echo "$SUITE" | sed 's/_/-/g' | tr '[:upper:]' '[:lower:]' | sed 's/-tests$//')
                     sf agent test create --spec "$SPECS/${SPEC_FILE}-tests.yaml" --target-org ci-agent-eval
                   fi
+                  printf '%b' "$CREATION_LOG" > /tmp/test-creation.log
 
             - name: Run Agent Evaluation Tests
+              id: eval-tests
               run: |
                   RESULTS_DIR="agent-results/evaluations"
 
@@ -331,6 +415,7 @@ jobs:
                   done
 
             - name: Analyze Results and Enforce Pass Rate
+              id: analyze
               run: |
                   RESULTS_DIR="agent-results/evaluations"
                   THRESHOLD=${{ env.PASS_RATE_THRESHOLD }}
@@ -345,11 +430,12 @@ jobs:
                     let totalTests = 0;
                     let totalPassed = 0;
                     let suiteResults = [];
+                    const lines = [];
 
-                    console.log('');
-                    console.log('='.repeat(70));
-                    console.log('  AGENTFORCE AGENT EVALUATION RESULTS');
-                    console.log('='.repeat(70));
+                    lines.push('');
+                    lines.push('='.repeat(70));
+                    lines.push('  AGENTFORCE AGENT EVALUATION RESULTS');
+                    lines.push('='.repeat(70));
 
                     for (const file of files) {
                       try {
@@ -385,16 +471,16 @@ jobs:
                         const total = passed + failed;
                         const rate = total > 0 ? Math.round((passed / total) * 100) : 0;
 
-                        console.log('');
-                        console.log('  ' + suiteName);
-                        console.log('  ' + '-'.repeat(50));
-                        console.log('  Tests: ' + total + ' | Passed: ' + passed + ' | Failed: ' + failed + ' | Rate: ' + rate + '%');
+                        lines.push('');
+                        lines.push('  ' + suiteName);
+                        lines.push('  ' + '-'.repeat(50));
+                        lines.push('  Tests: ' + total + ' | Passed: ' + passed + ' | Failed: ' + failed + ' | Rate: ' + rate + '%');
 
                         if (failures.length > 0) {
-                          console.log('  Failures:');
+                          lines.push('  Failures:');
                           for (const f of failures) {
-                            console.log('    - \"' + f.utterance.substring(0, 60) + '\"');
-                            console.log('      Topic: ' + (f.topicPass ? 'PASS' : 'FAIL') + ' | Action: ' + (f.actionPass ? 'PASS' : 'FAIL'));
+                            lines.push('    - \"' + f.utterance.substring(0, 60) + '\"');
+                            lines.push('      Topic: ' + (f.topicPass ? 'PASS' : 'FAIL') + ' | Action: ' + (f.actionPass ? 'PASS' : 'FAIL'));
                           }
                         }
 
@@ -402,34 +488,65 @@ jobs:
                         totalPassed += passed;
                         suiteResults.push({ name: suiteName, total, passed, rate });
                       } catch (e) {
-                        console.log('  Warning: Could not parse ' + file + ': ' + e.message);
+                        lines.push('  Warning: Could not parse ' + file + ': ' + e.message);
                       }
                     }
 
                     const overallRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
 
-                    console.log('');
-                    console.log('='.repeat(70));
-                    console.log('  OVERALL: ' + totalPassed + '/' + totalTests + ' passed (' + overallRate + '%)');
-                    console.log('  Threshold: ' + threshold + '%');
-                    console.log('='.repeat(70));
+                    lines.push('');
+                    lines.push('='.repeat(70));
+                    lines.push('  OVERALL: ' + totalPassed + '/' + totalTests + ' passed (' + overallRate + '%)');
+                    lines.push('  Threshold: ' + threshold + '%');
+                    lines.push('='.repeat(70));
 
                     if (totalTests === 0) {
-                      console.log('');
-                      console.log('  Warning: No test results found. Skipping threshold check.');
-                      console.log('  This may be expected if agent test definitions could not be created.');
-                      process.exit(0);
+                      lines.push('');
+                      lines.push('  Warning: No test results found. Skipping threshold check.');
+                      lines.push('  This may be expected if agent test definitions could not be created.');
                     }
 
-                    if (overallRate < threshold) {
+                    const output = lines.join('\n');
+                    console.log(output);
+                    fs.writeFileSync('/tmp/eval-results.txt', output);
+
+                    if (totalTests > 0 && overallRate < threshold) {
                       console.error('');
                       console.error('  FAILED: Overall pass rate ' + overallRate + '% is below ' + threshold + '% threshold');
                       process.exit(1);
-                    } else {
+                    } else if (totalTests > 0) {
                       console.log('');
                       console.log('  PASSED: Agent evaluation meets quality threshold');
                     }
                   "
+
+            - name: Post evaluation results as commit comment
+              if: always()
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  BODY="## Agentforce Agent Tests — Evaluation Results\n\n"
+                  BODY+="**Workflow:** [${{ github.workflow }} #${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n"
+                  BODY+="**Branch:** \`${{ github.ref_name }}\`\n\n"
+
+                  if [ -n "${SCRATCH_ERROR:-}" ]; then
+                    BODY+="### Scratch Org Creation Failed\n\`\`\`\n$(cat /tmp/scratch-create.log | head -80)\n\`\`\`\n\n"
+                  fi
+
+                  if [ -f /tmp/test-creation.log ]; then
+                    BODY+="### Test Definition Creation\n\`\`\`\n$(cat /tmp/test-creation.log)\n\`\`\`\n\n"
+                  fi
+
+                  if [ -f /tmp/eval-results.txt ]; then
+                    BODY+="### Evaluation Results\n\`\`\`\n$(cat /tmp/eval-results.txt)\n\`\`\`\n\n"
+                  elif [ "${{ steps.eval-tests.outcome }}" = "skipped" ]; then
+                    BODY+="### Evaluation Tests\nSkipped (earlier step failed)\n\n"
+                  fi
+
+                  BODY+="**Job status:** ${{ job.status }}"
+
+                  printf '%s' "$BODY" | gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
+                    -f "body=$(printf '%s' "$BODY")" --silent || echo "Warning: Failed to post commit comment"
 
             - name: Delete Scratch Org (only on creation failure)
               if: always() && steps.provision.outputs.org_created == 'true' && failure()
@@ -461,8 +578,10 @@ jobs:
                   rm sfdx_auth.txt
 
             - name: Validate Package Metadata
+              id: validate
               run: |
                   echo "Validating Agentforce expansion package metadata..."
+                  REPORT=""
 
                   echo ""
                   echo "Checking packageable metadata types..."
@@ -470,31 +589,39 @@ jobs:
 
                   if [ -d "force-agentforce/main/default/botTemplates" ]; then
                     echo "  [OK] BotTemplate found"
+                    REPORT+="[OK] BotTemplate found\n"
                   else
                     echo "  [WARN] No BotTemplate found — generate with: sf agent generate template"
+                    REPORT+="[WARN] No BotTemplate found\n"
                   fi
 
                   if [ -d "force-agentforce/main/default/genAiPlannerBundles" ]; then
                     BUNDLES=$(find force-agentforce/main/default/genAiPlannerBundles -name "*.xml" | wc -l)
                     echo "  [OK] GenAiPlannerBundle: $BUNDLES file(s)"
+                    REPORT+="[OK] GenAiPlannerBundle: $BUNDLES file(s)\n"
                   else
                     echo "  [FAIL] No GenAiPlannerBundle found"
+                    REPORT+="[FAIL] No GenAiPlannerBundle found\n"
                     ERRORS=$((ERRORS + 1))
                   fi
 
                   if [ -d "force-agentforce/main/default/genAiPlugins" ]; then
                     PLUGINS=$(find force-agentforce/main/default/genAiPlugins -name "*.xml" | wc -l)
                     echo "  [OK] GenAiPlugin (Topics): $PLUGINS file(s)"
+                    REPORT+="[OK] GenAiPlugin (Topics): $PLUGINS file(s)\n"
                   else
                     echo "  [FAIL] No GenAiPlugin (Topics) found"
+                    REPORT+="[FAIL] No GenAiPlugin (Topics) found\n"
                     ERRORS=$((ERRORS + 1))
                   fi
 
                   if [ -d "force-agentforce/main/default/genAiFunctions" ]; then
                     FUNCTIONS=$(find force-agentforce/main/default/genAiFunctions -name "*.xml" | wc -l)
                     echo "  [OK] GenAiFunction (Actions): $FUNCTIONS file(s)"
+                    REPORT+="[OK] GenAiFunction (Actions): $FUNCTIONS file(s)\n"
                   else
                     echo "  [FAIL] No GenAiFunction (Actions) found"
+                    REPORT+="[FAIL] No GenAiFunction (Actions) found\n"
                     ERRORS=$((ERRORS + 1))
                   fi
 
@@ -503,10 +630,13 @@ jobs:
                   NAMESPACE_VIOLATIONS=$(grep -rl "OpenSF__" force-agentforce/main/default/objects/ force-agentforce/main/default/genAiPlugins/ force-agentforce/main/default/genAiFunctions/ force-agentforce/main/default/genAiPlannerBundles/ 2>/dev/null | wc -l)
                   if [ "$NAMESPACE_VIOLATIONS" -gt 0 ]; then
                     echo "  [FAIL] Found OpenSF__ prefix in metadata source files"
-                    grep -rl "OpenSF__" force-agentforce/main/default/objects/ force-agentforce/main/default/genAiPlugins/ force-agentforce/main/default/genAiFunctions/ force-agentforce/main/default/genAiPlannerBundles/ 2>/dev/null
+                    VIOLATIONS=$(grep -rl "OpenSF__" force-agentforce/main/default/objects/ force-agentforce/main/default/genAiPlugins/ force-agentforce/main/default/genAiFunctions/ force-agentforce/main/default/genAiPlannerBundles/ 2>/dev/null)
+                    echo "$VIOLATIONS"
+                    REPORT+="[FAIL] Namespace violations in: $VIOLATIONS\n"
                     ERRORS=$((ERRORS + 1))
                   else
                     echo "  [OK] No namespace prefix violations in metadata"
+                    REPORT+="[OK] No namespace prefix violations\n"
                   fi
 
                   echo ""
@@ -521,9 +651,14 @@ jobs:
                   done
                   if [ "$APEX_HAS_NAMESPACE" = true ]; then
                     echo "  [OK] Apex classes use OpenSF__ namespace prefix at runtime"
+                    REPORT+="[OK] Apex namespace references present\n"
                   else
                     echo "  [WARN] Apex classes may be missing OpenSF__ namespace references"
+                    REPORT+="[WARN] Apex namespace references may be missing\n"
                   fi
+
+                  printf '%b' "$REPORT" > /tmp/validation-report.txt
+                  echo "VALIDATION_ERRORS=$ERRORS" >> "$GITHUB_ENV"
 
                   echo ""
                   if [ "$ERRORS" -gt 0 ]; then
@@ -532,6 +667,24 @@ jobs:
                   else
                     echo "Package validation passed"
                   fi
+
+            - name: Post validation results as commit comment
+              if: always()
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  BODY="## Agentforce Agent Tests — Package Validation\n\n"
+                  BODY+="**Branch:** \`${{ github.ref_name }}\`\n\n"
+
+                  if [ -f /tmp/validation-report.txt ]; then
+                    BODY+="### Metadata Validation\n\`\`\`\n$(cat /tmp/validation-report.txt)\n\`\`\`\n\n"
+                  fi
+
+                  BODY+="**Errors:** ${VALIDATION_ERRORS:-unknown}\n"
+                  BODY+="**Job status:** ${{ job.status }}"
+
+                  printf '%s' "$BODY" | gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
+                    -f "body=$(printf '%s' "$BODY")" --silent || echo "Warning: Failed to post commit comment"
 
             - name: Dry Run Package Version Create
               if: github.event_name == 'push' && github.ref == 'refs/heads/main'
