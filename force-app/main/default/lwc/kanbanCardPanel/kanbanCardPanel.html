@@ -109,7 +109,9 @@
                 </lightning-record-edit-form>
 
                 <!-- Files Section -->
-                <div class="card-panel__files slds-var-m-top_medium">
+                <div
+                    class="card-panel__files slds-var-m-top_medium"
+                >
                     <div
                         class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-var-m-bottom_x-small"
                     >
@@ -143,7 +145,9 @@
                             multiple
                         ></lightning-file-upload>
                         <template lwc:if={hasFiles}>
-                            <ul class="slds-has-dividers_bottom-space slds-var-m-top_small">
+                            <ul
+                                class="slds-has-dividers_bottom-space slds-var-m-top_small"
+                            >
                                 <template
                                     for:each={files}
                                     for:item="file"

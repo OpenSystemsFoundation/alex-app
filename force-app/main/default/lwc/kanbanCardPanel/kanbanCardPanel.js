@@ -420,9 +420,7 @@ export default class KanbanCardPanel extends LightningElement {
         this.dispatchEvent(
             new ShowToastEvent({
                 title: 'Success',
-                message:
-                    uploadedFiles.length +
-                    ' file(s) uploaded',
+                message: uploadedFiles.length + ' file(s) uploaded',
                 variant: 'success'
             })
         );

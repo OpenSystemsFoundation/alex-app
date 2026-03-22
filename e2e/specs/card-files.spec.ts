@@ -111,10 +111,7 @@ test.describe('Card File Attachments', () => {
 
         // Open first card
         const firstCardId = boardData.cards[0].Id;
-        await boardPage
-            .card(firstCardId)
-            .locator('.kanban-card__body')
-            .click();
+        await boardPage.card(firstCardId).locator('.kanban-card__body').click();
 
         const panel = boardPage.page.locator('.card-panel');
         await expect(panel).toBeVisible({ timeout: SF_TIMEOUT });
