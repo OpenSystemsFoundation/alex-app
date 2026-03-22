@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures';
 import { sfApexRun, sfQuery } from '../helpers/sf-data';
 
 /**
- * Team Management — E2E tests.
+ * Team Management — E2E tests for LeSS multi-team foundation.
  *
  * Tests the Team__c and TeamMember__c data layer via Apex execution
  * to validate the LeSS multi-team foundation deployed to the scratch org.
