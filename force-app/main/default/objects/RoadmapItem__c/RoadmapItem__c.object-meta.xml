@@ -43,7 +43,8 @@
     <allowInChatterGroups>false</allowInChatterGroups>
     <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>Represents an epic placed on a roadmap with horizon/quarter assignments and timeline dates.</description>
+    <description
+    >Represents an epic placed on a roadmap with horizon/quarter assignments and timeline dates.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

@@ -43,7 +43,8 @@
     <allowInChatterGroups>false</allowInChatterGroups>
     <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>Represents a dependency relationship between two epic cards for timeline visualization.</description>
+    <description
+    >Represents a dependency relationship between two epic cards for timeline visualization.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

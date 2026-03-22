@@ -3,7 +3,8 @@
     <apiVersion>66.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>Roadmap Board</masterLabel>
-    <description>Agile roadmap board with Now/Next/Future and Quarterly views for epic planning</description>
+    <description
+    >Agile roadmap board with Now/Next/Future and Quarterly views for epic planning</description>
     <targets>
         <target>lightning__AppPage</target>
         <target>lightning__RecordPage</target>
