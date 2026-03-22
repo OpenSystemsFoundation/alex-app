@@ -283,6 +283,9 @@ export default class KanbanCardPanel extends LightningElement {
     }
 
     get isPostDisabled() {
+        // Note: in automated test environments, lightning-textarea onchange
+        // may not fire, so this getter is best-effort. The handlePostComment
+        // method reads the component value directly as a fallback.
         return !this.newCommentBody || !this.newCommentBody.trim();
     }
 

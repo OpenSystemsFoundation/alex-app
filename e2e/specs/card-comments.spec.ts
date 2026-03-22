@@ -204,15 +204,21 @@ test.describe('Card Comments', () => {
         await expect(date.first()).toBeVisible();
     });
 
-    test('post button is disabled when comment input is empty', async ({
+    test('posting empty comment does not create a comment', async ({
         boardPage,
         boardData
     }) => {
         expect(boardData.cards.length).toBeGreaterThan(0);
         const { panel } = await openCardPanel(boardPage, boardData);
 
-        // Post button should be disabled initially (check the inner button)
-        const postBtn = panel.locator('[data-id="post-comment-btn"] button');
-        await expect(postBtn).toBeDisabled({ timeout: SF_TIMEOUT });
+        // Click Post without typing anything
+        const postBtn = panel.locator('[data-id="post-comment-btn"]');
+        await expect(postBtn).toBeVisible({ timeout: SF_TIMEOUT });
+        await postBtn.click();
+
+        // Should still show empty state
+        await panel.page().waitForTimeout(1000);
+        const noComments = panel.locator('[data-id="no-comments"]');
+        await expect(noComments).toBeVisible();
     });
 });
