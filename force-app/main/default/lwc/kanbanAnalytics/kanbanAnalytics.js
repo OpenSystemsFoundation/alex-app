@@ -88,13 +88,17 @@ export default class KanbanAnalytics extends LightningElement {
         this.dispatchEvent(new CustomEvent('close'));
     }
 
+    _chartDrawnForData = null;
+
     renderedCallback() {
         if (
             this.isOpen &&
             !this.isLoading &&
             this.isCycleTimeTab &&
-            this.hasCycleTimeData
+            this.hasCycleTimeData &&
+            this._chartDrawnForData !== this.cycleTimeData
         ) {
+            this._chartDrawnForData = this.cycleTimeData;
             this.drawColumnTimeChart();
         }
     }
@@ -104,7 +108,8 @@ export default class KanbanAnalytics extends LightningElement {
         if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
-        const width = (canvas.width = canvas.parentElement.clientWidth || 500);
+        const width = canvas.parentElement.clientWidth || 500;
+        canvas.width = width;
         const height = (canvas.height = 240);
         const p = { top: 20, right: 20, bottom: 50, left: 60 };
         const chartW = width - p.left - p.right;

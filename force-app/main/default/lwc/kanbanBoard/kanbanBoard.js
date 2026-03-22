@@ -95,7 +95,7 @@ export default class KanbanBoard extends LightningElement {
 
     // Tab state
     @track activeTab = 'board';
-    @track _isRefreshing = false;
+    _isRefreshing = false;
 
     // Board filter state
     @track _boardSearchTerm = '';

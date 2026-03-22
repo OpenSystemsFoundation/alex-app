@@ -39,6 +39,7 @@ public with sharing class AnalyticsService {
                 AND OpenSF__DurationMinutes__c != NULL
             WITH USER_MODE
             ORDER BY OpenSF__EnteredAt__c ASC
+            LIMIT 10000
         ];
 
         // Group by column for average times
@@ -198,6 +199,7 @@ public with sharing class AnalyticsService {
                 AND OpenSF__EnteredAt__c >= :sinceDate
             WITH USER_MODE
             ORDER BY OpenSF__EnteredAt__c ASC
+            LIMIT 10000
         ];
 
         // Get column names ordered by position

@@ -37,9 +37,9 @@ export default class KanbanBacklogView extends LightningElement {
     // Inline edit state
     @track editingCell = null; // { cardId, field }
 
-    // Drag state
-    @track draggedCardId = null;
-    @track dragOverIndex = null;
+    // Drag state (non-tracked: UI updates via direct DOM manipulation during drag)
+    draggedCardId = null;
+    dragOverIndex = null;
     _dragTargetIndex = null; // Final drop target index (not tracked — no re-render)
 
     _storeUnsubscribe = null;
@@ -95,10 +95,11 @@ export default class KanbanBacklogView extends LightningElement {
         }
 
         // Enrich cards with selection state and UI helpers
+        const selectedSet = new Set(this.selectedCards);
         return cards.map((card, index) => ({
             ...card,
             __index: index,
-            isSelected: this.selectedCards.includes(card.Id),
+            isSelected: selectedSet.has(card.Id),
             recordUrl: `/lightning/r/OpenSF__Card__c/${card.Id}/view`,
             rowStyle: card.color ? `border-left: 3px solid ${card.color}` : '',
             refinementIcon: card.needsRefinement
@@ -932,16 +933,22 @@ export default class KanbanBacklogView extends LightningElement {
         } else {
             row.classList.add('drag-indicator-above');
         }
+        this._lastHighlightedRow = row;
 
         this.dragOverIndex = effectiveIndex;
         this._dragTargetIndex = effectiveIndex;
     }
 
+    _lastHighlightedRow = null;
+
     _clearDropIndicators() {
-        const rows = this.template.querySelectorAll('.backlog-row');
-        rows.forEach((r) => {
-            r.classList.remove('drag-indicator-above', 'drag-indicator-below');
-        });
+        if (this._lastHighlightedRow) {
+            this._lastHighlightedRow.classList.remove(
+                'drag-indicator-above',
+                'drag-indicator-below'
+            );
+            this._lastHighlightedRow = null;
+        }
     }
 
     handleDragEnd(event) {
