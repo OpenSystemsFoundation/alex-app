@@ -1,12 +1,10 @@
 {
     "orgName": "OpenSF",
-    "edition": "Partner Developer",
+    "edition": "partner-developer",
     "language": "en_US",
     "features": [
         "ContactsToMultipleAccounts",
-        "Einstein1AIPlatform",
-        "CustomerDataPlatform",
-        "CustomerDataPlatformLite"
+        "Einstein1AIPlatform"
     ],
     "settings": {
         "mobileSettings": {

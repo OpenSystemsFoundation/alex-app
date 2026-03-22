@@ -1,6 +1,6 @@
 {
     "orgName": "OpenSF",
-    "edition": "Partner Developer",
+    "edition": "partner-developer",
     "language": "en_US",
     "features": ["ContactsToMultipleAccounts", "Communities"],
     "settings": {
