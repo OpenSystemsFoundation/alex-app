@@ -102,3 +102,9 @@
     border-radius: 4px;
     padding: 0.5rem;
 }
+
+.comment-textarea {
+    width: 100%;
+    resize: vertical;
+    min-height: 60px;
+}

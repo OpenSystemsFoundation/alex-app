@@ -121,7 +121,6 @@ export default class KanbanCardPanel extends LightningElement {
     // Comment state
     @track comments = [];
     @track isLoadingComments = false;
-    @track newCommentBody = '';
 
     _resizing = false;
     _deleteTimer;
@@ -282,13 +281,6 @@ export default class KanbanCardPanel extends LightningElement {
         );
     }
 
-    get isPostDisabled() {
-        // Note: in automated test environments, lightning-textarea onchange
-        // may not fire, so this getter is best-effort. The handlePostComment
-        // method reads the component value directly as a fallback.
-        return !this.newCommentBody || !this.newCommentBody.trim();
-    }
-
     // =========================================================================
     // Comment methods
     // =========================================================================
@@ -344,17 +336,11 @@ export default class KanbanCardPanel extends LightningElement {
         return date.toLocaleDateString();
     }
 
-    handleCommentInputChange(event) {
-        this.newCommentBody = event.detail.value;
-    }
-
     async handlePostComment() {
-        // Read value from the lightning-textarea component directly
-        // in case the onchange binding didn't fire (e.g. automated tests)
         const textareaEl = this.template.querySelector(
             '[data-id="comment-input"]'
         );
-        const body = (textareaEl?.value || this.newCommentBody || '').trim();
+        const body = (textareaEl?.value || '').trim();
         if (!body) {
             return;
         }
@@ -364,7 +350,6 @@ export default class KanbanCardPanel extends LightningElement {
                 body
             });
             this.comments = [this.enrichComment(newComment), ...this.comments];
-            this.newCommentBody = '';
             // Clear the textarea
             if (textareaEl) {
                 textareaEl.value = '';
@@ -566,7 +551,6 @@ export default class KanbanCardPanel extends LightningElement {
         this.deleteConfirmState = false;
         this._lastLoadedCardId = null;
         this.comments = [];
-        this.newCommentBody = '';
         if (this._deleteTimer) {
             clearTimeout(this._deleteTimer);
             this._deleteTimer = null;

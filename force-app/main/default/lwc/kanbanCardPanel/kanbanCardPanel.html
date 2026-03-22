@@ -131,15 +131,13 @@
                     <div
                         class="comment-input slds-var-m-bottom_small"
                     >
-                        <lightning-textarea
-                            label="Add a comment"
-                            variant="label-hidden"
+                        <textarea
+                            class="comment-textarea slds-textarea"
                             placeholder="Write a comment..."
-                            value={newCommentBody}
-                            onchange={handleCommentInputChange}
-                            max-length="10000"
+                            maxlength="10000"
+                            rows="3"
                             data-id="comment-input"
-                        ></lightning-textarea>
+                        ></textarea>
                         <div
                             class="slds-grid slds-grid_align-end slds-var-m-top_xx-small"
                         >
