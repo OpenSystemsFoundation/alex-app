@@ -2,6 +2,11 @@ import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { updateCardAsync, deleteCardAsync } from 'c/kanbanStore';
 import getModalSettings from '@salesforce/apex/KanbanBoardController.getModalSettings';
+import getCardComments from '@salesforce/apex/KanbanBoardController.getCardComments';
+import addCardComment from '@salesforce/apex/KanbanBoardController.addCardComment';
+import updateCardComment from '@salesforce/apex/KanbanBoardController.updateCardComment';
+import deleteCardComment from '@salesforce/apex/KanbanBoardController.deleteCardComment';
+import userId from '@salesforce/user/Id';
 
 const FIELD_METADATA = {
     OpenSF__Subject__c: { fullWidth: true, isTextarea: false },
@@ -113,10 +118,16 @@ export default class KanbanCardPanel extends LightningElement {
     @track deleteConfirmState = false;
     @track panelWidth = 400;
 
+    // Comment state
+    @track comments = [];
+    @track isLoadingComments = false;
+    @track newCommentBody = '';
+
     _resizing = false;
     _deleteTimer;
     _boundHandleResize;
     _boundHandleResizeEnd;
+    _lastLoadedCardId;
 
     @wire(getModalSettings)
     wiredModalSettings({ data, error }) {
@@ -133,6 +144,17 @@ export default class KanbanCardPanel extends LightningElement {
                     variant: 'error'
                 })
             );
+        }
+    }
+
+    renderedCallback() {
+        if (
+            this.isOpen &&
+            this.card?.Id &&
+            this.card.Id !== this._lastLoadedCardId
+        ) {
+            this._lastLoadedCardId = this.card.Id;
+            this.loadComments();
         }
     }
 
@@ -239,6 +261,213 @@ export default class KanbanCardPanel extends LightningElement {
         return this.deleteConfirmState ? 'destructive' : 'neutral';
     }
 
+    // =========================================================================
+    // Comment getters
+    // =========================================================================
+
+    get commentCount() {
+        return this.comments ? this.comments.length : 0;
+    }
+
+    get hasComments() {
+        return (
+            !this.isLoadingComments && this.comments && this.comments.length > 0
+        );
+    }
+
+    get noComments() {
+        return (
+            !this.isLoadingComments &&
+            (!this.comments || this.comments.length === 0)
+        );
+    }
+
+    get isPostDisabled() {
+        return !this.newCommentBody || !this.newCommentBody.trim();
+    }
+
+    // =========================================================================
+    // Comment methods
+    // =========================================================================
+
+    async loadComments() {
+        if (!this.card?.Id) {
+            return;
+        }
+        this.isLoadingComments = true;
+        try {
+            const rawComments = await getCardComments({ cardId: this.card.Id });
+            this.comments = rawComments.map((c) => this.enrichComment(c));
+        } catch (error) {
+            this.comments = [];
+        } finally {
+            this.isLoadingComments = false;
+        }
+    }
+
+    enrichComment(c) {
+        return {
+            ...c,
+            isOwnComment: c.createdById === userId,
+            isEditing: false,
+            editBody: c.body,
+            formattedDate: this.formatRelativeDate(c.createdDate)
+        };
+    }
+
+    formatRelativeDate(dateStr) {
+        if (!dateStr) {
+            return '';
+        }
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) {
+            return 'just now';
+        }
+        if (diffMins < 60) {
+            return `${diffMins}m ago`;
+        }
+        if (diffHours < 24) {
+            return `${diffHours}h ago`;
+        }
+        if (diffDays < 7) {
+            return `${diffDays}d ago`;
+        }
+        return date.toLocaleDateString();
+    }
+
+    handleCommentInputChange(event) {
+        this.newCommentBody = event.detail.value;
+    }
+
+    async handlePostComment() {
+        const body = this.newCommentBody?.trim();
+        if (!body) {
+            return;
+        }
+        try {
+            const newComment = await addCardComment({
+                cardId: this.card.Id,
+                body
+            });
+            this.comments = [this.enrichComment(newComment), ...this.comments];
+            this.newCommentBody = '';
+            // Clear the textarea
+            const textarea = this.template.querySelector(
+                '[data-id="comment-input"]'
+            );
+            if (textarea) {
+                textarea.value = '';
+            }
+        } catch (error) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error',
+                    message: 'Failed to post comment',
+                    variant: 'error'
+                })
+            );
+        }
+    }
+
+    handleCommentAction(event) {
+        const action = event.detail.value;
+        const commentId =
+            event.currentTarget.dataset.commentId ||
+            event.target.closest('[data-comment-id]')?.dataset?.commentId;
+        if (!commentId) {
+            return;
+        }
+        if (action === 'edit') {
+            this.comments = this.comments.map((c) =>
+                c.Id === commentId
+                    ? { ...c, isEditing: true, editBody: c.body }
+                    : c
+            );
+        } else if (action === 'delete') {
+            this.handleDeleteComment(commentId);
+        }
+    }
+
+    handleEditInputChange(event) {
+        const commentId = event.target.dataset.commentId;
+        if (!commentId) {
+            return;
+        }
+        this.comments = this.comments.map((c) =>
+            c.Id === commentId ? { ...c, editBody: event.detail.value } : c
+        );
+    }
+
+    handleCancelEdit(event) {
+        const commentId = event.target.dataset.commentId;
+        if (!commentId) {
+            return;
+        }
+        this.comments = this.comments.map((c) =>
+            c.Id === commentId
+                ? { ...c, isEditing: false, editBody: c.body }
+                : c
+        );
+    }
+
+    async handleSaveEdit(event) {
+        const commentId = event.target.dataset.commentId;
+        if (!commentId) {
+            return;
+        }
+        const comment = this.comments.find((c) => c.Id === commentId);
+        if (!comment || !comment.editBody?.trim()) {
+            return;
+        }
+        try {
+            const updated = await updateCardComment({
+                commentId,
+                body: comment.editBody.trim()
+            });
+            this.comments = this.comments.map((c) =>
+                c.Id === commentId
+                    ? {
+                          ...this.enrichComment(updated),
+                          isEditing: false
+                      }
+                    : c
+            );
+        } catch (error) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error',
+                    message: 'Failed to update comment',
+                    variant: 'error'
+                })
+            );
+        }
+    }
+
+    async handleDeleteComment(commentId) {
+        try {
+            await deleteCardComment({ commentId });
+            this.comments = this.comments.filter((c) => c.Id !== commentId);
+        } catch (error) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error',
+                    message: 'Failed to delete comment',
+                    variant: 'error'
+                })
+            );
+        }
+    }
+
+    // =========================================================================
+    // Card save / delete / close
+    // =========================================================================
+
     async handleSave() {
         const inputFields = this.template.querySelectorAll(
             'lightning-input-field'
@@ -330,6 +559,9 @@ export default class KanbanCardPanel extends LightningElement {
 
     handleClose() {
         this.deleteConfirmState = false;
+        this._lastLoadedCardId = null;
+        this.comments = [];
+        this.newCommentBody = '';
         if (this._deleteTimer) {
             clearTimeout(this._deleteTimer);
             this._deleteTimer = null;

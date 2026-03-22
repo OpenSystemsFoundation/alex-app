@@ -577,6 +577,50 @@ public with sharing class KanbanBoardDTO {
     }
 
     /**
+     * Card Comment DTO
+     */
+    public class CardCommentDTO {
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public String Name;
+        @AuraEnabled
+        public String body;
+        @AuraEnabled
+        public Id cardId;
+        @AuraEnabled
+        public Id createdById;
+        @AuraEnabled
+        public String createdByName;
+        @AuraEnabled
+        public String createdByPhotoUrl;
+        @AuraEnabled
+        public DateTime createdDate;
+        @AuraEnabled
+        public DateTime lastModifiedDate;
+
+        public CardCommentDTO(OpenSF__CardComment__c c) {
+            this.Id = c.Id;
+            this.Name = c.Name;
+            this.body = c.OpenSF__Body__c;
+            this.cardId = c.OpenSF__Card__c;
+            this.createdById = c.CreatedById;
+            this.createdDate = c.CreatedDate;
+            this.lastModifiedDate = c.LastModifiedDate;
+            try {
+                this.createdByName = c.CreatedBy.Name;
+            } catch (Exception e) {
+                this.createdByName = null;
+            }
+            try {
+                this.createdByPhotoUrl = c.CreatedBy.SmallPhotoUrl;
+            } catch (Exception e) {
+                this.createdByPhotoUrl = null;
+            }
+        }
+    }
+
+    /**
      * Convert list of sprint snapshots
      */
     public static List<SprintSnapshotDTO> convertSnapshots(

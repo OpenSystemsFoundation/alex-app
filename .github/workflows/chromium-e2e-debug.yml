@@ -72,14 +72,13 @@ jobs:
     #           debug: ${{ inputs.debug || false }}
     # ---------------------------------------------------------------
 
-    no-suites:
-        name: No debug suites configured
-        runs-on: ubuntu-latest
-        timeout-minutes: 1
-        steps:
-            - name: Info
-              run: |
-                  echo "No debug E2E suites are configured."
-                  echo "Add suites to .github/workflows/chromium-e2e-debug.yml to start testing."
-                  echo ""
-                  echo "See the workflow file comments for examples."
+    card-comments:
+        name: Card Comments
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: card-comments
+            specs: 'card-comments.spec.ts'
+            create-retro-data: false
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
