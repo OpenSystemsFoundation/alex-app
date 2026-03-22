@@ -331,9 +331,9 @@ User action → dispatch thunk → Apex controller → DB update → Trigger fir
 
 ### Apex Test Organization
 
-**ALWAYS** place Apex test classes in the `tests/` subdirectory:
+Place Apex test classes in the same `classes/` directory as the classes they test:
 
-- `force-app/main/default/classes/tests/MyClassTest.cls`
+- `force-app/main/default/classes/MyClassTest.cls`
 
 ### Type Safety Standards
 

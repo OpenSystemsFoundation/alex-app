@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Add Cards to Sprint</masterLabel>
+    <description
+    >Adds one or more cards to a sprint. Skips cards already in the sprint. Recalculates sprint story points.</description>
+    <functionType>InvocableApex</functionType>
+    <invocableActionName>AgentAddCardsToSprint</invocableActionName>
+    <invocableActionType>apex</invocableActionType>
+    <isActive>true</isActive>
+</GenAiFunction>

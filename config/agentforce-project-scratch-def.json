@@ -13,6 +13,9 @@
         "einsteinGptSettings": {
             "enableEinsteinGptPlatform": true
         },
+        "agentPlatformSettings": {
+            "enableAgentPlatform": true
+        },
         "chatterSettings": {
             "enableChatter": true
         }

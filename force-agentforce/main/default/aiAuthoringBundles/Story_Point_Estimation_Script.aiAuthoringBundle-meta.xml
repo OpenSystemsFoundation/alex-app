@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<AiAuthoringBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Story Point Estimation Script</masterLabel>
+    <description
+    >Guided agent script that analyzes a card's details to suggest story points with a confidence level, reasoning, and option to apply the estimate.</description>
+    <steps>
+        <step>
+            <name>Identify_Card</name>
+            <label>Identify Card</label>
+            <description
+            >Determine which card the user wants to estimate.</description>
+            <stepType>UserInput</stepType>
+            <instructions
+            >Ask the user which card they want to estimate. They can provide a card ID, card name, or describe the card. If they provide a name or description, use Search Cards to find matching cards and confirm the right one. If multiple matches are found, present them as a numbered list and ask the user to select one.</instructions>
+            <nextStep>Get_Details</nextStep>
+        </step>
+        <step>
+            <name>Get_Details</name>
+            <label>Get Card Details</label>
+            <description
+            >Retrieve the full card details for analysis.</description>
+            <stepType>Action</stepType>
+            <actionName>Get_Card_Details</actionName>
+            <instructions
+            >Fetch the card's full details. Present a brief summary: subject, description (first 200 chars), type, priority, and current story points (if any). If the card already has story points, mention the current value and note that we will provide an independent estimate for comparison.</instructions>
+            <nextStep>Run_Estimation</nextStep>
+        </step>
+        <step>
+            <name>Run_Estimation</name>
+            <label>Run Estimation</label>
+            <description
+            >Execute the story point estimation algorithm.</description>
+            <stepType>Action</stepType>
+            <actionName>Estimate_Story_Points</actionName>
+            <instructions
+            >Run the Estimate Story Points action on the card. Present the results clearly:
+
+**Estimated Story Points: [X]** (Confidence: [High/Medium/Low])
+
+**Reasoning:**
+- [List each factor that influenced the estimate]
+
+If the card already has points, show a comparison:
+- Current: [X] points
+- Estimated: [Y] points
+- Difference: [+/- Z] points
+
+Explain any significant discrepancy between current and estimated values.</instructions>
+            <nextStep>Apply_Decision</nextStep>
+        </step>
+        <step>
+            <name>Apply_Decision</name>
+            <label>Apply Decision</label>
+            <description
+            >Ask the user if they want to apply the estimated story points to the card.</description>
+            <stepType>UserInput</stepType>
+            <instructions>Ask the user if they would like to:
+1. Apply the estimated story points to the card
+2. Enter a different value manually
+3. Keep the current value (if one exists)
+4. Skip — do not update
+
+If they choose option 1, proceed to update. If option 2, ask for their preferred value. For options 3 and 4, acknowledge and end.</instructions>
+            <nextStep>Apply_Update</nextStep>
+        </step>
+        <step>
+            <name>Apply_Update</name>
+            <label>Apply Update</label>
+            <description
+            >Update the card with the chosen story point value.</description>
+            <stepType>Action</stepType>
+            <actionName>Update_Card</actionName>
+            <instructions
+            >Update the card's story points with the chosen value (either the estimate or the user's manual entry). Confirm the update was successful. If the card is in an active sprint, mention that the sprint's total points will be affected. Ask if the user wants to estimate another card.</instructions>
+        </step>
+    </steps>
+    <entryStep>Identify_Card</entryStep>
+</AiAuthoringBundle>

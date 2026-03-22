@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Alex Agent Planner</masterLabel>
+    <description
+    >AI planner for the Alex Kanban board agent. Orchestrates card management, sprint planning, board insights, team assignment, and estimation topics.</description>
+    <genAiPlugins>
+        <genAiPlugin>Card_Management</genAiPlugin>
+        <genAiPlugin>Sprint_Management</genAiPlugin>
+        <genAiPlugin>Board_Insights</genAiPlugin>
+        <genAiPlugin>Team_Assignment</genAiPlugin>
+        <genAiPlugin>Estimation</genAiPlugin>
+    </genAiPlugins>
+</GenAiPlannerBundle>

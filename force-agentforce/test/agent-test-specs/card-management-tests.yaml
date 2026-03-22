@@ -1,0 +1,121 @@
+# Agent Test Spec: Card Management Topic
+# Tests topic classification, action selection, and expected outcomes
+# for the Card_Management topic of the Alex Agent.
+#
+# Run with: sf agent test create --spec force-agentforce/test/agent-test-specs/card-management-tests.yaml
+#           sf agent test run --name Card_Management_Tests --wait 10
+
+testName: Card_Management_Tests
+description: Validates Card Management topic routing, action selection, and response quality.
+agentName: Alex_Agent
+
+testCases:
+    # --- Create Card ---
+    - utterance: "Create a new bug card called 'Login page crashes on mobile'"
+      expectedTopic: Card_Management
+      expectedActions:
+          - Create_Card
+      expectedOutcome: "A new card is created with subject 'Login page crashes on mobile' and type Bug."
+
+    - utterance: 'Add a user story to the backlog for implementing dark mode'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Create_Card
+      expectedOutcome: 'A new card is created in the backlog with a subject related to dark mode implementation.'
+
+    - utterance: 'Create a high priority card for the API timeout issue with 5 story points'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Create_Card
+      expectedOutcome: 'A card is created with high priority, related to API timeout, and 5 story points.'
+
+    # --- Update Card ---
+    - utterance: 'Change the priority of the login bug to Critical'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Search_Cards
+          - Update_Card
+      expectedOutcome: 'The card related to login bug is found and its priority is updated to Critical.'
+
+    - utterance: 'Update card description to include the stack trace details'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Update_Card
+      expectedOutcome: 'The card description is updated with the new information.'
+
+    - utterance: 'Set the due date of the dark mode card to next Friday'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Search_Cards
+          - Update_Card
+      expectedOutcome: 'The dark mode card is found and its due date is updated.'
+
+    # --- Search Cards ---
+    - utterance: 'Show me all high priority bugs'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Search_Cards
+      expectedOutcome: 'A list of cards with high priority and Bug type is returned.'
+
+    - utterance: 'Find cards assigned to Sarah'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Search_Cards
+      expectedOutcome: 'Cards assigned to Sarah are returned with their details.'
+
+    - utterance: 'What cards are in the Done column?'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Search_Cards
+      expectedOutcome: 'Cards in the Done column or with Done status are returned.'
+
+    # --- Move Card ---
+    - utterance: 'Move the login bug to In Progress'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Search_Cards
+          - Move_Card
+      expectedOutcome: 'The login bug card is moved to the In Progress column.'
+
+    - utterance: 'Move card to Code Review'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Move_Card
+      expectedOutcome: 'The card is moved to the Code Review column.'
+
+    # --- Delete Card ---
+    - utterance: 'Delete the duplicate test card'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Search_Cards
+          - Delete_Card
+      expectedOutcome: 'The agent confirms before deleting the card, then removes it permanently.'
+
+    # --- Get Card Details ---
+    - utterance: 'Show me the details for the API timeout card'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Search_Cards
+          - Get_Card_Details
+      expectedOutcome: 'Full card details are returned including subject, description, priority, type, story points, assignee, and status.'
+
+    - utterance: "What's the status of the dark mode feature?"
+      expectedTopic: Card_Management
+      expectedActions:
+          - Search_Cards
+          - Get_Card_Details
+      expectedOutcome: 'The dark mode card details and current status are returned.'
+
+    # --- Edge Cases ---
+    - utterance: 'I need to make a card for fixing the null pointer exception in UserService.cls'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Create_Card
+      expectedOutcome: 'A new card is created with a subject referencing the null pointer exception in UserService.'
+
+    - utterance: 'Can you mark the payment integration card as refined?'
+      expectedTopic: Card_Management
+      expectedActions:
+          - Search_Cards
+          - Update_Card
+      expectedOutcome: 'The payment integration card is found and its refinement status is updated.'

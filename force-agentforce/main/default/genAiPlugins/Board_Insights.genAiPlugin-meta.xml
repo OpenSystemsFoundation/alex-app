@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Board Insights</masterLabel>
+    <description
+    >Get board summaries, burndown charts, velocity metrics, and sprint capacity analysis.</description>
+    <scope
+    >Use this topic when the user wants metrics, reports, summaries, or analytics about the board or sprints. This includes getting a board overview, viewing burndown data for a sprint, checking team velocity across sprints, analyzing sprint capacity to right-size upcoming sprints, or getting the board column layout. Also use this when the user asks questions like "how are we doing", "what's our velocity", "show me the burndown", or "can we take on more work".</scope>
+    <genAiFunctions>
+        <genAiFunction>Get_Board_Summary</genAiFunction>
+        <genAiFunction>Get_Burndown</genAiFunction>
+        <genAiFunction>Get_Velocity</genAiFunction>
+        <genAiFunction>Get_Board_Layout</genAiFunction>
+        <genAiFunction>Analyze_Sprint_Capacity</genAiFunction>
+    </genAiFunctions>
+</GenAiPlugin>

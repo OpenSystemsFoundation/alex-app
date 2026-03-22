@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Start Sprint</masterLabel>
+    <description
+    >Activates a sprint that is in Planning status. Only one sprint can be active per board at a time.</description>
+    <functionType>InvocableApex</functionType>
+    <invocableActionName>AgentStartSprint</invocableActionName>
+    <invocableActionType>apex</invocableActionType>
+    <isActive>true</isActive>
+</GenAiFunction>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Analyze Sprint Capacity</masterLabel>
+    <description
+    >Analyzes team velocity history and backlog to recommend the right amount of work for a sprint. Shows whether the proposed sprint is under, over, or right-sized.</description>
+    <functionType>InvocableApex</functionType>
+    <invocableActionName>AgentAnalyzeSprintCapacity</invocableActionName>
+    <invocableActionType>apex</invocableActionType>
+    <isActive>true</isActive>
+</GenAiFunction>

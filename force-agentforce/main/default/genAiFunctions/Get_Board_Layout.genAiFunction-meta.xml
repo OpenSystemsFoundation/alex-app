@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Get Board Layout</masterLabel>
+    <description
+    >Returns the column layout of a board including column names, colors, categories, statuses, and card counts.</description>
+    <functionType>InvocableApex</functionType>
+    <invocableActionName>AgentGetBoardLayout</invocableActionName>
+    <invocableActionType>apex</invocableActionType>
+    <isActive>true</isActive>
+</GenAiFunction>

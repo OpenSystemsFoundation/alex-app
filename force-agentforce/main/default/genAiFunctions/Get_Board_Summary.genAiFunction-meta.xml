@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Get Board Summary</masterLabel>
+    <description
+    >Gets an overview of the board including columns, card counts per column, board type, and active sprint information.</description>
+    <functionType>InvocableApex</functionType>
+    <invocableActionName>AgentGetBoardSummary</invocableActionName>
+    <invocableActionType>apex</invocableActionType>
+    <isActive>true</isActive>
+</GenAiFunction>

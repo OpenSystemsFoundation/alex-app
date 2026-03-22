@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Bot xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Alex_Agent</fullName>
+    <masterLabel>Alex Agent</masterLabel>
+    <description
+    >AI agent for managing Alex Kanban boards through natural language. Handles card management, sprint planning, board insights, team assignments, and story point estimation.</description>
+    <type>Bot</type>
+    <iconUrl>slds:standard:bot</iconUrl>
+    <logPrivateConversationData>true</logPrivateConversationData>
+    <richContentEnabled>true</richContentEnabled>
+    <botMlDomain>
+        <label>Alex Agent</label>
+        <name>Alex_Agent</name>
+    </botMlDomain>
+</Bot>

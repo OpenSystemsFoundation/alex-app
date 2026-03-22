@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Assign Card</masterLabel>
+    <description
+    >Assigns a user to a card as the primary assignee or peer reviewer. Searches for the user by name.</description>
+    <functionType>InvocableApex</functionType>
+    <invocableActionName>AgentAssignCard</invocableActionName>
+    <invocableActionType>apex</invocableActionType>
+    <isActive>true</isActive>
+</GenAiFunction>
