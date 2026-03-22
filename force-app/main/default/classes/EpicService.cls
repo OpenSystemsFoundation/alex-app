@@ -98,11 +98,9 @@ public with sharing class EpicService {
             summary.totalPoints = stats.totalPoints;
             summary.completedPoints = stats.completedPoints;
             summary.progressPercent = stats.totalCards > 0
-                ? Math.round(
-                          ((Decimal) stats.completedCards / stats.totalCards) *
-                          100
-                      )
-                      .intValue()
+                ? (Integer) Math.round(
+                      ((Decimal) stats.completedCards / stats.totalCards) * 100
+                  )
                 : 0;
 
             summaries.add(summary);
@@ -165,11 +163,9 @@ public with sharing class EpicService {
         }
 
         summary.progressPercent = summary.totalCards > 0
-            ? Math.round(
-                      ((Decimal) summary.completedCards / summary.totalCards) *
-                      100
-                  )
-                  .intValue()
+            ? (Integer) Math.round(
+                  ((Decimal) summary.completedCards / summary.totalCards) * 100
+              )
             : 0;
 
         return summary;

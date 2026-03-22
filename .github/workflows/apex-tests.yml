@@ -27,7 +27,19 @@ jobs:
               run: sf org create scratch --definition-file config/project-scratch-def.json --alias ci-test --duration-days 1 --wait 10
 
             - name: Deploy Source
-              run: sf project deploy start --target-org ci-test --ignore-conflicts
+              id: deploy
+              run: |
+                  sf project deploy start --target-org ci-test --ignore-conflicts 2>&1 | tee /tmp/deploy-output.txt
+              continue-on-error: true
+
+            - name: Report deploy failure
+              if: steps.deploy.outcome == 'failure'
+              run: |
+                  echo "## Deploy Source Failed" >> $GITHUB_STEP_SUMMARY
+                  echo '```' >> $GITHUB_STEP_SUMMARY
+                  tail -50 /tmp/deploy-output.txt >> $GITHUB_STEP_SUMMARY
+                  echo '```' >> $GITHUB_STEP_SUMMARY
+                  exit 1
 
             - name: Assign Permission Set
               run: sf org assign permset --name Alex_Admin --target-org ci-test
