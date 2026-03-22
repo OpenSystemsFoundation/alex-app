@@ -41,14 +41,7 @@ jobs:
               id: auth
               run: |
                   echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
-                  if ! sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub 2>/tmp/auth-error.txt; then
-                    AUTH_ERR=$(cat /tmp/auth-error.txt)
-                    echo "AUTH_ERROR<<EOF" >> "$GITHUB_ENV"
-                    echo "$AUTH_ERR" >> "$GITHUB_ENV"
-                    echo "EOF" >> "$GITHUB_ENV"
-                    rm sfdx_auth.txt
-                    exit 1
-                  fi
+                  sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
                   rm sfdx_auth.txt
 
             - name: Restore cached org auth
@@ -88,16 +81,20 @@ jobs:
 
                   if [ "$ORG_CREATED" = "true" ]; then
                     echo "::group::Creating new scratch org"
+                    set -o pipefail
                     if ! sf org create scratch \
                       --definition-file config/agentforce-project-scratch-def.json \
                       --alias ci-agent-test \
                       --duration-days 7 \
                       --wait 15 2>&1 | tee /tmp/scratch-create.log; then
-                      echo "SCRATCH_ERROR<<EOF" >> "$GITHUB_ENV"
-                      cat /tmp/scratch-create.log >> "$GITHUB_ENV"
-                      echo "EOF" >> "$GITHUB_ENV"
+                      {
+                        echo "SCRATCH_ERROR<<EOF"
+                        tail -40 /tmp/scratch-create.log
+                        echo "EOF"
+                      } >> "$GITHUB_ENV"
                       exit 1
                     fi
+                    set +o pipefail
                     sf org display --target-org ci-agent-test --verbose --json 2>/dev/null | node -e "
                       let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
                         console.log(JSON.parse(d).result.sfdxAuthUrl);
@@ -218,8 +215,8 @@ jobs:
                   BODY+="**Branch:** \`${{ github.ref_name }}\`\n"
                   BODY+="**Commit:** \`${{ github.sha }}\`\n\n"
 
-                  if [ -f /tmp/auth-error.txt ] && [ -s /tmp/auth-error.txt ]; then
-                    BODY+="### DevHub Authentication Failed\n\`\`\`\n$(cat /tmp/auth-error.txt | head -50)\n\`\`\`\n\n"
+                  if [ "${{ steps.auth.outcome }}" = "failure" ]; then
+                    BODY+="### DevHub Authentication Failed\nThe \`sf org login sfdx-url\` command failed. Verify the SFDX_AUTH_URL secret is valid.\n\n"
                   fi
 
                   if [ -f /tmp/scratch-create.log ] && [ -n "${SCRATCH_ERROR:-}" ]; then
@@ -313,16 +310,20 @@ jobs:
 
                   if [ "$ORG_CREATED" = "true" ]; then
                     echo "::group::Creating new scratch org"
+                    set -o pipefail
                     if ! sf org create scratch \
                       --definition-file config/agentforce-project-scratch-def.json \
                       --alias ci-agent-eval \
                       --duration-days 7 \
                       --wait 15 2>&1 | tee /tmp/scratch-create.log; then
-                      echo "SCRATCH_ERROR<<EOF" >> "$GITHUB_ENV"
-                      cat /tmp/scratch-create.log >> "$GITHUB_ENV"
-                      echo "EOF" >> "$GITHUB_ENV"
+                      {
+                        echo "SCRATCH_ERROR<<EOF"
+                        tail -40 /tmp/scratch-create.log
+                        echo "EOF"
+                      } >> "$GITHUB_ENV"
                       exit 1
                     fi
+                    set +o pipefail
                     sf org display --target-org ci-agent-eval --verbose --json 2>/dev/null | node -e "
                       let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
                         console.log(JSON.parse(d).result.sfdxAuthUrl);

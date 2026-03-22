@@ -59,20 +59,15 @@ runs:
           env:
               SFDX_DISABLE_DNS_CHECK: 'true'
           run: |
-              AUTH_INPUT="${{ inputs.sfdx-auth-url }}"
-              if [ -z "$AUTH_INPUT" ]; then
+              if [ -z "${{ inputs.sfdx-auth-url }}" ]; then
                 echo "::error::SFDX_AUTH_URL is empty — check the repository secret"
                 exit 1
               fi
-              echo "$AUTH_INPUT" > /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
-              if ! sf org login sfdx-url \
+              echo "${{ inputs.sfdx-auth-url }}" > /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
+              sf org login sfdx-url \
                 --sfdx-url-file /tmp/sfdx_auth_${{ inputs.org-alias }}.txt \
                 --alias devhub \
-                --set-default-dev-hub 2>&1; then
-                echo "::error::DevHub authentication failed"
-                rm -f /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
-                exit 1
-              fi
+                --set-default-dev-hub
               rm /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
 
         - name: Restore cached org auth
