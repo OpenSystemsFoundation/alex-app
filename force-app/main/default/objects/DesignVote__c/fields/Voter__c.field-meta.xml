@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Voter__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>The user who cast this vote.</description>
+    <label>Voter</label>
+    <referenceTo>User</referenceTo>
+    <relationshipLabel>Design Votes</relationshipLabel>
+    <relationshipName>DesignVotes</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

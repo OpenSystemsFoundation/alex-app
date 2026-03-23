@@ -1,0 +1,18 @@
+<template>
+    <div class="tool-picker">
+        <template for:each={availableTools} for:item="tool">
+            <button
+                key={tool.id}
+                class={tool.classes}
+                onclick={handleToolSelect}
+                data-tool={tool.id}
+            >
+                <lightning-icon
+                    icon-name={tool.icon}
+                    size="x-small"
+                ></lightning-icon>
+                <span>{tool.label}</span>
+            </button>
+        </template>
+    </div>
+</template>

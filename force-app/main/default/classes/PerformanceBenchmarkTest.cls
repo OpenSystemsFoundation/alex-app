@@ -26,16 +26,14 @@ public class PerformanceBenchmarkTest {
         Map<String, Object> before,
         Map<String, Object> after
     ) {
-        Integer queries = (Integer) after.get('queries') -
-            (Integer) before.get('queries');
-        Integer dml = (Integer) after.get('dml') -
-            (Integer) before.get('dml');
-        Integer cpu = (Integer) after.get('cpu') -
-            (Integer) before.get('cpu');
-        Integer heap = (Integer) after.get('heap') -
-            (Integer) before.get('heap');
-        Integer rows = (Integer) after.get('rows') -
-            (Integer) before.get('rows');
+        Integer queries =
+            (Integer) after.get('queries') - (Integer) before.get('queries');
+        Integer dml = (Integer) after.get('dml') - (Integer) before.get('dml');
+        Integer cpu = (Integer) after.get('cpu') - (Integer) before.get('cpu');
+        Integer heap =
+            (Integer) after.get('heap') - (Integer) before.get('heap');
+        Integer rows =
+            (Integer) after.get('rows') - (Integer) before.get('rows');
 
         // Structured line that CI parses
         System.debug(
@@ -80,7 +78,7 @@ public class PerformanceBenchmarkTest {
 
     @TestSetup
     static void setupBenchmarkData() {
-        TestSettings.skipPlatformEvents();
+        TestSettings.skipPlatformEvents = true;
 
         // Large board: 6 columns x 50 cards = 300 cards
         OpenSF__Board__c board = TestFactory.createBoard(
@@ -97,10 +95,7 @@ public class PerformanceBenchmarkTest {
         }
 
         // Sprint with cards
-        OpenSF__Sprint__c sprint = TestFactory.createSprint(
-            board.Id,
-            'Active'
-        );
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(board.Id, 'Active');
         List<OpenSF__Card__c> firstColCards = [
             SELECT Id
             FROM OpenSF__Card__c

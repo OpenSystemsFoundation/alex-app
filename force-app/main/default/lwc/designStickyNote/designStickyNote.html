@@ -1,0 +1,30 @@
+<template>
+    <div class={noteClasses} style={noteStyle} draggable="true"
+         ondragstart={handleDragStart} ondblclick={handleEdit} data-note-id={note.id}>
+        <div class="note-header">
+            <span class="note-author">{note.authorName}</span>
+            <template lwc:if={isEditable}>
+                <lightning-button-icon icon-name="utility:delete" alternative-text="Delete"
+                    size="xx-small" variant="bare" onclick={handleDelete} class="delete-btn">
+                </lightning-button-icon>
+            </template>
+        </div>
+        <div class="note-body">
+            <template lwc:if={isEditing}>
+                <textarea class="note-textarea" value={editText}
+                    onblur={handleSaveEdit} onkeydown={handleKeyDown}></textarea>
+            </template>
+            <template lwc:else>
+                <p class="note-text">{note.text}</p>
+            </template>
+        </div>
+        <template lwc:if={showVotes}>
+            <div class="note-footer">
+                <span class="vote-count">
+                    <lightning-icon icon-name="utility:like" size="xx-small"></lightning-icon>
+                    {note.voteCount}
+                </span>
+            </div>
+        </template>
+    </div>
+</template>

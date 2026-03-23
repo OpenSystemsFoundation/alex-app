@@ -1,0 +1,56 @@
+<template>
+    <div class="tool-canvas">
+        <template lwc:if={isEmpathyMap}>
+            <c-design-empathy-map
+                notes={notes}
+                onnoteadd={fwd}
+                onnoteupdate={fwd}
+                onnotemove={fwd}
+                onnotedelete={fwd}
+            ></c-design-empathy-map>
+        </template>
+        <template lwc:if={isBrainstorm}>
+            <c-design-brainstorm-canvas
+                notes={notes}
+                onnoteadd={fwd}
+                onnoteupdate={fwd}
+                onnotedelete={fwd}
+            ></c-design-brainstorm-canvas>
+        </template>
+        <template lwc:if={isFeedbackGrid}>
+            <c-design-feedback-grid
+                notes={notes}
+                onnoteadd={fwd}
+                onnoteupdate={fwd}
+                onnotemove={fwd}
+                onnotedelete={fwd}
+            ></c-design-feedback-grid>
+        </template>
+        <template lwc:if={isHMW}>
+            <c-design-hmw-builder
+                notes={notes}
+                votes={votes}
+                onnoteadd={fwd}
+                onnoteupdate={fwd}
+                onnotedelete={fwd}
+                onvotecast={fwd}
+            ></c-design-hmw-builder>
+        </template>
+        <template lwc:if={isDotVoting}>
+            <c-design-dot-voting
+                items={notes}
+                votes={votes}
+                onvotecast={fwd}
+            ></c-design-dot-voting>
+        </template>
+        <template lwc:if={noTool}>
+            <div class="no-tool">
+                <lightning-icon
+                    icon-name="utility:touch_action"
+                    size="large"
+                ></lightning-icon>
+                <p>Select a tool above to begin</p>
+            </div>
+        </template>
+    </div>
+</template>

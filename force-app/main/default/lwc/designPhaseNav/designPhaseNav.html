@@ -1,0 +1,15 @@
+<template>
+    <div class="phase-nav">
+        <template for:each={phases} for:item="phase">
+            <button
+                key={phase.id}
+                class={phase.classes}
+                onclick={handlePhaseClick}
+                data-phase={phase.id}
+            >
+                <span class="phase-icon">{phase.icon}</span>
+                <span class="phase-label">{phase.label}</span>
+            </button>
+        </template>
+    </div>
+</template>

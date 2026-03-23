@@ -1,0 +1,28 @@
+<template>
+    <div class="canvas-container">
+        <div class="canvas-toolbar">
+            <lightning-button label="Add Note" icon-name="utility:add" onclick={handleAddNote} variant="brand" class="slds-m-right_small"></lightning-button>
+            <span class="note-count">{totalNoteCount} notes</span>
+        </div>
+        <div class="canvas-grid" style={gridStyle}>
+            <template for:each={zones} for:item="zone">
+                <div key={zone.id} class="canvas-zone" data-zone-id={zone.id}
+                     ondragover={handleDragOver} ondrop={handleDrop} ondragleave={handleDragLeave}>
+                    <div class="zone-header">
+                        <h3 class="zone-title">{zone.label}</h3>
+                        <template lwc:if={zone.description}>
+                            <p class="zone-description">{zone.description}</p>
+                        </template>
+                    </div>
+                    <div class="zone-notes">
+                        <template for:each={zone.notes} for:item="note">
+                            <c-design-sticky-note key={note.id} note={note} is-editable={isEditable}
+                                show-votes={showVotes} onnoteupdate={handleNoteUpdate} onnotedelete={handleNoteDelete}>
+                            </c-design-sticky-note>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>
