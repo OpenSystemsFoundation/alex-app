@@ -1,0 +1,16 @@
+<template>
+    <div class="pipeline">
+        <h3 class="pipeline-title">Design Thinking Pipeline</h3>
+        <div class="pipeline-columns">
+            <template for:each={pipelinePhases} for:item="phase">
+                <div key={phase.id} class="pipeline-column">
+                    <div class="pipeline-header">
+                        <span class="pipeline-label">{phase.label}</span>
+                        <span class="pipeline-count">{phase.count}</span>
+                    </div>
+                    <div class="pipeline-bar" style={phase.barStyle}></div>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>

@@ -1,0 +1,17 @@
+.dt-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.dt-split-view {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 16px;
+    height: 100%;
+}
+.dt-sessions-panel {
+    overflow-y: auto;
+}
+.dt-pipeline-panel {
+    overflow-y: auto;
+}

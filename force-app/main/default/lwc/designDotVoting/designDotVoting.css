@@ -1,0 +1,14 @@
+.voting-container { padding: 16px; }
+.voting-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.voting-title { font-size: 16px; font-weight: 700; margin: 0; }
+.remaining-votes { font-size: 14px; font-weight: 600; color: #0176d3; }
+.voting-items { display: flex; flex-direction: column; gap: 8px; }
+.voting-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: white; border: 1px solid #e5e5e5; border-radius: 8px; cursor: pointer; transition: border-color 0.2s; }
+.voting-item:hover { border-color: #0176d3; background: #eef4ff; }
+.item-content { flex: 1; }
+.item-text { margin: 0; font-size: 14px; }
+.item-author { font-size: 12px; color: #747474; }
+.item-votes { display: flex; align-items: center; gap: 8px; }
+.vote-dots { display: flex; gap: 3px; }
+.vote-dot { width: 10px; height: 10px; border-radius: 50%; background: #0176d3; }
+.vote-total { font-size: 18px; font-weight: 700; min-width: 24px; text-align: center; }

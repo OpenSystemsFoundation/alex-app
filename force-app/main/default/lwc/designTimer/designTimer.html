@@ -1,0 +1,24 @@
+<template>
+    <div class="timer-container">
+        <div class="timer-display"><span class={timerClasses}>{formattedTime}</span></div>
+        <div class="timer-controls">
+            <template lwc:if={isFacilitator}>
+                <template lwc:if={isRunning}>
+                    <lightning-button-icon icon-name="utility:pause" alternative-text="Pause" onclick={handleStop} variant="border-filled"></lightning-button-icon>
+                </template>
+                <template lwc:else>
+                    <lightning-button-icon icon-name="utility:play" alternative-text="Start" onclick={handleStart} variant="brand"></lightning-button-icon>
+                </template>
+                <lightning-button-icon icon-name="utility:refresh" alternative-text="Reset" onclick={handleReset} variant="border-filled" class="slds-m-left_xx-small"></lightning-button-icon>
+            </template>
+        </div>
+        <template lwc:if={isFacilitator}>
+            <div class="timer-presets">
+                <template for:each={presets} for:item="preset">
+                    <lightning-button key={preset.value} label={preset.label} variant="neutral" onclick={handlePreset} data-minutes={preset.value}></lightning-button>
+                </template>
+            </div>
+        </template>
+        <div class="timer-progress"><div class="progress-bar" style={progressStyle}></div></div>
+    </div>
+</template>

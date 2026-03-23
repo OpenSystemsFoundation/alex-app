@@ -1,0 +1,4 @@
+.participant-bar { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.participant { position: relative; }
+.active-indicator { position: absolute; bottom: 0; right: 0; width: 8px; height: 8px; border-radius: 50%; background: #2e844a; border: 2px solid white; }
+.participant-count { font-size: 12px; color: #747474; margin-left: 4px; }

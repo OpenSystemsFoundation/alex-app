@@ -1,0 +1,28 @@
+.session-board {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.session-board-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid #e5e5e5;
+}
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.session-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+}
+.tool-workspace {
+    flex: 1;
+    overflow: auto;
+    padding: 16px;
+}

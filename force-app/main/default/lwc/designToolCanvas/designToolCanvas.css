@@ -1,0 +1,12 @@
+.tool-canvas {
+    height: 100%;
+}
+.no-tool {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    color: #747474;
+    gap: 12px;
+}

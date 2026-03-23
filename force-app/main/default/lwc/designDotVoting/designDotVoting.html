@@ -1,0 +1,26 @@
+<template>
+    <div class="voting-container">
+        <div class="voting-header">
+            <h3 class="voting-title">Dot Voting</h3>
+            <span class="remaining-votes">{remainingVotes} votes remaining</span>
+        </div>
+        <div class="voting-items">
+            <template for:each={sortedItems} for:item="item">
+                <div key={item.id} class="voting-item" onclick={handleVote} data-item-id={item.id}>
+                    <div class="item-content">
+                        <p class="item-text">{item.text}</p>
+                        <span class="item-author">{item.authorName}</span>
+                    </div>
+                    <div class="item-votes">
+                        <div class="vote-dots">
+                            <template for:each={item.voteDots} for:item="dot">
+                                <span key={dot.key} class="vote-dot" title={dot.voterName}></span>
+                            </template>
+                        </div>
+                        <span class="vote-total">{item.voteCount}</span>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>
