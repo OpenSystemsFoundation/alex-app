@@ -403,6 +403,80 @@ This is computational serendipity. Structured, reproducible, oracle-validated se
 
 The limiting factor is not quantum hardware (sprint-scale problems are small enough for current devices). The limiting factor is **formalizing the type universe extraction** — turning a codebase into a machine-readable set of typed fibers. The HoTT-structured AGENTS.md is a first step toward this.
 
+### 7.8 Forcing as the C→K Operator
+
+C-K theory's primary operator is **forcing** — the same operation Paul Cohen introduced in 1963 to prove the independence of the Continuum Hypothesis. In set-theoretic forcing, you take a model M and extend it to M[G] by adding a generic filter G that is *consistent* with M but *not derivable* from M.
+
+This is exactly the C→K conjunction in C-K theory:
+
+```
+K  →  K ∪ {new concept}  =  K[G]
+       ↑
+       concept is consistent with K but not derivable from K
+```
+
+The **Flypitch project** (Han & van Doorn, 2019) formally verified Cohen's forcing in Lean — a dependent type theory proof assistant. This verification means:
+
+1. The mathematical operation underlying C-K's expansion operator is **provably valid in dependent type theory**
+2. The bridge from C-K to HoTT is not merely analogical — forcing literally operates on models of type theory
+3. When an agent takes AGENTS.md (K-space as type universe) and "forces" a new feature type into it, this extension has the same mathematical structure that Flypitch verified
+
+Forcing is what makes C-K **generative** rather than merely combinatorial. You're not just recombining existing types — you're extending the type universe with genuinely new inhabitants.
+
+### 7.9 Why Quantum, Not Just LLMs — The Local Optima Problem
+
+An LLM already performs C-K exploration. Prompted with a codebase, it traverses from K to C by pattern-matching against training data, recombining patterns, and proposing concepts. Why isn't this sufficient?
+
+**Because the LLM is sampling from a learned distribution, and that distribution has local optima.**
+
+The LLM's latent space is a landscape with peaks (modes from training data) and valleys (low-probability regions between modes). When an LLM generates a "novel" concept, it performs one of two operations:
+
+- **Interpolation**: blending two nearby modes. "Undo + real-time sync = collaborative undo." Both modes exist in training data; the interpolation path has reasonable probability.
+- **Mild extrapolation**: stepping slightly beyond a mode. "LexoRank but for time-based ordering." Still within the training distribution's support.
+
+What the LLM **cannot** do is reach concepts in low-probability regions separated from all modes by high barriers. These are cross-fiber combinations where no training example ever combined these capabilities, and the path through latent space crosses a probability valley. Classical sampling — including temperature scaling — cannot create probability mass where there is none.
+
+```
+Classical (LLM sampling):
+
+  Mode A ──valley──valley──valley── Mode B (unreachable)
+    ↑
+    └── LLM samples here, finds nearby concepts,
+        never crosses the valley
+
+Quantum (QAOA):
+
+  Mode A ──valley──valley──valley── Mode B
+    ↑           ↑ TUNNEL ↑            ↑
+    └───────────┴────────┴────────────┘
+    superposition spans both modes,
+    mixer Hamiltonian enables barrier crossing
+```
+
+QAOA's mixer Hamiltonian creates transitions that **have no classical path**. The quantum state tunnels through barriers rather than climbing over them. This is not a metaphor — quantum tunneling in QAOA is a proven mechanism for escaping local optima in combinatorial optimization (Farhi et al. 2014, Crosson & Harrow 2016).
+
+**The null space argument**: The LLM's latent space is a projection of training data through learned weights. This projection has a null space — concepts that map to zero probability because no training example instantiated them. Genuinely novel cross-fiber concepts live in this null space. They are **literally unreachable** by sampling from the LLM, regardless of prompting strategy.
+
+Quantum exploration operates on the **type structure**, not the LLM's weights. It doesn't need a concept to exist in training data. It constructs valid combinations from the combinatorial structure of the type universe. The LLM is then used as a **decoder** — translating structural descriptions into natural language — which is far easier than generation from scratch:
+
+```
+LLM generation:    P(concept) = 0           →  unreachable
+Quantum discovery: valid(concept) = true     →  reachable, regardless of P
+LLM narration:     P(description | structure) > 0  →  describable
+```
+
+The pipeline allocates each component to what it does best:
+
+| Operation | Best Tool | Why |
+|-----------|-----------|-----|
+| Extract type universe from code | LLM | Pattern recognition on structured text |
+| Explore nearby concept space | LLM | Fast, cheap, good enough for local search |
+| Explore exponential cross-fiber space | Quantum | Tunneling escapes local optima |
+| Validate constructibility | Type checker | Decidable oracle for the quantum circuit |
+| Narrate discovered concepts | LLM | Description is easier than generation |
+
+The quantum computer finds concepts the LLM would never generate. The LLM describes concepts it would never have found.
+
 ---
 
 ## References
@@ -414,3 +488,6 @@ The limiting factor is not quantum hardware (sprint-scale problems are small eno
 - Coecke, B., de Felice, G., Meichanetzidis, K. et al. — "Foundations for Near-Term Quantum Natural Language Processing" (2020) — categorical quantum mechanics applied to language
 - Farhi, E., Goldstone, J., Gutmann, S. — "A Quantum Approximate Optimization Algorithm" (2014) — QAOA
 - Dowek, G. — "Proofs and Algorithms: An Introduction to Logic and Computability" (2011) — type inhabitation decidability
+- Han, J. & van Doorn, F. — "A Formal Proof of the Independence of the Continuum Hypothesis" (Flypitch, 2019) — forcing verified in Lean
+- Crosson, E. & Harrow, A. — "Simulated Quantum Annealing Can Be Exponentially Faster Than Classical Simulated Annealing" (2016) — quantum tunneling advantage
+- Cohen, P. — "The Independence of the Continuum Hypothesis" (1963) — forcing
