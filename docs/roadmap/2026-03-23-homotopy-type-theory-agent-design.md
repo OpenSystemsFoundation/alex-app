@@ -1,0 +1,493 @@
+# Homotopy Type Theory + C-K Design Theory for AI Agent Instructions
+
+**Date:** March 23, 2026
+
+---
+
+## Abstract
+
+This document proposes a formal framework for structuring AI agent instructions (AGENTS.md, CLAUDE.md) using two complementary theories:
+
+- **Homotopy Type Theory (HoTT)** — to make instruction spaces precise, reduce ambiguity, and lower the degrees of freedom available to the LLM during code generation
+- **C-K Design Theory** — to formalize the relationship between the codebase (Knowledge space) and feature requests (Concept space), making the design process navigable by AI agents
+
+The goal is **more deterministic, higher-quality AI-assisted development** by aligning instruction structure with the geometry of transformer attention mechanisms.
+
+---
+
+## Part 1: The Problem with Flat Instructions
+
+Traditional agent instruction files are prose documents — flat lists of rules with implicit relationships. This creates several failure modes:
+
+1. **Ambiguity** — Rules can conflict ("be concise" vs "deliver humor that teaches through pain"). The LLM must resolve conflicts at inference time, introducing non-determinism.
+2. **Redundancy** — The same rule stated differently in multiple places wastes context window and creates inconsistency (e.g., namespace warnings in both CLAUDE.md and AGENTS.md).
+3. **Missing dependencies** — Rules that only apply in certain contexts aren't structurally linked to those contexts. The LLM must infer when rules apply.
+4. **No composition model** — There's no formal way to combine rules, extend them for new domains, or reason about whether two rule sets produce equivalent behavior.
+
+---
+
+## Part 2: HoTT Concepts Applied to Agent Instructions
+
+### 2.1 Types as Spaces of Valid Behavior
+
+In HoTT, a type is a space. Each point in the space is a valid inhabitant. Applied to agent instructions:
+
+- A **rule** defines a type — the space of all behaviors that satisfy it
+- An **instruction set** defines a product type — the intersection of all rule-spaces
+- The LLM's output must be a **term** (inhabitant) of this product type
+
+The fewer inhabitants a type has, the more constrained (deterministic) the output.
+
+### 2.2 Homotopy Levels and Determinism
+
+Every type in HoTT has a homotopy level (h-level) that measures its degrees of freedom:
+
+| h-level | Name | Inhabitants | Agent instruction analog |
+|---------|------|-------------|--------------------------|
+| -2 | Contractible | Exactly one | "Use LexoRank for ordering" — only one valid approach |
+| -1 | Mere proposition | At most one | "Tests must pass" — either satisfied or not |
+| 0 | Set | Discrete, decidable | "Follow Controller → Service → Selector" — distinct valid patterns, clearly comparable |
+| 1+ | Groupoid | Multiple + multiple comparisons | "Improve performance" — many valid approaches, many ways to compare them |
+
+**Key insight: Well-structured instructions truncate the h-level of the LLM's output space.** Lower h-level = more deterministic behavior.
+
+### 2.3 Dependent Types — Context-Sensitive Rules
+
+A dependent type `B(a)` varies based on the value of `a`. This models context-sensitive rules:
+
+```
+-- The agent's behavior type depends on what it's doing
+AgentMode := Debugging | Explaining | Executing | Summarizing
+
+Behavior : AgentMode → Type
+Behavior Debugging   = Concise × DirectAction × NoHumor
+Behavior Explaining  = Teaching × AncientGodHumor × Examples
+Behavior Executing   = MinimalOutput × ToolFocused × NoHumor
+Behavior Summarizing = BulletPoints × Scannable × LightHumor
+```
+
+Making dependencies explicit eliminates the LLM's need to infer context — the structure tells it which rules apply.
+
+### 2.4 Fibrations — Layered Instruction Bundles
+
+A fibration in HoTT is a type family that varies smoothly over a base space. The codebase has a natural fibration structure:
+
+```
+Base space: { Metadata, Apex, LWC, Tests, E2E, CI/CD }
+
+Fiber(Metadata) = { no OpenSF__ prefix, XML format, declarative }
+Fiber(Apex)     = { OpenSF__ prefix, enum types, typed params, governor limits }
+Fiber(LWC)      = { OpenSF__ prefix, JSDoc types, Redux pattern, ESLint strict }
+Fiber(Tests)    = { TypeScript, Jest/Playwright, test organization rules }
+Fiber(CI/CD)    = { GitHub Actions, conventional commits, manual releases }
+```
+
+When the LLM receives a task, it first identifies which fiber(s) are relevant, then applies only the rules from those fibers. This is more efficient than scanning all rules.
+
+### 2.5 Path Equivalence — Deduplication
+
+Two rules that produce the same behavioral outcome are **path-equivalent** (homotopic). They should be collapsed to a single canonical rule with a reference. This reduces context window waste and eliminates inconsistency risk.
+
+Example: "Use KanbanEnums for status values" and "Prefer enums over string literals" are homotopic — they trace different paths to the same behavioral endpoint. Collapse to one rule.
+
+---
+
+## Part 3: C-K Design Theory Applied to Feature Development
+
+### 3.1 The Two Spaces
+
+C-K Theory (Hatchuel & Weil, 2003) models design as navigation between two spaces:
+
+- **K-space (Knowledge)**: Validated, established propositions. In our context: the codebase, test suite, CI pipeline, architecture docs, and AGENTS.md itself.
+- **C-space (Concepts)**: Propositions with undecided truth status. In our context: user stories, feature requests, bug reports — things that *could* become part of the codebase but haven't been validated yet.
+
+### 3.2 The Four Operators
+
+```
+C → C  (Concept Expansion)
+  Backlog refinement. Breaking a user story into sub-tasks.
+  "Add planning poker" → "voting UI" + "vote aggregation" + "reveal mechanism"
+
+K → K  (Knowledge Expansion)
+  Reading the codebase. Understanding existing patterns. Running tests.
+  Learning that SprintService exists and Platform Events work.
+
+K → C  (Disjunction — Knowledge generates Concepts)
+  The structure of the codebase suggests new features.
+  "We have clientRequestId echo prevention → what if we reuse it for vote dedup?"
+  The ARCHITECTURE of K determines which concepts are nearby in C-space.
+
+C → K  (Conjunction — Testing Concepts against Knowledge)
+  Implementation + testing. Writing code, running tests, deploying.
+  If tests pass: concept becomes knowledge. C collapses into K.
+  If tests fail: concept is rejected. Return to C-space and expand differently.
+```
+
+### 3.3 K Is the Repo. C Is the User Story.
+
+The mapping is precise:
+
+| C-K Concept | Project Analog |
+|-------------|---------------|
+| K-space | Git repo + test suite + AGENTS.md + CI pipeline + deployed scratch org |
+| C-space | GitHub issues, user stories, feature branches before merge |
+| C → C | Backlog refinement, sprint planning, story decomposition |
+| K → K | Codebase exploration, reading architecture docs, understanding patterns |
+| K → C | Architecture suggests features: "we have Redux store → add undo/redo" |
+| C → K | The E2E debug loop: push → test → fix → push (chromium-e2e-debug.yml) |
+
+### 3.4 The E2E Debug Loop IS the C→K Operator
+
+The existing `chromium-e2e-debug.yml` workflow is a formalized conjunction operator:
+
+```
+Push to claude/* branch          ← Concept (untested code)
+  → GitHub Action runs           ← Conjunction operator
+  → E2E tests execute            ← K validates C
+  → Results posted as comments   ← Feedback
+  → Fix and push again           ← Refined concept
+  → Tests pass                   ← C collapses into K
+  → Merge to main                ← Knowledge is permanent
+```
+
+---
+
+## Part 4: The Synthesis — HoTT × C-K for Agent Instructions
+
+### 4.1 K-Space Has a Topology (HoTT Describes It)
+
+The repo isn't a flat bag of files. It has topological structure — related modules are "close," unrelated modules are "far." HoTT fibrations describe this structure precisely.
+
+When a new concept arrives (user story), the K→C operator asks: **which fiber does this concept attach to?** The fibration structure in AGENTS.md tells the LLM exactly which modules to read and extend.
+
+### 4.2 Well-Typed K Truncates the H-Level of C
+
+The more structured and precise the K-space (AGENTS.md + architecture + tests), the lower the h-level of any concept the LLM must implement. This is the core mechanism:
+
+```
+Vague K ("write good code")        → high h-level C → non-deterministic output
+Precise K ("Controller → Service → Selector, use KanbanEnums, LexoRank for ordering")
+                                    → low h-level C → deterministic output
+```
+
+AGENTS.md is a **truncation operator** on the concept space.
+
+### 4.3 Tests Are Type Signatures
+
+In constructive type theory (which HoTT extends), a proposition is proved by constructing a witness. Tests are type signatures — they define *what* must be true without specifying *how*.
+
+```
+// This test IS a type signature:
+expect(sprint.status).toBe('Active')     // h-level -1 (proposition)
+expect(cards).toHaveLength(7)            // h-level -2 (contractible — exactly one valid value)
+expect(result).toBeTruthy()              // h-level 1+ (groupoid — many valid values)
+```
+
+More specific test assertions = lower h-level = more deterministic implementations.
+
+### 4.4 Feature Stories as Type Signatures
+
+Instead of prose user stories, structure feature requests as dependent type signatures:
+
+```
+-- Prose (high h-level):
+"Add planning poker to sprint planning"
+
+-- Type signature (low h-level):
+PlanningPoker : (board : Board) → (sprint : Sprint board) → (cards : List (Card board)) →
+  VotingSession where
+    participants : board.members
+    votes : ∀ (user : participants) → ∀ (card : cards) → StoryPoints
+    reveal : (∀ user ∈ participants, hasVoted(user)) → VoteResults
+    consensus : VoteResults → StoryPoints
+    persistence : VotingSession → SprintCard.StoryPoints__c update
+    realtime : VotingSession changes → SprintUpdateEvent__e published
+```
+
+The LLM doesn't parse this as formal math — it uses the structural pattern to constrain its implementation space. Each dependent type (sprint depends on board, votes depend on participants and cards) tells the LLM how modules connect.
+
+---
+
+## Part 5: Token Space Optimization
+
+### 5.1 Structural Priming via Consistent Templates
+
+Transformers learn hierarchical structure from consistent formatting. Every rule in AGENTS.md should follow the same template to let the model attend to content rather than parsing varying formats:
+
+```markdown
+## [DOMAIN]: Rule Name
+**When:** context trigger
+**Do:** specific action
+**Not:** anti-pattern
+**Example:**
+  ✓ correct code
+  ✗ incorrect code
+```
+
+### 5.2 Contrastive Pairs Over Prose
+
+LLMs are trained on next-token prediction and excel at contrastive patterns. `DO/NOT` pairs create stronger signals than paragraphs of explanation:
+
+```
+DO:  KanbanEnums.SprintStatus.ACTIVE
+NOT: "Active"
+
+DO:  objects/Sprint__c/fields/Status__c.field-meta.xml
+NOT: objects/OpenSF__Sprint__c/fields/OpenSF__Status__c.field-meta.xml
+```
+
+### 5.3 Attention Anchors
+
+Transformers allocate disproportionate attention to tokens with high surprise value. Use strategically:
+
+- `CRITICAL`, `NEVER`, `ALWAYS` — high-weight keywords at section boundaries
+- Structural markers (`##`, `**`, code fences) — consistent attention anchors
+- First and last tokens of sections get primacy/recency attention bias
+
+### 5.4 Information Density
+
+Eliminate prose that restates what examples already demonstrate. The model learns more from a single `✓/✗` example pair than from three sentences of explanation. Reduce token count without reducing signal.
+
+---
+
+## Part 6: Implementation Plan
+
+### Phase 1: Restructure AGENTS.md
+
+Reorganize around the fibration structure:
+
+1. **Type Universe** — Top-level declarations of rule categories and their dependencies
+2. **Global Rules** — Rules that apply in ALL fibers (h-level truncation operators)
+3. **Fiber: Metadata** — XML, declarative config, namespace rules
+4. **Fiber: Apex** — Service layer patterns, type safety, governor limits
+5. **Fiber: LWC** — Redux patterns, JSDoc types, ESLint rules
+6. **Fiber: Tests** — TypeScript, test organization, assertion specificity
+7. **Fiber: CI/CD** — Workflows, conventional commits, release flow
+8. **C-K Navigation Guide** — How to traverse from concept to implementation using codebase structure
+
+### Phase 2: Collapse Redundancy
+
+Eliminate path-equivalent rules between CLAUDE.md and AGENTS.md. CLAUDE.md becomes the minimal entry point; AGENTS.md becomes the full type universe.
+
+### Phase 3: Token Optimization
+
+Convert all rules to the consistent template format. Replace prose with contrastive pairs. Add attention anchors at section boundaries.
+
+---
+
+## Part 7: Quantum Concept Space Exploration
+
+### 7.1 The Meta-Level Question
+
+Parts 1–6 describe how to structure instructions for an LLM building *this* app. But the framework is general — any codebase with formalized types and constraints defines a K-space. The question becomes:
+
+**Given a formalized K-space (type universe + constraints), can quantum computing explore the C-space to discover novel features that classical reasoning — human or LLM — cannot reach?**
+
+### 7.2 Why the Oracle IS Computable
+
+Quantum search algorithms (Grover, QAOA) require an oracle — a function that evaluates whether a candidate solution is valid. The standard objection to quantum concept exploration is: "there's no oracle for whether a feature idea is good."
+
+But HoTT changes this. If K-space is a type universe, then the oracle is **type inhabitation**:
+
+```
+Oracle(concept) := "Does this type signature compose validly
+                    with the existing type universe?"
+```
+
+This is decidable for the type systems relevant to software development. A concept is "constructible" if and only if its type is inhabited given the existing types and constraints. The quantum computer doesn't evaluate whether a feature is *good* — it evaluates whether a feature is *buildable*. "Good" remains a human judgment applied to the quantum output.
+
+### 7.3 The Tensor Product Structure of K-Space
+
+Individual K-fibers suggest concepts that are "nearby" in one dimension:
+
+```
+Fiber(Redux)           → nearby concepts: undo/redo, time-travel, state snapshots
+Fiber(Platform Events) → nearby concepts: chat, notifications, activity feed
+Fiber(LexoRank)        → nearby concepts: custom sort, priority lanes, swimlanes
+```
+
+These are classical K→C operations — a human or LLM reads one fiber and imagines extensions.
+
+But the **tensor product** of fibers creates a combinatorial space of cross-fiber concepts:
+
+```
+Fiber(Redux) ⊗ Fiber(Platform Events)
+  → collaborative undo (one user's undo propagates as a platform event)
+  → conflict resolution (concurrent edits detected via event + state diff)
+  → These concepts live in NEITHER fiber alone.
+
+Fiber(LexoRank) ⊗ Fiber(MPS Tensor)
+  → MI-based card ordering (mutual information determines optimal sort)
+  → Entanglement-aware swimlanes (correlated cards cluster automatically)
+  → These concepts require BOTH fibers to be considered simultaneously.
+```
+
+The number of cross-fiber concepts grows exponentially with the number of fibers. For N fibers, there are 2^N - N - 1 non-trivial tensor products. A codebase with 10 capability fibers has 1,013 cross-fiber concept neighborhoods. Classical exploration (human or LLM) can visit a few. Quantum exploration can superpose over all of them.
+
+### 7.4 QUBO Formulation for Concept Discovery
+
+Encode concept discovery as a constrained optimization problem:
+
+**Decision variables:**
+
+```
+x[i][j] ∈ {0, 1}  — 1 if capability i is combined with capability j in the concept
+```
+
+**Objective function (maximize novelty subject to constructibility):**
+
+```
+max  Σᵢⱼ  novelty(i,j) × x[i][j]                    // maximize novelty
+   - λ₁ Σ  type_conflict(i,j) × x[i][j]              // penalize type conflicts
+   - λ₂ Σ  (dependency_missing(i,j)) × x[i][j]       // penalize missing dependencies
+   - λ₃ (Σᵢⱼ x[i][j] - target_complexity)²           // target concept complexity
+```
+
+Where:
+- `novelty(i,j)` = inverse frequency of this combination in existing features (high = novel)
+- `type_conflict(i,j)` = 1 if combining fibers i and j produces uninhabited types
+- `dependency_missing(i,j)` = 1 if combining requires infrastructure that doesn't exist
+- `target_complexity` = desired number of fiber combinations (prevents trivial or impossibly complex concepts)
+
+**Output:** The top-K bitstrings from the Sampler primitive are ranked concept proposals — each bitstring encodes a set of capability combinations. The concept is then decoded into a natural-language feature description by the LLM (quantum finds the structure, LLM narrates it).
+
+### 7.5 The General Framework
+
+This is not specific to any app. The framework requires:
+
+1. **A formalized type universe (K-space).** This is what AGENTS.md becomes when structured with HoTT — a machine-readable set of types, constraints, and fiber relationships. Any codebase can produce one.
+
+2. **A fiber decomposition of capabilities.** Each independent capability axis (state management, persistence, real-time sync, ordering, auth, etc.) is a fiber. The fibration structure is extractable from any well-architected codebase.
+
+3. **A novelty metric.** How "far" a concept is from existing features, measured in the type universe. Novel concepts combine fibers that haven't been combined before.
+
+4. **A constructibility oracle.** Type inhabitation check — does the proposed combination produce valid types? This is the quantum oracle.
+
+5. **A QAOA circuit.** Encodes the QUBO and explores the tensor product space of all fiber combinations simultaneously.
+
+6. **An LLM narrator.** Takes the quantum output (a set of fiber combinations) and generates a human-readable feature description with type signatures.
+
+The pipeline:
+
+```
+Codebase → Type Universe Extraction → Fiber Decomposition → QUBO Encoding
+  → QAOA Circuit → IBM Quantum (Sampler) → Top-K Concept Bitstrings
+  → LLM Narration → Ranked Feature Proposals with Type Signatures
+  → Human Selection → C→K Implementation Loop
+```
+
+### 7.6 What This Means
+
+Classical product development discovers features via:
+- Human intuition (limited by individual experience)
+- Market research (limited by what competitors have built)
+- LLM prompting (limited by training data distribution)
+
+All three explore C-space **locally** — they find concepts near known concepts. They cannot efficiently explore the exponential space of cross-capability combinations.
+
+Quantum concept exploration is **non-local** in C-space. It superposes over all fiber combinations simultaneously, interferes constructively on valid+novel combinations, and returns candidates that no local search would find. The concepts are not random — they are **constructible** (the oracle ensures type inhabitation) and **novel** (the objective function maximizes novelty).
+
+This is computational serendipity. Structured, reproducible, oracle-validated serendipity.
+
+### 7.7 Current Feasibility
+
+| Component | Status |
+|-----------|--------|
+| Type universe extraction from codebase | Feasible now — static analysis + LLM can produce fiber decomposition |
+| QUBO encoding of fiber combinations | Feasible now — same math as sprint planning QUBO |
+| QAOA circuit execution | Feasible now — Alex already has OpenQASM launcher + IBM Quantum integration |
+| Constructibility oracle (type inhabitation) | Feasible for practical type systems — decidable for dependent types with termination |
+| Novelty metric | Requires definition — inverse frequency of fiber combination in existing features is a starting point |
+| LLM narration of quantum output | Feasible now — any modern LLM can narrate structured concept descriptions |
+| End-to-end pipeline | Not built — but all components exist individually |
+
+The limiting factor is not quantum hardware (sprint-scale problems are small enough for current devices). The limiting factor is **formalizing the type universe extraction** — turning a codebase into a machine-readable set of typed fibers. The HoTT-structured AGENTS.md is a first step toward this.
+
+### 7.8 Forcing as the C→K Operator
+
+C-K theory's primary operator is **forcing** — the same operation Paul Cohen introduced in 1963 to prove the independence of the Continuum Hypothesis. In set-theoretic forcing, you take a model M and extend it to M[G] by adding a generic filter G that is *consistent* with M but *not derivable* from M.
+
+This is exactly the C→K conjunction in C-K theory:
+
+```
+K  →  K ∪ {new concept}  =  K[G]
+       ↑
+       concept is consistent with K but not derivable from K
+```
+
+The **Flypitch project** (Han & van Doorn, 2019) formally verified Cohen's forcing in Lean — a dependent type theory proof assistant. This verification means:
+
+1. The mathematical operation underlying C-K's expansion operator is **provably valid in dependent type theory**
+2. The bridge from C-K to HoTT is not merely analogical — forcing literally operates on models of type theory
+3. When an agent takes AGENTS.md (K-space as type universe) and "forces" a new feature type into it, this extension has the same mathematical structure that Flypitch verified
+
+Forcing is what makes C-K **generative** rather than merely combinatorial. You're not just recombining existing types — you're extending the type universe with genuinely new inhabitants.
+
+### 7.9 Why Quantum, Not Just LLMs — The Local Optima Problem
+
+An LLM already performs C-K exploration. Prompted with a codebase, it traverses from K to C by pattern-matching against training data, recombining patterns, and proposing concepts. Why isn't this sufficient?
+
+**Because the LLM is sampling from a learned distribution, and that distribution has local optima.**
+
+The LLM's latent space is a landscape with peaks (modes from training data) and valleys (low-probability regions between modes). When an LLM generates a "novel" concept, it performs one of two operations:
+
+- **Interpolation**: blending two nearby modes. "Undo + real-time sync = collaborative undo." Both modes exist in training data; the interpolation path has reasonable probability.
+- **Mild extrapolation**: stepping slightly beyond a mode. "LexoRank but for time-based ordering." Still within the training distribution's support.
+
+What the LLM **cannot** do is reach concepts in low-probability regions separated from all modes by high barriers. These are cross-fiber combinations where no training example ever combined these capabilities, and the path through latent space crosses a probability valley. Classical sampling — including temperature scaling — cannot create probability mass where there is none.
+
+```
+Classical (LLM sampling):
+
+  Mode A ──valley──valley──valley── Mode B (unreachable)
+    ↑
+    └── LLM samples here, finds nearby concepts,
+        never crosses the valley
+
+Quantum (QAOA):
+
+  Mode A ──valley──valley──valley── Mode B
+    ↑           ↑ TUNNEL ↑            ↑
+    └───────────┴────────┴────────────┘
+    superposition spans both modes,
+    mixer Hamiltonian enables barrier crossing
+```
+
+QAOA's mixer Hamiltonian creates transitions that **have no classical path**. The quantum state tunnels through barriers rather than climbing over them. This is not a metaphor — quantum tunneling in QAOA is a proven mechanism for escaping local optima in combinatorial optimization (Farhi et al. 2014, Crosson & Harrow 2016).
+
+**The null space argument**: The LLM's latent space is a projection of training data through learned weights. This projection has a null space — concepts that map to zero probability because no training example instantiated them. Genuinely novel cross-fiber concepts live in this null space. They are **literally unreachable** by sampling from the LLM, regardless of prompting strategy.
+
+Quantum exploration operates on the **type structure**, not the LLM's weights. It doesn't need a concept to exist in training data. It constructs valid combinations from the combinatorial structure of the type universe. The LLM is then used as a **decoder** — translating structural descriptions into natural language — which is far easier than generation from scratch:
+
+```
+LLM generation:    P(concept) = 0           →  unreachable
+Quantum discovery: valid(concept) = true     →  reachable, regardless of P
+LLM narration:     P(description | structure) > 0  →  describable
+```
+
+The pipeline allocates each component to what it does best:
+
+| Operation | Best Tool | Why |
+|-----------|-----------|-----|
+| Extract type universe from code | LLM | Pattern recognition on structured text |
+| Explore nearby concept space | LLM | Fast, cheap, good enough for local search |
+| Explore exponential cross-fiber space | Quantum | Tunneling escapes local optima |
+| Validate constructibility | Type checker | Decidable oracle for the quantum circuit |
+| Narrate discovered concepts | LLM | Description is easier than generation |
+
+The quantum computer finds concepts the LLM would never generate. The LLM describes concepts it would never have found.
+
+---
+
+## References
+
+- Homotopy Type Theory: Univalent Foundations of Mathematics (The HoTT Book, 2013)
+- Hatchuel, A. & Weil, B. — "A New Approach of Innovative Design: An Introduction to C-K Theory" (2003)
+- Vaswani et al. — "Attention Is All You Need" (2017) — transformer attention mechanisms
+- Press et al. — "Train Short, Test Long: Attention with Linear Biases" (2022) — positional attention patterns
+- Coecke, B., de Felice, G., Meichanetzidis, K. et al. — "Foundations for Near-Term Quantum Natural Language Processing" (2020) — categorical quantum mechanics applied to language
+- Farhi, E., Goldstone, J., Gutmann, S. — "A Quantum Approximate Optimization Algorithm" (2014) — QAOA
+- Dowek, G. — "Proofs and Algorithms: An Introduction to Logic and Computability" (2011) — type inhabitation decidability
+- Han, J. & van Doorn, F. — "A Formal Proof of the Independence of the Continuum Hypothesis" (Flypitch, 2019) — forcing verified in Lean
+- Crosson, E. & Harrow, A. — "Simulated Quantum Annealing Can Be Exponentially Faster Than Classical Simulated Annealing" (2016) — quantum tunneling advantage
+- Cohen, P. — "The Independence of the Continuum Hypothesis" (1963) — forcing

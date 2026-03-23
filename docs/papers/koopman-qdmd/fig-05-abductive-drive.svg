@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" font-family="system-ui, sans-serif">
+  <text x="400" y="28" text-anchor="middle" font-size="17" font-weight="bold" fill="#0f172a">Abductive Fiber Drive Rankings — Koopman Projection</text>
+
+  <!-- Query 1 -->
+  <text x="200" y="65" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e40af">Query 1: "Real-time Collaborative Reordering"</text>
+  <text x="200" y="82" text-anchor="middle" font-size="11" fill="#64748b">From: Redux+Apex+LWC → Target: +PE+Lex+Echo</text>
+
+  <!-- Q1 Axes -->
+  <line x1="50" y1="100" x2="50" y2="295" stroke="#334155" stroke-width="1.5"/>
+  <line x1="50" y1="295" x2="380" y2="295" stroke="#334155" stroke-width="1.5"/>
+  <text x="215" y="318" text-anchor="middle" font-size="12" fill="#475569">Koopman Drive Strength</text>
+
+  <!-- Q1 horizontal bars — max=11.40, scale: drive*28 -->
+  <!-- MPSTensor: 11.40 → w=319 -->
+  <rect x="130" y="107" width="219" height="28" rx="4" fill="#f59e0b" opacity="0.85"/>
+  <text x="55" y="126" font-size="12" fill="#334155">MPS</text>
+  <text x="355" y="126" font-size="11" fill="#92400e">11.40</text>
+
+  <!-- EchoPrevention: 10.96 → w=307 -->
+  <rect x="130" y="143" width="210" height="28" rx="4" fill="#16a34a" opacity="0.85"/>
+  <text x="55" y="162" font-size="12" fill="#334155">Echo</text>
+  <text x="346" y="162" font-size="11" fill="#166534">10.96 ✓</text>
+
+  <!-- QAOA: 8.68 → w=243 -->
+  <rect x="130" y="179" width="166" height="28" rx="4" fill="#f59e0b" opacity="0.85"/>
+  <text x="55" y="198" font-size="12" fill="#334155">QAOA</text>
+  <text x="302" y="198" font-size="11" fill="#92400e">8.68</text>
+
+  <!-- LexoRank: 4.92 → w=138 -->
+  <rect x="130" y="215" width="94" height="28" rx="4" fill="#16a34a" opacity="0.85"/>
+  <text x="55" y="234" font-size="12" fill="#334155">Lex</text>
+  <text x="230" y="234" font-size="11" fill="#166534">4.92 ✓</text>
+
+  <!-- PlatformEvents: 4.03 → w=113 -->
+  <rect x="130" y="251" width="77" height="28" rx="4" fill="#16a34a" opacity="0.85"/>
+  <text x="55" y="270" font-size="12" fill="#334155">PE</text>
+  <text x="213" y="270" font-size="11" fill="#166534">4.03 ✓</text>
+
+  <!-- Q1 Legend -->
+  <rect x="55" y="330" width="12" height="12" rx="2" fill="#16a34a" opacity="0.85"/>
+  <text x="73" y="341" font-size="11" fill="#334155">Target fiber (correctly identified)</text>
+  <rect x="55" y="348" width="12" height="12" rx="2" fill="#f59e0b" opacity="0.85"/>
+  <text x="73" y="359" font-size="11" fill="#334155">Overshoot (Koopman mode coupling)</text>
+
+  <!-- Query 2 -->
+  <text x="600" y="65" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e40af">Query 2: "Quantum-Tensor Optimization"</text>
+  <text x="600" y="82" text-anchor="middle" font-size="11" fill="#64748b">From: all except MPS+QAOA → Target: +MPS+QAOA</text>
+
+  <!-- Q2 Axes -->
+  <line x1="450" y1="100" x2="450" y2="215" stroke="#334155" stroke-width="1.5"/>
+  <line x1="450" y1="215" x2="760" y2="215" stroke="#334155" stroke-width="1.5"/>
+  <text x="605" y="238" text-anchor="middle" font-size="12" fill="#475569">Koopman Drive Strength</text>
+
+  <!-- Q2 bars — max=9.17, scale: drive*30 -->
+  <!-- MPSTensor: 9.17 → w=275 -->
+  <rect x="530" y="107" width="195" height="35" rx="4" fill="#16a34a" opacity="0.85"/>
+  <text x="455" y="130" font-size="13" fill="#334155">MPS</text>
+  <text x="735" y="130" font-size="12" fill="#166534">9.17 ✓</text>
+
+  <!-- QAOA: 7.35 → w=221 -->
+  <rect x="530" y="155" width="156" height="35" rx="4" fill="#16a34a" opacity="0.85"/>
+  <text x="455" y="178" font-size="13" fill="#334155">QAOA</text>
+  <text x="696" y="178" font-size="12" fill="#166534">7.35 ✓</text>
+
+  <!-- Q2 result box -->
+  <rect x="460" y="260" width="280" height="45" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="600" y="280" text-anchor="middle" font-size="13" font-weight="bold" fill="#166534">Perfect precision: 2/2 targets, 0 false positives</text>
+  <text x="600" y="296" text-anchor="middle" font-size="11" fill="#14532d">Clean separation: next highest drive = 0.00</text>
+
+  <!-- Cross-validation note -->
+  <rect x="420" y="380" width="370" height="70" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="605" y="402" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">QAOA Cross-Validation</text>
+  <text x="605" y="420" text-anchor="middle" font-size="11" fill="#78350f">QAOA novel discoveries: MPS+QAOA+Echo, MPS+QAOA+Lex</text>
+  <text x="605" y="436" text-anchor="middle" font-size="11" fill="#78350f">Koopman dominant modes: MPS, QAOA, Echo, Lex — same fibers</text>
+
+  <!-- Overall note -->
+  <rect x="30" y="400" width="370" height="60" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="215" y="422" text-anchor="middle" font-size="12" font-weight="bold" fill="#1e40af">Abductive Overshoot = Design Signal</text>
+  <text x="215" y="440" text-anchor="middle" font-size="11" fill="#1e3a8a">Q1 overshoot to MPS/QAOA reveals downstream</text>
+  <text x="215" y="455" text-anchor="middle" font-size="11" fill="#1e3a8a">implications: building toward RT reorder pulls toward quantum</text>
+</svg>

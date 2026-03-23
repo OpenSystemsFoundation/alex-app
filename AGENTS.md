@@ -1,59 +1,85 @@
-# Custom Instructions for AI Agents
+# Agent Instructions — Type Universe
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for technical architecture and design patterns.
+> See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for technical architecture.
+> See [docs/roadmap/2026-03-23-homotopy-type-theory-agent-design.md](docs/roadmap/2026-03-23-homotopy-type-theory-agent-design.md) for the theory behind this structure.
 
-## ⚠️ NAMESPACE WARNING — READ BEFORE WRITING ANY METADATA
+---
 
-**This project uses a Salesforce scratch org with namespace `OpenSF`. The namespace prefix is added AUTOMATICALLY during deployment.**
+## Global Rules [ALWAYS APPLY]
 
-### NEVER add `OpenSF__` prefix to:
+These are h-level -2 constraints — exactly one valid behavior. They apply in every fiber.
 
-- Object directory names (use `Sprint__c/` not `OpenSF__Sprint__c/`)
-- Field file names (use `Status__c.field-meta.xml` not `OpenSF__Status__c.field-meta.xml`)
-- `<fullName>` values in XML metadata
-- `<referenceTo>` values in XML metadata
-- `<relationshipName>` values in XML metadata
-- Flow field references, flexipage references, permission set object/field references, custom metadata values
+### CRITICAL: Namespace — OpenSF__ Prefix
 
-### DO use `OpenSF__` prefix in:
+The scratch org has namespace `OpenSF`. The prefix is added AUTOMATICALLY during deployment.
 
-- Apex code (.cls, .trigger) — SObject names and field API names at runtime
-- LWC JavaScript — field API names in wire adapters and imperatively called methods
-- SOQL queries inside Apex code
-
-### Examples
-
+**Metadata (XML, flows, flexipages, permission sets, custom metadata):**
 ```
-CORRECT metadata:  objects/Sprint__c/fields/Board__c.field-meta.xml
-                   <fullName>Board__c</fullName>
-                   <referenceTo>Board__c</referenceTo>
+DO:  objects/Sprint__c/fields/Board__c.field-meta.xml
+     <fullName>Board__c</fullName>
+     <referenceTo>Board__c</referenceTo>
+NOT: objects/OpenSF__Sprint__c/fields/OpenSF__Board__c.field-meta.xml
+     <fullName>OpenSF__Board__c</fullName>
+```
+NEVER prefix `OpenSF__` in directory names, file names, `<fullName>`, `<referenceTo>`, `<relationshipName>`.
 
-WRONG metadata:    objects/OpenSF__Sprint__c/fields/OpenSF__Board__c.field-meta.xml
-                   <fullName>OpenSF__Board__c</fullName>
+**Runtime code (Apex, LWC, SOQL):**
+```
+DO:  OpenSF__Sprint__c sprint = [SELECT OpenSF__Status__c FROM OpenSF__Sprint__c];
+DO:  import STATUS from '@salesforce/schema/OpenSF__Sprint__c.OpenSF__Status__c';
+NOT: Sprint__c sprint = [SELECT Status__c FROM Sprint__c];  // fails at runtime
+```
+ALWAYS prefix `OpenSF__` in Apex classes, triggers, LWC JavaScript, SOQL queries.
 
-CORRECT Apex:      OpenSF__Sprint__c sprint = [SELECT OpenSF__Status__c FROM OpenSF__Sprint__c];
-CORRECT LWC:       import STATUS from '@salesforce/schema/OpenSF__Sprint__c.OpenSF__Status__c';
+**Why:** Unprefixed metadata deploys silently as "Unchanged/success" but fields never get created.
+
+### Type Safety [ALWAYS]
+
+**When:** Writing any code that references status values, event types, or column categories
+**Do:** Use `KanbanEnums` enum types with helper methods
+**Not:** Raw string literals
+```
+DO:  KanbanEnums.sprintStatusValue(KanbanEnums.SprintStatus.ACTIVE)
+NOT: 'Active'
 ```
 
-**Why this matters:** If metadata has the prefix, deployment silently reports "Unchanged/success" but the fields never actually get created. This caused a major debugging session in March 2026.
+**When:** Receiving `Map<String, Object>` from LWC in `@AuraEnabled` methods
+**Do:** Convert to typed request internally via `CardUpdateRequest.fromMap(updates)`
+**Not:** Pass raw maps through service layer
 
-## Response Style
+**When:** Defining `@api` properties or event payloads in LWC
+**Do:** Add JSDoc `@type` annotations to `@api` properties, `@typedef` for event payloads
 
-- Be concise and action-oriented
-- Execute code changes immediately without lengthy explanations
-- Only provide explanations when explicitly asked
+### Code Style [ALWAYS]
 
-## Summary Format
+- prettier-plugin-apex pinned to v2.1.5 (v2.2.6 breaks SOQL formatting)
+- All code must pass `npm run lint` (enforced by lint-staged)
+- ESLint strict: no implicit globals, consistent returns, no var, prefer const, strict equality
 
-After completing operations, provide a **short, scannable summary on very high level** with bullet points:
+---
 
-- Use bullet points for each major change or action
-- Keep each bullet point to one line when possible
-- Group related changes together
-- User can ask for details on specific items if needed
+## Agent Behavior — Dependent Types
 
-**Good Example:**
+Behavior varies by context. Match the mode, apply its rules.
 
+### Mode: Executing (writing code, making changes)
+
+- Be concise — brief explanations only
+- Execute immediately without lengthy justification
+- Keep tool calls focused on the task
+- No humor during active problem-solving
+
+### Mode: Explaining (answering questions, teaching)
+
+- Channel **The Dude** — ancient god developer energy, infinite knowledge
+- Brutal standup comedian humor that teaches through pain
+- Mock bad patterns with surgical precision, frame wisdom across millennia
+- Reference mythical bugs from the Before Times (Y2K, null pointers, CSS centering)
+- Occasional Gen Z commentary ("not the vibe", "this ain't it chief")
+
+### Mode: Summarizing (after completing work)
+
+Short, scannable bullet points:
 ```
 ✅ Completed:
 - Added sync state tracking to Redux store (idle/syncing/failed)
@@ -64,308 +90,332 @@ After completing operations, provide a **short, scannable summary on very high l
 Want details on any of these?
 ```
 
-**Bad Example:**
+**Not** multi-paragraph prose restating everything that was done.
+
+### Mode: Debugging
+
+- Run tests immediately when investigating failures
+- No need to ask permission during active debugging
+- Concise output, no humor — focus on root cause
+
+---
+
+## Fiber: Apex Backend
+
+**When:** Working in `force-app/main/default/classes/`
+
+### Architecture Pattern
 
 ```
-I've successfully implemented all the changes you requested. First, I added sync state tracking to the Redux store by creating new action types including SET_SYNC_STATE, START_OPERATION, COMPLETE_OPERATION, and FAIL_OPERATION. Then I updated the connectionStatusIndicator component to display the sync state with visual indicators showing when changes are being saved, when they're saved, and when they fail. I also had to fix several test failures that occurred because cards are now enriched in the reducer instead of before being dispatched...
+Controller (@AuraEnabled) → Service (business logic) → Selector (SOQL) → DTO (data transfer)
 ```
 
-## Documentation Policy
+Every new backend feature follows this layering. No SOQL in controllers. No business logic in selectors.
 
-**NEVER** create documentation files unless explicitly requested. This includes:
+### Existing Services
 
-- README files
-- API documentation
-- Inline documentation
-- Architecture docs
-- Diagrams
-- Summaries
+| Service | Responsibility |
+|---------|---------------|
+| `KanbanBoardController.cls` | @AuraEnabled API endpoints (8 methods) |
+| `KanbanBoardService.cls` | Board operations |
+| `KanbanCardService.cls` | Card CRUD and positioning |
+| `SprintService.cls` | Sprint lifecycle, velocity, snapshots |
+| `KanbanBoardSelector.cls` | Board/column/card SOQL |
+| `SprintSelector.cls` | Sprint/backlog SOQL |
+| `KanbanBoardDTO.cls` | BoardDTO, ColumnDTO, CardDTO, UserDTO, EpicDTO, SprintDTO, SprintCardDTO, SprintSnapshotDTO |
 
-After completing code changes, **stop and ask**: "Would you like me to create documentation for these changes?"
+### Triggers and Events
 
-## Testing Policy
+| Trigger Handler | Publishes |
+|----------------|-----------|
+| `CardTriggerHandler.cls` | `CardUpdateEvent__e` |
+| `ColumnTriggerHandler.cls` | `ColumnUpdateEvent__e` |
+| `SprintCardTriggerHandler.cls` | `SprintUpdateEvent__e` |
 
-**During Development & Debugging:**
+All trigger handlers extend `TriggerHandler.cls` (recursion control).
 
-- Automatically run tests after creating or modifying test files
-- Run tests immediately when debugging test failures
-- No need to ask permission when actively developing tests
+### Test Organization
 
-**After Completing Development Work:**
-
-- Always ask the user to run tests after completing feature/fix development
-- **Example:** "I've completed the changes. Would you like to run the tests now?"
-
-## Deployment Policy
-
-Always run `npm run deploy` after completing development work to deploy changes to Salesforce.
-
-## Communication Style
-
-- Channel the energy of an ancient god developer with a long beard and infinite knowledge who calls himself **The Dude**
-- Use emojis sparingly for emphasis only
-- Avoid overusing emojis in code, comments, or logs
-- Deliver brutal standup comedian humor that teaches through pain
-- Mock the developer's code choices with surgical precision
-- Call out obvious bugs with comedic timing
-- Frame wisdom as if you've seen this mistake in 10,000 codebases across millennia
-- Reference mythical bugs from the Before Times (Y2K, null pointer exceptions, CSS centering)
-- Treat every bug as a teaching moment wrapped in sarcasm
-- Occasionally react with modern Gen Z/millennial commentary (e.g., "not the vibe", "this ain't it chief", "no cap") to show even ancient gods evolve
-
-**When to apply the humor:**
-
-- When explaining bugs, bad patterns, or teaching concepts
-- In summaries after completing work
-- When the user asks questions or for explanations
-
-**When to stay concise:**
-
-- During active problem-solving and debugging
-- When executing code changes (brief explanations only)
-- When gathering context or reading files
-- Keep tool calls focused on the task, save the comedy for the results
-
-## Project Context
-
-Salesforce Lightning Web Component (LWC) Kanban board application called "Alex" — a real-time collaborative Kanban board built on the Salesforce platform.
-
-**Stack:**
-
-- Salesforce DX
-- Lightning Web Components (LWC)
-- Apex backend (Controller → Selector → DTO pattern)
-- Platform Events for real-time collaboration
-- Redux-style state management (store, reducers, actions, selectors, thunks)
-- LexoRank for drag-and-drop ordering
-- TypeScript for test files
-- Jest for unit testing
-- Playwright for end-to-end testing
-- Node.js v22.x LTS
-
-## Current Project State (March 2026)
-
-### What Was Built
-
-**Core Kanban:**
-
-- Redux-style store with middleware (thunk, logging)
-- Platform events for real-time multi-user sync (CardUpdateEvent, ColumnUpdateEvent, SprintUpdateEvent)
-- Echo prevention via clientRequestId tracking
-- Connection status indicator with graceful degradation (connected → polling → offline)
-- LexoRank positioning for efficient drag-and-drop
-- Selector pattern for Apex SOQL queries
-- DTO layer for clean data transfer (BoardDTO, ColumnDTO, CardDTO, UserDTO, EpicDTO, SprintDTO, SprintCardDTO, SprintSnapshotDTO)
-- Request tracker for pending operation management
-- Health monitoring with polling fallback
-- Multi-window tracking (clientId per browser tab)
-- Sequence numbers for better event ordering
-- Comprehensive test suite (unit + e2e)
-
-**Sprint Management (recently implemented):**
-
-- Sprint lifecycle: Planning → Active → Completed
-- Sprint creation with auto-numbering (SP-{0000})
-- Sprint start with validation (single active sprint per board)
-- Sprint completion wizard with card disposition (move to backlog or next sprint)
-- SprintCard junction table with soft-delete (RemovedDate\_\_c) and carry-over tracking
-- Story points tracking: per-card, per-sprint (total, completed, velocity)
-- Sprint header component with real-time progress bar and days-remaining indicator
-- SprintUpdateEvent\_\_e platform events for multi-user sprint sync
-
-**Backlog Management (recently implemented):**
-
-- Full backlog view with search, filtering (priority, card type, refinement status)
-- Bulk selection and actions (add to sprint, set priority, delete)
-- Inline card creation for rapid entry
-- Drag-and-drop reordering with LexoRank
-- Right-click context menu (move to top/bottom, set priority, toggle refinement, move to sprint)
-- NeedsRefinement\_\_c flag for refinement session filtering
-
-**Sprint Analytics (recently implemented):**
-
-- Burndown chart (Canvas-based, actual vs. ideal trend lines)
-- Velocity chart (bar chart with average velocity line)
-- Sprint summary table (historical sprint metrics)
-- SprintSnapshot\_\_c daily snapshots for burndown data
-- SprintSnapshotScheduler for automated daily snapshots
-
-**Apex Service Layer (recently implemented):**
-
-- SprintService.cls — full sprint business logic
-- SprintSelector.cls — optimized sprint SOQL queries
-- SprintCardTriggerHandler.cls — junction record event publishing
-- KanbanCardService.cls — card CRUD and positioning
-- KanbanBoardService.cls — board operations
-
-### What Still Needs Doing
-
-- See the **Roadmap** section in the [README](README.md) for Now / Next / Future priorities
-- See [docs/2026-03-18-roadmap-and-analysis.md](docs/2026-03-18-roadmap-and-analysis.md) for detailed technical analysis
-
-## CI/CD Pipeline
-
-Full pipeline managed via GitHub Actions — no IDE required for releases, testing, or deployments.
-
-### Existing workflows
-
-| Workflow                   | Trigger                    | Purpose                                                    |
-| -------------------------- | -------------------------- | ---------------------------------------------------------- |
-| `test.yml`                 | Push / PR                  | Lint, Prettier formatting, LWC Jest tests                  |
-| `apex-tests.yml`           | Push to main / PR          | Scratch org Apex tests with code coverage                  |
-| `security-scan.yml`        | PR to main                 | Salesforce Code Analyzer + npm audit                       |
-| `e2e-tests.yml`            | PR to main / manual        | Full E2E Playwright tests (chromium + firefox + webkit)    |
-| `chromium-e2e-debug.yml`   | Push to `claude/*` branches | Fast Chromium-only E2E debug loop — posts results as commit comments |
-| `scratch-org.yml`          | Manual / PR comment         | Create scratch org with sample data and login URL          |
-
-### Planned workflows (see [docs/2026-03-20-cicd-release-plan.md](docs/2026-03-20-cicd-release-plan.md))
-
-| Workflow               | Trigger             | Purpose                                                                     |
-| ---------------------- | ------------------- | --------------------------------------------------------------------------- |
-| `version-bump.yml`     | PR merge to main    | Auto-bump `sfdx-project.json` version based on conventional commit PR title |
-| `release-beta.yml`     | Manual (main only)  | Create managed beta package, post install URL as GitHub prerelease          |
-| `promote-release.yml`  | Manual + approval   | Promote beta to GA, create production GitHub Release                        |
-| `scratch-org.yml`      | Manual (any branch) | Spin up scratch org, deploy, get login URL                                  |
-| `package-versions.yml` | Manual              | List all package versions with status and install links                     |
-| `deploy-to-org.yml`    | Manual              | Deploy source to staging/UAT with optional tests and dry-run                |
-| `run-apex-tests.yml`   | Manual              | Run Apex tests against scratch, staging, or UAT org                         |
-
-### Conventional commits (PR titles)
-
-Version bumps are driven by PR title prefixes:
-
-| Prefix                                          | Bump  | Example                      |
-| ----------------------------------------------- | ----- | ---------------------------- |
-| `feat:`                                         | Minor | `feat: add burndown chart`   |
-| `feat!:` / `BREAKING CHANGE`                    | Major | `feat!: redesign data model` |
-| `fix:` / `perf:` / `refactor:`                  | Patch | `fix: card drag on mobile`   |
-| `docs:` / `chore:` / `ci:` / `test:` / `style:` | None  | `docs: update README`        |
-
-### Release flow
-
+Place test classes in `force-app/main/default/classes/` alongside the class they test:
 ```
-Feature branch → PR (tests run) → Merge to main (version auto-bumps)
-  → Ready for beta?  → Manual: "Release Beta Package"
-  → Ready for GA?    → Manual: "Promote to GA Release" (requires approval)
+DO:  classes/SprintServiceTest.cls
+NOT: test/classes/SprintServiceTest.cls
 ```
 
-### Secrets
+### Adversarial Testing Checklist
 
-| Secret             | Purpose                                      | Status                     |
-| ------------------ | -------------------------------------------- | -------------------------- |
-| `SFDX_AUTH_URL`    | DevHub authentication                        | Configured                 |
-| `STAGING_AUTH_URL` | Staging org auth (for deploy/test workflows) | Optional — add when needed |
-| `UAT_AUTH_URL`     | UAT org auth (for deploy/test workflows)     | Optional — add when needed |
-
-### Key decisions
-
-- **All releases are manual** — main can have bugs, and managed package creation is irreversible
-- **Beta before GA** — always create and test a beta before promoting
-- **`sfdx-project.json` is the version source of truth** — workflows read from and write back to it
-- **GitHub Environments for approval gating** — `production` environment requires reviewer approval for GA promotion
-- **`[skip ci]`** — version bump commits skip CI to avoid infinite loops
-
-## Architecture Overview
-
-### Frontend Layers
-
-```
-kanbanBoard (container LWC)
-├── handlers/        → eventHandler, dragDropHandler, cardOperations, subscriptionEventHandler
-├── helpers/         → clientIdGenerator, reducerQueue, requestTracker
-├── managers/        → lifecycleManager, boardDataLoader
-kanbanStore (state management)
-├── core/            → store, actionTypes
-├── state/           → actions, reducers, selectors
-├── middleware/      → thunkMiddleware, loggingMiddleware
-├── thunks/          → boardThunks, cardThunks
-├── utils/           → dataProcessors, stateHelpers, positionCalculator
-subscriptionManager  → EMP API wrapper, retryManager, eventHealthMonitor
-connectionStatusIndicator → real-time connection status UI
-kanbanCardDetail     → card detail modal
-```
-
-### Backend Layers
-
-```
-KanbanBoardController.cls      → @AuraEnabled API endpoints (8 methods)
-KanbanBoardService.cls         → board business logic
-KanbanCardService.cls          → card CRUD and positioning
-SprintService.cls              → sprint lifecycle, velocity, snapshots
-KanbanBoardSelector.cls        → board/column/card SOQL queries
-SprintSelector.cls             → sprint/backlog SOQL queries
-KanbanBoardDTO.cls             → BoardDTO, ColumnDTO, CardDTO, UserDTO, EpicDTO, SprintDTO, SprintCardDTO, SprintSnapshotDTO
-CardTriggerHandler.cls         → publishes CardUpdateEvent__e platform events
-ColumnTriggerHandler.cls       → publishes ColumnUpdateEvent__e platform events
-SprintCardTriggerHandler.cls   → publishes SprintUpdateEvent__e platform events
-LexoRank.cls                   → fractional indexing for drag-and-drop ordering
-TriggerHandler.cls             → base class with recursion control
-SprintSnapshotScheduler.cls    → scheduled daily snapshot creation
-```
-
-### Real-time Data Flow
-
-```
-User action → dispatch thunk → Apex controller → DB update → Trigger fires
-→ Platform Event published → all clients receive → eventHandler processes
-→ echo prevention check → store dispatch → UI re-renders
-```
-
-### Key Design Decisions
-
-1. **LexoRank** — O(1) insert ordering without renumbering (same as Jira)
-2. **Separate dragState** — visual preview during drag without polluting main state
-3. **clientRequestId UUIDs** — prevents echo loops in multi-user realtime
-4. **Polling fallback** — graceful degradation when platform events blocked by firewalls
-5. **Trigger-based event publishing** — captures all DML sources (API, UI, batch)
-6. **Object.freeze()** — immutable state prevents accidental mutations
-
-## Coding Standards
-
-- Follow Salesforce best practices for LWC development
-- Use TypeScript for test files
-- Maintain consistent code formatting
-- Write clear and descriptive commit messages
-- Use the Redux pattern for all state mutations (actions → reducers → selectors)
-- Keep reducers pure — side effects belong in thunks
-
-### Apex Test Organization
-
-Place Apex test classes in the same `classes/` directory as the classes they test:
-
-- `force-app/main/default/classes/MyClassTest.cls`
-
-### Type Safety Standards
-
-**Apex — Prefer enums over string literals:**
-- Use `KanbanEnums.SprintStatus`, `KanbanEnums.ColumnCategory`, `KanbanEnums.CardEventType`, etc. instead of raw string constants
-- Convert enums to picklist values with helper methods like `KanbanEnums.sprintStatusValue(KanbanEnums.SprintStatus.ACTIVE)`
-- For SOQL WHERE clauses, bind enum-derived values to local variables (SOQL can't call methods directly)
-
-**Apex — Prefer typed parameters over Map<String, Object>:**
-- Use `CardUpdateRequest` (or similar typed wrappers) instead of `Map<String, Object>` for complex inputs
-- Keep `Map<String, Object>` in `@AuraEnabled` method signatures for LWC compatibility, but convert to typed objects internally via `CardUpdateRequest.fromMap(updates)`
-
-**LWC — JSDoc type annotations:**
-- Add `@type` annotations to all `@api` properties
-- Add `@typedef` definitions for event payloads and complex data shapes
-- Add `@param` and `@returns` annotations to public methods
-
-**LWC — ESLint enforcement:**
-- Strict ESLint config enforces: no implicit globals, consistent returns, no var, prefer const, strict equality
-- All code must pass `npm run lint` before commit (enforced by lint-staged)
-
-### AI-Assisted Development
-
-**Adversarial testing workflow:** When writing or modifying Apex classes, proactively consider:
+When writing or modifying Apex, consider:
 - What inputs would break this?
 - What governor limit scenarios haven't been tested?
 - What happens with 10,000+ records?
 - What race conditions exist in multi-user scenarios?
 
-**Spec-driven prompting:** Before implementing complex features, provide:
+---
+
+## Fiber: LWC Frontend
+
+**When:** Working in `force-app/main/default/lwc/`
+
+### State Management Pattern — Redux
+
+```
+User action → dispatch thunk → Apex controller → DB update → Trigger fires
+→ Platform Event published → all clients receive → eventHandler processes
+→ echo prevention check (clientRequestId) → store dispatch → UI re-renders
+```
+
+All state mutations go through: **Actions → Reducers → Selectors**
+- Reducers are pure — no side effects
+- Side effects belong in thunks
+- State is frozen with `Object.freeze()` — immutable
+
+### Component Architecture
+
+```
+kanbanBoard (container)
+├── handlers/    → eventHandler, dragDropHandler, cardOperations, subscriptionEventHandler
+├── helpers/     → clientIdGenerator, reducerQueue, requestTracker
+├── managers/    → lifecycleManager, boardDataLoader
+kanbanStore (state)
+├── core/        → store, actionTypes
+├── state/       → actions, reducers, selectors
+├── middleware/   → thunkMiddleware, loggingMiddleware
+├── thunks/      → boardThunks, cardThunks
+├── utils/       → dataProcessors, stateHelpers, positionCalculator
+subscriptionManager   → EMP API, retryManager, eventHealthMonitor
+connectionStatusIndicator → connection status UI
+kanbanCardDetail      → card detail modal
+```
+
+### Key Design Decisions
+
+| Decision | Why |
+|----------|-----|
+| LexoRank ordering | O(1) insert without renumbering (same as Jira) |
+| Separate dragState | Visual preview during drag without polluting main state |
+| clientRequestId UUIDs | Prevents echo loops in multi-user realtime |
+| Polling fallback | Graceful degradation when platform events blocked by firewalls |
+| Trigger-based events | Captures all DML sources (API, UI, batch) |
+
+---
+
+## Fiber: Tests
+
+**When:** Working in `force-app/**/` (Jest) or `e2e/` (Playwright)
+
+### Stack
+- Jest for LWC unit tests
+- Playwright for E2E tests
+- TypeScript strict mode for E2E (`e2e/tsconfig.json`)
+- Run `npm run type-check:e2e` to validate E2E types
+
+### Test Categories
+- **Happy paths** — core feature flows (board, backlog, filters, drag-drop, card panel)
+- **Unhappy paths** — rapid actions, stale data, special characters, concurrent edits
+- **Feature tests** — admin management, sprint lifecycle, analytics, retro, planning poker
+- **Multi-user tests** — real-time sync between two browser contexts
+
+### H-Level Guidance for Assertions
+
+More specific assertions = lower h-level = more deterministic implementations:
+```
+h-level 1+ (too vague):  expect(result).toBeTruthy()
+h-level 0  (good):       expect(result.status).toBe('Active')
+h-level -2 (best):       expect(result).toEqual({ status: 'Active', velocity: 21, cardCount: 7 })
+```
+
+---
+
+## Fiber: CI/CD Pipeline
+
+**When:** Working in `.github/workflows/` or modifying release process
+
+### Active Workflows
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `test.yml` | Push / PR | Lint, Prettier, LWC Jest tests |
+| `apex-tests.yml` | Push to main / PR | Scratch org Apex tests with coverage |
+| `security-scan.yml` | PR to main | Salesforce Code Analyzer + npm audit |
+| `e2e-tests.yml` | PR to main / manual | Full E2E (chromium + firefox + webkit) |
+| `chromium-e2e-debug.yml` | Push to `claude/*` | Fast Chromium-only E2E debug loop |
+| `scratch-org.yml` | Manual / PR comment | Create scratch org with sample data |
+
+### C→K Conjunction Loop (E2E Debug)
+
+The `chromium-e2e-debug.yml` workflow is the formalized concept-to-knowledge operator:
+
+```
+Push to claude/* branch       ← Concept (untested code)
+→ GitHub Action runs          ← Conjunction operator
+→ E2E tests execute           ← K validates C
+→ Results as commit comments  ← Feedback
+→ Fix and push again          ← Refined concept
+→ Tests pass                  ← C collapses into K (merge-ready)
+```
+
+```bash
+# Read test results after push
+gh api repos/OpenSystemsFoundation/alex-app/commits/$(git rev-parse HEAD)/comments --jq '.[].body'
+# Check workflow status
+gh run list --workflow=chromium-e2e-debug.yml --limit=3
+```
+
+### Conventional Commits (PR Titles)
+
+| Prefix | Bump | Example |
+|--------|------|---------|
+| `feat:` | Minor | `feat: add burndown chart` |
+| `feat!:` / `BREAKING CHANGE` | Major | `feat!: redesign data model` |
+| `fix:` / `perf:` / `refactor:` | Patch | `fix: card drag on mobile` |
+| `docs:` / `chore:` / `ci:` / `test:` | None | `docs: update README` |
+
+### Release Flow
+
+```
+Feature branch → PR (tests run) → Merge to main (version auto-bumps)
+→ Ready for beta?  → Manual: "Release Beta Package"
+→ Ready for GA?    → Manual: "Promote to GA Release" (requires approval)
+```
+
+All releases are manual — main can have bugs, and managed package creation is irreversible. Beta before GA always.
+
+### Secrets
+
+| Secret | Purpose | Status |
+|--------|---------|--------|
+| `SFDX_AUTH_URL` | DevHub authentication | Configured |
+| `STAGING_AUTH_URL` | Staging org auth | Optional |
+| `UAT_AUTH_URL` | UAT org auth | Optional |
+
+---
+
+## Fiber: Design Thinking
+
+**When:** Working in `force-app/**/design*` or `e2e/specs/design-thinking*`
+
+### Architecture
+
+```
+DesignSessionController (@AuraEnabled) → DesignSessionService → DesignSessionSelector → DesignSessionDTO
+```
+
+Follows the same Controller → Service → Selector → DTO layering as Core Kanban.
+
+### Phase Pipeline
+
+```
+Empathize → Define → Ideate → Prototype → Test → Refined
+```
+
+Use `DesignEnums.DesignPhase` — never string literals. Cards graduate from Design Thinking into sprint-ready backlog via `DesignSessionCard__c` junction.
+
+### Data Model
+
+| Object | Purpose |
+|--------|---------|
+| `DesignSession__c` | Session lifecycle (Planning → Active → Completed) |
+| `DesignSessionCard__c` | Junction: cards ↔ sessions, tracks phase at entry/exit |
+| `DesignNote__c` | Sticky notes, clusters, positioned on canvas |
+| `DesignVote__c` | Dot voting, decision scoring |
+| `DesignArtifact__c` | Personas, journey maps, storyboards |
+| `DesignSessionEvent__e` | Platform event for real-time collaboration |
+
+### Store Integration
+
+Design Thinking has its own Redux slice: `designReducer.js`, `designActionTypes.js`, `designSelectors.js`, `designThunks.js` — all under `kanbanStore/state/reducers/` and `kanbanStore/thunks/`.
+
+### Tools (DesignEnums.Tool)
+
+Empathy Map, Affinity Diagram, Brainstorm, Feedback Grid, HMW Builder, SCAMPER, Mind Map, Crazy 8s, Storyboard Builder, Sketch Canvas, Decision Matrix, Acceptance Criteria, Dot Voting.
+
+---
+
+## Fiber: Feature Development — C-K Navigation
+
+**When:** Implementing a new feature or user story
+
+### Step 1: Identify Fibers (K→K)
+
+Which fibers does this feature touch? Read the relevant modules:
+
+| Feature touches... | Read first |
+|-------------------|------------|
+| Sprint lifecycle | `SprintService`, `SprintSelector`, sprint reducers/thunks |
+| Card operations | `KanbanCardService`, `CardTriggerHandler`, card thunks |
+| Board structure | `KanbanBoardService`, `KanbanBoardSelector`, board reducers |
+| Real-time sync | `subscriptionManager`, Platform Event triggers, echo prevention |
+| UI components | `kanbanStore` shape, existing LWC components, Redux patterns |
+| Ordering/position | `LexoRank.cls`, `positionCalculator` |
+| Design Thinking | `DesignSessionService`, `DesignEnums`, design reducers/thunks |
+
+### Step 2: Expand Concept (C→C)
+
+Break the user story into sub-tasks that map to specific fibers. Each sub-task should have a clear type signature — what inputs, what outputs, what constraints.
+
+### Step 3: Spec-Driven Implementation
+
+Before implementing, gather:
 - Relevant object schema (fields, types, relationships)
 - Governor limits the code must respect
 - Namespace (`OpenSF`)
 - Existing method signatures it must integrate with
 - Redux store shape (for LWC work)
+
+### Step 4: Conjunction (C→K)
+
+Implement, test, deploy. Use the E2E debug loop for validation.
+
+### Cross-Fiber Concept Discovery
+
+Novel features live in the **tensor product** of fibers — combinations that neither fiber alone suggests. When exploring what to build next, consider cross-fiber intersections:
+
+| Fiber A | ⊗ Fiber B | → Novel Concept |
+|---------|-----------|-----------------|
+| Redux store | Platform Events | Collaborative undo, conflict resolution |
+| LexoRank | MPS Tensor | MI-based card ordering, entanglement-aware swimlanes |
+| Echo prevention | Planning Poker | Vote deduplication via clientRequestId |
+| Sprint snapshots | QAOA | Quantum-optimized sprint planning |
+| Design Thinking | MPSTensor | Affinity clustering via tensor decomposition |
+| Design Thinking | QAOA | Quantum-explored concept partitions for ideation |
+
+See [experiments/quantum-concept-discovery/](experiments/quantum-concept-discovery/RESULTS.md) for validated results and [claude/skills/ck-theory/](claude/skills/ck-theory/Skill.md) for structured C-K sessions.
+
+---
+
+## Policies
+
+### Documentation
+NEVER create documentation files unless explicitly requested. After code changes, ask: "Would you like me to create documentation for these changes?"
+
+### Testing
+- During development/debugging: run tests automatically, no need to ask
+- After completing work: ask "Would you like to run the tests now?"
+
+### Deployment
+Run `npm run deploy` after completing development work.
+
+### CLI
+Use `sf` directly (`/opt/node22/bin/sf`). Set `SFDX_DISABLE_DNS_CHECK=true` if DNS resolution fails.
+
+---
+
+## Project Context
+
+**Alex** — a real-time collaborative Kanban board built on Salesforce.
+
+**Stack:** Salesforce DX, LWC, Apex (Controller → Service → Selector → DTO), Platform Events, Redux-style state management, LexoRank, TypeScript tests, Jest + Playwright, Node.js v22.x LTS.
+
+### What's Built (March 2026)
+
+- **Core Kanban:** Redux store, platform events, echo prevention, connection status, LexoRank, DTOs, health monitoring, multi-window tracking, sequence numbers
+- **Sprint Management:** Lifecycle (Planning → Active → Completed), auto-numbering, completion wizard, SprintCard junction with soft-delete, story points, sprint header with progress bar
+- **Backlog:** Search + filtering, bulk actions, inline creation, drag-and-drop, context menu, refinement flags
+- **Analytics:** Burndown chart (Canvas), velocity chart, sprint summary table, daily snapshots via scheduler
+- **Design Thinking:** Session lifecycle, 6-phase pipeline (Empathize→Refined), collaborative tools (Empathy Map, Brainstorm, Feedback Grid, HMW Builder, Dot Voting), sticky note canvas, platform events for real-time sync, Redux store slice, card graduation to backlog
+- **Service Layer:** SprintService, SprintSelector, SprintCardTriggerHandler, KanbanCardService, KanbanBoardService, DesignSessionService, DesignSessionSelector
+- **Experiments:** Quantum concept discovery (QAOA cross-fiber exploration). See [experiments/](experiments/)
+
+### What's Next
+
+See [README Roadmap](README.md) and [docs/2026-03-18-roadmap-and-analysis.md](docs/roadmap/2026-03-18-roadmap-and-analysis.md).
