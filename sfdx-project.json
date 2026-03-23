@@ -11,20 +11,6 @@
             "definitionFile": "config/project-scratch-def.json"
         },
         {
-            "path": "force-design-thinking",
-            "package": "Alex - Design Thinking",
-            "versionName": "ver 1.0",
-            "versionNumber": "1.0.0.NEXT",
-            "versionDescription": "Collaborative design thinking extension for Alex Kanban — facilitated sessions with empathy maps, brainstorming, dot voting, and phase pipeline for idea-to-sprint refinement.",
-            "definitionFile": "config/project-scratch-def.json",
-            "dependencies": [
-                {
-                    "package": "Alex - A Kanban App",
-                    "versionNumber": "2.0.0.LATEST"
-                }
-            ]
-        },
-        {
             "path": "force-agentforce",
             "package": "Alex - Agentforce",
             "versionName": "ver 1.0",

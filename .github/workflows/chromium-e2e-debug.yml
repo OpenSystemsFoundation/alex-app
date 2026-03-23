@@ -27,7 +27,6 @@ on:
         paths:
             - 'e2e/**'
             - 'force-app/**'
-            - 'force-design-thinking/**'
             - '.github/workflows/e2e-*.yml'
             - '.github/workflows/chromium-e2e-debug.yml'
             - '.github/actions/setup-e2e-org/**'
