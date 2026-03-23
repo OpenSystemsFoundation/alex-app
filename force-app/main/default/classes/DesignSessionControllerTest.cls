@@ -3,7 +3,6 @@
  */
 @IsTest
 private class DesignSessionControllerTest {
-
     @TestSetup
     static void setupTestData() {
         OpenSF__Board__c board = new OpenSF__Board__c(
@@ -14,9 +13,9 @@ private class DesignSessionControllerTest {
         insert board;
 
         OpenSF__Column__c col = new OpenSF__Column__c(
-            Name = 'To Do',
+            OpenSF__ColumnHeader__c = 'To Do',
             OpenSF__Board__c = board.Id,
-            OpenSF__Position__c = 'a'
+            OpenSF__LexoRankPosition__c = '0|h00000:'
         );
         insert col;
 
@@ -42,7 +41,10 @@ private class DesignSessionControllerTest {
         OpenSF__Board__c board = getBoard();
 
         Test.startTest();
-        DesignSessionDTO.SessionDTO dto = DesignSessionController.createSession(board.Id, 'Controller Session');
+        DesignSessionDTO.SessionDTO dto = DesignSessionController.createSession(
+            board.Id,
+            'Controller Session'
+        );
         Test.stopTest();
 
         System.assertNotEquals(null, dto.id);
@@ -52,10 +54,15 @@ private class DesignSessionControllerTest {
     @IsTest
     static void testControllerGetSession() {
         OpenSF__Board__c board = getBoard();
-        DesignSessionDTO.SessionDTO created = DesignSessionController.createSession(board.Id, 'Get Test');
+        DesignSessionDTO.SessionDTO created = DesignSessionController.createSession(
+            board.Id,
+            'Get Test'
+        );
 
         Test.startTest();
-        DesignSessionDTO.SessionDTO fetched = DesignSessionController.getSession(created.id);
+        DesignSessionDTO.SessionDTO fetched = DesignSessionController.getSession(
+            created.id
+        );
         Test.stopTest();
 
         System.assertEquals(created.id, fetched.id);
@@ -69,7 +76,9 @@ private class DesignSessionControllerTest {
         DesignSessionController.createSession(board.Id, 'Session B');
 
         Test.startTest();
-        List<DesignSessionDTO.SessionDTO> sessions = DesignSessionController.getSessionsByBoard(board.Id);
+        List<DesignSessionDTO.SessionDTO> sessions = DesignSessionController.getSessionsByBoard(
+            board.Id
+        );
         Test.stopTest();
 
         System.assertEquals(2, sessions.size(), 'Should have 2 sessions');
@@ -78,17 +87,24 @@ private class DesignSessionControllerTest {
     @IsTest
     static void testControllerSessionLifecycle() {
         OpenSF__Board__c board = getBoard();
-        DesignSessionDTO.SessionDTO session = DesignSessionController.createSession(board.Id, 'Lifecycle');
+        DesignSessionDTO.SessionDTO session = DesignSessionController.createSession(
+            board.Id,
+            'Lifecycle'
+        );
 
         Test.startTest();
-        DesignSessionDTO.SessionDTO started = DesignSessionController.startSession(session.id);
+        DesignSessionDTO.SessionDTO started = DesignSessionController.startSession(
+            session.id
+        );
         System.assertEquals('Active', started.status);
 
         DesignSessionController.endSession(session.id);
         Test.stopTest();
 
         OpenSF__DesignSession__c ended = [
-            SELECT OpenSF__Status__c FROM OpenSF__DesignSession__c WHERE Id = :session.id
+            SELECT OpenSF__Status__c
+            FROM OpenSF__DesignSession__c
+            WHERE Id = :session.id
         ];
         System.assertEquals('Completed', ended.OpenSF__Status__c);
     }
@@ -97,10 +113,16 @@ private class DesignSessionControllerTest {
     static void testControllerCardOperations() {
         OpenSF__Board__c board = getBoard();
         OpenSF__Card__c card = getCard();
-        DesignSessionDTO.SessionDTO session = DesignSessionController.createSession(board.Id, 'Card Ops');
+        DesignSessionDTO.SessionDTO session = DesignSessionController.createSession(
+            board.Id,
+            'Card Ops'
+        );
 
         Test.startTest();
-        DesignSessionDTO.SessionCardDTO sc = DesignSessionController.addCardToSession(session.id, card.Id);
+        DesignSessionDTO.SessionCardDTO sc = DesignSessionController.addCardToSession(
+            session.id,
+            card.Id
+        );
         System.assertNotEquals(null, sc.id);
 
         DesignSessionController.advanceCardPhase(card.Id, 'Define');
@@ -114,18 +136,38 @@ private class DesignSessionControllerTest {
     static void testControllerNoteOperations() {
         OpenSF__Board__c board = getBoard();
         OpenSF__Card__c card = getCard();
-        DesignSessionDTO.SessionDTO session = DesignSessionController.createSession(board.Id, 'Note Ops');
+        DesignSessionDTO.SessionDTO session = DesignSessionController.createSession(
+            board.Id,
+            'Note Ops'
+        );
 
         Test.startTest();
         DesignSessionDTO.NoteDTO note = DesignSessionController.createNote(
-            session.id, card.Id, 'Test note', 'says', 'EmpathyMap', 'Empathize', 10.0, 20.0
+            session.id,
+            card.Id,
+            'Test note',
+            'says',
+            'EmpathyMap',
+            'Empathize',
+            10.0,
+            20.0
         );
         System.assertNotEquals(null, note.id);
 
-        DesignSessionController.updateNote(note.id, 'Updated', 'thinks', 50.0, 50.0);
+        DesignSessionController.updateNote(
+            note.id,
+            'Updated',
+            'thinks',
+            50.0,
+            50.0
+        );
         DesignSessionController.deleteNote(note.id);
 
-        List<DesignSessionDTO.NoteDTO> notes = DesignSessionController.getNotesBySession(session.id, 'EmpathyMap', 'Empathize');
+        List<DesignSessionDTO.NoteDTO> notes = DesignSessionController.getNotesBySession(
+            session.id,
+            'EmpathyMap',
+            'Empathize'
+        );
         System.assertEquals(0, notes.size());
         Test.stopTest();
     }
@@ -134,15 +176,28 @@ private class DesignSessionControllerTest {
     static void testControllerVoteOperations() {
         OpenSF__Board__c board = getBoard();
         OpenSF__Card__c card = getCard();
-        DesignSessionDTO.SessionDTO session = DesignSessionController.createSession(board.Id, 'Vote Ops');
+        DesignSessionDTO.SessionDTO session = DesignSessionController.createSession(
+            board.Id,
+            'Vote Ops'
+        );
         DesignSessionDTO.NoteDTO note = DesignSessionController.createNote(
-            session.id, card.Id, 'Votable idea', 'unsorted', 'Brainstorm', 'Ideate', 0, 0
+            session.id,
+            card.Id,
+            'Votable idea',
+            'unsorted',
+            'Brainstorm',
+            'Ideate',
+            0,
+            0
         );
 
         Test.startTest();
         DesignSessionController.castVote(session.id, note.id, 'Dot', null, 1);
 
-        List<DesignSessionDTO.VoteDTO> votes = DesignSessionController.getVotesBySession(session.id, 1);
+        List<DesignSessionDTO.VoteDTO> votes = DesignSessionController.getVotesBySession(
+            session.id,
+            1
+        );
         System.assertEquals(1, votes.size());
 
         DesignSessionController.retractVote(session.id, note.id, 1);
@@ -153,15 +208,26 @@ private class DesignSessionControllerTest {
     static void testControllerArtifactOperations() {
         OpenSF__Board__c board = getBoard();
         OpenSF__Card__c card = getCard();
-        DesignSessionDTO.SessionDTO session = DesignSessionController.createSession(board.Id, 'Artifact Ops');
+        DesignSessionDTO.SessionDTO session = DesignSessionController.createSession(
+            board.Id,
+            'Artifact Ops'
+        );
 
         Test.startTest();
         DesignSessionDTO.ArtifactDTO artifact = DesignSessionController.saveArtifact(
-            session.id, card.Id, 'Persona', 'Test Persona', '{"name":"Pat"}', 'Define', 'EmpathyMap'
+            session.id,
+            card.Id,
+            'Persona',
+            'Test Persona',
+            '{"name":"Pat"}',
+            'Define',
+            'EmpathyMap'
         );
         System.assertNotEquals(null, artifact.id);
 
-        List<DesignSessionDTO.ArtifactDTO> artifacts = DesignSessionController.getArtifactsByCard(card.Id);
+        List<DesignSessionDTO.ArtifactDTO> artifacts = DesignSessionController.getArtifactsByCard(
+            card.Id
+        );
         System.assertEquals(1, artifacts.size());
         Test.stopTest();
     }
@@ -171,7 +237,9 @@ private class DesignSessionControllerTest {
         OpenSF__Board__c board = getBoard();
 
         Test.startTest();
-        Map<String, Integer> counts = DesignSessionController.getPhaseCounts(board.Id);
+        Map<String, Integer> counts = DesignSessionController.getPhaseCounts(
+            board.Id
+        );
         Test.stopTest();
 
         System.assertNotEquals(null, counts);

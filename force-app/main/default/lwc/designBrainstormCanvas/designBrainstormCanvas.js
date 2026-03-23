@@ -11,6 +11,7 @@ const ZONES = [
 export default class DesignBrainstormCanvas extends LightningElement {
     @api notes = [];
     zoneConfig = ZONES;
+    showVotes = false;
 
     fwd(event) {
         this.dispatchEvent(

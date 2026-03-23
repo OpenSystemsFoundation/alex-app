@@ -12,6 +12,7 @@ export default class DesignHmwBuilder extends LightningElement {
     @api notes = [];
     @api votes = [];
     zoneConfig = ZONES;
+    showVotes = true;
 
     fwd(event) {
         this.dispatchEvent(

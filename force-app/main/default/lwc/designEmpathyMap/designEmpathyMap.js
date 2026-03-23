@@ -22,6 +22,7 @@ const ZONES = [
 export default class DesignEmpathyMap extends LightningElement {
     @api notes = [];
     zoneConfig = ZONES;
+    showVotes = false;
 
     fwd(event) {
         this.dispatchEvent(

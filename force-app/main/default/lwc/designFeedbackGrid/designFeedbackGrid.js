@@ -26,6 +26,7 @@ const ZONES = [
 export default class DesignFeedbackGrid extends LightningElement {
     @api notes = [];
     zoneConfig = ZONES;
+    showVotes = false;
 
     fwd(event) {
         this.dispatchEvent(
