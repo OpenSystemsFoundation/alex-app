@@ -1,8 +1,5 @@
 import { test, expect, type Page, type CDPSession } from '@playwright/test';
-import {
-    createIsolatedBoard,
-    type BoardData
-} from '../helpers/sf-data';
+import { createIsolatedBoard, type BoardData } from '../helpers/sf-data';
 
 /**
  * LWC Performance Benchmark Suite
@@ -77,7 +74,7 @@ async function getNavigationTiming(page: Page): Promise<PerfMetrics> {
         const nav = performance.getEntriesByType(
             'navigation'
         )[0] as PerformanceNavigationTiming;
-        if (!nav) return {};
+        if (!nav) return {} as PerfMetrics;
         return {
             ttfb: nav.responseStart - nav.requestStart,
             domInteractive: nav.domInteractive - nav.startTime,
@@ -90,7 +87,7 @@ async function getNavigationTiming(page: Page): Promise<PerfMetrics> {
 
 /** Measure time for an action (returns ms) */
 async function measureAction(
-    page: Page,
+    _page: Page,
     label: string,
     action: () => Promise<void>
 ): Promise<TimingResult> {
@@ -168,12 +165,10 @@ test.describe('LWC Performance Benchmarks', () => {
             boardPageLoad: loadTiming.durationMs,
             cardsRender: cardRenderTiming.durationMs,
             jsHeapUsedMB: (
-                (metricsAfter.JSHeapUsedSize ?? 0) /
-                1048576
+                (metricsAfter.JSHeapUsedSize ?? 0) / 1048576
             ).toFixed(2),
             jsHeapTotalMB: (
-                (metricsAfter.JSHeapTotalSize ?? 0) /
-                1048576
+                (metricsAfter.JSHeapTotalSize ?? 0) / 1048576
             ).toFixed(2),
             domNodes: navTiming.domNodes ?? 0,
             ttfbMs: Math.round(navTiming.ttfb ?? 0),
@@ -296,8 +291,7 @@ test.describe('LWC Performance Benchmarks', () => {
         const results = {
             interactions: timings,
             jsHeapUsedMB: (
-                (metricsAfter.JSHeapUsedSize ?? 0) /
-                1048576
+                (metricsAfter.JSHeapUsedSize ?? 0) / 1048576
             ).toFixed(2),
             longTaskCount: longTasks.length,
             totalLongTaskMs: Math.round(
@@ -305,9 +299,7 @@ test.describe('LWC Performance Benchmarks', () => {
             )
         };
 
-        console.log(
-            `PERF_BENCHMARK|interactions|${JSON.stringify(results)}`
-        );
+        console.log(`PERF_BENCHMARK|interactions|${JSON.stringify(results)}`);
 
         // Sanity: interactions should complete in reasonable time
         for (const t of timings) {
