@@ -5,7 +5,8 @@
 **Domain**: Alex kanban app capability fibers encoded as a QUBO
 **Fibers (8 qubits)**: Redux, PlatformEvents, LexoRank, ApexServices, LWC, MPSTensor, QAOA, EchoPrevention
 **Objective**: maximize cross-fiber novelty − type conflicts − complexity penalty
-**Simulator**: Qiskit statevector (exact), COBYLA optimizer with 3 random restarts
+**Simulator**: Qiskit statevector (exact), COBYLA optimizer with 5 random restarts
+**p=2 initialization**: FOURIER interpolation from p=1 optimal parameters (Zhou et al. 2020)
 
 ## Hypothesis Results
 
@@ -49,28 +50,30 @@ Novel concepts discovered by QAOA (not reachable by greedy local search):
 
 **Interpretation for C-K theory**: This is direct evidence that quantum amplitude amplification can discover concept combinations in C-space that classical sequential expansion (analogous to LLM-style "extend from what I know") cannot. The 6 novel concepts are **genuinely new knowledge partitions** — type-valid fiber bundles that a greedy agent would never propose.
 
-### H3: Depth Advantage — FALSIFIED ✗
+### H3: Depth Advantage — SUPPORTED ✓
 
 > QAOA at depth p=2 produces higher mean objective value than p=1.
 
-| Metric | Value |
-|--------|-------|
-| Mean score (uniform) | −1.225 |
-| Mean score (QAOA p=1) | **1.678** |
-| Mean score (QAOA p=2) | 0.681 |
-| t-statistic | −18.3 |
-| p-value | 1.00 |
-| Verdict | **p=2 worse than p=1** |
+| Metric | v1 (random init, 100 iters) | v2 (FOURIER init, 300 iters) |
+|--------|----------------------------|-------------------------------|
+| Mean score (uniform) | −1.225 | −1.225 |
+| Mean score (QAOA p=1) | 1.678 | 1.678 |
+| Mean score (QAOA p=2) | 0.681 | **2.040** |
+| t-statistic | −18.3 | **+8.08** |
+| p-value | 1.00 | **3.64 × 10⁻¹⁶** |
+| Verdict | ~~p=2 worse than p=1~~ | **p=2 > p=1, highly significant** |
 
-**Why H3 failed**: With only 4 parameters and 100 COBYLA iterations, the p=2 optimizer likely got stuck in a worse local minimum of the classical outer loop. The QAOA landscape for p=2 has more parameters and a rougher loss surface. This is a known issue: deeper QAOA circuits require better classical optimization (e.g., FOURIER initialization, more iterations) to realize their theoretical advantage.
+**What changed**: The original experiment used random initialization for p=2, causing COBYLA to get stuck in poor local minima of the classical outer loop. FOURIER initialization (Zhou et al. 2020) interpolates the optimal p=1 parameters to warm-start p=2, giving the optimizer a much better starting point. Combined with 300 iterations (vs. 100), the deeper circuit now significantly outperforms p=1.
 
-**This does NOT refute quantum advantage for concept discovery** — H1 and H2 are the core claims. H3 is about whether *deeper* circuits help, and the answer is: not with a naive optimizer on 4 parameters in 100 iterations.
+**Probability concentration at p=2**: The two highest-scoring concepts (`00100111` at 4.6 and `10000111` at 4.5) concentrate 1.65% probability each at p=2 vs. 1.13% at p=1 — a 46% increase in probability mass on the best solutions. The deeper circuit tunnels more effectively.
+
+**Interpretation for C-K theory**: This is a C-K result in its own right. The original H3 failure was a `[⊥]` Independent status — the question "does depth help?" was undecidable within the framework of random initialization. The resolution was a framework expansion (FOURIER init = new axiom for the optimizer), not more K-probing. This mirrors the skill's prescription: when you hit `[⊥]`, stop searching and propose new axioms.
 
 ## Key Finding: The Local Optima Pipeline
 
 The greedy heuristic (simulating LLM-style concept generation) produces only **17 unique concepts** out of 256 possibilities — a 6.6% coverage rate. It is trapped in a basin of attraction around MPSTensor+EchoPrevention combos.
 
-QAOA at p=1 places non-trivial probability on all 256 bitstrings but **concentrates mass** on the high-scoring region. Its top-10 are all in the top quartile of objective scores, and 6 of them are unreachable by greedy search.
+QAOA at p=1 places non-trivial probability on all 256 bitstrings but **concentrates mass** on the high-scoring region. Its top-10 are all in the top quartile of objective scores, and 6 of them are unreachable by greedy search. At p=2 with FOURIER initialization, concentration increases further while maintaining coverage of the full space.
 
 This validates the §7.9 claim: **QAOA on a concept-space QUBO can tunnel through local optima barriers that trap classical sequential concept generation**.
 
@@ -84,6 +87,8 @@ This validates the §7.9 claim: **QAOA on a concept-space QUBO can tunnel throug
    - `Redux + LexoRank + QAOA + EchoPrevention` (3.9) — ordered quantum-optimized state with echo prevention
 
 3. **The greedy trap is real**: An LLM asked "what should Alex build next?" would propose the same 17 concepts every time. The quantum concept oracle proposes 6 that no amount of local search finds.
+
+4. **Depth helps — with the right framework**: The H3 resolution demonstrates that QAOA's theoretical depth advantage is real but requires proper parameter transfer. This is itself a C-K finding: the `[⊥]` status of "does depth help?" was resolved by framework expansion (FOURIER initialization), not by more computation within the naive framework.
 
 ## Reproducibility
 

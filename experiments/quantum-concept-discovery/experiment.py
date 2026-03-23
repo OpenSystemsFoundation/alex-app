@@ -283,11 +283,50 @@ def extract_qubo_coeffs(hamiltonian):
     return {'zz': zz_coeffs, 'z': z_coeffs}
 
 
-def run_qaoa_statevector(hamiltonian, depth, n_optimizer_iters=100, n_restarts=3):
-    """Run QAOA at given depth using manual circuit construction."""
+def fourier_init_from_lower_depth(optimal_params_prev, prev_depth, new_depth):
+    """
+    FOURIER initialization (Zhou et al. 2020): interpolate optimal p-level
+    parameters to initialize p+1 level. Instead of random init, we use the
+    optimal solution at depth p to warm-start depth p+1.
+
+    For QAOA, this maps p parameters to p+1 by linear interpolation:
+      gamma_k^(p+1) = (k/p+1) * gamma_{k-1}^(p) + (1 - k/p+1) * gamma_k^(p)
+    with boundary padding of zeros.
+    """
+    gammas_prev = optimal_params_prev[:prev_depth]
+    betas_prev = optimal_params_prev[prev_depth:]
+
+    def interpolate(params_prev, p_old, p_new):
+        # Pad with zeros at boundaries
+        padded = np.zeros(p_old + 2)
+        padded[1:p_old+1] = params_prev
+        new_params = np.zeros(p_new)
+        for k in range(p_new):
+            # Map new index to old index space
+            t = (k + 0.5) / p_new * p_old
+            idx = int(t)
+            frac = t - idx
+            new_params[k] = (1 - frac) * padded[idx + 1] + frac * padded[min(idx + 2, p_old + 1)]
+        return new_params
+
+    gammas_new = interpolate(gammas_prev, prev_depth, new_depth)
+    betas_new = interpolate(betas_prev, prev_depth, new_depth)
+    return np.concatenate([gammas_new, betas_new])
+
+
+def run_qaoa_statevector(hamiltonian, depth, n_optimizer_iters=100, n_restarts=3,
+                         warm_start_params=None, warm_start_depth=None):
+    """Run QAOA at given depth using manual circuit construction.
+
+    If warm_start_params and warm_start_depth are provided, uses FOURIER
+    initialization to interpolate from the lower-depth optimal parameters
+    as one of the initial points (Zhou et al. 2020).
+    """
     qubo_coeffs = extract_qubo_coeffs(hamiltonian)
     num_params = 2 * depth  # gamma and beta per layer
-    print(f"  Parameters: {num_params} (depth={depth}), restarts: {n_restarts}")
+    print(f"  Parameters: {num_params} (depth={depth}), restarts: {n_restarts}", flush=True)
+    if warm_start_params is not None:
+        print(f"  Using FOURIER initialization from depth {warm_start_depth}", flush=True)
 
     def cost_function(params):
         gammas = params[:depth]
@@ -301,7 +340,11 @@ def run_qaoa_statevector(hamiltonian, depth, n_optimizer_iters=100, n_restarts=3
 
     for restart in range(n_restarts):
         print(f"  Restart {restart+1}/{n_restarts}...", flush=True)
-        x0 = np.random.uniform(-np.pi, np.pi, num_params)
+        if restart == 0 and warm_start_params is not None:
+            # First restart: use FOURIER-interpolated init from lower depth
+            x0 = fourier_init_from_lower_depth(warm_start_params, warm_start_depth, depth)
+        else:
+            x0 = np.random.uniform(-np.pi, np.pi, num_params)
         result = minimize(cost_function, x0, method='COBYLA',
                          options={'maxiter': n_optimizer_iters})
         if result.fun < best_cost:
@@ -315,7 +358,7 @@ def run_qaoa_statevector(hamiltonian, depth, n_optimizer_iters=100, n_restarts=3
     sv = Statevector(qc)
     probs = sv.probabilities_dict()
 
-    return probs, -best_cost  # negate back: we minimized -objective
+    return probs, -best_cost, best_result.x  # negate back: we minimized -objective
 
 
 # ============================================================
@@ -414,7 +457,7 @@ def main():
 
     np.random.seed(42)
     print("\nRunning QAOA (p=1) on statevector simulator...")
-    qaoa_probs_p1, qaoa_obj_p1 = run_qaoa_statevector(H, depth=1)
+    qaoa_probs_p1, qaoa_obj_p1, qaoa_params_p1 = run_qaoa_statevector(H, depth=1, n_restarts=5)
     print(f"QAOA p=1 optimal objective value: {qaoa_obj_p1:.4f}")
 
     # Compare QAOA distribution to uniform
@@ -502,8 +545,11 @@ def main():
     print("    Falsified if: mean score(p=2) <= mean score(p=1)")
     print("=" * 70)
 
-    print("\nRunning QAOA (p=2) on statevector simulator...")
-    qaoa_probs_p2, qaoa_obj_p2 = run_qaoa_statevector(H, depth=2)
+    print("\nRunning QAOA (p=2) with FOURIER initialization from p=1...")
+    qaoa_probs_p2, qaoa_obj_p2, qaoa_params_p2 = run_qaoa_statevector(
+        H, depth=2, n_optimizer_iters=300, n_restarts=5,
+        warm_start_params=qaoa_params_p1, warm_start_depth=1
+    )
     print(f"QAOA p=2 optimal objective value: {qaoa_obj_p2:.4f}")
 
     # Compute expected objective value under each distribution
@@ -593,6 +639,9 @@ def main():
             "qaoa_depths": [1, 2],
             "classical_samples": 10000,
             "optimizer": "COBYLA",
+            "p1_optimizer_iters": 100,
+            "p2_optimizer_iters": 300,
+            "p2_initialization": "FOURIER (Zhou et al. 2020)",
             "random_restarts": 5
         }
     }

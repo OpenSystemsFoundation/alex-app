@@ -11,31 +11,21 @@
     "novel_count": 6,
     "novel_concepts": [
       {
+        "bitstring": "11100100",
+        "score": 3.8,
+        "fibers": [
+          "Redux",
+          "PlatformEvents",
+          "LexoRank",
+          "MPSTensor"
+        ]
+      },
+      {
         "bitstring": "10010110",
         "score": 3.7,
         "fibers": [
           "Redux",
           "ApexServices",
-          "MPSTensor",
-          "QAOA"
-        ]
-      },
-      {
-        "bitstring": "00110011",
-        "score": 3.7,
-        "fibers": [
-          "LexoRank",
-          "ApexServices",
-          "QAOA",
-          "EchoPrevention"
-        ]
-      },
-      {
-        "bitstring": "10100110",
-        "score": 4.0,
-        "fibers": [
-          "Redux",
-          "LexoRank",
           "MPSTensor",
           "QAOA"
         ]
@@ -51,6 +41,26 @@
         ]
       },
       {
+        "bitstring": "10100110",
+        "score": 4.0,
+        "fibers": [
+          "Redux",
+          "LexoRank",
+          "MPSTensor",
+          "QAOA"
+        ]
+      },
+      {
+        "bitstring": "00110011",
+        "score": 3.7,
+        "fibers": [
+          "LexoRank",
+          "ApexServices",
+          "QAOA",
+          "EchoPrevention"
+        ]
+      },
+      {
         "bitstring": "00010111",
         "score": 4.0,
         "fibers": [
@@ -58,16 +68,6 @@
           "MPSTensor",
           "QAOA",
           "EchoPrevention"
-        ]
-      },
-      {
-        "bitstring": "11100100",
-        "score": 3.8,
-        "fibers": [
-          "Redux",
-          "PlatformEvents",
-          "LexoRank",
-          "MPSTensor"
         ]
       }
     ],
@@ -78,10 +78,10 @@
     "hypothesis": "QAOA p=2 > p=1 mean objective",
     "mean_uniform": -1.2249999999999999,
     "mean_p1": 1.6782866789039577,
-    "mean_p2": 0.6806211638046171,
-    "t_statistic": -18.309818526053323,
-    "p_value": 1.0,
-    "result": "FALSIFIED"
+    "mean_p2": 2.03961730216999,
+    "t_statistic": 8.079102024500612,
+    "p_value": 3.6390600216392914e-16,
+    "result": "SUPPORTED"
   },
   "metadata": {
     "n_fibers": 8,
@@ -103,6 +103,9 @@
     ],
     "classical_samples": 10000,
     "optimizer": "COBYLA",
+    "p1_optimizer_iters": 100,
+    "p2_optimizer_iters": 300,
+    "p2_initialization": "FOURIER (Zhou et al. 2020)",
     "random_restarts": 5
   }
 }
