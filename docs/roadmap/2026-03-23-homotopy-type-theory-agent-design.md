@@ -275,9 +275,142 @@ Convert all rules to the consistent template format. Replace prose with contrast
 
 ---
 
+## Part 7: Quantum Concept Space Exploration
+
+### 7.1 The Meta-Level Question
+
+Parts 1–6 describe how to structure instructions for an LLM building *this* app. But the framework is general — any codebase with formalized types and constraints defines a K-space. The question becomes:
+
+**Given a formalized K-space (type universe + constraints), can quantum computing explore the C-space to discover novel features that classical reasoning — human or LLM — cannot reach?**
+
+### 7.2 Why the Oracle IS Computable
+
+Quantum search algorithms (Grover, QAOA) require an oracle — a function that evaluates whether a candidate solution is valid. The standard objection to quantum concept exploration is: "there's no oracle for whether a feature idea is good."
+
+But HoTT changes this. If K-space is a type universe, then the oracle is **type inhabitation**:
+
+```
+Oracle(concept) := "Does this type signature compose validly
+                    with the existing type universe?"
+```
+
+This is decidable for the type systems relevant to software development. A concept is "constructible" if and only if its type is inhabited given the existing types and constraints. The quantum computer doesn't evaluate whether a feature is *good* — it evaluates whether a feature is *buildable*. "Good" remains a human judgment applied to the quantum output.
+
+### 7.3 The Tensor Product Structure of K-Space
+
+Individual K-fibers suggest concepts that are "nearby" in one dimension:
+
+```
+Fiber(Redux)           → nearby concepts: undo/redo, time-travel, state snapshots
+Fiber(Platform Events) → nearby concepts: chat, notifications, activity feed
+Fiber(LexoRank)        → nearby concepts: custom sort, priority lanes, swimlanes
+```
+
+These are classical K→C operations — a human or LLM reads one fiber and imagines extensions.
+
+But the **tensor product** of fibers creates a combinatorial space of cross-fiber concepts:
+
+```
+Fiber(Redux) ⊗ Fiber(Platform Events)
+  → collaborative undo (one user's undo propagates as a platform event)
+  → conflict resolution (concurrent edits detected via event + state diff)
+  → These concepts live in NEITHER fiber alone.
+
+Fiber(LexoRank) ⊗ Fiber(MPS Tensor)
+  → MI-based card ordering (mutual information determines optimal sort)
+  → Entanglement-aware swimlanes (correlated cards cluster automatically)
+  → These concepts require BOTH fibers to be considered simultaneously.
+```
+
+The number of cross-fiber concepts grows exponentially with the number of fibers. For N fibers, there are 2^N - N - 1 non-trivial tensor products. A codebase with 10 capability fibers has 1,013 cross-fiber concept neighborhoods. Classical exploration (human or LLM) can visit a few. Quantum exploration can superpose over all of them.
+
+### 7.4 QUBO Formulation for Concept Discovery
+
+Encode concept discovery as a constrained optimization problem:
+
+**Decision variables:**
+
+```
+x[i][j] ∈ {0, 1}  — 1 if capability i is combined with capability j in the concept
+```
+
+**Objective function (maximize novelty subject to constructibility):**
+
+```
+max  Σᵢⱼ  novelty(i,j) × x[i][j]                    // maximize novelty
+   - λ₁ Σ  type_conflict(i,j) × x[i][j]              // penalize type conflicts
+   - λ₂ Σ  (dependency_missing(i,j)) × x[i][j]       // penalize missing dependencies
+   - λ₃ (Σᵢⱼ x[i][j] - target_complexity)²           // target concept complexity
+```
+
+Where:
+- `novelty(i,j)` = inverse frequency of this combination in existing features (high = novel)
+- `type_conflict(i,j)` = 1 if combining fibers i and j produces uninhabited types
+- `dependency_missing(i,j)` = 1 if combining requires infrastructure that doesn't exist
+- `target_complexity` = desired number of fiber combinations (prevents trivial or impossibly complex concepts)
+
+**Output:** The top-K bitstrings from the Sampler primitive are ranked concept proposals — each bitstring encodes a set of capability combinations. The concept is then decoded into a natural-language feature description by the LLM (quantum finds the structure, LLM narrates it).
+
+### 7.5 The General Framework
+
+This is not specific to any app. The framework requires:
+
+1. **A formalized type universe (K-space).** This is what AGENTS.md becomes when structured with HoTT — a machine-readable set of types, constraints, and fiber relationships. Any codebase can produce one.
+
+2. **A fiber decomposition of capabilities.** Each independent capability axis (state management, persistence, real-time sync, ordering, auth, etc.) is a fiber. The fibration structure is extractable from any well-architected codebase.
+
+3. **A novelty metric.** How "far" a concept is from existing features, measured in the type universe. Novel concepts combine fibers that haven't been combined before.
+
+4. **A constructibility oracle.** Type inhabitation check — does the proposed combination produce valid types? This is the quantum oracle.
+
+5. **A QAOA circuit.** Encodes the QUBO and explores the tensor product space of all fiber combinations simultaneously.
+
+6. **An LLM narrator.** Takes the quantum output (a set of fiber combinations) and generates a human-readable feature description with type signatures.
+
+The pipeline:
+
+```
+Codebase → Type Universe Extraction → Fiber Decomposition → QUBO Encoding
+  → QAOA Circuit → IBM Quantum (Sampler) → Top-K Concept Bitstrings
+  → LLM Narration → Ranked Feature Proposals with Type Signatures
+  → Human Selection → C→K Implementation Loop
+```
+
+### 7.6 What This Means
+
+Classical product development discovers features via:
+- Human intuition (limited by individual experience)
+- Market research (limited by what competitors have built)
+- LLM prompting (limited by training data distribution)
+
+All three explore C-space **locally** — they find concepts near known concepts. They cannot efficiently explore the exponential space of cross-capability combinations.
+
+Quantum concept exploration is **non-local** in C-space. It superposes over all fiber combinations simultaneously, interferes constructively on valid+novel combinations, and returns candidates that no local search would find. The concepts are not random — they are **constructible** (the oracle ensures type inhabitation) and **novel** (the objective function maximizes novelty).
+
+This is computational serendipity. Structured, reproducible, oracle-validated serendipity.
+
+### 7.7 Current Feasibility
+
+| Component | Status |
+|-----------|--------|
+| Type universe extraction from codebase | Feasible now — static analysis + LLM can produce fiber decomposition |
+| QUBO encoding of fiber combinations | Feasible now — same math as sprint planning QUBO |
+| QAOA circuit execution | Feasible now — Alex already has OpenQASM launcher + IBM Quantum integration |
+| Constructibility oracle (type inhabitation) | Feasible for practical type systems — decidable for dependent types with termination |
+| Novelty metric | Requires definition — inverse frequency of fiber combination in existing features is a starting point |
+| LLM narration of quantum output | Feasible now — any modern LLM can narrate structured concept descriptions |
+| End-to-end pipeline | Not built — but all components exist individually |
+
+The limiting factor is not quantum hardware (sprint-scale problems are small enough for current devices). The limiting factor is **formalizing the type universe extraction** — turning a codebase into a machine-readable set of typed fibers. The HoTT-structured AGENTS.md is a first step toward this.
+
+---
+
 ## References
 
 - Homotopy Type Theory: Univalent Foundations of Mathematics (The HoTT Book, 2013)
 - Hatchuel, A. & Weil, B. — "A New Approach of Innovative Design: An Introduction to C-K Theory" (2003)
 - Vaswani et al. — "Attention Is All You Need" (2017) — transformer attention mechanisms
 - Press et al. — "Train Short, Test Long: Attention with Linear Biases" (2022) — positional attention patterns
+- Coecke, B., de Felice, G., Meichanetzidis, K. et al. — "Foundations for Near-Term Quantum Natural Language Processing" (2020) — categorical quantum mechanics applied to language
+- Farhi, E., Goldstone, J., Gutmann, S. — "A Quantum Approximate Optimization Algorithm" (2014) — QAOA
+- Dowek, G. — "Proofs and Algorithms: An Introduction to Logic and Computability" (2011) — type inhabitation decidability

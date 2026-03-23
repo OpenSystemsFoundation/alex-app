@@ -324,6 +324,19 @@ Before implementing, gather:
 
 Implement, test, deploy. Use the E2E debug loop for validation.
 
+### Cross-Fiber Concept Discovery
+
+Novel features often live in the **tensor product** of fibers — combinations that neither fiber alone suggests. When exploring what to build next, consider cross-fiber intersections:
+
+| Fiber A | ⊗ Fiber B | → Novel Concept |
+|---------|-----------|-----------------|
+| Redux store | Platform Events | Collaborative undo, conflict resolution |
+| LexoRank | MPS Tensor | MI-based card ordering, entanglement-aware swimlanes |
+| Echo prevention | Planning Poker | Vote deduplication via clientRequestId |
+| Sprint snapshots | QAOA | Quantum-optimized sprint planning |
+
+See [Quantum Concept Space Exploration](docs/roadmap/2026-03-23-homotopy-type-theory-agent-design.md#part-7-quantum-concept-space-exploration) for the general framework.
+
 ---
 
 ## Policies
