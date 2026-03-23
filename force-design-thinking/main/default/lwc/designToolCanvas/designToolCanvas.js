@@ -23,7 +23,14 @@ export default class DesignToolCanvas extends LightningElement {
         return this.activeTool === 'DotVoting';
     }
     get noTool() {
-        return !this.activeTool;
+        return (
+            !this.activeTool ||
+            (!this.isEmpathyMap &&
+                !this.isBrainstorm &&
+                !this.isFeedbackGrid &&
+                !this.isHMW &&
+                !this.isDotVoting)
+        );
     }
 
     fwd(event) {
