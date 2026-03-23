@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" font-family="system-ui, sans-serif">
+  <text x="400" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#0f172a">Koopman Eigenspectrum — Classical DMD (8 Modes)</text>
+
+  <!-- Axes -->
+  <line x1="80" y1="380" x2="760" y2="380" stroke="#334155" stroke-width="2"/>
+  <line x1="80" y1="380" x2="80" y2="50" stroke="#334155" stroke-width="2"/>
+  <text x="420" y="420" text-anchor="middle" font-size="14" fill="#475569">Mode Index</text>
+  <text x="30" y="215" text-anchor="middle" font-size="14" fill="#475569" transform="rotate(-90, 30, 215)">|λ|</text>
+
+  <!-- Y-axis ticks -->
+  <line x1="75" y1="380" x2="85" y2="380" stroke="#334155" stroke-width="1.5"/>
+  <text x="70" y="385" text-anchor="end" font-size="12" fill="#64748b">0.0</text>
+  <line x1="75" y1="314" x2="760" y2="314" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <text x="70" y="319" text-anchor="end" font-size="12" fill="#64748b">0.25</text>
+  <line x1="75" y1="248" x2="760" y2="248" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <text x="70" y="253" text-anchor="end" font-size="12" fill="#64748b">0.50</text>
+  <line x1="75" y1="182" x2="760" y2="182" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <text x="70" y="187" text-anchor="end" font-size="12" fill="#64748b">0.75</text>
+  <line x1="75" y1="116" x2="760" y2="116" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <text x="70" y="121" text-anchor="end" font-size="12" fill="#64748b">1.00</text>
+  <line x1="75" y1="50" x2="760" y2="50" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <text x="70" y="55" text-anchor="end" font-size="12" fill="#64748b">1.25</text>
+
+  <!-- H4 threshold line -->
+  <line x1="80" y1="248" x2="760" y2="248" stroke="#ef4444" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="765" y="245" font-size="11" fill="#ef4444">H4 threshold (|λ| = 0.5)</text>
+
+  <!-- Bars: |λ| values: 1.238, 1.238, 0.638, 0.391, 0.391, 0.258, 0.258, 0.114 -->
+  <!-- Scale: 0→380px(y=380), 1.25→0px(y=50), so y = 380 - val*264 -->
+
+  <!-- Mode 0: 1.238 → y=380-1.238*264 = 380-327 = 53 -->
+  <rect x="115" y="53" width="60" height="327" rx="4" fill="#2563eb" opacity="0.85"/>
+  <text x="145" y="395" text-anchor="middle" font-size="12" fill="#334155">0</text>
+  <text x="145" y="47" text-anchor="middle" font-size="11" font-weight="bold" fill="#1e40af">1.238</text>
+
+  <!-- Mode 1: 1.238 → same -->
+  <rect x="195" y="53" width="60" height="327" rx="4" fill="#2563eb" opacity="0.85"/>
+  <text x="225" y="395" text-anchor="middle" font-size="12" fill="#334155">1</text>
+  <text x="225" y="47" text-anchor="middle" font-size="11" font-weight="bold" fill="#1e40af">1.238</text>
+
+  <!-- Mode 2: 0.638 → y=380-0.638*264 = 380-168 = 212 -->
+  <rect x="275" y="212" width="60" height="168" rx="4" fill="#16a34a" opacity="0.85"/>
+  <text x="305" y="395" text-anchor="middle" font-size="12" fill="#334155">2</text>
+  <text x="305" y="206" text-anchor="middle" font-size="11" font-weight="bold" fill="#166534">0.638</text>
+
+  <!-- Mode 3: 0.391 → y=380-0.391*264 = 380-103 = 277 -->
+  <rect x="355" y="277" width="60" height="103" rx="4" fill="#94a3b8" opacity="0.7"/>
+  <text x="385" y="395" text-anchor="middle" font-size="12" fill="#334155">3</text>
+  <text x="385" y="271" text-anchor="middle" font-size="11" fill="#64748b">0.391</text>
+
+  <!-- Mode 4: 0.391 -->
+  <rect x="435" y="277" width="60" height="103" rx="4" fill="#94a3b8" opacity="0.7"/>
+  <text x="465" y="395" text-anchor="middle" font-size="12" fill="#334155">4</text>
+  <text x="465" y="271" text-anchor="middle" font-size="11" fill="#64748b">0.391</text>
+
+  <!-- Mode 5: 0.258 → y=380-0.258*264 = 380-68 = 312 -->
+  <rect x="515" y="312" width="60" height="68" rx="4" fill="#cbd5e1" opacity="0.6"/>
+  <text x="545" y="395" text-anchor="middle" font-size="12" fill="#334155">5</text>
+  <text x="545" y="306" text-anchor="middle" font-size="11" fill="#94a3b8">0.258</text>
+
+  <!-- Mode 6: 0.258 -->
+  <rect x="595" y="312" width="60" height="68" rx="4" fill="#cbd5e1" opacity="0.6"/>
+  <text x="625" y="395" text-anchor="middle" font-size="12" fill="#334155">6</text>
+  <text x="625" y="306" text-anchor="middle" font-size="11" fill="#94a3b8">0.258</text>
+
+  <!-- Mode 7: 0.114 → y=380-0.114*264 = 380-30 = 350 -->
+  <rect x="675" y="350" width="60" height="30" rx="4" fill="#e2e8f0" opacity="0.5"/>
+  <text x="705" y="395" text-anchor="middle" font-size="12" fill="#334155">7</text>
+  <text x="705" y="344" text-anchor="middle" font-size="11" fill="#94a3b8">0.114</text>
+
+  <!-- Annotations -->
+  <rect x="100" y="430" width="12" height="12" rx="2" fill="#2563eb" opacity="0.85"/>
+  <text x="118" y="441" font-size="11" fill="#334155">Growing (MPS+QAOA+Lex)</text>
+  <rect x="280" y="430" width="12" height="12" rx="2" fill="#16a34a" opacity="0.85"/>
+  <text x="298" y="441" font-size="11" fill="#334155">Stable (QAOA+Echo+MPS)</text>
+  <rect x="480" y="430" width="12" height="12" rx="2" fill="#94a3b8" opacity="0.7"/>
+  <text x="498" y="441" font-size="11" fill="#334155">Transient (decaying modes)</text>
+</svg>

@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 400" font-family="monospace, Courier">
+  <text x="425" y="28" text-anchor="middle" font-size="16" font-weight="bold" font-family="system-ui" fill="#0f172a">QPE Circuit — 6 Ancilla + 3 System Qubits (IBM Kingston)</text>
+
+  <!-- Qubit lines -->
+  <!-- Ancilla qubits a0-a5 -->
+  <text x="20" y="73" font-size="13" fill="#2563eb">a₅</text>
+  <line x1="50" y1="70" x2="680" y2="70" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="20" y="113" font-size="13" fill="#2563eb">a₄</text>
+  <line x1="50" y1="110" x2="680" y2="110" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="20" y="153" font-size="13" fill="#2563eb">a₃</text>
+  <line x1="50" y1="150" x2="680" y2="150" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="20" y="193" font-size="13" fill="#2563eb">a₂</text>
+  <line x1="50" y1="190" x2="680" y2="190" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="20" y="233" font-size="13" fill="#2563eb">a₁</text>
+  <line x1="50" y1="230" x2="680" y2="230" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="20" y="273" font-size="13" fill="#2563eb">a₀</text>
+  <line x1="50" y1="270" x2="680" y2="270" stroke="#2563eb" stroke-width="1.5"/>
+
+  <!-- System qubits q0-q2 -->
+  <line x1="50" y1="310" x2="720" y2="310" stroke="#16a34a" stroke-width="1.5"/>
+  <line x1="50" y1="340" x2="720" y2="340" stroke="#16a34a" stroke-width="1.5"/>
+  <line x1="50" y1="370" x2="720" y2="370" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="10" y="313" font-size="13" fill="#16a34a">q₀</text>
+  <text x="10" y="343" font-size="13" fill="#16a34a">q₁</text>
+  <text x="10" y="373" font-size="13" fill="#16a34a">q₂</text>
+
+  <!-- H gates on ancilla -->
+  <rect x="60" y="57" width="28" height="26" rx="3" fill="white" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="74" y="75" text-anchor="middle" font-size="14" fill="#2563eb">H</text>
+  <rect x="60" y="97" width="28" height="26" rx="3" fill="white" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="74" y="115" text-anchor="middle" font-size="14" fill="#2563eb">H</text>
+  <rect x="60" y="137" width="28" height="26" rx="3" fill="white" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="74" y="155" text-anchor="middle" font-size="14" fill="#2563eb">H</text>
+  <rect x="60" y="177" width="28" height="26" rx="3" fill="white" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="74" y="195" text-anchor="middle" font-size="14" fill="#2563eb">H</text>
+  <rect x="60" y="217" width="28" height="26" rx="3" fill="white" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="74" y="235" text-anchor="middle" font-size="14" fill="#2563eb">H</text>
+  <rect x="60" y="257" width="28" height="26" rx="3" fill="white" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="74" y="275" text-anchor="middle" font-size="14" fill="#2563eb">H</text>
+
+  <!-- H gates on system -->
+  <rect x="60" y="297" width="28" height="26" rx="3" fill="white" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="74" y="315" text-anchor="middle" font-size="14" fill="#16a34a">H</text>
+  <rect x="60" y="327" width="28" height="26" rx="3" fill="white" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="74" y="345" text-anchor="middle" font-size="14" fill="#16a34a">H</text>
+  <rect x="60" y="357" width="28" height="26" rx="3" fill="white" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="74" y="375" text-anchor="middle" font-size="14" fill="#16a34a">H</text>
+
+  <!-- Controlled-U gates -->
+  <!-- c-U^32 from a5 -->
+  <circle cx="140" cy="70" r="5" fill="#2563eb"/>
+  <line x1="140" y1="75" x2="140" y2="297" stroke="#2563eb" stroke-width="1.5"/>
+  <rect x="110" y="297" width="60" height="76" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="140" y="337" text-anchor="middle" font-size="10" fill="#1e40af">U³²</text>
+
+  <!-- c-U^16 from a4 -->
+  <circle cx="210" cy="110" r="5" fill="#2563eb"/>
+  <line x1="210" y1="115" x2="210" y2="297" stroke="#2563eb" stroke-width="1.5"/>
+  <rect x="180" y="297" width="60" height="76" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="210" y="337" text-anchor="middle" font-size="10" fill="#1e40af">U¹⁶</text>
+
+  <!-- c-U^8 from a3 -->
+  <circle cx="280" cy="150" r="5" fill="#2563eb"/>
+  <line x1="280" y1="155" x2="280" y2="297" stroke="#2563eb" stroke-width="1.5"/>
+  <rect x="250" y="297" width="60" height="76" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="280" y="337" text-anchor="middle" font-size="10" fill="#1e40af">U⁸</text>
+
+  <!-- c-U^4 from a2 -->
+  <circle cx="350" cy="190" r="5" fill="#2563eb"/>
+  <line x1="350" y1="195" x2="350" y2="297" stroke="#2563eb" stroke-width="1.5"/>
+  <rect x="320" y="297" width="60" height="76" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="350" y="337" text-anchor="middle" font-size="10" fill="#1e40af">U⁴</text>
+
+  <!-- c-U^2 from a1 -->
+  <circle cx="420" cy="230" r="5" fill="#2563eb"/>
+  <line x1="420" y1="235" x2="420" y2="297" stroke="#2563eb" stroke-width="1.5"/>
+  <rect x="390" y="297" width="60" height="76" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="420" y="337" text-anchor="middle" font-size="10" fill="#1e40af">U²</text>
+
+  <!-- c-U^1 from a0 -->
+  <circle cx="490" cy="270" r="5" fill="#2563eb"/>
+  <line x1="490" y1="275" x2="490" y2="297" stroke="#2563eb" stroke-width="1.5"/>
+  <rect x="460" y="297" width="60" height="76" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="490" y="337" text-anchor="middle" font-size="10" fill="#1e40af">U¹</text>
+
+  <!-- QFT inverse box -->
+  <rect x="560" y="55" width="70" height="230" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="595" y="165" text-anchor="middle" font-size="13" fill="#92400e" transform="rotate(-90, 595, 165)">QFT†</text>
+
+  <!-- Measurement symbols -->
+  <g transform="translate(660, 57)">
+    <rect width="30" height="26" rx="3" fill="white" stroke="#334155" stroke-width="1.5"/>
+    <path d="M 8 20 Q 15 6 22 20" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <line x1="15" y1="14" x2="22" y2="6" stroke="#334155" stroke-width="1.5"/>
+  </g>
+  <g transform="translate(660, 97)">
+    <rect width="30" height="26" rx="3" fill="white" stroke="#334155" stroke-width="1.5"/>
+    <path d="M 8 20 Q 15 6 22 20" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <line x1="15" y1="14" x2="22" y2="6" stroke="#334155" stroke-width="1.5"/>
+  </g>
+  <g transform="translate(660, 137)">
+    <rect width="30" height="26" rx="3" fill="white" stroke="#334155" stroke-width="1.5"/>
+    <path d="M 8 20 Q 15 6 22 20" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <line x1="15" y1="14" x2="22" y2="6" stroke="#334155" stroke-width="1.5"/>
+  </g>
+  <g transform="translate(660, 177)">
+    <rect width="30" height="26" rx="3" fill="white" stroke="#334155" stroke-width="1.5"/>
+    <path d="M 8 20 Q 15 6 22 20" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <line x1="15" y1="14" x2="22" y2="6" stroke="#334155" stroke-width="1.5"/>
+  </g>
+  <g transform="translate(660, 217)">
+    <rect width="30" height="26" rx="3" fill="white" stroke="#334155" stroke-width="1.5"/>
+    <path d="M 8 20 Q 15 6 22 20" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <line x1="15" y1="14" x2="22" y2="6" stroke="#334155" stroke-width="1.5"/>
+  </g>
+  <g transform="translate(660, 257)">
+    <rect width="30" height="26" rx="3" fill="white" stroke="#334155" stroke-width="1.5"/>
+    <path d="M 8 20 Q 15 6 22 20" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <line x1="15" y1="14" x2="22" y2="6" stroke="#334155" stroke-width="1.5"/>
+  </g>
+
+  <!-- Labels -->
+  <text x="720" y="73" font-size="11" font-family="system-ui" fill="#475569">→ λ₅</text>
+  <text x="720" y="113" font-size="11" font-family="system-ui" fill="#475569">→ λ₄</text>
+  <text x="720" y="153" font-size="11" font-family="system-ui" fill="#475569">→ λ₃</text>
+  <text x="720" y="193" font-size="11" font-family="system-ui" fill="#475569">→ λ₂</text>
+  <text x="720" y="233" font-size="11" font-family="system-ui" fill="#475569">→ λ₁</text>
+  <text x="720" y="273" font-size="11" font-family="system-ui" fill="#475569">→ λ₀</text>
+  <text x="740" y="343" font-size="11" font-family="system-ui" fill="#475569">→ φ</text>
+
+  <!-- Bracket labels -->
+  <text x="800" y="170" text-anchor="middle" font-size="12" font-family="system-ui" fill="#2563eb">eigenphase</text>
+  <text x="800" y="185" text-anchor="middle" font-size="12" font-family="system-ui" fill="#2563eb">(6 bits)</text>
+  <text x="795" y="355" text-anchor="middle" font-size="12" font-family="system-ui" fill="#16a34a">eigenmode</text>
+</svg>
