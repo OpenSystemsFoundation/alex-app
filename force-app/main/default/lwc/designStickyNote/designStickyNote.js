@@ -2,7 +2,7 @@ import { LightningElement, api } from 'lwc';
 
 export default class DesignStickyNote extends LightningElement {
     @api note = {};
-    @api isEditable = true;
+    @api isEditable = false;
     @api showVotes = false;
     isEditing = false;
     editText = '';
@@ -14,9 +14,13 @@ export default class DesignStickyNote extends LightningElement {
         return `background-color: ${this.note?.color || '#FFE082'};`;
     }
     handleDragStart(event) {
-        event.dataTransfer.setData('text/plain', JSON.stringify({
-            noteId: this.note.id, sourceZone: this.note.zone
-        }));
+        event.dataTransfer.setData(
+            'text/plain',
+            JSON.stringify({
+                noteId: this.note.id,
+                sourceZone: this.note.zone
+            })
+        );
         event.dataTransfer.effectAllowed = 'move';
     }
     handleEdit() {
@@ -32,10 +36,13 @@ export default class DesignStickyNote extends LightningElement {
     handleSaveEdit() {
         this.isEditing = false;
         if (this.editText !== this.note.text) {
-            this.dispatchEvent(new CustomEvent('noteupdate', {
-                detail: { noteId: this.note.id, text: this.editText },
-                bubbles: true, composed: true
-            }));
+            this.dispatchEvent(
+                new CustomEvent('noteupdate', {
+                    detail: { noteId: this.note.id, text: this.editText },
+                    bubbles: true,
+                    composed: true
+                })
+            );
         }
     }
     handleKeyDown(event) {
@@ -50,8 +57,12 @@ export default class DesignStickyNote extends LightningElement {
         }
     }
     handleDelete() {
-        this.dispatchEvent(new CustomEvent('notedelete', {
-            detail: { noteId: this.note.id }, bubbles: true, composed: true
-        }));
+        this.dispatchEvent(
+            new CustomEvent('notedelete', {
+                detail: { noteId: this.note.id },
+                bubbles: true,
+                composed: true
+            })
+        );
     }
 }
