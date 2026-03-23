@@ -27,6 +27,7 @@ on:
         paths:
             - 'e2e/**'
             - 'force-app/**'
+            - 'force-design-thinking/**'
             - '.github/workflows/e2e-*.yml'
             - '.github/workflows/chromium-e2e-debug.yml'
             - '.github/actions/setup-e2e-org/**'
@@ -131,5 +132,75 @@ jobs:
         with:
             suite-name: card-linking
             specs: 'card-linking.spec.ts'
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
+
+    # --- Core Board & Sprints ---
+
+    kanban-board:
+        name: Kanban Board
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: kanban-board
+            specs: 'kanban-board.spec.ts'
+            create-retro-data: false
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
+
+    unhappy-paths:
+        name: Unhappy Paths
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: unhappy-paths
+            specs: 'unhappy-paths.spec.ts'
+            create-retro-data: false
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
+
+    sprint-management:
+        name: Sprint Management
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: sprint-management
+            specs: 'sprint-management.spec.ts'
+            create-retro-data: false
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
+
+    # --- Design Thinking Extension ---
+
+    design-thinking:
+        name: Design Thinking
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: design-thinking
+            specs: 'design-thinking.spec.ts'
+            create-retro-data: false
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
+
+    # --- Multi-user Suites ---
+
+    drag-drop-sync:
+        name: Drag & Drop Sync
+        uses: ./.github/workflows/e2e-multi-user.yml
+        secrets: inherit
+        with:
+            suite-name: drag-drop-sync
+            specs: 'drag-drop-sync.spec.ts'
+            grep: ${{ inputs.grep || '' }}
+            debug: ${{ inputs.debug || false }}
+
+    design-thinking-sync:
+        name: Design Thinking Sync
+        uses: ./.github/workflows/e2e-multi-user.yml
+        secrets: inherit
+        with:
+            suite-name: design-thinking-sync
+            specs: 'design-thinking-sync.spec.ts'
             grep: ${{ inputs.grep || '' }}
             debug: ${{ inputs.debug || false }}
