@@ -1,0 +1,207 @@
+{
+  "H4": {
+    "n_significant": 3,
+    "threshold": 0.5,
+    "result": "SUPPORTED"
+  },
+  "eigenspectrum": [
+    {
+      "index": 0,
+      "eigenvalue_abs": 1.2379320332452022,
+      "eigenvalue_real": 1.2138383699220867,
+      "eigenvalue_imag": 0.24304758924846642,
+      "top_fibers": [
+        {
+          "fiber": "MPSTensor",
+          "weight": 0.677423680285878
+        },
+        {
+          "fiber": "QAOA",
+          "weight": 0.6473419330325894
+        },
+        {
+          "fiber": "LexoRank",
+          "weight": 0.4031969389046241
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "eigenvalue_abs": 1.2379320332452022,
+      "eigenvalue_real": 1.2138383699220867,
+      "eigenvalue_imag": -0.24304758924846642,
+      "top_fibers": [
+        {
+          "fiber": "MPSTensor",
+          "weight": 0.677423680285878
+        },
+        {
+          "fiber": "QAOA",
+          "weight": 0.6473419330325894
+        },
+        {
+          "fiber": "LexoRank",
+          "weight": 0.4031969389046241
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "eigenvalue_abs": 0.6384736414946932,
+      "eigenvalue_real": 0.6384736414946932,
+      "eigenvalue_imag": 0.0,
+      "top_fibers": [
+        {
+          "fiber": "QAOA",
+          "weight": 0.40126580633635495
+        },
+        {
+          "fiber": "EchoPrevention",
+          "weight": 0.3242395363870925
+        },
+        {
+          "fiber": "MPSTensor",
+          "weight": 0.26451336794013613
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "eigenvalue_abs": 0.391326936679468,
+      "eigenvalue_real": 0.2708565014494865,
+      "eigenvalue_imag": 0.28244207723616654,
+      "top_fibers": [
+        {
+          "fiber": "EchoPrevention",
+          "weight": 0.3005941818990904
+        },
+        {
+          "fiber": "MPSTensor",
+          "weight": 0.15936922379113333
+        },
+        {
+          "fiber": "QAOA",
+          "weight": 0.12773707550129557
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "eigenvalue_abs": 0.391326936679468,
+      "eigenvalue_real": 0.2708565014494865,
+      "eigenvalue_imag": -0.28244207723616654,
+      "top_fibers": [
+        {
+          "fiber": "EchoPrevention",
+          "weight": 0.3005941818990904
+        },
+        {
+          "fiber": "MPSTensor",
+          "weight": 0.15936922379113333
+        },
+        {
+          "fiber": "QAOA",
+          "weight": 0.12773707550129557
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "eigenvalue_abs": 0.2582305985054766,
+      "eigenvalue_real": 0.2561219156539798,
+      "eigenvalue_imag": 0.032933361902974974,
+      "top_fibers": [
+        {
+          "fiber": "EchoPrevention",
+          "weight": 0.1882324707682434
+        },
+        {
+          "fiber": "MPSTensor",
+          "weight": 0.16124532096541386
+        },
+        {
+          "fiber": "LWC",
+          "weight": 0.047724376179413684
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "eigenvalue_abs": 0.2582305985054766,
+      "eigenvalue_real": 0.2561219156539798,
+      "eigenvalue_imag": -0.032933361902974974,
+      "top_fibers": [
+        {
+          "fiber": "EchoPrevention",
+          "weight": 0.1882324707682434
+        },
+        {
+          "fiber": "MPSTensor",
+          "weight": 0.16124532096541386
+        },
+        {
+          "fiber": "LWC",
+          "weight": 0.047724376179413684
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "eigenvalue_abs": 0.11436431301295862,
+      "eigenvalue_real": 0.11436431301295862,
+      "eigenvalue_imag": 0.0,
+      "top_fibers": [
+        {
+          "fiber": "EchoPrevention",
+          "weight": 0.09087935398489388
+        },
+        {
+          "fiber": "MPSTensor",
+          "weight": 0.05952380245356405
+        },
+        {
+          "fiber": "LWC",
+          "weight": 0.022458305473120062
+        }
+      ]
+    }
+  ],
+  "abductive_q1": [
+    {
+      "fiber": "MPSTensor",
+      "drive": 11.401697958395191
+    },
+    {
+      "fiber": "EchoPrevention",
+      "drive": 10.96168334798193
+    },
+    {
+      "fiber": "QAOA",
+      "drive": 8.675937401438725
+    },
+    {
+      "fiber": "LexoRank",
+      "drive": 4.917713049765588
+    },
+    {
+      "fiber": "PlatformEvents",
+      "drive": 4.027645983017794
+    }
+  ],
+  "abductive_q2": [
+    {
+      "fiber": "MPSTensor",
+      "drive": 9.170465510545498
+    },
+    {
+      "fiber": "QAOA",
+      "drive": 7.353072650671709
+    }
+  ],
+  "metadata": {
+    "n_fibers": 8,
+    "n_trajectories": 6,
+    "n_transitions": 48,
+    "dmd_rank": 8
+  }
+}
