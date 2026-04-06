@@ -1,0 +1,141 @@
+name: LWC Unit Test Benchmark
+
+on:
+    workflow_dispatch:
+        inputs:
+            coverage_threshold:
+                description: 'Coverage threshold percentage'
+                required: false
+                default: '80'
+
+jobs:
+    lwc-benchmark:
+        name: LWC Jest Performance & Coverage
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run Jest with timing and coverage
+              run: |
+                  mkdir -p benchmark-results
+
+                  # Run with verbose timing and JSON output
+                  npx jest --coverage --verbose --json --outputFile=benchmark-results/jest-results.json 2>&1 | tee benchmark-results/jest-console.txt || true
+
+            - name: Parse LWC Benchmark Results
+              run: |
+                  node -e "
+                    const fs = require('fs');
+
+                    let results = {};
+                    try {
+                      results = JSON.parse(fs.readFileSync('benchmark-results/jest-results.json', 'utf8'));
+                    } catch(e) {
+                      console.error('Failed to parse jest results:', e.message);
+                      process.exit(0);
+                    }
+
+                    const testSuites = results.testResults || [];
+                    const coverage = results.coverageMap || {};
+
+                    // Test execution benchmarks
+                    const suiteTimings = testSuites.map(s => ({
+                      name: s.testFilePath.replace(/.*lwc\//, '').replace(/.*__tests__\//, ''),
+                      duration: (s.endTime - s.startTime),
+                      tests: s.testResults?.length || 0,
+                      passed: s.testResults?.filter(t => t.status === 'passed').length || 0,
+                      failed: s.testResults?.filter(t => t.status === 'failed').length || 0
+                    })).sort((a, b) => b.duration - a.duration);
+
+                    // Coverage summary
+                    const coverageSummary = {
+                      lines: results.coverageSummary?.lines || { total: 0, covered: 0, pct: 0 },
+                      branches: results.coverageSummary?.branches || { total: 0, covered: 0, pct: 0 },
+                      functions: results.coverageSummary?.functions || { total: 0, covered: 0, pct: 0 },
+                      statements: results.coverageSummary?.statements || { total: 0, covered: 0, pct: 0 }
+                    };
+
+                    // Slowest individual tests
+                    const allTests = testSuites.flatMap(s =>
+                      (s.testResults || []).map(t => ({
+                        suite: s.testFilePath.replace(/.*lwc\//, '').replace(/.*__tests__\//, ''),
+                        name: t.fullName || t.title,
+                        duration: t.duration || 0,
+                        status: t.status
+                      }))
+                    ).sort((a, b) => b.duration - a.duration);
+
+                    // Summary JSON
+                    const summary = {
+                      timestamp: new Date().toISOString(),
+                      totalSuites: results.numTotalTestSuites,
+                      totalTests: results.numTotalTests,
+                      passed: results.numPassedTests,
+                      failed: results.numFailedTests,
+                      totalDurationMs: suiteTimings.reduce((s, t) => s + t.duration, 0),
+                      coverageSummary,
+                      slowestSuites: suiteTimings.slice(0, 10),
+                      slowestTests: allTests.slice(0, 20)
+                    };
+                    fs.writeFileSync('benchmark-results/lwc-benchmark-summary.json', JSON.stringify(summary, null, 2));
+
+                    // GitHub Step Summary
+                    const lines = ['## LWC Unit Test Benchmark', ''];
+                    lines.push('**Total suites:** ' + results.numTotalTestSuites);
+                    lines.push('**Total tests:** ' + results.numTotalTests + ' (' + results.numPassedTests + ' passed, ' + results.numFailedTests + ' failed)');
+                    lines.push('**Total duration:** ' + (suiteTimings.reduce((s, t) => s + t.duration, 0) / 1000).toFixed(1) + 's');
+                    lines.push('');
+
+                    // Coverage
+                    lines.push('### Coverage Summary');
+                    lines.push('| Metric | Covered | Total | % |');
+                    lines.push('|--------|---------|-------|---|');
+                    for (const [metric, data] of Object.entries(coverageSummary)) {
+                      const icon = data.pct >= ${{ github.event.inputs.coverage_threshold }} ? '✅' : '⚠️';
+                      lines.push('| ' + metric + ' | ' + data.covered + ' | ' + data.total + ' | ' + icon + ' ' + data.pct + '% |');
+                    }
+
+                    // Slowest suites
+                    lines.push('');
+                    lines.push('### Slowest Test Suites (Top 10)');
+                    lines.push('| Suite | Tests | Duration | Passed |');
+                    lines.push('|-------|-------|----------|--------|');
+                    for (const s of suiteTimings.slice(0, 10)) {
+                      const flag = s.duration > 5000 ? ' 🐌' : '';
+                      lines.push('| ' + s.name + flag + ' | ' + s.tests + ' | ' + s.duration + 'ms | ' + s.passed + '/' + s.tests + ' |');
+                    }
+
+                    // Slowest individual tests
+                    lines.push('');
+                    lines.push('### Slowest Individual Tests (Top 15)');
+                    lines.push('| Test | Duration | Status |');
+                    lines.push('|------|----------|--------|');
+                    for (const t of allTests.slice(0, 15)) {
+                      const icon = t.status === 'passed' ? '✅' : '❌';
+                      lines.push('| ' + t.name.substring(0, 80) + ' | ' + t.duration + 'ms | ' + icon + ' |');
+                    }
+
+                    lines.push('');
+                    lines.push('---');
+                    lines.push('*LWC Jest benchmark — use to track test suite performance over time*');
+
+                    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\\n'));
+                  "
+
+            - name: Upload LWC Benchmark Results
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: lwc-benchmark-results
+                  path: benchmark-results/
+                  retention-days: 90

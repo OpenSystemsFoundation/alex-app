@@ -1,0 +1,186 @@
+name: E2E Suite (Reusable)
+
+on:
+    workflow_call:
+        inputs:
+            suite-name:
+                description: 'Name for this suite (used in artifact names)'
+                required: true
+                type: string
+            specs:
+                description: 'Space-separated list of spec filenames to run'
+                required: true
+                type: string
+            create-retro-data:
+                description: 'Create retrospective sample data'
+                required: false
+                type: boolean
+                default: false
+            grep:
+                description: 'Playwright --grep filter'
+                required: false
+                type: string
+                default: ''
+            debug:
+                description: 'Enable traces for all tests'
+                required: false
+                type: boolean
+                default: false
+            persistent:
+                description: 'Reuse scratch org across runs (true) or ephemeral (false)'
+                required: false
+                type: boolean
+                default: false
+            cache-key:
+                description: 'Cache key prefix for persistent orgs (e.g. branch ref)'
+                required: false
+                type: string
+                default: ''
+
+jobs:
+    run:
+        name: ${{ inputs.suite-name }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 25
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install Playwright Chromium
+              run: npx playwright install --with-deps chromium
+
+            - name: Setup Scratch Org
+              id: org
+              uses: ./.github/actions/setup-e2e-org
+              with:
+                  org-alias: e2e-${{ inputs.suite-name }}
+                  sfdx-auth-url: ${{ secrets.SFDX_AUTH_URL }}
+                  create-retro-data: ${{ inputs.create-retro-data }}
+                  persistent: ${{ inputs.persistent }}
+                  cache-key: ${{ inputs.cache-key }}
+                  duration-days: ${{ inputs.persistent && '7' || '1' }}
+
+            - name: Run Playwright Tests
+              id: playwright
+              env:
+                  SCRATCH_ORG_URL: ${{ steps.org.outputs.login-url }}
+                  SF_TARGET_ORG: e2e-${{ inputs.suite-name }}
+              run: |
+                  set +e
+
+                  # Build spec file arguments
+                  SPEC_ARGS=""
+                  for spec in ${{ inputs.specs }}; do
+                    SPEC_ARGS="$SPEC_ARGS e2e/specs/$spec"
+                  done
+
+                  GREP_ARG=""
+                  if [ -n "${{ inputs.grep }}" ]; then
+                    GREP_ARG="--grep=\"${{ inputs.grep }}\""
+                  fi
+                  TRACE_ARG=""
+                  if [ "${{ inputs.debug }}" = "true" ]; then
+                    TRACE_ARG="--trace on"
+                  fi
+
+                  npx playwright test \
+                    --project=chromium \
+                    --retries=1 \
+                    --workers=2 \
+                    --reporter=list \
+                    $GREP_ARG $TRACE_ARG \
+                    $SPEC_ARGS \
+                    2>&1 | tee /tmp/playwright-output.txt
+                  echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+            - name: Post results as commit comment
+              if: always()
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  # Truncate to last 200 lines to stay within API limits
+                  BODY=$(tail -200 /tmp/playwright-output.txt | head -c 60000)
+                  SUITE="${{ inputs.suite-name }}"
+                  EXIT="${{ steps.playwright.outputs.exit_code }}"
+                  STATUS="PASS"
+                  if [ "$EXIT" != "0" ]; then STATUS="FAIL"; fi
+                  COMMENT="### E2E: $SUITE — $STATUS (exit $EXIT)
+                  \`\`\`
+                  $BODY
+                  \`\`\`"
+                  gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
+                    -f body="$COMMENT" || echo "Failed to post comment"
+
+            - name: Upload output
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: e2e-output-${{ inputs.suite-name }}
+                  path: /tmp/playwright-output.txt
+                  retention-days: 3
+
+            - name: Post results as commit comment
+              if: always()
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  # Truncate to last 60 lines to fit GitHub comment limits
+                  BODY=$(tail -60 /tmp/playwright-output.txt | head -c 60000)
+                  gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
+                    -f "body=### E2E Results: ${{ inputs.suite-name }}
+                  \`\`\`
+                  ${BODY}
+                  \`\`\`" || true
+
+            - name: Upload Test Report
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: e2e-report-${{ inputs.suite-name }}
+                  path: playwright-report/
+                  retention-days: 7
+
+            - name: Upload Traces
+              uses: actions/upload-artifact@v4
+              if: failure()
+              with:
+                  name: e2e-traces-${{ inputs.suite-name }}
+                  path: test-results/
+                  retention-days: 7
+
+            - name: Delete Scratch Org
+              if: always() && inputs.persistent != true
+              run: sf org delete scratch --target-org e2e-${{ inputs.suite-name }} --no-prompt || true
+
+            - name: Post results as commit comment
+              if: always() && steps.playwright.outputs.exit_code != ''
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  STATUS="PASSED"
+                  if [ "${{ steps.playwright.outputs.exit_code }}" != "0" ]; then
+                    STATUS="FAILED"
+                  fi
+                  # Truncate output to fit GitHub comment limit
+                  OUTPUT=$(tail -100 /tmp/playwright-output.txt 2>/dev/null || echo "No output captured")
+                  BODY=$(cat <<COMMENT_EOF
+                  ## E2E Results: ${{ inputs.suite-name }} — ${STATUS}
+
+                  \`\`\`
+                  ${OUTPUT}
+                  \`\`\`
+                  COMMENT_EOF
+                  )
+                  gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
+                    -f body="$BODY" || true
+
+            - name: Fail if tests failed
+              if: always() && steps.playwright.outputs.exit_code != '0'
+              run: exit 1

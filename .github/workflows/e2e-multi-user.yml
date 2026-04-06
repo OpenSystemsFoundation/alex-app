@@ -1,0 +1,197 @@
+name: E2E Multi-User Suite (Reusable)
+
+on:
+    workflow_call:
+        inputs:
+            suite-name:
+                description: 'Name for this suite'
+                required: true
+                type: string
+            specs:
+                description: 'Space-separated list of spec filenames to run'
+                required: true
+                type: string
+            grep:
+                description: 'Playwright --grep filter'
+                required: false
+                type: string
+                default: ''
+            debug:
+                description: 'Enable traces for all tests'
+                required: false
+                type: boolean
+                default: false
+            persistent:
+                description: 'Reuse scratch org across runs (true) or ephemeral (false)'
+                required: false
+                type: boolean
+                default: false
+            cache-key:
+                description: 'Cache key prefix for persistent orgs (e.g. branch ref)'
+                required: false
+                type: string
+                default: ''
+
+jobs:
+    run:
+        name: ${{ inputs.suite-name }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 25
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install Playwright Chromium
+              run: npx playwright install --with-deps chromium
+
+            - name: Setup Scratch Org
+              id: org
+              uses: ./.github/actions/setup-e2e-org
+              with:
+                  org-alias: e2e-${{ inputs.suite-name }}
+                  sfdx-auth-url: ${{ secrets.SFDX_AUTH_URL }}
+                  create-retro-data: 'true'
+                  persistent: ${{ inputs.persistent }}
+                  cache-key: ${{ inputs.cache-key }}
+                  duration-days: ${{ inputs.persistent && '7' || '1' }}
+
+            - name: Create Second User (User B)
+              if: steps.org.outputs.org-created == 'true'
+              run: |
+                  sf org create user \
+                    --target-org e2e-${{ inputs.suite-name }} \
+                    --set-alias e2e-user-b \
+                    --definition-file config/e2e-test-user-def.json
+
+            - name: Assign Permission Set to User B
+              if: steps.org.outputs.org-created == 'true'
+              run: |
+                  sf org assign permset \
+                    --name Alex_User \
+                    --target-org e2e-${{ inputs.suite-name }} \
+                    --on-behalf-of e2e-user-b
+
+            - name: Generate Password for User B
+              if: steps.org.outputs.org-created == 'true'
+              run: sf org generate password --target-org e2e-${{ inputs.suite-name }} --on-behalf-of e2e-user-b
+
+            - name: Restore User B auth from cache
+              if: inputs.persistent == true && steps.org.outputs.org-created != 'true'
+              id: cache-user-b
+              uses: actions/cache/restore@v4
+              with:
+                  path: /tmp/cached-user-b-auth-${{ inputs.suite-name }}.txt
+                  key: scratch-org-user-b-${{ inputs.cache-key }}-${{ inputs.suite-name }}
+
+            - name: Authenticate cached User B
+              if: inputs.persistent == true && steps.org.outputs.org-created != 'true' && steps.cache-user-b.outputs.cache-hit == 'true'
+              run: |
+                  sf org login sfdx-url \
+                    --sfdx-url-file /tmp/cached-user-b-auth-${{ inputs.suite-name }}.txt \
+                    --alias e2e-user-b 2>/dev/null || true
+
+            - name: Get Login URLs
+              id: login
+              run: |
+                  USER_A_URL=$(sf org open --target-org e2e-${{ inputs.suite-name }} --url-only --json 2>/dev/null | node -e "
+                    let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                      console.log(JSON.parse(d).result.url);
+                    });
+                  ")
+                  USER_B_URL=$(sf org open --target-org e2e-user-b --url-only --json 2>/dev/null | node -e "
+                    let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                      console.log(JSON.parse(d).result.url);
+                    });
+                  ")
+                  echo "user_a_url=$USER_A_URL" >> "$GITHUB_OUTPUT"
+                  echo "user_b_url=$USER_B_URL" >> "$GITHUB_OUTPUT"
+
+            - name: Cache User B auth
+              if: inputs.persistent == true && steps.org.outputs.org-created == 'true'
+              run: |
+                  sf org display --target-org e2e-user-b --verbose --json 2>/dev/null | node -e "
+                    let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                      console.log(JSON.parse(d).result.sfdxAuthUrl);
+                    });
+                  " > /tmp/cached-user-b-auth-${{ inputs.suite-name }}.txt
+
+            - name: Save User B auth to cache
+              if: inputs.persistent == true && steps.org.outputs.org-created == 'true'
+              uses: actions/cache/save@v4
+              with:
+                  path: /tmp/cached-user-b-auth-${{ inputs.suite-name }}.txt
+                  key: scratch-org-user-b-${{ inputs.cache-key }}-${{ inputs.suite-name }}
+
+            - name: Run Multi-User Playwright Tests
+              id: playwright
+              env:
+                  SCRATCH_ORG_URL: ${{ steps.login.outputs.user_a_url }}
+                  USER_A_LOGIN_URL: ${{ steps.login.outputs.user_a_url }}
+                  USER_B_LOGIN_URL: ${{ steps.login.outputs.user_b_url }}
+                  SF_TARGET_ORG: e2e-${{ inputs.suite-name }}
+              run: |
+                  set +e
+
+                  SPEC_ARGS=""
+                  for spec in ${{ inputs.specs }}; do
+                    SPEC_ARGS="$SPEC_ARGS e2e/specs/$spec"
+                  done
+
+                  GREP_ARG=""
+                  if [ -n "${{ inputs.grep }}" ]; then
+                    GREP_ARG="--grep=\"${{ inputs.grep }}\""
+                  fi
+                  TRACE_ARG=""
+                  if [ "${{ inputs.debug }}" = "true" ]; then
+                    TRACE_ARG="--trace on"
+                  fi
+
+                  # Multi-user tests use 1 worker to avoid session conflicts
+                  npx playwright test \
+                    --project=chromium \
+                    --retries=1 \
+                    --workers=1 \
+                    --reporter=list \
+                    $GREP_ARG $TRACE_ARG \
+                    $SPEC_ARGS \
+                    2>&1 | tee /tmp/playwright-output.txt
+                  echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+            - name: Upload output
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: e2e-output-${{ inputs.suite-name }}
+                  path: /tmp/playwright-output.txt
+                  retention-days: 3
+
+            - name: Upload Test Report
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: e2e-report-${{ inputs.suite-name }}
+                  path: playwright-report/
+                  retention-days: 7
+
+            - name: Upload Traces
+              uses: actions/upload-artifact@v4
+              if: failure()
+              with:
+                  name: e2e-traces-${{ inputs.suite-name }}
+                  path: test-results/
+                  retention-days: 7
+
+            - name: Delete Scratch Org
+              if: always() && inputs.persistent != true
+              run: sf org delete scratch --target-org e2e-${{ inputs.suite-name }} --no-prompt || true
+
+            - name: Fail if tests failed
+              if: always() && steps.playwright.outputs.exit_code != '0'
+              run: exit 1

@@ -1,0 +1,284 @@
+name: Code Quality Benchmark
+
+on:
+    workflow_dispatch:
+        inputs:
+            severity_threshold:
+                description: 'Min severity to report (1=Critical, 2=High, 3=Moderate)'
+                required: false
+                default: '3'
+
+jobs:
+    code-analyzer:
+        name: Salesforce Code Analyzer (Full Scan)
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Install Salesforce CLI
+              run: npm install -g @salesforce/cli
+
+            - name: Install Code Analyzer v5
+              run: sf plugins install @salesforce/plugin-code-analyzer
+
+            - name: List Available Rules
+              run: |
+                  sf code-analyzer rules --workspace "force-app" > /tmp/rules-list.txt 2>&1 || true
+                  wc -l /tmp/rules-list.txt
+
+            - name: Run Full Code Analysis
+              run: |
+                  mkdir -p benchmark-results
+
+                  # Run with all categories
+                  sf code-analyzer run \
+                    --workspace "force-app" \
+                    --output-file benchmark-results/code-analyzer-full.json \
+                    --severity-threshold ${{ github.event.inputs.severity_threshold }} 2>&1 | tee /tmp/analyzer-output.txt || true
+
+            - name: Parse Code Analyzer Results
+              run: |
+                  node -e "
+                    const fs = require('fs');
+                    let results = [];
+                    try {
+                      const raw = fs.readFileSync('benchmark-results/code-analyzer-full.json', 'utf8');
+                      const parsed = JSON.parse(raw);
+                      // Code Analyzer v5 outputs SARIF or JSON array
+                      if (parsed.runs) {
+                        // SARIF format
+                        results = parsed.runs.flatMap(r => r.results || []);
+                      } else if (Array.isArray(parsed)) {
+                        results = parsed;
+                      }
+                    } catch(e) {
+                      console.log('Could not parse results:', e.message);
+                    }
+
+                    // Categorize by severity and engine
+                    const bySeverity = {};
+                    const byEngine = {};
+                    const byCategory = {};
+
+                    for (const r of results) {
+                      // SARIF format
+                      const severity = r.level || r.severity || 'unknown';
+                      const engine = r.ruleId?.split('/')[0] || r.engine || 'unknown';
+                      const category = r.properties?.category || r.category || 'uncategorized';
+
+                      bySeverity[severity] = (bySeverity[severity] || 0) + 1;
+                      byEngine[engine] = (byEngine[engine] || 0) + 1;
+                      byCategory[category] = (byCategory[category] || 0) + 1;
+                    }
+
+                    // Summary JSON
+                    const summary = {
+                      timestamp: new Date().toISOString(),
+                      totalViolations: results.length,
+                      bySeverity,
+                      byEngine,
+                      byCategory
+                    };
+                    fs.writeFileSync(
+                      'benchmark-results/quality-summary.json',
+                      JSON.stringify(summary, null, 2)
+                    );
+
+                    // GitHub Step Summary
+                    const lines = ['## Code Quality Benchmark', ''];
+                    lines.push('**Total violations:** ' + results.length);
+                    lines.push('**Severity threshold:** ${{ github.event.inputs.severity_threshold }}');
+                    lines.push('');
+
+                    lines.push('### By Severity');
+                    lines.push('| Severity | Count |');
+                    lines.push('|----------|-------|');
+                    for (const [sev, count] of Object.entries(bySeverity).sort()) {
+                      lines.push('| ' + sev + ' | ' + count + ' |');
+                    }
+
+                    lines.push('');
+                    lines.push('### By Engine');
+                    lines.push('| Engine | Count |');
+                    lines.push('|--------|-------|');
+                    for (const [eng, count] of Object.entries(byEngine).sort()) {
+                      lines.push('| ' + eng + ' | ' + count + ' |');
+                    }
+
+                    lines.push('');
+                    lines.push('### By Category');
+                    lines.push('| Category | Count |');
+                    lines.push('|----------|-------|');
+                    for (const [cat, count] of Object.entries(byCategory).sort()) {
+                      lines.push('| ' + cat + ' | ' + count + ' |');
+                    }
+
+                    if (results.length > 0) {
+                      lines.push('');
+                      lines.push('### Top 20 Violations');
+                      lines.push('| File | Rule | Severity | Message |');
+                      lines.push('|------|------|----------|---------|');
+                      const top = results.slice(0, 20);
+                      for (const r of top) {
+                        const file = r.locations?.[0]?.physicalLocation?.artifactLocation?.uri || r.fileName || '--';
+                        const rule = r.ruleId || r.ruleName || '--';
+                        const sev = r.level || r.severity || '--';
+                        const msg = (r.message?.text || r.message || '--').substring(0, 80);
+                        lines.push('| ' + file.replace(/.*force-app/, 'force-app') + ' | ' + rule + ' | ' + sev + ' | ' + msg + ' |');
+                      }
+                    }
+
+                    lines.push('');
+                    lines.push('---');
+                    lines.push('*Powered by Salesforce Code Analyzer v5 (PMD + ESLint + RetireJS + Regex)*');
+
+                    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\\n'));
+                  "
+
+            - name: Upload Code Quality Results
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: code-quality-benchmark
+                  path: benchmark-results/
+                  retention-days: 90
+
+    lwc-quality:
+        name: LWC Lint & Complexity
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run ESLint with metrics
+              run: |
+                  mkdir -p benchmark-results
+
+                  # Run ESLint in JSON format for parsing
+                  npx eslint force-app/main/default/lwc --format json > benchmark-results/eslint-results.json 2>&1 || true
+
+            - name: Analyze LWC Complexity
+              run: |
+                  node -e "
+                    const fs = require('fs');
+                    const path = require('path');
+
+                    // Parse ESLint results
+                    let eslintResults = [];
+                    try {
+                      eslintResults = JSON.parse(fs.readFileSync('benchmark-results/eslint-results.json', 'utf8'));
+                    } catch(e) {}
+
+                    const totalErrors = eslintResults.reduce((sum, f) => sum + f.errorCount, 0);
+                    const totalWarnings = eslintResults.reduce((sum, f) => sum + f.warningCount, 0);
+
+                    // Measure LWC bundle sizes
+                    const lwcDir = 'force-app/main/default/lwc';
+                    const components = fs.readdirSync(lwcDir)
+                      .filter(f => {
+                        try { return fs.statSync(path.join(lwcDir, f)).isDirectory(); } catch(e) { return false; }
+                      })
+                      .filter(f => !f.startsWith('__'));
+
+                    const bundleSizes = [];
+                    for (const comp of components) {
+                      const compDir = path.join(lwcDir, comp);
+                      let totalSize = 0;
+                      let jsLines = 0;
+                      let htmlLines = 0;
+
+                      const files = fs.readdirSync(compDir);
+                      for (const file of files) {
+                        const filePath = path.join(compDir, file);
+                        try {
+                          const stat = fs.statSync(filePath);
+                          if (stat.isFile()) {
+                            totalSize += stat.size;
+                            const content = fs.readFileSync(filePath, 'utf8');
+                            const lines = content.split('\\n').length;
+                            if (file.endsWith('.js')) jsLines += lines;
+                            if (file.endsWith('.html')) htmlLines += lines;
+                          }
+                        } catch(e) {}
+                      }
+
+                      // Also check subdirectories (managers/, store/, etc.)
+                      for (const file of files) {
+                        const subPath = path.join(compDir, file);
+                        try {
+                          if (fs.statSync(subPath).isDirectory()) {
+                            const subFiles = fs.readdirSync(subPath);
+                            for (const sf of subFiles) {
+                              const sfPath = path.join(subPath, sf);
+                              try {
+                                const stat = fs.statSync(sfPath);
+                                if (stat.isFile()) {
+                                  totalSize += stat.size;
+                                  const content = fs.readFileSync(sfPath, 'utf8');
+                                  if (sf.endsWith('.js')) jsLines += content.split('\\n').length;
+                                }
+                              } catch(e) {}
+                            }
+                          }
+                        } catch(e) {}
+                      }
+
+                      bundleSizes.push({ component: comp, totalSize, jsLines, htmlLines });
+                    }
+
+                    bundleSizes.sort((a, b) => b.jsLines - a.jsLines);
+
+                    // Summary
+                    const summary = {
+                      timestamp: new Date().toISOString(),
+                      eslint: { errors: totalErrors, warnings: totalWarnings },
+                      components: bundleSizes.length,
+                      topBySize: bundleSizes.slice(0, 10)
+                    };
+                    fs.writeFileSync('benchmark-results/lwc-quality-summary.json', JSON.stringify(summary, null, 2));
+
+                    // GitHub Step Summary
+                    const lines = ['## LWC Quality & Complexity Benchmark', ''];
+                    lines.push('**Components:** ' + bundleSizes.length);
+                    lines.push('**ESLint:** ' + totalErrors + ' errors, ' + totalWarnings + ' warnings');
+                    lines.push('');
+
+                    lines.push('### Top 15 Components by JS Lines');
+                    lines.push('| Component | JS Lines | HTML Lines | Bundle Size |');
+                    lines.push('|-----------|----------|------------|-------------|');
+                    for (const b of bundleSizes.slice(0, 15)) {
+                      const sizeKB = (b.totalSize / 1024).toFixed(1) + 'KB';
+                      const flag = b.jsLines > 500 ? ' ⚠️' : '';
+                      lines.push('| ' + b.component + flag + ' | ' + b.jsLines + ' | ' + b.htmlLines + ' | ' + sizeKB + ' |');
+                    }
+                    lines.push('');
+                    lines.push('> ⚠️ = Over 500 JS lines (consider splitting)');
+
+                    lines.push('');
+                    lines.push('### Total JS/HTML Lines');
+                    const totalJS = bundleSizes.reduce((s, b) => s + b.jsLines, 0);
+                    const totalHTML = bundleSizes.reduce((s, b) => s + b.htmlLines, 0);
+                    lines.push('- **Total JS lines:** ' + totalJS);
+                    lines.push('- **Total HTML lines:** ' + totalHTML);
+                    lines.push('- **Total bundle size:** ' + (bundleSizes.reduce((s, b) => s + b.totalSize, 0) / 1024).toFixed(1) + 'KB');
+
+                    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\\n'));
+                  "
+
+            - name: Upload LWC Quality Results
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: lwc-quality-benchmark
+                  path: benchmark-results/
+                  retention-days: 90

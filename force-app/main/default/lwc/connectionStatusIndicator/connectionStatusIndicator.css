@@ -1,0 +1,168 @@
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e5e5e5;
+    transition: all 0.3s ease;
+}
+
+.status-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+.status-connected {
+    border-color: #4bca81;
+    background-color: rgba(75, 202, 129, 0.1);
+}
+
+.status-connected .status-text {
+    color: #027e46;
+}
+
+.status-connecting {
+    border-color: #ffb75d;
+    background-color: rgba(255, 183, 93, 0.1);
+}
+
+.status-connecting .status-text {
+    color: #a96404;
+}
+
+.status-polling {
+    border-color: #ffb75d;
+    background-color: rgba(255, 183, 93, 0.1);
+}
+
+.status-polling .status-text {
+    color: #a96404;
+}
+
+.status-error {
+    border-color: #ea001e;
+    background-color: rgba(234, 0, 30, 0.1);
+}
+
+.status-error .status-text {
+    color: #ba0517;
+}
+
+.status-disconnected {
+    border-color: #c9c9c9;
+    background-color: rgba(201, 201, 201, 0.1);
+}
+
+.status-disconnected .status-text {
+    color: #706e6b;
+}
+
+/* Icon styling */
+.status-icon {
+    flex-shrink: 0;
+}
+
+/* Color the icon based on status */
+.status-connected .status-icon {
+    --slds-c-icon-color-foreground: #027e46;
+}
+
+.status-connecting .status-icon {
+    --slds-c-icon-color-foreground: #a96404;
+}
+
+.status-polling .status-icon {
+    --slds-c-icon-color-foreground: #a96404;
+}
+
+.status-error .status-icon {
+    --slds-c-icon-color-foreground: #ba0517;
+}
+
+.status-disconnected .status-icon {
+    --slds-c-icon-color-foreground: #706e6b;
+}
+
+/* Pulse animation for active states */
+.pulse-animation .status-icon {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Sync Status Styling */
+.sync-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e5e5e5;
+    transition: all 0.3s ease;
+}
+
+.sync-status-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+.sync-idle {
+    border-color: #4bca81;
+    background-color: rgba(75, 202, 129, 0.1);
+}
+
+.sync-idle .sync-status-text {
+    color: #027e46;
+}
+
+.sync-syncing {
+    border-color: #0176d3;
+    background-color: rgba(1, 118, 211, 0.1);
+}
+
+.sync-syncing .sync-status-text {
+    color: #014486;
+}
+
+.sync-failed {
+    border-color: #ea001e;
+    background-color: rgba(234, 0, 30, 0.1);
+}
+
+.sync-failed .sync-status-text {
+    color: #ba0517;
+}
+
+/* Fade out animation for saved state */
+.fade-out {
+    animation: fadeOut 1s ease-out forwards;
+}
+
+@keyframes fadeOut {
+    0% {
+        opacity: 1;
+    }
+    70% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}

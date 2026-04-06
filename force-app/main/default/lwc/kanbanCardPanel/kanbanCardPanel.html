@@ -1,0 +1,580 @@
+<template>
+    <template lwc:if={isOpen}>
+        <div
+            class="card-panel"
+            style={panelStyle}
+            onkeydown={handleKeyDown}
+            tabindex="-1"
+        >
+            <!-- Resize Handle -->
+            <div
+                class="card-panel__resize-handle"
+                onmousedown={handleResizeStart}
+            ></div>
+
+            <!-- Panel Header -->
+            <div
+                class="card-panel__header slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-var-p-around_small"
+            >
+                <div
+                    class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate"
+                >
+                    <lightning-icon
+                        icon-name="standard:task"
+                        size="small"
+                        class="slds-var-m-right_x-small"
+                    ></lightning-icon>
+                    <h2
+                        class="slds-text-heading_small slds-truncate"
+                    >
+                        <a
+                            href={cardRecordUrl}
+                            data-card-id={card.Id}
+                            onclick={handleNameClick}
+                            class="slds-text-link"
+                            >{card.Name}</a
+                        >
+                    </h2>
+                </div>
+                <lightning-button-icon
+                    icon-name="utility:close"
+                    alternative-text="Close"
+                    variant="bare"
+                    size="small"
+                    onclick={handleClose}
+                ></lightning-button-icon>
+            </div>
+
+            <!-- Panel Body - scrollable -->
+            <div
+                class="card-panel__body slds-var-p-around_small"
+            >
+                <lightning-record-edit-form
+                    object-api-name="OpenSF__Card__c"
+                    record-id={card.Id}
+                >
+                    <div
+                        class="slds-form slds-form_stacked"
+                    >
+                        <div
+                            class="slds-grid slds-wrap slds-gutters_small"
+                        >
+                            <template
+                                for:each={regularFields}
+                                for:item="field"
+                            >
+                                <div
+                                    key={field.key}
+                                    class={field.columnClass}
+                                >
+                                    <lightning-input-field
+                                        field-name={field.fieldName}
+                                        variant="label-stacked"
+                                    ></lightning-input-field>
+                                </div>
+                            </template>
+                            <template
+                                lwc:if={descriptionField}
+                            >
+                                <div
+                                    class="slds-col slds-size_1-of-1 slds-var-m-top_small"
+                                >
+                                    <div
+                                        class="slds-grid slds-grid_align-spread slds-grid_vertical-align-end slds-var-m-bottom_xx-small"
+                                    >
+                                        <span
+                                            class="slds-form-element__label"
+                                            >Description</span
+                                        >
+                                        <template
+                                            lwc:if={showApplyTemplate}
+                                        >
+                                            <lightning-button
+                                                variant="base"
+                                                label="Apply Template"
+                                                icon-name="utility:paste"
+                                                onclick={handleApplyTemplate}
+                                                class="template-btn"
+                                            ></lightning-button>
+                                        </template>
+                                    </div>
+                                    <lightning-input-field
+                                        field-name={descriptionField.fieldName}
+                                        variant="label-hidden"
+                                    ></lightning-input-field>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </lightning-record-edit-form>
+
+                <!-- Epic Detail Section (only for Epic-type cards) -->
+                <template lwc:if={isEpicCard}>
+                    <div
+                        class="epic-detail-section slds-var-m-top_small"
+                    >
+                        <h3
+                            class="slds-text-heading_small slds-var-m-bottom_x-small"
+                        >
+                            <lightning-icon
+                                icon-name="utility:layers"
+                                size="xx-small"
+                                class="slds-var-m-right_xx-small"
+                            ></lightning-icon>
+                            Epic Progress
+                        </h3>
+
+                        <template
+                            lwc:if={epicDetailLoading}
+                        >
+                            <lightning-spinner
+                                alternative-text="Loading epic details"
+                                size="small"
+                            ></lightning-spinner>
+                        </template>
+
+                        <template lwc:if={epicDetail}>
+                            <!-- Progress Bar -->
+                            <div
+                                class="epic-detail__progress slds-var-m-bottom_x-small"
+                            >
+                                <div
+                                    class="epic-detail__progress-bar"
+                                >
+                                    <div
+                                        class="epic-detail__progress-fill"
+                                        style={epicProgressStyle}
+                                    ></div>
+                                </div>
+                                <div
+                                    class="slds-grid slds-grid_align-spread slds-var-m-top_xxx-small"
+                                >
+                                    <span
+                                        class="slds-text-body_small"
+                                        >{epicProgressLabel}</span
+                                    >
+                                    <span
+                                        class="slds-text-body_small"
+                                        >{epicPointsLabel}</span
+                                    >
+                                </div>
+                            </div>
+
+                            <!-- Child Cards List -->
+                            <template
+                                lwc:if={hasEpicChildCards}
+                            >
+                                <div
+                                    class="epic-detail__children"
+                                >
+                                    <template
+                                        for:each={epicDetail.childCards}
+                                        for:item="child"
+                                    >
+                                        <div
+                                            key={child.id}
+                                            class="epic-child-card"
+                                            data-card-id={child.id}
+                                            onclick={handleChildCardClick}
+                                        >
+                                            <div
+                                                class="epic-child-card__header"
+                                            >
+                                                <span
+                                                    class="epic-child-card__name slds-truncate"
+                                                    >{child.name}</span
+                                                >
+                                                <template
+                                                    lwc:if={child.storyPoints}
+                                                >
+                                                    <span
+                                                        class="epic-child-card__sp"
+                                                        >{child.storyPoints}</span
+                                                    >
+                                                </template>
+                                            </div>
+                                            <div
+                                                class="epic-child-card__meta"
+                                            >
+                                                <span
+                                                    class="epic-child-card__subject slds-truncate"
+                                                    >{child.subject}</span
+                                                >
+                                            </div>
+                                            <div
+                                                class="epic-child-card__badges"
+                                            >
+                                                <template
+                                                    lwc:if={child.status}
+                                                >
+                                                    <span
+                                                        class="epic-child-badge"
+                                                        >{child.status}</span
+                                                    >
+                                                </template>
+                                                <template
+                                                    lwc:if={child.cardType}
+                                                >
+                                                    <span
+                                                        class="epic-child-badge"
+                                                        >{child.cardType}</span
+                                                    >
+                                                </template>
+                                                <template
+                                                    lwc:if={child.assigneeName}
+                                                >
+                                                    <span
+                                                        class="epic-child-badge"
+                                                        >{child.assigneeName}</span
+                                                    >
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <template lwc:else>
+                                <p
+                                    class="slds-text-body_small slds-text-color_weak"
+                                >
+                                    No child cards linked to
+                                    this epic yet.
+                                </p>
+                            </template>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Linked Cards Section -->
+                <div class="slds-var-m-top_small">
+                    <c-card-linked-cards
+                        record-id={card.Id}
+                    ></c-card-linked-cards>
+                </div>
+
+                <!-- Files Section -->
+                <div
+                    class="card-panel__files slds-var-m-top_medium"
+                >
+                    <div
+                        class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-var-m-bottom_x-small"
+                    >
+                        <h3
+                            class="slds-text-title_caps slds-text-color_weak"
+                        >
+                            Files
+                            <template lwc:if={fileCount}>
+                                ({fileCount})
+                            </template>
+                        </h3>
+                        <button
+                            class="slds-button slds-button_icon slds-button_icon-border-filled"
+                            title="Toggle files section"
+                            onclick={toggleFilesSection}
+                        >
+                            <lightning-icon
+                                icon-name={filesToggleIcon}
+                                size="xx-small"
+                                alternative-text="Toggle"
+                            ></lightning-icon>
+                        </button>
+                    </div>
+                    <template lwc:if={filesExpanded}>
+                        <lightning-file-upload
+                            label="Upload Files"
+                            name="fileUploader"
+                            accept={acceptedFormats}
+                            record-id={card.Id}
+                            onuploadfinished={handleUploadFinished}
+                            multiple
+                        ></lightning-file-upload>
+                        <template lwc:if={hasFiles}>
+                            <ul
+                                class="slds-has-dividers_bottom-space slds-var-m-top_small"
+                            >
+                                <template
+                                    for:each={files}
+                                    for:item="file"
+                                >
+                                    <li
+                                        key={file.contentDocumentId}
+                                        class="slds-item card-file-item"
+                                    >
+                                        <div
+                                            class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center"
+                                        >
+                                            <div
+                                                class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate"
+                                            >
+                                                <lightning-icon
+                                                    icon-name={file.iconName}
+                                                    size="small"
+                                                    class="slds-var-m-right_x-small"
+                                                ></lightning-icon>
+                                                <div
+                                                    class="slds-truncate"
+                                                >
+                                                    <a
+                                                        href="#"
+                                                        class="slds-text-link"
+                                                        title="Preview file"
+                                                        data-file-id={file.contentDocumentId}
+                                                        onclick={handlePreviewFile}
+                                                        >{file.title}.{file.fileExtension}</a
+                                                    >
+                                                    <p
+                                                        class="slds-text-body_small slds-text-color_weak"
+                                                    >
+                                                        {file.formattedSize}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="slds-grid slds-grid_vertical-align-center"
+                                            >
+                                                <lightning-button-icon
+                                                    icon-name="utility:download"
+                                                    alternative-text="Download file"
+                                                    variant="bare"
+                                                    size="small"
+                                                    data-url={file.downloadUrl}
+                                                    onclick={handleDownloadFile}
+                                                    class="slds-var-m-right_xx-small"
+                                                ></lightning-button-icon>
+                                                <lightning-button-icon
+                                                    icon-name="utility:delete"
+                                                    alternative-text="Delete file"
+                                                    variant="bare"
+                                                    size="small"
+                                                    data-file-id={file.contentDocumentId}
+                                                    onclick={handleDeleteFile}
+                                                ></lightning-button-icon>
+                                            </div>
+                                        </div>
+                                    </li>
+                                </template>
+                            </ul>
+                        </template>
+                        <template lwc:if={noFiles}>
+                            <p
+                                class="slds-text-body_small slds-text-color_weak slds-var-m-top_small slds-align_absolute-center"
+                            >
+                                No files attached
+                            </p>
+                        </template>
+                    </template>
+                </div>
+
+                <!-- Comments Section -->
+                <div
+                    class="comments-section slds-var-m-top_medium"
+                >
+                    <div
+                        class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-var-m-bottom_small"
+                    >
+                        <h3 class="slds-text-heading_small">
+                            Comments
+                            <template lwc:if={commentCount}>
+                                <span
+                                    class="slds-text-body_small slds-text-color_weak"
+                                >
+                                    ({commentCount})</span
+                                >
+                            </template>
+                        </h3>
+                    </div>
+
+                    <!-- New Comment Input -->
+                    <div
+                        class="comment-input slds-var-m-bottom_small"
+                    >
+                        <textarea
+                            class="comment-textarea slds-textarea"
+                            placeholder="Write a comment..."
+                            maxlength="10000"
+                            rows="3"
+                            data-id="comment-input"
+                        ></textarea>
+                        <div
+                            class="slds-grid slds-grid_align-end slds-var-m-top_xx-small"
+                        >
+                            <lightning-button
+                                variant="brand"
+                                label="Post"
+                                onclick={handlePostComment}
+                                icon-name="utility:send"
+                                data-id="post-comment-btn"
+                            ></lightning-button>
+                        </div>
+                    </div>
+
+                    <!-- Comments List -->
+                    <template lwc:if={isLoadingComments}>
+                        <div
+                            class="slds-align_absolute-center slds-var-p-around_medium"
+                        >
+                            <lightning-spinner
+                                alternative-text="Loading comments"
+                                size="small"
+                            ></lightning-spinner>
+                        </div>
+                    </template>
+                    <template lwc:if={hasComments}>
+                        <ul class="comment-list">
+                            <template
+                                for:each={comments}
+                                for:item="comment"
+                            >
+                                <li
+                                    key={comment.Id}
+                                    class="comment-item slds-var-p-around_x-small"
+                                    data-comment-id={comment.Id}
+                                >
+                                    <div
+                                        class="slds-grid slds-grid_vertical-align-start"
+                                    >
+                                        <template
+                                            lwc:if={comment.createdByPhotoUrl}
+                                        >
+                                            <img
+                                                src={comment.createdByPhotoUrl}
+                                                alt={comment.createdByName}
+                                                class="comment-avatar"
+                                            />
+                                        </template>
+                                        <template lwc:else>
+                                            <lightning-icon
+                                                icon-name="standard:avatar"
+                                                size="small"
+                                                class="comment-avatar-icon"
+                                            ></lightning-icon>
+                                        </template>
+                                        <div
+                                            class="slds-col slds-has-flexi-truncate slds-var-m-left_x-small"
+                                        >
+                                            <div
+                                                class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center"
+                                            >
+                                                <div>
+                                                    <span
+                                                        class="comment-author"
+                                                        >{comment.createdByName}</span
+                                                    >
+                                                    <span
+                                                        class="comment-date slds-text-body_small slds-text-color_weak slds-var-m-left_xx-small"
+                                                        >{comment.formattedDate}</span
+                                                    >
+                                                </div>
+                                                <template
+                                                    lwc:if={comment.isOwnComment}
+                                                >
+                                                    <lightning-button-menu
+                                                        alternative-text="Comment actions"
+                                                        variant="border-filled"
+                                                        icon-size="x-small"
+                                                        menu-alignment="right"
+                                                        onselect={handleCommentAction}
+                                                        data-comment-id={comment.Id}
+                                                    >
+                                                        <lightning-menu-item
+                                                            value="edit"
+                                                            label="Edit"
+                                                            icon-name="utility:edit"
+                                                        ></lightning-menu-item>
+                                                        <lightning-menu-item
+                                                            value="delete"
+                                                            label="Delete"
+                                                            icon-name="utility:delete"
+                                                        ></lightning-menu-item>
+                                                    </lightning-button-menu>
+                                                </template>
+                                            </div>
+                                            <template
+                                                lwc:if={comment.isEditing}
+                                            >
+                                                <div
+                                                    class="slds-var-m-top_xx-small"
+                                                >
+                                                    <lightning-textarea
+                                                        label="Edit comment"
+                                                        variant="label-hidden"
+                                                        value={comment.editBody}
+                                                        onchange={handleEditInputChange}
+                                                        data-comment-id={comment.Id}
+                                                        max-length="10000"
+                                                    ></lightning-textarea>
+                                                    <div
+                                                        class="slds-grid slds-grid_align-end slds-var-m-top_xx-small"
+                                                    >
+                                                        <lightning-button
+                                                            variant="neutral"
+                                                            label="Cancel"
+                                                            onclick={handleCancelEdit}
+                                                            data-comment-id={comment.Id}
+                                                            class="slds-var-m-right_xx-small"
+                                                        ></lightning-button>
+                                                        <lightning-button
+                                                            variant="brand"
+                                                            label="Save"
+                                                            onclick={handleSaveEdit}
+                                                            data-comment-id={comment.Id}
+                                                        ></lightning-button>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                            <template
+                                                lwc:else
+                                            >
+                                                <p
+                                                    class="comment-body slds-var-m-top_xx-small"
+                                                >
+                                                    {comment.body}
+                                                </p>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+                    <template lwc:if={noComments}>
+                        <p
+                            class="slds-text-color_weak slds-text-align_center slds-var-p-around_small"
+                            data-id="no-comments"
+                        >
+                            No comments yet. Be the first to
+                            comment!
+                        </p>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Panel Footer -->
+            <div
+                class="card-panel__footer slds-grid slds-grid_align-spread slds-var-p-around_small"
+            >
+                <lightning-button
+                    variant={deleteButtonVariant}
+                    label={deleteButtonLabel}
+                    onclick={handleDelete}
+                    icon-name="utility:delete"
+                ></lightning-button>
+                <div>
+                    <lightning-button
+                        variant="neutral"
+                        label="Cancel"
+                        onclick={handleClose}
+                        class="slds-var-m-right_x-small"
+                    ></lightning-button>
+                    <lightning-button
+                        variant="brand"
+                        label="Save"
+                        onclick={handleSave}
+                        icon-name="utility:save"
+                    ></lightning-button>
+                </div>
+            </div>
+        </div>
+    </template>
+</template>

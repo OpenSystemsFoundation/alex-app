@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ActiveDesignSession__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description
+    >The active design thinking session this card is currently in.</description>
+    <label>Active Design Session</label>
+    <referenceTo>DesignSession__c</referenceTo>
+    <relationshipLabel>Cards In Session</relationshipLabel>
+    <relationshipName>CardsInSession</relationshipName>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

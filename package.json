@@ -1,0 +1,67 @@
+{
+    "name": "alex-kanban-board",
+    "private": true,
+    "version": "2.0.0",
+    "description": "A LWC Kanban Board for realtime collaboration.",
+    "author": "Open Systems Foundation",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/OpenSystemsFoundation/alex-app"
+    },
+    "license": "MIT",
+    "scripts": {
+        "lint": "eslint **/{aura,lwc}/**/*.js",
+        "test": "npm run test:unit",
+        "test:all": "npm run test:apex && npm run test:unit",
+        "test:unit": "sfdx-lwc-jest",
+        "test:unit:watch": "sfdx-lwc-jest --watch",
+        "test:unit:debug": "sfdx-lwc-jest --debug",
+        "test:unit:coverage": "sfdx-lwc-jest --coverage",
+        "test:apex": "sf apex run test --test-level RunLocalTests --result-format human --code-coverage",
+        "prettier": "prettier --write \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
+        "prettier:verify": "prettier --check \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
+        "prepare": "husky",
+        "prepush": "lint-staged",
+        "deploy": "sf project deploy start --source-dir force-app --ignore-conflicts",
+        "create:sample": "sf apex run --file scripts/apex/CreateBoard.apex",
+        "create:testdata": "node scripts/create-test-data.js",
+        "validate": "sf project deploy validate --source-dir force-app/main/default",
+        "alexadmin": "sf org assign permset --name Alex_Admin",
+        "test:e2e": "npx playwright test",
+        "test:e2e:headed": "npx playwright test --headed",
+        "test:e2e:report": "npx playwright show-report",
+        "type-check:e2e": "npx tsc --noEmit -p e2e/tsconfig.json"
+    },
+    "devDependencies": {
+        "@lwc/eslint-plugin-lwc": "^2.2.0",
+        "@lwc/jest-preset": "^18.1.2",
+        "@playwright/test": "^1.50.0",
+        "@prettier/plugin-xml": "^3.2.2",
+        "@salesforce-ux/eslint-plugin-slds": "^1.0.2",
+        "@salesforce-ux/slds-linter": "^1.0.2",
+        "@salesforce/eslint-config-lwc": "^3.7.2",
+        "@salesforce/eslint-plugin-aura": "^2.1.0",
+        "@salesforce/eslint-plugin-lightning": "^1.0.1",
+        "@salesforce/sfdx-lwc-jest": "^7.3.0",
+        "@types/node": "^25.5.0",
+        "baseline-browser-mapping": "^2.10.9",
+        "eslint": "^8.57.0",
+        "eslint-plugin-import": "^2.25.4",
+        "eslint-plugin-jest": "28.9.0",
+        "husky": "9.1.7",
+        "lint-staged": "^15.1.0",
+        "prettier": "^3.3.3",
+        "prettier-plugin-apex": "2.1.5"
+    },
+    "lint-staged": {
+        "**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}": [
+            "prettier --write"
+        ],
+        "**/{aura,lwc}/**/*.js": [
+            "eslint"
+        ]
+    },
+    "dependencies": {
+        "@lwc/engine": "^1.17.6"
+    }
+}

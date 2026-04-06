@@ -1,0 +1,168 @@
+name: 'Setup E2E Scratch Org'
+description: 'Creates or reuses a persistent scratch org, deploys source, and returns a login URL for E2E testing'
+
+inputs:
+    org-alias:
+        description: 'Alias for the scratch org'
+        required: true
+    sfdx-auth-url:
+        description: 'DevHub SFDX auth URL'
+        required: true
+    create-retro-data:
+        description: 'Whether to create retrospective sample data'
+        required: false
+        default: 'false'
+    create-board-data:
+        description: 'Whether to create filled kanban board data'
+        required: false
+        default: 'true'
+    persistent:
+        description: 'Reuse scratch org across runs via cache (true) or create ephemeral org (false)'
+        required: false
+        default: 'false'
+    cache-key:
+        description: 'Cache key prefix for persistent orgs (e.g. branch name). Required when persistent=true.'
+        required: false
+        default: ''
+    duration-days:
+        description: 'Scratch org duration in days'
+        required: false
+        default: '1'
+
+outputs:
+    login-url:
+        description: 'Salesforce frontdoor login URL'
+        value: ${{ steps.login.outputs.url }}
+    org-created:
+        description: 'Whether a new org was created (true) or an existing one was reused (false)'
+        value: ${{ steps.provision.outputs.org_created }}
+
+runs:
+    using: 'composite'
+    steps:
+        - name: Install Salesforce CLI
+          shell: bash
+          run: npm install -g @salesforce/cli
+
+        - name: Authenticate DevHub
+          shell: bash
+          run: |
+              echo "${{ inputs.sfdx-auth-url }}" > /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
+              sf org login sfdx-url \
+                --sfdx-url-file /tmp/sfdx_auth_${{ inputs.org-alias }}.txt \
+                --alias devhub \
+                --set-default-dev-hub 2>/dev/null || true
+              rm /tmp/sfdx_auth_${{ inputs.org-alias }}.txt
+
+        - name: Restore cached org auth
+          if: inputs.persistent == 'true'
+          id: cache-restore
+          uses: actions/cache/restore@v4
+          with:
+              path: /tmp/cached-org-auth-${{ inputs.org-alias }}.txt
+              key: scratch-org-${{ inputs.cache-key }}-${{ inputs.org-alias }}
+
+        - name: Provision Scratch Org (create or reuse)
+          id: provision
+          shell: bash
+          run: |
+              ORG_CREATED="true"
+              PERSISTENT="${{ inputs.persistent }}"
+              ALIAS="${{ inputs.org-alias }}"
+              CACHE_HIT="${{ steps.cache-restore.outputs.cache-hit }}"
+              AUTH_FILE="/tmp/cached-org-auth-${{ inputs.org-alias }}.txt"
+
+              if [ "$PERSISTENT" = "true" ] && [ "$CACHE_HIT" = "true" ] && [ -f "$AUTH_FILE" ]; then
+                echo "::group::Attempting to reuse cached scratch org"
+                # Authenticate the cached org
+                sf org login sfdx-url \
+                  --sfdx-url-file "$AUTH_FILE" \
+                  --alias "$ALIAS" 2>/dev/null || true
+
+                # Verify the org is still alive
+                if sf org display --target-org "$ALIAS" --json 2>/dev/null | node -e "
+                  let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                    const j=JSON.parse(d);
+                    const status = (j.result && j.result.connectedStatus) || '';
+                    process.exit(status === 'Connected' ? 0 : 1);
+                  });
+                "; then
+                  echo "✅ Cached scratch org is alive — reusing"
+                  ORG_CREATED="false"
+                else
+                  echo "⚠️ Cached org is dead or expired — will create a new one"
+                  rm -f "$AUTH_FILE"
+                fi
+                echo "::endgroup::"
+              fi
+
+              if [ "$ORG_CREATED" = "true" ]; then
+                echo "::group::Creating new scratch org"
+                sf org create scratch \
+                  --definition-file config/project-scratch-def.json \
+                  --alias "$ALIAS" \
+                  --duration-days ${{ inputs.duration-days }} \
+                  --wait 15
+
+                if [ "$PERSISTENT" = "true" ]; then
+                  # Export auth URL for caching
+                  sf org display --target-org "$ALIAS" --verbose --json 2>/dev/null | node -e "
+                    let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                      const j=JSON.parse(d);
+                      console.log(j.result.sfdxAuthUrl);
+                    });
+                  " > "$AUTH_FILE"
+                fi
+                echo "::endgroup::"
+              fi
+
+              echo "org_created=$ORG_CREATED" >> "$GITHUB_OUTPUT"
+
+        - name: Save org auth to cache
+          if: inputs.persistent == 'true' && steps.provision.outputs.org_created == 'true'
+          uses: actions/cache/save@v4
+          with:
+              path: /tmp/cached-org-auth-${{ inputs.org-alias }}.txt
+              key: scratch-org-${{ inputs.cache-key }}-${{ inputs.org-alias }}
+
+        - name: Deploy Source (base package only)
+          shell: bash
+          run: sf project deploy start --source-dir force-app --target-org ${{ inputs.org-alias }} --ignore-conflicts
+
+        - name: Assign Permission Sets
+          if: steps.provision.outputs.org_created == 'true'
+          shell: bash
+          run: sf org assign permset --name Alex_Admin --target-org ${{ inputs.org-alias }}
+
+        - name: Create Board Data
+          if: inputs.create-board-data == 'true' && steps.provision.outputs.org_created == 'true'
+          shell: bash
+          run: sf apex run --file scripts/apex/CreateFilledKanbanBoard.apex --target-org ${{ inputs.org-alias }}
+
+        - name: Create Retrospective Data
+          if: inputs.create-retro-data == 'true' && steps.provision.outputs.org_created == 'true'
+          shell: bash
+          run: |
+              sf apex run --target-org ${{ inputs.org-alias }} <<'APEX'
+              OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c ORDER BY CreatedDate DESC LIMIT 1];
+              OpenSF__Retrospective__c retro = new OpenSF__Retrospective__c(
+                  OpenSF__Status__c = 'Active',
+                  OpenSF__Template__c = 'Start_Stop_Continue',
+                  OpenSF__MaxVotesPerUser__c = 5,
+                  OpenSF__Board__c = board.Id
+              );
+              insert retro;
+              System.debug('E2E_RETRO_ID:' + retro.Id);
+              APEX
+
+        - name: Get Login URL
+          id: login
+          shell: bash
+          run: |
+              LOGIN_URL=$(sf org open --target-org ${{ inputs.org-alias }} --json 2>/dev/null | node -e "
+                let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+                  const j=JSON.parse(d);
+                  console.log(j.result.url);
+                });
+              ")
+              echo "url=$LOGIN_URL" >> "$GITHUB_OUTPUT"

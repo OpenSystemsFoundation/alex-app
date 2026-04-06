@@ -1,0 +1,436 @@
+/* ==========================================================================
+   Backlog View — Dense data table, full-width, Jira/Linear density
+   ========================================================================== */
+
+/* Host element must fill parent */
+:host {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+}
+
+.backlog-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background: rgb(255, 255, 255);
+}
+
+/* ---------- Toolbar: single compact row ---------- */
+.backlog-view__toolbar {
+    border-bottom: 1px solid rgb(229, 231, 235);
+    background: rgb(255, 255, 255);
+    flex-shrink: 0;
+    padding: 0.375rem 0.75rem !important;
+}
+
+.backlog-search {
+    --slds-c-input-sizing-min-height: 1.75rem;
+    max-width: 240px;
+}
+
+.backlog-filter {
+    --slds-c-input-sizing-min-height: 1.75rem;
+    min-width: 110px;
+}
+
+/* ---------- Bulk actions bar ---------- */
+.backlog-view__bulk-actions {
+    background: rgb(239, 246, 255);
+    border-bottom: 1px solid rgb(191, 219, 254);
+    flex-shrink: 0;
+    padding: 0.25rem 0.75rem !important;
+}
+
+/* ---------- Create form ---------- */
+.backlog-view__create-form {
+    background: rgb(250, 251, 252);
+    border-bottom: 1px solid rgb(229, 231, 235);
+    flex-shrink: 0;
+    padding: 0.375rem 0.75rem !important;
+}
+
+.create-input {
+    --slds-c-input-sizing-min-height: 1.75rem;
+}
+
+/* ---------- Table: full width, dense rows ---------- */
+.backlog-view__table {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Table rows — card-like objects */
+.backlog-row {
+    padding: 0;
+    min-height: 2.25rem;
+    width: 100%;
+    background: rgb(255, 255, 255);
+    border: 1px solid rgb(229, 231, 235);
+    border-radius: 0.25rem;
+    margin-bottom: 0.125rem;
+    transition:
+        background-color 0.08s ease,
+        box-shadow 0.12s ease,
+        border-color 0.12s ease;
+}
+
+.backlog-row--header {
+    background: rgb(250, 250, 251);
+    border: none;
+    border-bottom: 1px solid rgb(229, 231, 235);
+    border-radius: 0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgb(107, 114, 128);
+    margin-bottom: 0.25rem;
+    min-height: 1.75rem;
+}
+
+/* Header cells should all look the same */
+.backlog-row--header .backlog-cell {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: rgb(107, 114, 128);
+    min-height: 1.75rem;
+}
+
+.header-icon {
+    opacity: 0.5;
+    --slds-c-icon-color-foreground-default: rgb(107, 114, 128);
+}
+
+.backlog-row:not(.backlog-row--header):hover {
+    background: rgb(249, 250, 252);
+    border-color: rgb(196, 200, 210);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.backlog-row:not(.backlog-row--header) {
+    cursor: pointer;
+}
+
+.backlog-row:not(.backlog-row--header):active {
+    background: rgb(243, 246, 250);
+    box-shadow: 0 0 0 1px rgb(191, 219, 254);
+}
+
+.backlog-row.dragging {
+    opacity: 0.2;
+    background: rgb(239, 242, 255);
+    border-color: rgb(165, 180, 252);
+}
+
+/* Drop indicator lines */
+.backlog-row.drag-indicator-above {
+    border-top: 2px solid rgb(37, 99, 235);
+    margin-top: 0.25rem;
+}
+
+.backlog-row.drag-indicator-below {
+    border-bottom: 2px solid rgb(37, 99, 235);
+    margin-bottom: 0.25rem;
+}
+
+/* Section header drop indicator */
+.sprint-header-row.drag-indicator-header {
+    background: rgb(219, 234, 254);
+    outline: 2px solid rgb(37, 99, 235);
+    outline-offset: -2px;
+}
+
+/* Refinement highlight */
+.backlog-row.needs-refinement {
+    border-left: 3px solid rgb(107, 114, 128);
+    background: rgb(249, 250, 251);
+}
+
+.backlog-row.needs-refinement:hover {
+    background: rgb(243, 244, 246);
+}
+
+/* ---------- Table cells ---------- */
+.backlog-cell {
+    padding: 0.3125rem 0.375rem;
+    font-size: 0.8125rem;
+    display: flex;
+    align-items: center;
+    line-height: 1.3;
+    min-height: 2.25rem;
+}
+
+/* Drag handle — always visible, styled as grip */
+.backlog-cell--drag {
+    width: 28px;
+    flex: 0 0 28px;
+    cursor: grab;
+    opacity: 0.25;
+    transition: opacity 0.12s ease;
+    justify-content: center;
+    border-right: 1px solid rgb(238, 240, 243);
+}
+
+.backlog-row:hover .backlog-cell--drag {
+    opacity: 0.6;
+}
+
+.backlog-cell--drag:hover {
+    opacity: 1 !important;
+    background: rgb(243, 244, 246);
+}
+
+.backlog-cell--drag:active {
+    cursor: grabbing;
+}
+
+.backlog-cell--checkbox {
+    width: 28px;
+    flex: 0 0 28px;
+    justify-content: center;
+}
+
+.backlog-cell--refinement {
+    width: 24px;
+    flex: 0 0 24px;
+    justify-content: center;
+}
+
+.backlog-cell--name {
+    width: 80px;
+    flex: 0 0 80px;
+    font-weight: 600;
+}
+
+.backlog-cell--name a {
+    font-size: 0.75rem;
+    color: rgb(37, 99, 235) !important;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.backlog-cell--name a:hover {
+    color: rgb(29, 78, 216) !important;
+    text-decoration: underline;
+}
+
+.backlog-cell--subject {
+    flex: 1;
+    min-width: 200px;
+    font-weight: 500;
+    color: rgb(17, 24, 39);
+}
+
+.backlog-cell--type {
+    width: 90px;
+    flex: 0 0 90px;
+}
+
+.backlog-cell--type .slds-badge {
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+}
+
+.backlog-cell--priority {
+    width: 80px;
+    flex: 0 0 80px;
+}
+
+.backlog-cell--points {
+    width: 56px;
+    flex: 0 0 56px;
+    text-align: center;
+    justify-content: center;
+    font-weight: 600;
+    color: rgb(75, 85, 99);
+    font-size: 0.8125rem;
+}
+
+.backlog-cell--assignee {
+    width: 140px;
+    flex: 0 0 140px;
+    color: rgb(107, 114, 128);
+    font-size: 0.75rem;
+}
+
+/* ---------- Refinement toggle ---------- */
+.refinement-toggle {
+    padding: 0 !important;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.refinement-active {
+    --slds-c-icon-color-foreground-default: rgb(55, 65, 81);
+    color: rgb(55, 65, 81) !important;
+}
+
+.refinement-inactive {
+    opacity: 0.15;
+    transition: opacity 0.12s ease;
+}
+
+.backlog-row:hover .refinement-inactive {
+    opacity: 0.4;
+}
+
+/* ---------- Priority badges (table) ---------- */
+.priority-badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 3px;
+    display: inline-block;
+    line-height: 1.375rem;
+}
+
+.priority-high {
+    background: rgb(254, 226, 226);
+    color: rgb(185, 28, 28);
+}
+
+.priority-medium {
+    background: rgb(254, 243, 199);
+    color: rgb(146, 64, 14);
+}
+
+.priority-low {
+    background: rgb(220, 252, 231);
+    color: rgb(21, 128, 61);
+}
+
+/* ---------- Sprint section headers ---------- */
+.backlog-section {
+    width: 100%;
+}
+
+.sprint-header-row {
+    padding: 0.375rem 0.5rem;
+    background: rgb(243, 244, 246);
+    border: 1px solid rgb(209, 213, 219);
+    border-radius: 0.25rem;
+    margin-bottom: 0.125rem;
+    margin-top: 0.375rem;
+    cursor: pointer;
+    transition:
+        background-color 0.08s ease,
+        border-color 0.12s ease;
+    user-select: none;
+}
+
+.sprint-header-row:first-child {
+    margin-top: 0;
+}
+
+.sprint-header-row:hover {
+    background: rgb(229, 231, 235);
+    border-color: rgb(156, 163, 175);
+}
+
+.sprint-header__chevron {
+    width: 20px;
+    flex: 0 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.25rem;
+    opacity: 0.6;
+    --slds-c-icon-color-foreground-default: rgb(75, 85, 99);
+}
+
+.sprint-header__label {
+    flex: 1;
+    font-size: 0.8125rem;
+    color: rgb(31, 41, 55);
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sprint-header__goal {
+    font-weight: 400;
+    color: rgb(107, 114, 128);
+}
+
+.sprint-header__stats {
+    flex: 0 0 auto;
+    color: rgb(107, 114, 128);
+    font-size: 0.75rem;
+    margin-left: 0.75rem;
+    white-space: nowrap;
+}
+
+/* ---------- Create sprint form ---------- */
+.create-sprint-input {
+    --slds-c-input-sizing-min-height: 1.75rem;
+}
+
+/* ---------- Empty state ---------- */
+.backlog-view .slds-align_absolute-center {
+    color: rgb(156, 163, 175);
+}
+
+/* ---------- Scrollbar ---------- */
+.backlog-view__table::-webkit-scrollbar {
+    width: 6px;
+}
+
+.backlog-view__table::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.backlog-view__table::-webkit-scrollbar-thumb {
+    background: rgb(209, 213, 219);
+    border-radius: 3px;
+}
+
+.backlog-view__table::-webkit-scrollbar-thumb:hover {
+    background: rgb(156, 163, 175);
+}
+
+/* ---------- Debug LexoRank column ---------- */
+.backlog-cell--debug {
+    flex: 0 0 120px;
+    font-family: monospace;
+    font-size: 0.65rem;
+    color: rgb(155, 89, 182);
+    opacity: 0.85;
+}
+
+/* ---------- Saving indicator ---------- */
+.saving-spinner {
+    display: inline-block;
+    position: relative;
+    width: 12px;
+    height: 12px;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+    .backlog-cell--assignee,
+    .backlog-cell--type {
+        display: none;
+    }
+
+    .backlog-cell--subject {
+        min-width: 120px;
+    }
+}

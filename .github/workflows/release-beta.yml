@@ -1,0 +1,113 @@
+name: Release Beta Package
+
+on:
+    workflow_dispatch:
+        inputs:
+            skip_validation:
+                description: 'Skip Apex test validation (faster, not promotable)'
+                type: boolean
+                default: false
+
+jobs:
+    create-beta:
+        name: Create Beta Managed Package
+        runs-on: ubuntu-latest
+        if: github.ref == 'refs/heads/main'
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install Salesforce CLI
+              run: npm install -g @salesforce/cli
+
+            - name: Authenticate DevHub
+              run: |
+                  echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
+                  sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --alias devhub --set-default-dev-hub
+                  rm sfdx_auth.txt
+
+            - name: Read version from sfdx-project.json
+              id: read_version
+              run: |
+                  VERSION_NAME=$(node -e "
+                    const p = require('./sfdx-project.json');
+                    console.log(p.packageDirectories[0].versionName);
+                  ")
+                  echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+
+            - name: Create Package Version
+              id: create_version
+              run: |
+                  SKIP_FLAG=""
+                  if [ "${{ inputs.skip_validation }}" = "true" ]; then
+                    SKIP_FLAG="--skip-validation"
+                  fi
+
+                  RESULT=$(sf package version create \
+                    --package "Alex - A Kanban App" \
+                    --installation-key-bypass \
+                    --wait 30 \
+                    --code-coverage \
+                    $SKIP_FLAG \
+                    --json)
+
+                  echo "$RESULT" | tee version-result.json
+
+                  # Extract subscriber package version ID (04t...) and version number
+                  node -e "
+                    const r = JSON.parse(require('fs').readFileSync('version-result.json','utf8'));
+                    const id = r.result.SubscriberPackageVersionId;
+                    console.log('version_id=' + id);
+                    console.log('install_url=https://login.salesforce.com/packaging/installPackage.apexp?p0=' + id);
+                  " >> "$GITHUB_OUTPUT"
+
+            - name: Get version number from Salesforce
+              id: version_info
+              run: |
+                  node -e "
+                    const child = require('child_process');
+                    const result = JSON.parse(child.execSync(
+                      'sf package version report --package ${{ steps.create_version.outputs.version_id }} --json',
+                      {encoding:'utf8'}
+                    ));
+                    const r = result.result;
+                    const ver = r.MajorVersion + '.' + r.MinorVersion + '.' + r.PatchVersion;
+                    const full = ver + '.' + r.BuildNumber;
+                    console.log('version=' + ver);
+                    console.log('version_full=' + full);
+                  " >> "$GITHUB_OUTPUT"
+
+            - name: Update sfdx-project.json with new alias
+              run: |
+                  node -e "
+                    const fs = require('fs');
+                    const p = JSON.parse(fs.readFileSync('sfdx-project.json','utf8'));
+                    const alias = 'Alex - A Kanban App@${{ steps.version_info.outputs.version_full }}';
+                    p.packageAliases[alias] = '${{ steps.create_version.outputs.version_id }}';
+                    fs.writeFileSync('sfdx-project.json', JSON.stringify(p, null, 4) + '\n');
+                  "
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git add sfdx-project.json
+                  git commit -m "chore: add package alias for v${{ steps.version_info.outputs.version_full }} [skip ci]"
+                  git push
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: v${{ steps.version_info.outputs.version }}-beta
+                  name: 'Alex v${{ steps.version_info.outputs.version }} Beta'
+                  body: |
+                      **Beta managed package** — ${{ steps.read_version.outputs.version_name }}
+
+                      **Install URL:** ${{ steps.create_version.outputs.install_url }}
+                      **Package Version ID:** `${{ steps.create_version.outputs.version_id }}`
+                      **Salesforce Version:** ${{ steps.version_info.outputs.version_full }}
+
+                      ### Install in a sandbox or Developer Edition org:
+                      1. Log in to your org
+                      2. Navigate to: ${{ steps.create_version.outputs.install_url }}
+                      3. Select "Install for Admins Only" (recommended)
+                      4. Assign the `Alex_Admin` or `Alex_User` permission set
+
+                      > This is a beta version and has NOT been promoted for production use.
+                  prerelease: true

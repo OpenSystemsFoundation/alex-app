@@ -1,0 +1,179 @@
+# .github/workflows/agentforce-scratch-org.yml
+name: Agentforce Scratch Org Test Drive
+
+on:
+    workflow_dispatch:
+        inputs:
+            package:
+                description: 'Agentforce scratch org variant'
+                type: choice
+                default: 'standard'
+                options:
+                    - standard
+                    - data-cloud
+            duration:
+                description: 'Scratch org duration in days (1-30)'
+                type: number
+                default: 7
+            skip_tests:
+                description: 'Skip Apex tests after deploy'
+                type: boolean
+                default: false
+    issue_comment:
+        types: [created]
+
+jobs:
+    create-agentforce-org:
+        name: Create Agentforce Org (${{ inputs.package || 'standard' }})
+        runs-on: ubuntu-latest
+        if: >
+            github.event_name == 'workflow_dispatch' ||
+            (github.event_name == 'issue_comment' &&
+             github.event.issue.pull_request &&
+             (contains(github.event.comment.body, '/agentforce-org') ||
+              contains(github.event.comment.body, '/agentforce-dc-org')))
+
+        steps:
+            - name: Determine package variant
+              id: variant
+              run: |
+                  if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+                    PACKAGE="${{ inputs.package }}"
+                  elif echo "${{ github.event.comment.body }}" | grep -q "/agentforce-dc-org"; then
+                    PACKAGE="data-cloud"
+                  else
+                    PACKAGE="standard"
+                  fi
+
+                  if [ "$PACKAGE" = "data-cloud" ]; then
+                    echo "scratch_def=config/dc-agentforce-project-scratch-def.json" >> "$GITHUB_OUTPUT"
+                    echo "label=Agentforce + Data Cloud" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "scratch_def=config/agentforce-project-scratch-def.json" >> "$GITHUB_OUTPUT"
+                    echo "label=Agentforce Standard" >> "$GITHUB_OUTPUT"
+                  fi
+                  echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
+
+            - name: Get PR branch (for issue_comment trigger)
+              if: github.event_name == 'issue_comment'
+              id: pr_branch
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const pr = await github.rest.pulls.get({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        pull_number: context.issue.number
+                      });
+                      core.setOutput('ref', pr.data.head.ref);
+                      core.setOutput('pr_number', context.issue.number);
+
+            - name: React to comment
+              if: github.event_name == 'issue_comment'
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      await github.rest.reactions.createForIssueComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        comment_id: context.payload.comment.id,
+                        content: 'rocket'
+                      });
+
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ steps.pr_branch.outputs.ref || github.ref }}
+
+            - name: Setup Agentforce Org
+              id: org
+              uses: ./.github/actions/setup-agentforce-org
+              with:
+                  org-alias: agentforce-test-drive
+                  sfdx-auth-url: ${{ secrets.SFDX_AUTH_URL }}
+                  scratch-def: ${{ steps.variant.outputs.scratch_def }}
+                  create-board-data: true
+                  duration-days: ${{ inputs.duration || 7 }}
+                  deploy-agentforce: true
+
+            - name: Run Apex Tests
+              if: inputs.skip_tests != true
+              run: |
+                  sf apex run test \
+                    --target-org agentforce-test-drive \
+                    --code-coverage \
+                    --result-format human \
+                    --wait 15 || true
+
+            - name: Post Job Summary
+              run: |
+                  BRANCH="${{ steps.pr_branch.outputs.ref || github.ref_name }}"
+                  cat >> "$GITHUB_STEP_SUMMARY" <<SUMMARY
+                  ## Agentforce Scratch Org Ready
+
+                  | | |
+                  |---|---|
+                  | **Package** | ${{ steps.variant.outputs.label }} |
+                  | **Branch** | \`$BRANCH\` |
+                  | **Username** | \`${{ steps.org.outputs.username }}\` |
+                  | **Instance** | ${{ steps.org.outputs.instance-url }} |
+                  | **Scratch Def** | \`${{ steps.variant.outputs.scratch_def }}\` |
+
+                  ### Login Link
+
+                  **[Click here to open the Agentforce scratch org](${{ steps.org.outputs.login-url }})**
+
+                  > One-time use frontdoor link. Bookmark after logging in.
+
+                  ### What's deployed
+                  - **Alex base package** (force-app) — kanban board, sprints, backlog, retrospectives
+                  - **Agentforce extension** (force-agentforce) — 5 topics, 22 actions, agent planner
+                  - \`Alex_Admin\` + \`Alex_Agentforce_User\` permission sets assigned
+                  - Einstein1 AI Platform + Agent Platform enabled
+                  $([ "${{ steps.variant.outputs.package }}" = "data-cloud" ] && echo "- Customer Data Platform enabled" || true)
+                  - Sample board with columns and cards pre-loaded
+
+                  ### Agentforce Setup (Post-Login)
+                  1. Navigate to **Setup > Einstein > Agents**
+                  2. The **Alex Agent** should already be deployed
+                  3. Open the agent in **Agent Builder** to test
+                  4. Try: *"Show me the board summary"* or *"Create a card called Fix login bug"*
+
+                  ### Available Agent Topics
+                  | Topic | Actions |
+                  |-------|---------|
+                  | Board Insights | Get Board Summary, Get Board Layout, Get Backlog |
+                  | Card Management | Create/Update/Delete/Move/Search Cards, Get Card Details |
+                  | Sprint Management | Create/Start/Complete Sprint, Get Sprint Status, Add/Remove Cards |
+                  | Team Assignment | Assign Card, Search Users, Get User Workload |
+                  | Estimation | Estimate Story Points, Analyze Sprint Capacity, Get Velocity, Get Burndown |
+                  SUMMARY
+
+            - name: Comment on PR
+              if: github.event_name == 'issue_comment'
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const loginUrl = '${{ steps.org.outputs.login-url }}';
+                      const username = '${{ steps.org.outputs.username }}';
+                      const label = '${{ steps.variant.outputs.label }}';
+                      const branch = '${{ steps.pr_branch.outputs.ref }}';
+
+                      await github.rest.issues.createComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: context.issue.number,
+                        body: `## Agentforce Scratch Org Ready
+
+                      | | |
+                      |---|---|
+                      | **Package** | ${label} |
+                      | **Branch** | \`${branch}\` |
+                      | **Username** | \`${username}\` |
+
+                      **[Click here to open the Agentforce scratch org](${loginUrl})**
+
+                      > One-time frontdoor link. Bookmark after logging in.
+                      > Alex + Agentforce agent pre-loaded with 5 topics and 22 actions.
+                      > Test in Agent Builder: Setup > Einstein > Agents > Alex Agent`
+                      });

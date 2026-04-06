@@ -1,0 +1,227 @@
+# .github/workflows/agentforce-dual-org-tests.yml
+name: Agentforce Dual-Org Test Matrix
+
+# Runs the full Apex test suite against both Agentforce scratch org variants
+# in parallel to catch environment-specific regressions.
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - 'force-app/**'
+            - 'force-agentforce/**'
+            - 'config/agentforce-*.json'
+            - 'config/dc-agentforce-*.json'
+    pull_request:
+        branches: [main]
+        paths:
+            - 'force-app/**'
+            - 'force-agentforce/**'
+            - 'config/agentforce-*.json'
+            - 'config/dc-agentforce-*.json'
+    workflow_dispatch:
+        inputs:
+            package:
+                description: 'Which org variant(s) to test'
+                type: choice
+                default: 'both'
+                options:
+                    - standard
+                    - data-cloud
+                    - both
+
+concurrency:
+    group: agentforce-dual-tests-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    test-standard:
+        name: Apex Tests — Agentforce Standard
+        runs-on: ubuntu-latest
+        if: >
+            github.event_name != 'workflow_dispatch' ||
+            inputs.package == 'standard' ||
+            inputs.package == 'both'
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Agentforce Org
+              id: org
+              uses: ./.github/actions/setup-agentforce-org
+              with:
+                  org-alias: af-dual-standard
+                  sfdx-auth-url: ${{ secrets.SFDX_AUTH_URL }}
+                  scratch-def: config/agentforce-project-scratch-def.json
+                  create-board-data: false
+                  deploy-agentforce: true
+                  persistent: true
+                  cache-key: ${{ github.head_ref || github.ref_name }}
+                  duration-days: '7'
+
+            - name: Run All Apex Tests
+              run: |
+                  mkdir -p apex-results
+                  sf apex run test \
+                    --target-org af-dual-standard \
+                    --code-coverage \
+                    --result-format json \
+                    --wait 15 > apex-results/test-run.json 2>&1 || true
+
+                  node -e "
+                    const fs=require('fs');
+                    const raw=fs.readFileSync('apex-results/test-run.json','utf8');
+                    const jsonStart=raw.indexOf('{');
+                    if(jsonStart<0){console.error('No JSON in output');console.log(raw);process.exit(1)}
+                    const j=JSON.parse(raw.substring(jsonStart));
+                    const r=j.result||j;
+                    const tests=r.tests||[];
+                    const failed=tests.filter(t=>t.Outcome==='Fail');
+                    const passed=tests.filter(t=>t.Outcome==='Pass');
+                    const total=tests.length;
+
+                    console.log('');
+                    console.log('='.repeat(60));
+                    console.log('  AGENTFORCE STANDARD — ALL APEX TESTS');
+                    console.log('='.repeat(60));
+
+                    tests.forEach(t=>{
+                      const cls=(t.ApexClass&&t.ApexClass.Name)||'Unknown';
+                      const icon=t.Outcome==='Pass'?'PASS':'FAIL';
+                      console.log('  ['+icon+'] '+cls+'.'+t.MethodName+' ('+(t.RunTime||'--')+'ms)');
+                    });
+
+                    console.log('');
+                    console.log('  Passed: '+passed.length+'/'+total);
+                    console.log('  Coverage: '+((r.summary||{}).orgWideCoverage||'N/A'));
+
+                    if(failed.length>0){
+                      console.log('');
+                      console.log('  FAILURES:');
+                      failed.forEach(t=>{
+                        const cls=(t.ApexClass&&t.ApexClass.Name)||'Unknown';
+                        console.log('    '+cls+'.'+t.MethodName+': '+t.Message);
+                        if(t.StackTrace) t.StackTrace.split('\\n').forEach(l=>console.log('      '+l));
+                      });
+                      process.exit(1);
+                    }
+                  "
+
+            - name: Delete Scratch Org
+              if: always()
+              run: sf org delete scratch --target-org af-dual-standard --no-prompt || true
+
+            - name: Upload Results
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: apex-results-agentforce-standard
+                  path: apex-results/
+                  retention-days: 7
+
+    test-data-cloud:
+        name: Apex Tests — Agentforce + Data Cloud
+        runs-on: ubuntu-latest
+        if: >
+            github.event_name != 'workflow_dispatch' ||
+            inputs.package == 'data-cloud' ||
+            inputs.package == 'both'
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Agentforce Org
+              id: org
+              uses: ./.github/actions/setup-agentforce-org
+              with:
+                  org-alias: af-dual-dc
+                  sfdx-auth-url: ${{ secrets.SFDX_AUTH_URL }}
+                  scratch-def: config/dc-agentforce-project-scratch-def.json
+                  create-board-data: false
+                  deploy-agentforce: true
+
+            - name: Run All Apex Tests
+              run: |
+                  mkdir -p apex-results
+                  sf apex run test \
+                    --target-org af-dual-dc \
+                    --code-coverage \
+                    --result-format json \
+                    --wait 15 > apex-results/test-run.json 2>&1 || true
+
+                  node -e "
+                    const fs=require('fs');
+                    const raw=fs.readFileSync('apex-results/test-run.json','utf8');
+                    const jsonStart=raw.indexOf('{');
+                    if(jsonStart<0){console.error('No JSON in output');console.log(raw);process.exit(1)}
+                    const j=JSON.parse(raw.substring(jsonStart));
+                    const r=j.result||j;
+                    const tests=r.tests||[];
+                    const failed=tests.filter(t=>t.Outcome==='Fail');
+                    const passed=tests.filter(t=>t.Outcome==='Pass');
+                    const total=tests.length;
+
+                    console.log('');
+                    console.log('='.repeat(60));
+                    console.log('  AGENTFORCE + DATA CLOUD — ALL APEX TESTS');
+                    console.log('='.repeat(60));
+
+                    tests.forEach(t=>{
+                      const cls=(t.ApexClass&&t.ApexClass.Name)||'Unknown';
+                      const icon=t.Outcome==='Pass'?'PASS':'FAIL';
+                      console.log('  ['+icon+'] '+cls+'.'+t.MethodName+' ('+(t.RunTime||'--')+'ms)');
+                    });
+
+                    console.log('');
+                    console.log('  Passed: '+passed.length+'/'+total);
+                    console.log('  Coverage: '+((r.summary||{}).orgWideCoverage||'N/A'));
+
+                    if(failed.length>0){
+                      console.log('');
+                      console.log('  FAILURES:');
+                      failed.forEach(t=>{
+                        const cls=(t.ApexClass&&t.ApexClass.Name)||'Unknown';
+                        console.log('    '+cls+'.'+t.MethodName+': '+t.Message);
+                        if(t.StackTrace) t.StackTrace.split('\\n').forEach(l=>console.log('      '+l));
+                      });
+                      process.exit(1);
+                    }
+                  "
+
+            - name: Delete Scratch Org
+              if: always()
+              run: sf org delete scratch --target-org af-dual-dc --no-prompt || true
+
+            - name: Upload Results
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: apex-results-agentforce-data-cloud
+                  path: apex-results/
+                  retention-days: 7
+
+    summary:
+        name: Dual-Org Test Summary
+        runs-on: ubuntu-latest
+        needs: [test-standard, test-data-cloud]
+        if: always()
+        steps:
+            - name: Post Summary
+              run: |
+                  STANDARD="${{ needs.test-standard.result }}"
+                  DC="${{ needs.test-data-cloud.result }}"
+
+                  cat >> "$GITHUB_STEP_SUMMARY" <<SUMMARY
+                  ## Agentforce Dual-Org Apex Test Results
+
+                  | Org Variant | Result |
+                  |-------------|--------|
+                  | Agentforce Standard (Einstein1 + Agent Platform) | ${STANDARD} |
+                  | Agentforce + Data Cloud (Einstein1 + Agent + CDP) | ${DC} |
+
+                  Both orgs deploy \`force-app\` (base package) + \`force-agentforce\` (extension)
+                  then run the complete Apex test suite including all Agent action tests.
+                  SUMMARY
+
+                  if [ "$STANDARD" = "failure" ] || [ "$DC" = "failure" ]; then
+                    echo "::error::One or more dual-org test jobs failed"
+                    exit 1
+                  fi

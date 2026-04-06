@@ -1,0 +1,250 @@
+/**
+ * LexoRank implementation for efficient ordering in drag-and-drop interfaces
+ * Based on the LexoRank algorithm used by Jira
+ */
+public with sharing class LexoRank {
+    private static final String MIN_CHAR = '0';
+    private static final String MAX_CHAR = 'z';
+    private static final String DEFAULT_START = '0|hzzzzz:';
+    private static final Integer DEFAULT_LENGTH = 6;
+
+    /**
+     * Generate initial rank
+     */
+    public static String initial() {
+        return DEFAULT_START;
+    }
+
+    /**
+     * Generate a rank between two positions
+     */
+    public static String between(String prev, String next) {
+        if (String.isBlank(prev) && String.isBlank(next)) {
+            return initial();
+        }
+
+        if (String.isBlank(prev)) {
+            return beforeFirst(next);
+        }
+
+        if (String.isBlank(next)) {
+            return afterLast(prev);
+        }
+
+        return betweenRanks(prev, next);
+    }
+
+    /**
+     * Generate rank before the first item
+     */
+    private static String beforeFirst(String rank) {
+        // Get bucket and key
+        List<String> parts = rank.split('\\|');
+        if (parts.size() != 2) {
+            return initial();
+        }
+
+        String bucket = parts[0];
+        String key = parts[1];
+
+        // Generate a key that comes before
+        String newKey = decrementKey(key);
+        return bucket + '|' + newKey;
+    }
+
+    /**
+     * Generate rank after the last item
+     */
+    private static String afterLast(String rank) {
+        // Get bucket and key
+        List<String> parts = rank.split('\\|');
+        if (parts.size() != 2) {
+            return initial();
+        }
+
+        String bucket = parts[0];
+        String key = parts[1];
+
+        // Generate a key that comes after
+        String newKey = incrementKey(key);
+        return bucket + '|' + newKey;
+    }
+
+    /**
+     * Generate rank between two existing ranks
+     */
+    private static String betweenRanks(String prevRank, String nextRank) {
+        List<String> prevParts = prevRank.split('\\|');
+        List<String> nextParts = nextRank.split('\\|');
+
+        if (prevParts.size() != 2 || nextParts.size() != 2) {
+            return initial();
+        }
+
+        String bucket = prevParts[0];
+        String prevKey = prevParts[1];
+        String nextKey = nextParts[1];
+
+        // Generate middle key
+        String newKey = midpoint(prevKey, nextKey);
+        return bucket + '|' + newKey;
+    }
+
+    /**
+     * Calculate midpoint between two keys using numerical averaging.
+     * Treats keys as numbers in a base-75 system (ASCII '0' to 'z')
+     * and computes the exact average, maintaining DEFAULT_LENGTH.
+     */
+    private static String midpoint(String prev, String next) {
+        // Strip trailing colon before calculation
+        String cleanPrev = prev.endsWith(':')
+            ? prev.substring(0, prev.length() - 1)
+            : prev;
+        String cleanNext = next.endsWith(':')
+            ? next.substring(0, next.length() - 1)
+            : next;
+
+        // Pad to at least DEFAULT_LENGTH
+        Integer maxLen = Math.max(
+            Math.max(cleanPrev.length(), cleanNext.length()),
+            DEFAULT_LENGTH
+        );
+        cleanPrev = padRight(cleanPrev, maxLen);
+        cleanNext = padRight(cleanNext, maxLen);
+
+        Integer minCode = getCharCode('0');
+        Integer maxCode = getCharCode('z');
+
+        List<Integer> result = new List<Integer>();
+        Boolean useMaxForNext = false;
+
+        // Allow extra positions for precision extension
+        Integer lim = maxLen + 8;
+        for (Integer i = 0; i < lim; i++) {
+            Integer p = i < cleanPrev.length() ? cleanPrev.charAt(i) : minCode;
+            Integer n = useMaxForNext
+                ? maxCode
+                : (i < cleanNext.length() ? cleanNext.charAt(i) : minCode);
+
+            if (p == n) {
+                result.add(p);
+                continue;
+            }
+
+            Integer mid = (p + n) / 2;
+            if (mid > p) {
+                result.add(mid);
+                String key = buildString(result);
+                return padRight(key, DEFAULT_LENGTH) + ':';
+            }
+
+            // Adjacent characters: take lower, use max bound going forward
+            result.add(p);
+            useMaxForNext = true;
+        }
+
+        // Safety fallback — should not normally be reached
+        result.add((minCode + maxCode) / 2);
+        String key = buildString(result);
+        return padRight(key, DEFAULT_LENGTH) + ':';
+    }
+
+    /**
+     * Increment a key
+     */
+    private static String incrementKey(String key) {
+        String cleanKey = key.replace(':', '');
+        cleanKey = padRight(cleanKey, DEFAULT_LENGTH);
+        List<Integer> chars = getCharCodes(cleanKey);
+
+        // Increment like a number with base-36
+        Boolean carry = true;
+        for (Integer i = chars.size() - 1; i >= 0 && carry; i--) {
+            Integer charCode = chars[i];
+            charCode++;
+
+            if (charCode > getCharCode('z')) {
+                chars[i] = getCharCode('0');
+                carry = true;
+            } else {
+                chars[i] = charCode;
+                carry = false;
+            }
+        }
+
+        if (carry) {
+            chars.add(0, getCharCode('0'));
+        }
+
+        return buildString(chars) + ':';
+    }
+
+    /**
+     * Decrement a key
+     */
+    private static String decrementKey(String key) {
+        String cleanKey = key.replace(':', '');
+        cleanKey = padRight(cleanKey, DEFAULT_LENGTH);
+        List<Integer> chars = getCharCodes(cleanKey);
+
+        if (chars.isEmpty()) {
+            return '0:';
+        }
+
+        // Decrement like a number with base-36
+        Boolean borrow = true;
+        for (Integer i = chars.size() - 1; i >= 0 && borrow; i--) {
+            Integer charCode = chars[i];
+            charCode--;
+
+            if (charCode < getCharCode('0')) {
+                chars[i] = getCharCode('z');
+                borrow = true;
+            } else {
+                chars[i] = charCode;
+                borrow = false;
+            }
+        }
+
+        return buildString(chars) + ':';
+    }
+
+    /**
+     * Get character codes from string
+     */
+    private static List<Integer> getCharCodes(String str) {
+        List<Integer> codes = new List<Integer>();
+        for (Integer i = 0; i < str.length(); i++) {
+            codes.add(str.charAt(i));
+        }
+        return codes;
+    }
+
+    /**
+     * Get character code
+     */
+    private static Integer getCharCode(String c) {
+        return c.charAt(0);
+    }
+
+    /**
+     * Build string from character codes
+     */
+    private static String buildString(List<Integer> codes) {
+        String result = '';
+        for (Integer code : codes) {
+            result += String.fromCharArray(new List<Integer>{ code });
+        }
+        return result;
+    }
+
+    /**
+     * Pad string to the right with lowest character
+     */
+    private static String padRight(String str, Integer length) {
+        while (str.length() < length) {
+            str += '0';
+        }
+        return str;
+    }
+}

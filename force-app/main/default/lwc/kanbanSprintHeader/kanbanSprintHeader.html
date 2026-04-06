@@ -1,0 +1,73 @@
+<template>
+    <div class="sprint-inline">
+        <template lwc:if={hasSprint}>
+            <!-- Sprint name + goal -->
+            <span class="sprint-inline__divider"></span>
+            <span
+                class="sprint-inline__name"
+                title={sprintName}
+                >{sprintName}</span
+            >
+            <template lwc:if={sprintGoal}>
+                <span
+                    class="sprint-inline__goal"
+                    title={sprintGoal}
+                    >{sprintGoal}</span
+                >
+            </template>
+
+            <!-- Progress -->
+            <span class="sprint-inline__divider"></span>
+            <template lwc:if={daysRemainingLabel}>
+                <span class={daysRemainingClass}
+                    >{daysRemainingLabel}</span
+                >
+            </template>
+            <div
+                class="sprint-inline__progress-bar"
+                title={progressLabel}
+            >
+                <div
+                    class="sprint-inline__progress-fill"
+                    style={progressStyle}
+                ></div>
+            </div>
+            <span class="sprint-inline__progress-label"
+                >{progressLabel}</span
+            >
+
+            <!-- Actions (internal only) -->
+            <template lwc:if={isInternalMode}>
+                <span class="sprint-inline__divider"></span>
+                <lightning-button-icon
+                    icon-name="utility:chart"
+                    alternative-text="Reports"
+                    title="Reports"
+                    onclick={handleShowReports}
+                    size="small"
+                ></lightning-button-icon>
+                <template lwc:if={canComplete}>
+                    <lightning-button
+                        label="Complete"
+                        onclick={handleCompleteSprint}
+                        variant="brand"
+                    ></lightning-button>
+                </template>
+            </template>
+        </template>
+        <template lwc:else>
+            <span class="sprint-inline__divider"></span>
+            <span class="sprint-inline__empty"
+                >No active sprint</span
+            >
+            <template lwc:if={isInternalMode}>
+                <lightning-button
+                    label="New Sprint"
+                    icon-name="utility:add"
+                    onclick={handleCreateSprint}
+                    variant="brand"
+                ></lightning-button>
+            </template>
+        </template>
+    </div>
+</template>

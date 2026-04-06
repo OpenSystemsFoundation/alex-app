@@ -1,0 +1,9 @@
+.slds-modal__container {
+    max-width: 640px;
+}
+
+.slds-progress__list {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+}

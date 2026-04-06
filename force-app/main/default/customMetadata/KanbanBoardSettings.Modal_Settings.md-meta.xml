@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+    xmlns="http://soap.sforce.com/2006/04/metadata"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>Modal Settings</label>
+    <protected>false</protected>
+    <values>
+        <field>FieldNames__c</field>
+        <value xsi:type="xsd:string">Subject__c,
+Description__c,
+Status__c,
+CardType__c,
+Priority__c,
+Epic__c,
+Assignee__c,
+PeerReviewer__c,
+DueDate__c,
+StoryPoints__c,
+Color__c,
+NeedsRefinement__c</value>
+    </values>
+</CustomMetadata>
