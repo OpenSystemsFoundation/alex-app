@@ -151,17 +151,15 @@ public with sharing class KanbanBoardService {
      */
     public static KanbanBoardController.ModalSettings getModalSettings() {
         try {
-            KanbanBoardSettings__mdt settings = [
-                SELECT FieldNames__c
-                FROM KanbanBoardSettings__mdt
-                WHERE DeveloperName = 'Modal_Settings'
-                LIMIT 1
-            ];
+            OpenSF__KanbanBoardSettings__mdt settings = getBoardSettings();
 
             KanbanBoardController.ModalSettings result = new KanbanBoardController.ModalSettings();
-            if (settings != null && String.isNotBlank(settings.FieldNames__c)) {
+            if (
+                settings != null &&
+                String.isNotBlank(settings.OpenSF__FieldNames__c)
+            ) {
                 // Parse comma-separated field names and clean them
-                List<String> fields = settings.FieldNames__c.split(',');
+                List<String> fields = settings.OpenSF__FieldNames__c.split(',');
                 result.visibleFields = new List<String>();
                 for (String field : fields) {
                     String cleanField = field.trim();
@@ -218,6 +216,28 @@ public with sharing class KanbanBoardService {
      * Get runtime config (defaults only in OSS version).
      */
     public static KanbanBoardController.KanbanConfigResult getKanbanConfig() {
-        return new KanbanBoardController.KanbanConfigResult();
+        KanbanBoardController.KanbanConfigResult result = new KanbanBoardController.KanbanConfigResult();
+
+        try {
+            OpenSF__KanbanBoardSettings__mdt settings = getBoardSettings();
+            if (settings != null) {
+                result.showUndoRedoButtons =
+                    settings.OpenSF__ShowUndoRedoButtons__c == true;
+            }
+        } catch (Exception e) {
+            // Keep defaults when metadata is unavailable.
+        }
+
+        return result;
+    }
+
+    private static OpenSF__KanbanBoardSettings__mdt getBoardSettings() {
+        List<OpenSF__KanbanBoardSettings__mdt> settingsList = [
+            SELECT OpenSF__FieldNames__c, OpenSF__ShowUndoRedoButtons__c
+            FROM OpenSF__KanbanBoardSettings__mdt
+            WHERE DeveloperName = 'Modal_Settings'
+            LIMIT 1
+        ];
+        return settingsList.isEmpty() ? null : settingsList[0];
     }
 }

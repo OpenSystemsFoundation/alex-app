@@ -1,0 +1,178 @@
+<template>
+    <div class="kanban-filter-bar">
+        <div class="kanban-filter-bar__search">
+            <lightning-icon
+                icon-name="utility:search"
+                size="xx-small"
+                class="search-icon"
+            ></lightning-icon>
+            <input
+                type="text"
+                class="kanban-filter-bar__search-input"
+                placeholder={searchPlaceholder}
+                value={_searchValue}
+                oninput={handleSearchInput}
+            />
+        </div>
+
+        <template lwc:if={showViewFilter}>
+            <select
+                class="kanban-filter-bar__select"
+                onchange={handleViewChange}
+                value={viewValue}
+            >
+                <template
+                    for:each={viewOptions}
+                    for:item="opt"
+                >
+                    <option
+                        key={opt.value}
+                        value={opt.value}
+                    >
+                        {opt.label}
+                    </option>
+                </template>
+            </select>
+        </template>
+
+        <template lwc:if={showPriorityFilter}>
+            <select
+                class="kanban-filter-bar__select"
+                onchange={handlePriorityChange}
+                value={priorityValue}
+            >
+                <template
+                    for:each={priorityOptions}
+                    for:item="opt"
+                >
+                    <option
+                        key={opt.value}
+                        value={opt.value}
+                    >
+                        {opt.label}
+                    </option>
+                </template>
+            </select>
+        </template>
+
+        <template lwc:if={showCardTypeFilter}>
+            <select
+                class="kanban-filter-bar__select"
+                onchange={handleCardTypeChange}
+                value={cardTypeValue}
+            >
+                <template
+                    for:each={cardTypeOptions}
+                    for:item="opt"
+                >
+                    <option
+                        key={opt.value}
+                        value={opt.value}
+                    >
+                        {opt.label}
+                    </option>
+                </template>
+            </select>
+        </template>
+
+        <template lwc:if={showEpicFilter}>
+            <select
+                class="kanban-filter-bar__select"
+                onchange={handleEpicChange}
+                value={epicValue}
+            >
+                <template
+                    for:each={epicOptions}
+                    for:item="opt"
+                >
+                    <option
+                        key={opt.value}
+                        value={opt.value}
+                    >
+                        {opt.label}
+                    </option>
+                </template>
+            </select>
+        </template>
+
+        <template lwc:if={showSwimlaneFilter}>
+            <select
+                class="kanban-filter-bar__select"
+                onchange={handleSwimlaneChange}
+                value={swimlaneValue}
+            >
+                <template
+                    for:each={swimlaneOptions}
+                    for:item="opt"
+                >
+                    <option
+                        key={opt.value}
+                        value={opt.value}
+                    >
+                        {opt.label}
+                    </option>
+                </template>
+            </select>
+        </template>
+
+        <template lwc:if={showHideDoneToggle}>
+            <button
+                class={hideDoneButtonClass}
+                onclick={handleToggleHideDone}
+                title="Hide cards in Done-category columns"
+            >
+                <lightning-icon
+                    icon-name="utility:check"
+                    size="xx-small"
+                ></lightning-icon>
+                <span class="filter-toggle__label">Hide Done</span>
+            </button>
+        </template>
+
+        <template lwc:if={showInfoText}>
+            <span class="kanban-filter-bar__info">{infoText}</span>
+        </template>
+
+        <template lwc:if={showBusyState}>
+            <span class="kanban-filter-bar__info kanban-filter-bar__info--busy">
+                <lightning-spinner
+                    size="xx-small"
+                    alternative-text={busyLabel}
+                    class="saving-spinner"
+                ></lightning-spinner>
+                {busyLabel}
+            </span>
+        </template>
+
+        <template lwc:if={showClearFilters}>
+            <button
+                class="kanban-filter-bar__clear"
+                onclick={handleClearFilters}
+                title="Clear all filters"
+            >
+                <lightning-icon
+                    icon-name="utility:close"
+                    size="xx-small"
+                ></lightning-icon>
+            </button>
+        </template>
+
+        <template lwc:if={showNewSprint}>
+            <lightning-button
+                label="New Sprint"
+                icon-name="utility:date_input"
+                onclick={handleCreateSprint}
+                variant="neutral"
+            ></lightning-button>
+        </template>
+
+        <template lwc:if={showNewCard}>
+            <lightning-button
+                label="New Card"
+                icon-name="utility:add"
+                onclick={handleCreateCard}
+                variant="brand"
+            ></lightning-button>
+        </template>
+    </div>
+</template>

@@ -1,0 +1,161 @@
+:host {
+    display: block;
+    width: 100%;
+}
+
+.kanban-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    row-gap: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    background: rgb(255, 255, 255);
+    border-bottom: 1px solid rgb(229, 231, 235);
+}
+
+.kanban-filter-bar__search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 0 1 20rem;
+    min-width: 16rem;
+}
+
+.kanban-filter-bar__search .search-icon {
+    position: absolute;
+    left: 0.5rem;
+    pointer-events: none;
+    color: rgb(156, 163, 175);
+}
+
+.kanban-filter-bar__search-input {
+    width: 100%;
+    height: 2rem;
+    padding: 0 0.5rem 0 1.75rem;
+    font-size: 0.875rem;
+    border: 1px solid rgb(229, 231, 235);
+    border-radius: 0.375rem;
+    background: rgb(249, 250, 251);
+    color: rgb(17, 24, 39);
+    outline: none;
+    transition:
+        border-color 0.12s ease,
+        background 0.12s ease,
+        box-shadow 0.12s ease;
+}
+
+.kanban-filter-bar__search-input:focus {
+    border-color: rgb(37, 99, 235);
+    background: rgb(255, 255, 255);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.kanban-filter-bar__select {
+    height: 2rem;
+    min-width: 7.5rem;
+    padding: 0 1.75rem 0 0.625rem;
+    font-size: 0.8125rem;
+    border: 1px solid rgb(229, 231, 235);
+    border-radius: 0.375rem;
+    background: rgb(249, 250, 251);
+    color: rgb(55, 65, 81);
+    cursor: pointer;
+    outline: none;
+    transition:
+        border-color 0.12s ease,
+        box-shadow 0.12s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='%236b7280'%3E%3Cpath d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+}
+
+.kanban-filter-bar__select:focus {
+    border-color: rgb(37, 99, 235);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: 2rem;
+    padding: 0 0.625rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: rgb(107, 114, 128);
+    background: rgb(249, 250, 251);
+    border: 1px solid rgb(229, 231, 235);
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease;
+    white-space: nowrap;
+}
+
+.filter-toggle:hover {
+    background: rgb(243, 244, 246);
+    border-color: rgb(209, 213, 219);
+}
+
+.filter-toggle--active {
+    color: rgb(22, 163, 74);
+    background: rgb(240, 253, 244);
+    border-color: rgb(134, 239, 172);
+}
+
+.kanban-filter-bar__info {
+    font-size: 0.8125rem;
+    color: rgb(107, 114, 128);
+    white-space: nowrap;
+}
+
+.kanban-filter-bar__info--busy {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.kanban-filter-bar__clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    background: none;
+    border: 1px solid rgb(229, 231, 235);
+    border-radius: 0.375rem;
+    cursor: pointer;
+    color: rgb(156, 163, 175);
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease,
+        color 0.12s ease;
+}
+
+.kanban-filter-bar__clear:hover {
+    background: rgb(254, 226, 226);
+    border-color: rgb(252, 165, 165);
+    color: rgb(220, 38, 38);
+}
+
+.kanban-filter-bar lightning-button {
+    --slds-c-button-sizing-height: 2rem;
+    --slds-c-button-radius-border: 0.5rem;
+}
+
+@media (max-width: 960px) {
+    .kanban-filter-bar__search {
+        flex-basis: 16rem;
+        min-width: 12rem;
+    }
+}
+
+@media (max-width: 720px) {
+    .kanban-filter-bar__search {
+        flex: 1 1 100%;
+    }
+}

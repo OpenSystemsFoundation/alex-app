@@ -258,7 +258,7 @@ export default class FilterManager {
      * @param {Event} event - Input event from search field
      */
     handleBoardSearch(event) {
-        const value = event.target.value;
+        const value = event.detail?.value ?? event.target?.value ?? '';
         if (this._searchDebounceTimer) {
             // eslint-disable-next-line @lwc/lwc/no-async-operation
             clearTimeout(this._searchDebounceTimer);
@@ -274,7 +274,8 @@ export default class FilterManager {
      * @param {Event} event - Change event from priority combobox
      */
     handlePriorityFilter(event) {
-        this.component._boardFilterPriority = event.target.value;
+        this.component._boardFilterPriority =
+            event.detail?.value ?? event.target?.value ?? 'All';
     }
 
     /**
@@ -282,7 +283,8 @@ export default class FilterManager {
      * @param {Event} event - Change event from card type combobox
      */
     handleCardTypeFilter(event) {
-        this.component._boardFilterCardType = event.target.value;
+        this.component._boardFilterCardType =
+            event.detail?.value ?? event.target?.value ?? 'All';
     }
 
     /**
@@ -290,7 +292,8 @@ export default class FilterManager {
      * @param {Event} event - Change event from epic combobox
      */
     handleEpicFilter(event) {
-        this.component._boardFilterEpic = event.target.value;
+        this.component._boardFilterEpic =
+            event.detail?.value ?? event.target?.value ?? 'All';
     }
 
     /**
@@ -314,13 +317,6 @@ export default class FilterManager {
             // eslint-disable-next-line @lwc/lwc/no-async-operation
             clearTimeout(this._searchDebounceTimer);
             this._searchDebounceTimer = null;
-        }
-        // Clear the search input element value
-        const searchInput = this.component.template.querySelector(
-            '.board-filter-search'
-        );
-        if (searchInput) {
-            searchInput.value = '';
         }
     }
 

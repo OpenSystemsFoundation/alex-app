@@ -25,8 +25,9 @@ export default class KanbanBacklogView extends LightningElement {
     @api showDebugInfo = false;
 
     @track searchTerm = '';
-    @track filterPriority = 'all';
-    @track filterCardType = 'all';
+    @track filterPriority = 'All';
+    @track filterCardType = 'All';
+    @track filterEpic = 'All';
     @track viewMode = 'all'; // 'all' | 'refinement'
     @track sortBy = 'priority';
     @track showCreateForm = false;
@@ -80,13 +81,22 @@ export default class KanbanBacklogView extends LightningElement {
         }
 
         // Priority filter
-        if (this.filterPriority !== 'all') {
+        if (this.filterPriority !== 'All') {
             cards = cards.filter((c) => c.priority === this.filterPriority);
         }
 
         // Card type filter
-        if (this.filterCardType !== 'all') {
+        if (this.filterCardType !== 'All') {
             cards = cards.filter((c) => c.cardType === this.filterCardType);
+        }
+
+        // Epic filter
+        if (this.filterEpic === '__none__') {
+            cards = cards.filter((c) => !c.epicId && !c.epic?.id);
+        } else if (this.filterEpic !== 'All') {
+            cards = cards.filter(
+                (c) => c.epicId === this.filterEpic || c.epic?.id === this.filterEpic
+            );
         }
 
         // Enrich cards with selection state and UI helpers
@@ -278,21 +288,43 @@ export default class KanbanBacklogView extends LightningElement {
 
     get priorityFilterOptions() {
         return [
-            { label: 'All Priorities', value: 'all' },
+            { label: 'All Priorities', value: 'All' },
+            { label: 'Blocking', value: 'Blocking' },
             { label: 'High', value: 'High' },
             { label: 'Medium', value: 'Medium' },
-            { label: 'Low', value: 'Low' }
+            { label: 'Low', value: 'Low' },
+            { label: 'Trivial', value: 'Trivial' }
         ];
     }
 
     get cardTypeFilterOptions() {
         return [
-            { label: 'All Types', value: 'all' },
+            { label: 'All Types', value: 'All' },
             { label: 'Story', value: 'Story' },
             { label: 'Bug', value: 'Bug' },
             { label: 'Task', value: 'Task' },
             { label: 'Epic', value: 'Epic' }
         ];
+    }
+
+    get epicFilterOptions() {
+        const summaries = this._storeState?.epicSummaries || [];
+        if (summaries.length === 0) {
+            return [{ label: 'All Epics', value: 'All' }];
+        }
+        return [
+            { label: 'All Epics', value: 'All' },
+            ...summaries.map((e) => ({
+                label: e.subject || 'Untitled Epic',
+                value: e.id
+            })),
+            { label: 'No Epic', value: '__none__' }
+        ];
+    }
+
+    get hasEpics() {
+        const summaries = this._storeState?.epicSummaries;
+        return summaries != null && summaries.length > 0;
     }
 
     get priorityOptions() {
@@ -312,24 +344,40 @@ export default class KanbanBacklogView extends LightningElement {
         return `Add to Sprint (${this.selectedCount})`;
     }
 
+    get backlogInfoText() {
+        return `${this.cardCount} cards | ${this.totalStoryPoints} pts`;
+    }
+
+    get hasBacklogInfoText() {
+        return !this.isBacklogSaving;
+    }
+
     // ===================================================================
     // Event Handlers - Toolbar
     // ===================================================================
 
     handleSearchChange(event) {
-        this.searchTerm = event.target.value;
+        this.searchTerm = this.extractEventValue(event);
     }
 
     handleViewModeChange(event) {
-        this.viewMode = event.detail.value;
+        this.viewMode = this.extractEventValue(event);
     }
 
     handlePriorityFilterChange(event) {
-        this.filterPriority = event.detail.value;
+        this.filterPriority = this.extractEventValue(event);
     }
 
     handleCardTypeFilterChange(event) {
-        this.filterCardType = event.detail.value;
+        this.filterCardType = this.extractEventValue(event);
+    }
+
+    handleEpicFilterChange(event) {
+        this.filterEpic = this.extractEventValue(event);
+    }
+
+    extractEventValue(event) {
+        return event.detail?.value ?? event.target?.value ?? '';
     }
 
     handleToggleCreateForm() {

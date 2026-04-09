@@ -585,10 +585,12 @@ public with sharing class KanbanBoardController {
         public Boolean showDebugInfo = false;
         @AuraEnabled
         public Boolean enableDevTools = false;
+        @AuraEnabled
+        public Boolean showUndoRedoButtons = false;
     }
 
     /**
-     * Get runtime config from the KanbanConfig hierarchy custom setting
+     * Get runtime config from Kanban board settings metadata.
      */
     @AuraEnabled(cacheable=true)
     public static KanbanConfigResult getKanbanConfig() {

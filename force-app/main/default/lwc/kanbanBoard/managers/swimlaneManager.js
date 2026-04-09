@@ -166,6 +166,7 @@ export default class SwimlaneManager {
      * @param {Event} event - The change event from the combobox
      */
     handleModeChange(event) {
-        this.component._swimlaneMode = event.target.value;
+        this.component._swimlaneMode =
+            event.detail?.value ?? event.target?.value ?? 'none';
     }
 }

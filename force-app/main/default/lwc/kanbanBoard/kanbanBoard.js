@@ -67,6 +67,8 @@ import { generateClientId } from './helpers/clientIdGenerator';
  */
 
 export default class KanbanBoard extends LightningElement {
+    static DEFAULT_CARD_PANEL_WIDTH = 400;
+
     /** @type {string|undefined} Optional fixed height; if not set, uses dynamic calculation */
     @api height;
     /** @type {boolean} Experience Cloud mode for community portal */
@@ -79,6 +81,7 @@ export default class KanbanBoard extends LightningElement {
     _resizeObserver = null;
     _wrapperElement = null;
     _windowResizeHandler = null;
+    _windowScrollHandler = null;
     _clientId = null; // Unique ID for this browser window/tab
 
     // Reactive state - only track what needs reactivity
@@ -87,11 +90,14 @@ export default class KanbanBoard extends LightningElement {
     // UI State - these don't need @track as they're reassigned directly
     selectedCard = null;
     showCardDetail = false;
+    @track _cardPanelWidth = KanbanBoard.DEFAULT_CARD_PANEL_WIDTH;
     @track _eventCount = 0; // Needs @track for indicator reactivity
     @track _lastSyncTime = null; // Needs @track for indicator reactivity
 
     // Config
     @track _showDebugInfo = false;
+    _showUndoRedoButtons = false;
+    _enableDevTools = false;
 
     // Tab state
     @track activeTab = 'board';
@@ -354,6 +360,7 @@ export default class KanbanBoard extends LightningElement {
         if (data) {
             this._showDebugInfo = data.showDebugInfo === true;
             this._enableDevTools = data.enableDevTools === true;
+            this._showUndoRedoButtons = data.showUndoRedoButtons === true;
             // Enable devtools if store already exists (wire fired after connectedCallback)
             if (this._enableDevTools && this._store) {
                 this._store.enableDevTools();
@@ -363,6 +370,10 @@ export default class KanbanBoard extends LightningElement {
 
     get showDebugInfo() {
         return this._showDebugInfo;
+    }
+
+    get showUndoRedoButtons() {
+        return this._showUndoRedoButtons;
     }
 
     @api
@@ -445,7 +456,22 @@ export default class KanbanBoard extends LightningElement {
         // Cleanup window resize listener
         if (this._windowResizeHandler) {
             window.removeEventListener('resize', this._windowResizeHandler);
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener(
+                    'resize',
+                    this._windowResizeHandler
+                );
+                window.visualViewport.removeEventListener(
+                    'scroll',
+                    this._windowResizeHandler
+                );
+            }
             this._windowResizeHandler = null;
+        }
+
+        if (this._windowScrollHandler) {
+            window.removeEventListener('scroll', this._windowScrollHandler);
+            this._windowScrollHandler = null;
         }
 
         // Cleanup keyboard listener
@@ -725,6 +751,7 @@ export default class KanbanBoard extends LightningElement {
     }
 
     handleUndo() {
+        if (!this.showUndoRedoButtons) return;
         const um = this.store.undoManager;
         if (!um || !um.canUndo()) return;
         this.store
@@ -746,6 +773,7 @@ export default class KanbanBoard extends LightningElement {
     }
 
     handleRedo() {
+        if (!this.showUndoRedoButtons) return;
         const um = this.store.undoManager;
         if (!um || !um.canRedo()) return;
         this.store
@@ -767,6 +795,8 @@ export default class KanbanBoard extends LightningElement {
     }
 
     _handleKeyboard(event) {
+        if (!this.showUndoRedoButtons) return;
+
         const isMeta = event.metaKey || event.ctrlKey;
         if (!isMeta) return;
 
@@ -814,6 +844,8 @@ export default class KanbanBoard extends LightningElement {
                 '--board-height',
                 this.height
             );
+            this._wrapperElement.style.height = this.height;
+            this._wrapperElement.style.maxHeight = this.height;
             return;
         }
 
@@ -831,6 +863,20 @@ export default class KanbanBoard extends LightningElement {
         // Also observe viewport changes via window resize
         this._windowResizeHandler = this.updateBoardHeight.bind(this);
         window.addEventListener('resize', this._windowResizeHandler);
+        this._windowScrollHandler = this.updateBoardHeight.bind(this);
+        window.addEventListener('scroll', this._windowScrollHandler, {
+            passive: true
+        });
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener(
+                'resize',
+                this._windowResizeHandler
+            );
+            window.visualViewport.addEventListener(
+                'scroll',
+                this._windowResizeHandler
+            );
+        }
     }
 
     updateBoardHeight() {
@@ -840,20 +886,24 @@ export default class KanbanBoard extends LightningElement {
 
         // Get the wrapper's position relative to viewport
         const rect = this._wrapperElement.getBoundingClientRect();
-
-        // Fill to near-bottom of viewport — no page scrolling
-        const buffer = 24;
-        const availableHeight = window.innerHeight - rect.top - buffer;
-
-        // Set minimum height to prevent collapse
-        const minHeight = 300;
-        const calculatedHeight = Math.max(minHeight, availableHeight);
+        const viewportHeight = Math.floor(
+            window.visualViewport?.height ||
+                document.documentElement.clientHeight ||
+                window.innerHeight
+        );
+        const topOffset = Math.max(0, Math.ceil(rect.top));
+        const calculatedHeight = Math.max(
+            0,
+            Math.floor(viewportHeight - topOffset - 1)
+        );
 
         // Update CSS custom property on wrapper
         this._wrapperElement.style.setProperty(
             '--board-height',
             `${calculatedHeight}px`
         );
+        this._wrapperElement.style.height = `${calculatedHeight}px`;
+        this._wrapperElement.style.maxHeight = `${calculatedHeight}px`;
     }
 
     get hasColumns() {
@@ -886,8 +936,18 @@ export default class KanbanBoard extends LightningElement {
         return !this.experienceCloud && this.isBacklogTabActive;
     }
 
+    get isAnalyticsTabActive() {
+        return this.showAnalytics;
+    }
+
     get boardTabButtonClass() {
         return this.activeTab === 'board'
+            ? 'topbar-tab topbar-tab--active'
+            : 'topbar-tab';
+    }
+
+    get analyticsTabButtonClass() {
+        return this.isAnalyticsTabActive
             ? 'topbar-tab topbar-tab--active'
             : 'topbar-tab';
     }
@@ -945,6 +1005,19 @@ export default class KanbanBoard extends LightningElement {
     handleTabClick(event) {
         event.preventDefault();
         this.activeTab = event.currentTarget.dataset.tabId;
+        this.showAnalytics = false;
+    }
+
+    handleAnalyticsTabClick(event) {
+        event.preventDefault();
+        this.showAnalytics = true;
+    }
+
+    handleCardPanelResize(event) {
+        const width = Number(event.detail?.width);
+        if (Number.isFinite(width)) {
+            this._cardPanelWidth = width;
+        }
     }
 
     // =============================================================================

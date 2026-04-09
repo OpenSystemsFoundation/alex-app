@@ -1,87 +1,35 @@
 <template>
     <div class="backlog-view">
         <!-- Toolbar -->
-        <div
-            class="backlog-view__toolbar slds-grid slds-grid_vertical-align-center slds-wrap slds-gutters_x-small slds-var-p-around_small"
-        >
-            <div class="slds-col slds-grow">
-                <lightning-input
-                    type="search"
-                    placeholder="Search backlog..."
-                    value={searchTerm}
-                    onchange={handleSearchChange}
-                    variant="label-hidden"
-                    class="backlog-search"
-                ></lightning-input>
-            </div>
-            <div class="slds-col">
-                <lightning-combobox
-                    label="View"
-                    value={viewMode}
-                    options={viewModeOptions}
-                    onchange={handleViewModeChange}
-                    variant="label-hidden"
-                    class="backlog-filter"
-                ></lightning-combobox>
-            </div>
-            <div class="slds-col">
-                <lightning-combobox
-                    label="Priority"
-                    value={filterPriority}
-                    options={priorityFilterOptions}
-                    onchange={handlePriorityFilterChange}
-                    variant="label-hidden"
-                    class="backlog-filter"
-                ></lightning-combobox>
-            </div>
-            <div class="slds-col">
-                <lightning-combobox
-                    label="Type"
-                    value={filterCardType}
-                    options={cardTypeFilterOptions}
-                    onchange={handleCardTypeFilterChange}
-                    variant="label-hidden"
-                    class="backlog-filter"
-                ></lightning-combobox>
-            </div>
-            <div class="slds-col slds-no-flex">
-                <span
-                    class="slds-text-body_small slds-text-color_weak slds-var-m-right_small"
-                >
-                    <template lwc:if={isBacklogSaving}>
-                        <lightning-spinner
-                            size="xx-small"
-                            alternative-text="Saving"
-                            class="saving-spinner"
-                        ></lightning-spinner>
-                        Saving&hellip;
-                    </template>
-                    <template lwc:else>
-                        {cardCount} cards &bull;
-                        {totalStoryPoints} pts
-                    </template>
-                </span>
-            </div>
-            <template lwc:if={isSprintBoard}>
-                <div class="slds-col slds-no-flex">
-                    <lightning-button
-                        label="New Sprint"
-                        icon-name="utility:date_input"
-                        onclick={handleToggleCreateSprintForm}
-                        variant="neutral"
-                        class="slds-var-m-right_xx-small"
-                    ></lightning-button>
-                </div>
-            </template>
-            <div class="slds-col slds-no-flex">
-                <lightning-button
-                    label="New Card"
-                    icon-name="utility:add"
-                    onclick={handleToggleCreateForm}
-                    variant="brand"
-                ></lightning-button>
-            </div>
-        </div>
+        <c-kanban-filter-bar
+            search-value={searchTerm}
+            search-placeholder="Search cards..."
+            show-view-filter
+            view-value={viewMode}
+            view-options={viewModeOptions}
+            show-priority-filter
+            priority-value={filterPriority}
+            priority-options={priorityFilterOptions}
+            show-card-type-filter
+            card-type-value={filterCardType}
+            card-type-options={cardTypeFilterOptions}
+            show-epic-filter={hasEpics}
+            epic-value={filterEpic}
+            epic-options={epicFilterOptions}
+            show-info-text={hasBacklogInfoText}
+            info-text={backlogInfoText}
+            show-busy-state={isBacklogSaving}
+            busy-label="Saving..."
+            show-new-sprint={isSprintBoard}
+            show-new-card
+            onsearchinput={handleSearchChange}
+            onviewchange={handleViewModeChange}
+            onprioritychange={handlePriorityFilterChange}
+            oncardtypechange={handleCardTypeFilterChange}
+            onepicchange={handleEpicFilterChange}
+            oncreatesprint={handleToggleCreateSprintForm}
+            oncreatecard={handleToggleCreateForm}
+        ></c-kanban-filter-bar>
 
         <!-- Bulk Action Bar -->
         <template lwc:if={hasSelectedCards}>

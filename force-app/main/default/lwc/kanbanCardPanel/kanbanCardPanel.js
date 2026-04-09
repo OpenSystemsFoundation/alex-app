@@ -125,6 +125,35 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     @api store;
     /** @type {boolean} Whether the panel is currently visible */
     @api isOpen = false;
+    /** @type {number} Persisted panel width provided by the parent view */
+    @api
+    get initialPanelWidth() {
+        return this.panelWidth;
+    }
+    set initialPanelWidth(value) {
+        const parsedWidth = Number(value);
+        if (Number.isFinite(parsedWidth)) {
+            this.panelWidth = Math.max(
+                MIN_PANEL_WIDTH,
+                Math.min(MAX_PANEL_WIDTH, parsedWidth)
+            );
+        }
+    }
+    /** @type {number} Parent-computed maximum width for the panel in current layout */
+    @api
+    get maxPanelWidth() {
+        return this._maxPanelWidth ?? MAX_PANEL_WIDTH;
+    }
+    set maxPanelWidth(value) {
+        const parsedWidth = Number(value);
+        if (Number.isFinite(parsedWidth)) {
+            this._maxPanelWidth = Math.max(MIN_PANEL_WIDTH, parsedWidth);
+            this.panelWidth = Math.max(
+                MIN_PANEL_WIDTH,
+                Math.min(this._maxPanelWidth, this.panelWidth)
+            );
+        }
+    }
 
     @track modalSettings;
     @track formFields = [];
@@ -450,11 +479,11 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
             return;
         }
         if (action === 'edit') {
-            this.comments = this.comments.map((c) =>
-                c.Id === commentId
+            this.comments = this.comments.map((c) => {
+                return c.Id === commentId
                     ? { ...c, isEditing: true, editBody: c.body }
-                    : c
-            );
+                    : c;
+            });
         } else if (action === 'delete') {
             this.handleDeleteComment(commentId);
         }
@@ -465,9 +494,11 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
         if (!commentId) {
             return;
         }
-        this.comments = this.comments.map((c) =>
-            c.Id === commentId ? { ...c, editBody: event.detail.value } : c
-        );
+        this.comments = this.comments.map((c) => {
+            return c.Id === commentId
+                ? { ...c, editBody: event.detail.value }
+                : c;
+        });
     }
 
     handleCancelEdit(event) {
@@ -475,11 +506,11 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
         if (!commentId) {
             return;
         }
-        this.comments = this.comments.map((c) =>
-            c.Id === commentId
+        this.comments = this.comments.map((c) => {
+            return c.Id === commentId
                 ? { ...c, isEditing: false, editBody: c.body }
-                : c
-        );
+                : c;
+        });
     }
 
     async handleSaveEdit(event) {
@@ -496,14 +527,14 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
                 commentId,
                 body: comment.editBody.trim()
             });
-            this.comments = this.comments.map((c) =>
-                c.Id === commentId
+            this.comments = this.comments.map((c) => {
+                return c.Id === commentId
                     ? {
                           ...this.enrichComment(updated),
                           isEditing: false
                       }
-                    : c
-            );
+                    : c;
+            });
         } catch (error) {
             this.dispatchEvent(
                 new ShowToastEvent({
@@ -788,9 +819,14 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
         let newWidth = this._resizeStartWidth + delta;
         newWidth = Math.max(
             MIN_PANEL_WIDTH,
-            Math.min(MAX_PANEL_WIDTH, newWidth)
+            Math.min(this.maxPanelWidth, newWidth)
         );
         this.panelWidth = newWidth;
+        this.dispatchEvent(
+            new CustomEvent('panelresize', {
+                detail: { width: newWidth }
+            })
+        );
     }
 
     handleResizeEnd() {
