@@ -131,7 +131,9 @@ export default class KanbanBacklogView extends LightningElement {
             cards = cards.filter((c) => !c.epicId && !c.epic?.id);
         } else if (this.filterEpic !== 'All') {
             cards = cards.filter(
-                (c) => c.epicId === this.filterEpic || c.epic?.id === this.filterEpic
+                (c) =>
+                    c.epicId === this.filterEpic ||
+                    c.epic?.id === this.filterEpic
             );
         }
 

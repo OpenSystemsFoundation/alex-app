@@ -24,11 +24,13 @@ describe('c-connection-status-indicator', () => {
 
         document.body.appendChild(element);
 
-        expect(element.shadowRoot.querySelector('.status-text').textContent).toBe(
-            'Auto-refresh'
-        );
         expect(
-            element.shadowRoot.querySelectorAll('.status-indicator lightning-icon')
+            element.shadowRoot.querySelector('.status-text').textContent
+        ).toBe('Auto-refresh');
+        expect(
+            element.shadowRoot.querySelectorAll(
+                '.status-indicator lightning-icon'
+            )
         ).toHaveLength(0);
     });
 
@@ -49,7 +51,9 @@ describe('c-connection-status-indicator', () => {
         document.body.appendChild(element);
 
         expect(
-            element.shadowRoot.querySelectorAll('.status-indicator lightning-icon')
+            element.shadowRoot.querySelectorAll(
+                '.status-indicator lightning-icon'
+            )
         ).toHaveLength(1);
     });
 });

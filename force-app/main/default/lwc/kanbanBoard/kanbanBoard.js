@@ -799,9 +799,10 @@ export default class KanbanBoard extends LightningElement {
         const nextSwimlaneSubjectMetrics = this.readPretextTextMetrics(
             '[data-pretext-role="swimlane-card-subject"]'
         );
-        const nextBoardCardNameWithAssigneeMetrics = this.readPretextTextMetrics(
-            '[data-pretext-role="board-card-name-with-assignee"]'
-        );
+        const nextBoardCardNameWithAssigneeMetrics =
+            this.readPretextTextMetrics(
+                '[data-pretext-role="board-card-name-with-assignee"]'
+            );
         const nextBoardCardNameWithoutAssigneeMetrics =
             this.readPretextTextMetrics(
                 '[data-pretext-role="board-card-name-without-assignee"]'

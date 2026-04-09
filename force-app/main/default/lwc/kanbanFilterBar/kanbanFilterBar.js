@@ -125,6 +125,10 @@ export default class KanbanFilterBar extends LightningElement {
         }));
     }
 
+    get isAssigneeFilterDisabled() {
+        return !this.hasAssigneeOptions;
+    }
+
     get assigneeButtonClass() {
         let classes = 'kanban-filter-bar__multiselect-button';
         if (this._showAssigneeDropdown) {

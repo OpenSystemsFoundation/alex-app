@@ -102,13 +102,16 @@
                     class={assigneeButtonClass}
                     onclick={handleAssigneeDropdownToggle}
                     title={assigneeButtonTitle}
-                    disabled={!hasAssigneeOptions}
+                    disabled={isAssigneeFilterDisabled}
                 >
-                    <span class="kanban-filter-bar__multiselect-label">
+                    <span
+                        class="kanban-filter-bar__multiselect-label"
+                    >
                         {assigneeButtonLabel}
                     </span>
-                    <span class="kanban-filter-bar__multiselect-caret"
-                        >▾</span
+                    <span
+                        class="kanban-filter-bar__multiselect-caret"
+                        >v</span
                     >
                 </button>
 
@@ -169,16 +172,22 @@
                     icon-name="utility:check"
                     size="xx-small"
                 ></lightning-icon>
-                <span class="filter-toggle__label">Hide Done</span>
+                <span class="filter-toggle__label"
+                    >Hide Done</span
+                >
             </button>
         </template>
 
         <template lwc:if={showInfoText}>
-            <span class="kanban-filter-bar__info">{infoText}</span>
+            <span class="kanban-filter-bar__info"
+                >{infoText}</span
+            >
         </template>
 
         <template lwc:if={showBusyState}>
-            <span class="kanban-filter-bar__info kanban-filter-bar__info--busy">
+            <span
+                class="kanban-filter-bar__info kanban-filter-bar__info--busy"
+            >
                 <lightning-spinner
                     size="xx-small"
                     alternative-text={busyLabel}
