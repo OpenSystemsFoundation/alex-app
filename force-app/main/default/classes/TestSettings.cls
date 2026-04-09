@@ -76,14 +76,10 @@ public class TestSettings {
     }
 
     /**
-     * Disable record-triggered flows (email/SF notifications) via
-     * KanbanConfig__c hierarchy custom setting.
-     * Call this in @TestSetup or at the start of test methods that
-     * perform card DML to prevent flow failures in test context.
+     * Disable record-triggered flows (email/SF notifications).
+     * No-op in OSS version (KanbanConfig__c is a paid feature).
      */
     public static void disableFlowAutomation() {
-        OpenSF__KanbanConfig__c config = OpenSF__KanbanConfig__c.getOrgDefaults();
-        config.OpenSF__DisableFlowAutomation__c = true;
-        upsert config;
+        // No-op: KanbanConfig__c not available in OSS
     }
 }

@@ -84,26 +84,4 @@ private class SprintCardTriggerHandlerTest {
         ];
         System.assertEquals(0, count, 'Sprint card should be deleted');
     }
-
-    @isTest
-    static void testSchedulerCreatesSnapshots() {
-        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
-        OpenSF__Sprint__c sprint = TestFactory.createSprint(board.Id, 'Active');
-        OpenSF__Card__c card = [SELECT Id FROM OpenSF__Card__c LIMIT 1];
-        card.OpenSF__StoryPoints__c = 5;
-        update card;
-        TestFactory.createSprintCard(sprint.Id, card.Id);
-
-        Test.startTest();
-        SprintSnapshotScheduler scheduler = new SprintSnapshotScheduler();
-        scheduler.execute(null);
-        Test.stopTest();
-
-        List<OpenSF__SprintSnapshot__c> snapshots = [
-            SELECT Id
-            FROM OpenSF__SprintSnapshot__c
-            WHERE OpenSF__Sprint__c = :sprint.Id
-        ];
-        System.assert(snapshots.size() >= 1, 'Should have at least 1 snapshot');
-    }
 }

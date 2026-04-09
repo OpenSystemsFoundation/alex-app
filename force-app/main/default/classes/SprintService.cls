@@ -123,9 +123,6 @@ public with sharing class SprintService {
             )
             .getRecords();
 
-        // Create initial snapshot
-        createDailySnapshot(sprintId);
-
         // Publish event
         publishSprintEvent(
             KanbanEnums.sprintEventTypeValue(
@@ -261,9 +258,6 @@ public with sharing class SprintService {
                 new List<OpenSF__Board__c>{ board }
             )
             .getRecords();
-
-        // Create final snapshot
-        createDailySnapshot(sprintId);
 
         // Publish event
         publishSprintEvent(
@@ -419,71 +413,6 @@ public with sharing class SprintService {
         }
 
         return data;
-    }
-
-    /**
-     * Create a daily snapshot for a sprint
-     */
-    public static void createDailySnapshot(Id sprintId) {
-        List<OpenSF__SprintCard__c> sprintCards = SprintSelector.getSprintCardsBySprintId(
-            sprintId
-        );
-
-        Decimal totalPoints = 0;
-        Decimal completedPoints = 0;
-        Decimal cardCount = sprintCards.size();
-        Decimal completedCardCount = 0;
-
-        for (OpenSF__SprintCard__c sc : sprintCards) {
-            Decimal points = sc.OpenSF__Card__r.OpenSF__StoryPoints__c;
-            if (points != null) {
-                totalPoints += points;
-            }
-            if (sc.OpenSF__CompletedInSprint__c == true) {
-                completedCardCount++;
-                if (points != null) {
-                    completedPoints += points;
-                }
-            }
-        }
-
-        OpenSF__SprintSnapshot__c snapshot = new OpenSF__SprintSnapshot__c(
-            OpenSF__Sprint__c = sprintId,
-            OpenSF__SnapshotDate__c = Date.today(),
-            OpenSF__TotalPoints__c = totalPoints,
-            OpenSF__RemainingPoints__c = totalPoints - completedPoints,
-            OpenSF__CompletedPoints__c = completedPoints,
-            OpenSF__CardCount__c = cardCount,
-            OpenSF__CompletedCardCount__c = completedCardCount
-        );
-        insert Security.stripInaccessible(
-                AccessType.CREATABLE,
-                new List<OpenSF__SprintSnapshot__c>{ snapshot }
-            )
-            .getRecords();
-    }
-
-    /**
-     * Get burndown data for a sprint
-     */
-    public static List<KanbanBoardDTO.SprintSnapshotDTO> getBurndownData(
-        Id sprintId
-    ) {
-        return KanbanBoardDTO.convertSnapshots(
-            SprintSelector.getSnapshotsBySprintId(sprintId)
-        );
-    }
-
-    /**
-     * Get velocity data for a board
-     */
-    public static List<KanbanBoardDTO.SprintDTO> getVelocityData(
-        Id boardId,
-        Integer count
-    ) {
-        return KanbanBoardDTO.convertSprints(
-            SprintSelector.getCompletedSprintsByBoardId(boardId, count)
-        );
     }
 
     /**

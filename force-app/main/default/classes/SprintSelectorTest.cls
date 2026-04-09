@@ -121,27 +121,6 @@ private class SprintSelectorTest {
     }
 
     @isTest
-    static void testGetSnapshotsBySprintId() {
-        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
-        OpenSF__Sprint__c sprint = TestFactory.createSprint(board.Id);
-        TestFactory.createSprintSnapshot(
-            sprint.Id,
-            Date.today().addDays(-1),
-            20,
-            15
-        );
-        TestFactory.createSprintSnapshot(sprint.Id, Date.today(), 20, 10);
-
-        Test.startTest();
-        List<OpenSF__SprintSnapshot__c> result = SprintSelector.getSnapshotsBySprintId(
-            sprint.Id
-        );
-        Test.stopTest();
-
-        System.assertEquals(2, result.size(), 'Should return 2 snapshots');
-    }
-
-    @isTest
     static void testGetCompletedSprintsByBoardId() {
         OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
         TestFactory.createSprint(board.Id, 'Completed');

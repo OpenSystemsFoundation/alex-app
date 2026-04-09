@@ -39,40 +39,4 @@ public with sharing class BoardSelector {
         );
         return boards.isEmpty() ? null : boards[0];
     }
-
-    /**
-     * Get onboarding status counts (boards, columns, cards, permission sets).
-     */
-    public static AdminController.OnboardingStatus getOnboardingStatus() {
-        AdminController.OnboardingStatus status = new AdminController.OnboardingStatus();
-
-        status.hasBoardsCreated =
-            [SELECT COUNT() FROM OpenSF__Board__c WITH USER_MODE] > 0;
-
-        status.hasColumnsConfigured =
-            [SELECT COUNT() FROM OpenSF__Column__c WITH USER_MODE] > 0;
-
-        status.hasUsersAssigned =
-            [
-                SELECT COUNT()
-                FROM PermissionSetAssignment
-                WHERE
-                    PermissionSet.Name IN (
-                        'OpenSF__Alex_Admin',
-                        'OpenSF__Alex_User'
-                    )
-                    AND AssigneeId != :UserInfo.getUserId()
-                WITH USER_MODE
-            ] > 0;
-
-        status.hasCardsCreated =
-            [SELECT COUNT() FROM OpenSF__Card__c WITH USER_MODE] > 0;
-
-        status.isComplete =
-            status.hasBoardsCreated &&
-            status.hasColumnsConfigured &&
-            status.hasUsersAssigned;
-
-        return status;
-    }
 }

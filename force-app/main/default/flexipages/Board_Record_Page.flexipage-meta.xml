@@ -250,9 +250,6 @@
                             <value>Board__c.Create_Column_Action</value>
                         </valueListItems>
                         <valueListItems>
-                            <value>Board__c.Give_Feedback_Action</value>
-                        </valueListItems>
-                        <valueListItems>
                             <value>AssignRecordLabel</value>
                         </valueListItems>
                         <valueListItems>

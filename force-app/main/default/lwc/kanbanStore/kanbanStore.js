@@ -65,9 +65,7 @@ export {
     moveCardToBacklogAsync,
     moveCardsToSprintAsync,
     addCardsToBacklogSprintAsync,
-    removeCardFromBacklogSprintAsync,
-    loadBurndownDataAsync,
-    loadVelocityDataAsync
+    removeCardFromBacklogSprintAsync
 } from './thunks/sprintThunks';
 export {
     loadCycleTimeAnalyticsAsync,

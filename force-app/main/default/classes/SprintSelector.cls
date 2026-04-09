@@ -194,29 +194,6 @@ public with sharing class SprintSelector {
     }
 
     /**
-     * Get Snapshots for a Sprint
-     */
-    public static List<OpenSF__SprintSnapshot__c> getSnapshotsBySprintId(
-        Id sprintId
-    ) {
-        return [
-            SELECT
-                Id,
-                OpenSF__Sprint__c,
-                OpenSF__SnapshotDate__c,
-                OpenSF__TotalPoints__c,
-                OpenSF__RemainingPoints__c,
-                OpenSF__CompletedPoints__c,
-                OpenSF__CardCount__c,
-                OpenSF__CompletedCardCount__c
-            FROM OpenSF__SprintSnapshot__c
-            WHERE OpenSF__Sprint__c = :sprintId
-            WITH USER_MODE
-            ORDER BY OpenSF__SnapshotDate__c ASC
-        ];
-    }
-
-    /**
      * Get completed Sprints for velocity calculation
      */
     public static List<OpenSF__Sprint__c> getCompletedSprintsByBoardId(

@@ -8,8 +8,6 @@ import addCardComment from '@salesforce/apex/KanbanBoardController.addCardCommen
 import updateCardComment from '@salesforce/apex/KanbanBoardController.updateCardComment';
 import deleteCardComment from '@salesforce/apex/KanbanBoardController.deleteCardComment';
 import userId from '@salesforce/user/Id';
-import getCardFiles from '@salesforce/apex/KanbanBoardController.getCardFiles';
-import deleteCardFile from '@salesforce/apex/KanbanBoardController.deleteCardFile';
 import getEpicDetail from '@salesforce/apex/KanbanBoardController.getEpicDetail';
 
 const FIELD_METADATA = {
@@ -672,28 +670,9 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     }
 
     async loadFiles() {
-        if (!this.card?.Id) {
-            return;
-        }
-        try {
-            const rawFiles = await getCardFiles({ cardId: this.card.Id });
-            this.files = rawFiles.map((f) => ({
-                ...f,
-                iconName: this._getFileIcon(f.fileExtension),
-                downloadUrl: `/sfc/servlet.shepherd/document/download/${f.contentDocumentId}`,
-                formattedSize: this._formatFileSize(f.contentSize)
-            }));
-            this._filesLoaded = true;
-            this._lastLoadedCardId = this.card.Id;
-        } catch (error) {
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error loading files',
-                    message: error.body ? error.body.message : 'Unknown error',
-                    variant: 'error'
-                })
-            );
-        }
+        // File attachments are available in Alexandra (paid)
+        this.files = [];
+        this._filesLoaded = true;
     }
 
     async handleUploadFinished(event) {
@@ -708,29 +687,8 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
         await this.loadFiles();
     }
 
-    async handleDeleteFile(event) {
-        const fileId = event.currentTarget.dataset.fileId;
-        try {
-            await deleteCardFile({ contentDocumentId: fileId });
-            this.files = this.files.filter(
-                (f) => f.contentDocumentId !== fileId
-            );
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Success',
-                    message: 'File deleted',
-                    variant: 'success'
-                })
-            );
-        } catch (error) {
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error deleting file',
-                    message: error.body ? error.body.message : 'Unknown error',
-                    variant: 'error'
-                })
-            );
-        }
+    handleDeleteFile() {
+        // File attachments are available in Alexandra (paid)
     }
 
     handleDownloadFile(event) {

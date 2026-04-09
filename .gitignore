@@ -81,7 +81,7 @@ playwright/.cache/
 
 # Playwright Videos and Screenshots
 *.webm
-*.png
+test-results/*
 !*.spec.ts
 
 # Playwright Traces

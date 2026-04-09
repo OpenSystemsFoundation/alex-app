@@ -12,8 +12,6 @@ import startSprintApex from '@salesforce/apex/KanbanBoardController.startSprint'
 import completeSprintApex from '@salesforce/apex/KanbanBoardController.completeSprint';
 import addCardsToSprintApex from '@salesforce/apex/KanbanBoardController.addCardsToSprint';
 import removeCardFromSprintApex from '@salesforce/apex/KanbanBoardController.removeCardFromSprint';
-import getBurndownDataApex from '@salesforce/apex/KanbanBoardController.getBurndownData';
-import getVelocityDataApex from '@salesforce/apex/KanbanBoardController.getVelocityData';
 import updateCardApex from '@salesforce/apex/KanbanBoardController.updateCard';
 import moveCardApex from '@salesforce/apex/KanbanBoardController.moveCard';
 import {
@@ -178,36 +176,6 @@ export const removeCardFromSprintAsync = (sprintId, cardId) => {
             return { success: true };
         } catch (error) {
             console.error('Error removing card from sprint:', error);
-            throw error;
-        }
-    };
-};
-
-/**
- * Load burndown data
- */
-export const loadBurndownDataAsync = (sprintId) => {
-    return async () => {
-        try {
-            const data = await getBurndownDataApex({ sprintId });
-            return { success: true, data };
-        } catch (error) {
-            console.error('Error loading burndown data:', error);
-            throw error;
-        }
-    };
-};
-
-/**
- * Load velocity data
- */
-export const loadVelocityDataAsync = (boardId, count = 10) => {
-    return async () => {
-        try {
-            const data = await getVelocityDataApex({ boardId, count });
-            return { success: true, data };
-        } catch (error) {
-            console.error('Error loading velocity data:', error);
             throw error;
         }
     };

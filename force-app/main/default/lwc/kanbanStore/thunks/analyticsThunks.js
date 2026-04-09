@@ -1,46 +1,25 @@
 /**
- * Analytics Thunks
+ * Analytics Thunks (stub)
  *
- * Async action creators for analytics operations (cycle time, cumulative flow).
+ * Analytics features (cycle time, cumulative flow) are available in Alexandra (paid).
  *
  * @module analyticsThunks
  */
 
-import getCycleTimeAnalyticsApex from '@salesforce/apex/KanbanBoardController.getCycleTimeAnalytics';
-import getCumulativeFlowDataApex from '@salesforce/apex/KanbanBoardController.getCumulativeFlowData';
-
 /**
- * Load cycle time analytics for a board
- * @param {string} boardId - Board ID
- * @param {number} daysBack - Number of days to look back
- * @returns {Function} Thunk function
+ * Load cycle time analytics for a board (not available in OSS)
  */
-export const loadCycleTimeAnalyticsAsync = (boardId, daysBack = 30) => {
+export const loadCycleTimeAnalyticsAsync = () => {
     return async () => {
-        try {
-            const data = await getCycleTimeAnalyticsApex({ boardId, daysBack });
-            return { success: true, data };
-        } catch (error) {
-            console.error('Error loading cycle time analytics:', error);
-            throw error;
-        }
+        return { success: false, data: null };
     };
 };
 
 /**
- * Load cumulative flow data for a board
- * @param {string} boardId - Board ID
- * @param {number} daysBack - Number of days to look back
- * @returns {Function} Thunk function
+ * Load cumulative flow data for a board (not available in OSS)
  */
-export const loadCumulativeFlowDataAsync = (boardId, daysBack = 30) => {
+export const loadCumulativeFlowDataAsync = () => {
     return async () => {
-        try {
-            const data = await getCumulativeFlowDataApex({ boardId, daysBack });
-            return { success: true, data };
-        } catch (error) {
-            console.error('Error loading cumulative flow data:', error);
-            throw error;
-        }
+        return { success: false, data: null };
     };
 };

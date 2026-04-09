@@ -365,28 +365,6 @@ public class TestFactory {
     }
 
     /**
-     * Creates a test SprintSnapshot
-     */
-    public static OpenSF__SprintSnapshot__c createSprintSnapshot(
-        Id sprintId,
-        Date snapshotDate,
-        Decimal totalPoints,
-        Decimal remainingPoints
-    ) {
-        OpenSF__SprintSnapshot__c snapshot = new OpenSF__SprintSnapshot__c(
-            OpenSF__Sprint__c = sprintId,
-            OpenSF__SnapshotDate__c = snapshotDate,
-            OpenSF__TotalPoints__c = totalPoints,
-            OpenSF__RemainingPoints__c = remainingPoints,
-            OpenSF__CompletedPoints__c = totalPoints - remainingPoints,
-            OpenSF__CardCount__c = 5,
-            OpenSF__CompletedCardCount__c = 2
-        );
-        insert snapshot;
-        return snapshot;
-    }
-
-    /**
      * Creates a test User (standard user, not for DML)
      * @param firstName First name of the user
      * @param lastName Last name of the user
@@ -411,47 +389,5 @@ public class TestFactory {
             ProfileId = UserInfo.getProfileId(),
             LanguageLocaleKey = 'en_US'
         );
-    }
-
-    /**
-     * Creates a test Team
-     * @param teamName The name of the team
-     * @return The created Team record
-     */
-    public static OpenSF__Team__c createTeam(String teamName) {
-        OpenSF__Team__c team = new OpenSF__Team__c(
-            Name = teamName,
-            OpenSF__Description__c = 'Test team: ' + teamName,
-            OpenSF__Status__c = 'Active',
-            OpenSF__AvatarColor__c = '#3366FF',
-            OpenSF__DefaultVelocity__c = 30
-        );
-        insert team;
-        return team;
-    }
-
-    /**
-     * Creates a test Team Member
-     * @param teamId The ID of the parent team
-     * @param userId The ID of the user
-     * @param role The role of the member
-     * @return The created Team Member record
-     */
-    public static OpenSF__TeamMember__c createTeamMember(
-        Id teamId,
-        Id userId,
-        String role
-    ) {
-        OpenSF__TeamMember__c member = new OpenSF__TeamMember__c(
-            OpenSF__Team__c = teamId,
-            OpenSF__Member__c = userId,
-            OpenSF__Role__c = role,
-            OpenSF__Allocation__c = 100,
-            OpenSF__JoinDate__c = Date.today(),
-            OpenSF__Status__c = 'Active',
-            OpenSF__WeeklyCapacityHours__c = 40
-        );
-        insert member;
-        return member;
     }
 }
