@@ -151,7 +151,7 @@ public with sharing class KanbanBoardService {
      */
     public static KanbanBoardController.ModalSettings getModalSettings() {
         try {
-            OpenSF__KanbanBoardSettings__mdt settings = getBoardSettings();
+            OpenSF__KanbanBoardSettings__mdt settings = getModalSettingsRecord();
 
             KanbanBoardController.ModalSettings result = new KanbanBoardController.ModalSettings();
             if (
@@ -216,24 +216,12 @@ public with sharing class KanbanBoardService {
      * Get runtime config (defaults only in OSS version).
      */
     public static KanbanBoardController.KanbanConfigResult getKanbanConfig() {
-        KanbanBoardController.KanbanConfigResult result = new KanbanBoardController.KanbanConfigResult();
-
-        try {
-            OpenSF__KanbanBoardSettings__mdt settings = getBoardSettings();
-            if (settings != null) {
-                result.showUndoRedoButtons =
-                    settings.OpenSF__ShowUndoRedoButtons__c == true;
-            }
-        } catch (Exception e) {
-            // Keep defaults when metadata is unavailable.
-        }
-
-        return result;
+        return new KanbanBoardController.KanbanConfigResult();
     }
 
-    private static OpenSF__KanbanBoardSettings__mdt getBoardSettings() {
+    private static OpenSF__KanbanBoardSettings__mdt getModalSettingsRecord() {
         List<OpenSF__KanbanBoardSettings__mdt> settingsList = [
-            SELECT OpenSF__FieldNames__c, OpenSF__ShowUndoRedoButtons__c
+            SELECT OpenSF__FieldNames__c
             FROM OpenSF__KanbanBoardSettings__mdt
             WHERE DeveloperName = 'Modal_Settings'
             LIMIT 1

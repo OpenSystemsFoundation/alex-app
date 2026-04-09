@@ -19,7 +19,6 @@ import { appStateReducer } from './reducers/appStateReducer';
 import { syncReducer } from './reducers/syncReducer';
 import { sprintReducer } from './reducers/sprintReducer';
 import { backlogReducer } from './reducers/backlogReducer';
-import { designReducer, initialDesignState } from './reducers/designReducer';
 
 /**
  * Initial state structure
@@ -51,9 +50,7 @@ export const initialState = {
     backlogVisible: false,
     selectedBacklogCards: [],
     // Epic state
-    epicSummaries: [],
-    // Design Thinking state
-    design: { ...initialDesignState }
+    epicSummaries: []
 };
 
 // Re-export all domain reducers for direct import (used by tests)
@@ -65,8 +62,7 @@ export {
     appStateReducer,
     syncReducer,
     sprintReducer,
-    backlogReducer,
-    designReducer
+    backlogReducer
 };
 
 /**
@@ -102,14 +98,6 @@ export const rootReducer = (state, action, lastDragPosition) => {
 
     // Backlog actions
     newState = backlogReducer(newState, action);
-
-    // Design Thinking actions (nested state slice)
-    if (action.type?.startsWith('design/')) {
-        newState = {
-            ...newState,
-            design: designReducer(newState.design, action)
-        };
-    }
 
     // Drag actions (special handling for lastDragPosition)
     const dragResult = dragReducer(newState, action, lastDragPosition);

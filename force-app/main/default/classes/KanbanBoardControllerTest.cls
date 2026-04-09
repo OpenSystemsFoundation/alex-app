@@ -1055,11 +1055,6 @@ private class KanbanBoardControllerTest {
         Test.stopTest();
 
         System.assertNotEquals(null, config, 'Config should not be null');
-        System.assertEquals(
-            false,
-            config.showUndoRedoButtons,
-            'Undo/redo buttons should be disabled by default'
-        );
     }
 
     @isTest

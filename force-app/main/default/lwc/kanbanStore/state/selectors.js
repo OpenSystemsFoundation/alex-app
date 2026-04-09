@@ -436,19 +436,3 @@ export const getCardSprintId = (state, cardId) => {
     );
     return psc ? psc.sprintId : null;
 };
-
-// Re-export Design Thinking selectors for convenience
-export {
-    getDesignSessions,
-    getActiveDesignSession,
-    getCurrentDesignPhase,
-    getActiveDesignTool,
-    getDesignNotes,
-    getNotesByZone,
-    getDesignVotes,
-    getDesignTimer,
-    getDesignParticipants,
-    getDesignPhaseCounts,
-    isDesignLoading,
-    getDesignError
-} from './designSelectors';

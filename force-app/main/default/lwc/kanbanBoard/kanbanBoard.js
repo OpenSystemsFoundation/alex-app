@@ -1,4 +1,6 @@
 import { LightningElement, api, track, wire } from 'lwc';
+import { loadScript } from 'lightning/platformResourceLoader';
+import PRETEXT_RESOURCE from '@salesforce/resourceUrl/pretext';
 import { createStore, selectors } from 'c/kanbanStore';
 import getKanbanConfig from '@salesforce/apex/KanbanBoardController.getKanbanConfig';
 import EventHandler from './handlers/eventHandler';
@@ -14,6 +16,36 @@ import SwimlaneManager from './managers/swimlaneManager';
 import MobileNavigationManager from './managers/mobileNavigationManager';
 import ContextMenuManager from './managers/contextMenuManager';
 import { generateClientId } from './helpers/clientIdGenerator';
+
+const PRETEXT_PROBE_TEXT = 'Realtime sync';
+const PRETEXT_PROBE_FONT = '14px Helvetica';
+const PRETEXT_PROBE_WIDTH = 96;
+const PRETEXT_PROBE_LINE_HEIGHT = 18;
+
+let pretextLoadPromise;
+
+function getPretextApi() {
+    if (typeof window !== 'undefined' && window.Pretext) {
+        return window.Pretext;
+    }
+    return null;
+}
+
+// Flip this locally or set localStorage['alex.debug.undoRedo'] = 'true'
+// when you want the dev-only undo/redo controls visible.
+const SHOW_UNDO_REDO_DEBUG = false;
+const UNDO_REDO_DEBUG_STORAGE_KEY = 'alex.debug.undoRedo';
+
+function isUndoRedoDebugEnabled() {
+    try {
+        return (
+            SHOW_UNDO_REDO_DEBUG ||
+            window.localStorage?.getItem(UNDO_REDO_DEBUG_STORAGE_KEY) === 'true'
+        );
+    } catch {
+        return SHOW_UNDO_REDO_DEBUG;
+    }
+}
 
 /**
  * @typedef {Object} CardDTO
@@ -96,7 +128,7 @@ export default class KanbanBoard extends LightningElement {
 
     // Config
     @track _showDebugInfo = false;
-    _showUndoRedoButtons = false;
+    _showUndoRedoButtons = SHOW_UNDO_REDO_DEBUG;
     _enableDevTools = false;
 
     // Tab state
@@ -131,6 +163,8 @@ export default class KanbanBoard extends LightningElement {
     @track _canRedo = false;
     _keyboardHandler = null;
     _undoManagerUnsubscribe = null;
+    _pretextApi = null;
+    _pretextLoadState = 'idle';
 
     // Drag state
     dragData = null;
@@ -360,7 +394,6 @@ export default class KanbanBoard extends LightningElement {
         if (data) {
             this._showDebugInfo = data.showDebugInfo === true;
             this._enableDevTools = data.enableDevTools === true;
-            this._showUndoRedoButtons = data.showUndoRedoButtons === true;
             // Enable devtools if store already exists (wire fired after connectedCallback)
             if (this._enableDevTools && this._store) {
                 this._store.enableDevTools();
@@ -392,6 +425,8 @@ export default class KanbanBoard extends LightningElement {
     }
 
     connectedCallback() {
+        this._showUndoRedoButtons = isUndoRedoDebugEnabled();
+
         // Generate unique client ID for this window/tab
         this._clientId = generateClientId();
 
@@ -429,6 +464,7 @@ export default class KanbanBoard extends LightningElement {
 
         // Initialize lifecycle (lazy getters handle instance creation)
         this.lifecycleManager.initialize();
+        this.initializePretextProbe();
     }
     renderedCallback() {
         if (this.lifecycleManager) {
@@ -496,6 +532,57 @@ export default class KanbanBoard extends LightningElement {
     // =============================================================================
     // Data Loading
     // =============================================================================
+
+    async initializePretextProbe() {
+        if (
+            this._pretextLoadState === 'loading' ||
+            this._pretextLoadState === 'ready'
+        ) {
+            return;
+        }
+
+        this._pretextLoadState = 'loading';
+
+        try {
+            if (!pretextLoadPromise) {
+                pretextLoadPromise = loadScript(this, PRETEXT_RESOURCE);
+            }
+
+            await pretextLoadPromise;
+
+            const pretext = getPretextApi();
+            if (
+                !pretext ||
+                typeof pretext.prepare !== 'function' ||
+                typeof pretext.layout !== 'function'
+            ) {
+                throw new Error(
+                    'Pretext global was not initialized after loadScript.'
+                );
+            }
+
+            const prepared = pretext.prepare(
+                PRETEXT_PROBE_TEXT,
+                PRETEXT_PROBE_FONT
+            );
+            const probeResult = pretext.layout(
+                prepared,
+                PRETEXT_PROBE_WIDTH,
+                PRETEXT_PROBE_LINE_HEIGHT
+            );
+
+            this._pretextApi = pretext;
+            this._pretextLoadState = 'ready';
+            console.info(
+                '[pretext] static resource loaded under LWS sandbox',
+                probeResult
+            );
+        } catch (error) {
+            this._pretextLoadState = 'failed';
+            pretextLoadPromise = null;
+            console.error('[pretext] failed to load static resource', error);
+        }
+    }
 
     async loadBoardData() {
         if (!this._recordId) {
