@@ -104,6 +104,10 @@ export default class ConnectionStatusIndicator extends LightningElement {
         return classes;
     }
 
+    get showStatusIcon() {
+        return this.config.status !== 'polling';
+    }
+
     @api
     get detailedStatus() {
         // Build sync state message

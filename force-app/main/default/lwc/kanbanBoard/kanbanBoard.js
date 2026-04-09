@@ -21,6 +21,19 @@ const PRETEXT_PROBE_TEXT = 'Realtime sync';
 const PRETEXT_PROBE_FONT = '14px Helvetica';
 const PRETEXT_PROBE_WIDTH = 96;
 const PRETEXT_PROBE_LINE_HEIGHT = 18;
+const PRETEXT_CARD_NAME_MAX_LINES = 2;
+const PRETEXT_CARD_SUBJECT_MAX_LINES = 2;
+const PRETEXT_EPIC_LABEL_MAX_LINES = 2;
+const PRETEXT_CARD_NAME_FALLBACK_CLASS =
+    'kanban-card__name kanban-card__name--single-line slds-text-link slds-text-color_brand';
+const PRETEXT_CARD_NAME_MULTI_LINE_CLASS =
+    'kanban-card__name kanban-card__name--two-line slds-text-link slds-text-color_brand';
+const PRETEXT_CARD_SUBJECT_FALLBACK_CLASS =
+    'kanban-card__subject kanban-card__subject--single-line';
+const PRETEXT_EPIC_LABEL_FALLBACK_CLASS =
+    'epic-label__text epic-label__text--single-line';
+const PRETEXT_EPIC_LABEL_MULTI_LINE_CLASS =
+    'epic-label__text epic-label__text--two-line';
 
 let pretextLoadPromise;
 
@@ -140,6 +153,7 @@ export default class KanbanBoard extends LightningElement {
     @track _boardFilterPriority = 'All';
     @track _boardFilterCardType = 'All';
     @track _boardFilterEpic = 'All';
+    @track _boardFilterAssignees = [];
     @track _boardHideCompleted = false;
     _searchDebounceTimer = null;
 
@@ -165,6 +179,21 @@ export default class KanbanBoard extends LightningElement {
     _undoManagerUnsubscribe = null;
     _pretextApi = null;
     _pretextLoadState = 'idle';
+    @track _pretextLayoutVersion = 0;
+    _pretextTextMetrics = {
+        boardSubject: null,
+        swimlaneSubject: null,
+        boardCardNameWithAssignee: null,
+        boardCardNameWithoutAssignee: null,
+        boardEpicLabel: null
+    };
+    _pretextLayoutCache = new Map();
+    _pretextDecoratedColumnsCache = {
+        columnsRef: null,
+        context: null,
+        version: -1,
+        value: []
+    };
 
     // Drag state
     dragData = null;
@@ -215,7 +244,9 @@ export default class KanbanBoard extends LightningElement {
     }
 
     get filteredColumns() {
-        return this.filterManager.getFilteredColumns();
+        const filteredColumns = this.filterManager.getFilteredColumns();
+        const context = this._swimlaneMode === 'none' ? 'board' : 'swimlane';
+        return this.getColumnsWithPretextLayout(filteredColumns, context);
     }
 
     get hasActiveFilters() {
@@ -246,6 +277,14 @@ export default class KanbanBoard extends LightningElement {
 
     get cardTypeFilterOptions() {
         return this.filterManager.cardTypeFilterOptions;
+    }
+
+    get assigneeFilterOptions() {
+        return this.filterManager.assigneeFilterOptions;
+    }
+
+    get hasAssigneeFilterOptions() {
+        return this.assigneeFilterOptions.length > 0;
     }
 
     get epicFilterOptions() {
@@ -475,6 +514,8 @@ export default class KanbanBoard extends LightningElement {
         if (!this._resizeObserver) {
             this.initializeDynamicHeight();
         }
+
+        this.updatePretextTextMetrics();
     }
 
     disconnectedCallback() {
@@ -577,11 +618,285 @@ export default class KanbanBoard extends LightningElement {
                 '[pretext] static resource loaded under LWS sandbox',
                 probeResult
             );
+            this.updatePretextTextMetrics();
         } catch (error) {
             this._pretextLoadState = 'failed';
             pretextLoadPromise = null;
             console.error('[pretext] failed to load static resource', error);
         }
+    }
+
+    getColumnsWithPretextLayout(columns, context) {
+        const version = this._pretextLayoutVersion;
+        const cache = this._pretextDecoratedColumnsCache;
+
+        if (
+            cache.columnsRef === columns &&
+            cache.context === context &&
+            cache.version === version
+        ) {
+            return cache.value;
+        }
+
+        if (!columns || columns.length === 0) {
+            return columns;
+        }
+
+        const decoratedColumns = columns.map((column) => ({
+            ...column,
+            cards: (column.cards || []).map((card) =>
+                this.decorateCardText(card, context)
+            )
+        }));
+
+        this._pretextDecoratedColumnsCache = {
+            columnsRef: columns,
+            context,
+            version,
+            value: decoratedColumns
+        };
+
+        return decoratedColumns;
+    }
+
+    decorateCardText(card, context) {
+        if (!card) {
+            return card;
+        }
+
+        return {
+            ...card,
+            ...this.getCardNameDecoration(card, context),
+            ...this.getCardSubjectDecoration(card, context),
+            ...this.getEpicLabelDecoration(card, context)
+        };
+    }
+
+    getCardNameDecoration(card, context) {
+        if (context !== 'board') {
+            return {};
+        }
+
+        const metricsKey = card.hasAssignee
+            ? 'boardCardNameWithAssignee'
+            : 'boardCardNameWithoutAssignee';
+        const decoration = this.getMeasuredTextDecoration(
+            card.Name,
+            metricsKey,
+            PRETEXT_CARD_NAME_MAX_LINES,
+            PRETEXT_CARD_NAME_FALLBACK_CLASS,
+            PRETEXT_CARD_NAME_MULTI_LINE_CLASS
+        );
+
+        return {
+            nameClass: decoration.className,
+            nameTitle: decoration.title,
+            nameMetricsRole: card.hasAssignee
+                ? 'board-card-name-with-assignee'
+                : 'board-card-name-without-assignee'
+        };
+    }
+
+    getCardSubjectDecoration(card, context) {
+        const metricsKey =
+            context === 'board' ? 'boardSubject' : 'swimlaneSubject';
+        const decoration = this.getMeasuredTextDecoration(
+            card.subject,
+            metricsKey,
+            PRETEXT_CARD_SUBJECT_MAX_LINES,
+            PRETEXT_CARD_SUBJECT_FALLBACK_CLASS,
+            'kanban-card__subject kanban-card__subject--two-line'
+        );
+
+        return {
+            subjectClass: decoration.className,
+            subjectTitle: decoration.title
+        };
+    }
+
+    getEpicLabelDecoration(card, context) {
+        if (context !== 'board' || !card.hasEpic) {
+            return {};
+        }
+
+        const decoration = this.getMeasuredTextDecoration(
+            card.epicLabel,
+            'boardEpicLabel',
+            PRETEXT_EPIC_LABEL_MAX_LINES,
+            PRETEXT_EPIC_LABEL_FALLBACK_CLASS,
+            PRETEXT_EPIC_LABEL_MULTI_LINE_CLASS
+        );
+
+        return {
+            epicLabelClass: decoration.className,
+            epicLabelContainerClass: decoration.isMultiLine
+                ? 'epic-label epic-label--two-line'
+                : 'epic-label',
+            epicLabelTitle: decoration.title
+        };
+    }
+
+    getMeasuredTextDecoration(
+        text,
+        metricsKey,
+        maxLines,
+        fallbackClass,
+        multiLineClass
+    ) {
+        if (!text) {
+            return {
+                className: fallbackClass,
+                isMultiLine: false,
+                title: null
+            };
+        }
+
+        const metrics = this._pretextTextMetrics[metricsKey];
+        const layout = this.measureTextLayout(text, metrics);
+        const isMultiLine =
+            layout != null &&
+            layout.lineCount > 1 &&
+            metrics != null &&
+            this._pretextApi != null;
+
+        return {
+            className: isMultiLine ? multiLineClass : fallbackClass,
+            isMultiLine,
+            title: layout != null && layout.lineCount > maxLines ? text : null
+        };
+    }
+
+    measureTextLayout(text, metrics) {
+        if (!text || !metrics || !this._pretextApi) {
+            return null;
+        }
+
+        const cacheKey = `${metrics.signature}::${text}`;
+        const cachedLayout = this._pretextLayoutCache.get(cacheKey);
+        if (cachedLayout) {
+            return cachedLayout;
+        }
+
+        try {
+            const prepared = this._pretextApi.prepare(text, metrics.font);
+            const layout = this._pretextApi.layout(
+                prepared,
+                metrics.width,
+                metrics.lineHeight
+            );
+            this._pretextLayoutCache.set(cacheKey, layout);
+            return layout;
+        } catch (error) {
+            console.warn('[pretext] card text measurement failed', error);
+            return null;
+        }
+    }
+
+    updatePretextTextMetrics() {
+        const nextBoardSubjectMetrics = this.readPretextTextMetrics(
+            '[data-pretext-role="board-card-subject"]'
+        );
+        const nextSwimlaneSubjectMetrics = this.readPretextTextMetrics(
+            '[data-pretext-role="swimlane-card-subject"]'
+        );
+        const nextBoardCardNameWithAssigneeMetrics = this.readPretextTextMetrics(
+            '[data-pretext-role="board-card-name-with-assignee"]'
+        );
+        const nextBoardCardNameWithoutAssigneeMetrics =
+            this.readPretextTextMetrics(
+                '[data-pretext-role="board-card-name-without-assignee"]'
+            );
+        const nextBoardEpicLabelMetrics = this.readPretextTextMetrics(
+            '[data-pretext-role="board-epic-label"]'
+        );
+
+        const boardSubjectChanged = this.setPretextTextMetrics(
+            'boardSubject',
+            nextBoardSubjectMetrics
+        );
+        const swimlaneSubjectChanged = this.setPretextTextMetrics(
+            'swimlaneSubject',
+            nextSwimlaneSubjectMetrics
+        );
+        const boardCardNameWithAssigneeChanged = this.setPretextTextMetrics(
+            'boardCardNameWithAssignee',
+            nextBoardCardNameWithAssigneeMetrics
+        );
+        const boardCardNameWithoutAssigneeChanged = this.setPretextTextMetrics(
+            'boardCardNameWithoutAssignee',
+            nextBoardCardNameWithoutAssigneeMetrics
+        );
+        const boardEpicLabelChanged = this.setPretextTextMetrics(
+            'boardEpicLabel',
+            nextBoardEpicLabelMetrics
+        );
+
+        if (
+            boardSubjectChanged ||
+            swimlaneSubjectChanged ||
+            boardCardNameWithAssigneeChanged ||
+            boardCardNameWithoutAssigneeChanged ||
+            boardEpicLabelChanged
+        ) {
+            this._pretextLayoutCache.clear();
+            this._pretextDecoratedColumnsCache = {
+                columnsRef: null,
+                context: null,
+                version: -1,
+                value: []
+            };
+            this._pretextLayoutVersion += 1;
+        }
+    }
+
+    setPretextTextMetrics(context, metrics) {
+        const currentMetrics = this._pretextTextMetrics[context];
+        if (
+            currentMetrics?.signature === metrics?.signature &&
+            currentMetrics?.width === metrics?.width &&
+            currentMetrics?.lineHeight === metrics?.lineHeight
+        ) {
+            return false;
+        }
+
+        this._pretextTextMetrics[context] = metrics;
+        return true;
+    }
+
+    readPretextTextMetrics(selector) {
+        const sampleElement = this.template.querySelector(selector);
+        if (!sampleElement) {
+            return null;
+        }
+
+        const width = Math.max(
+            0,
+            Math.floor(sampleElement.getBoundingClientRect().width)
+        );
+        if (!width) {
+            return null;
+        }
+
+        const styles = window.getComputedStyle(sampleElement);
+        const fontSize = parseFloat(styles.fontSize) || 13;
+        const lineHeight = Number.isFinite(parseFloat(styles.lineHeight))
+            ? parseFloat(styles.lineHeight)
+            : Math.round(fontSize * 1.35 * 100) / 100;
+        const font =
+            styles.font && styles.font !== ''
+                ? styles.font
+                : `${styles.fontStyle || 'normal'} ${
+                      styles.fontWeight || '500'
+                  } ${styles.fontSize || `${fontSize}px`} ${
+                      styles.fontFamily || 'Arial, sans-serif'
+                  }`;
+
+        return {
+            font,
+            width,
+            lineHeight,
+            signature: `${width}|${lineHeight}|${font}`
+        };
     }
 
     async loadBoardData() {
@@ -942,13 +1257,17 @@ export default class KanbanBoard extends LightningElement {
         // Create ResizeObserver to handle viewport changes, zoom, etc.
         this._resizeObserver = new ResizeObserver(() => {
             this.updateBoardHeight();
+            this.updatePretextTextMetrics();
         });
 
         // Observe the wrapper element
         this._resizeObserver.observe(this._wrapperElement);
 
         // Also observe viewport changes via window resize
-        this._windowResizeHandler = this.updateBoardHeight.bind(this);
+        this._windowResizeHandler = () => {
+            this.updateBoardHeight();
+            this.updatePretextTextMetrics();
+        };
         window.addEventListener('resize', this._windowResizeHandler);
         this._windowScrollHandler = this.updateBoardHeight.bind(this);
         window.addEventListener('scroll', this._windowScrollHandler, {
@@ -1125,6 +1444,10 @@ export default class KanbanBoard extends LightningElement {
 
     handleEpicFilter(event) {
         this.filterManager.handleEpicFilter(event);
+    }
+
+    handleAssigneeFilter(event) {
+        this.filterManager.handleAssigneeFilter(event);
     }
 
     handleToggleHideCompleted() {

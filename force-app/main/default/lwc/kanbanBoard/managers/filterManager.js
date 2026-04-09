@@ -4,6 +4,41 @@
  * @property {string} value - Filter value
  */
 
+function getAssigneeName(card) {
+    return card?.assignee?.name?.trim() || '';
+}
+
+function getAssigneeValue(card) {
+    const assigneeId = card?.assigneeId || card?.assignee?.id;
+    if (assigneeId) {
+        return assigneeId;
+    }
+
+    const assigneeName = getAssigneeName(card);
+    return assigneeName ? `name:${assigneeName}` : '';
+}
+
+function buildAssigneeOptions(cards) {
+    const optionsByValue = new Map();
+
+    (cards || []).forEach((card) => {
+        const label = getAssigneeName(card);
+        const value = getAssigneeValue(card);
+
+        if (!label || !value || optionsByValue.has(value)) {
+            return;
+        }
+
+        optionsByValue.set(value, { label, value });
+    });
+
+    return Array.from(optionsByValue.values()).sort((left, right) =>
+        left.label.localeCompare(right.label, undefined, {
+            sensitivity: 'base'
+        })
+    );
+}
+
 /**
  * Manages filter/search logic for the Kanban board.
  * Reads and writes reactive state on the host component via this.component.
@@ -52,6 +87,17 @@ export default class FilterManager {
         ];
     }
 
+    /**
+     * Assignee filter dropdown options
+     * @returns {FilterOption[]}
+     */
+    get assigneeFilterOptions() {
+        const cards = (this.component.columns || []).flatMap(
+            (column) => column.cards || []
+        );
+        return buildAssigneeOptions(cards);
+    }
+
     // =========================================================================
     // Computed getters
     // =========================================================================
@@ -66,6 +112,7 @@ export default class FilterManager {
             this.component._boardFilterPriority !== 'All' ||
             this.component._boardFilterCardType !== 'All' ||
             this.component._boardFilterEpic !== 'All' ||
+            this.component._boardFilterAssignees.length > 0 ||
             this.component._boardHideCompleted
         );
     }
@@ -134,12 +181,14 @@ export default class FilterManager {
         const priority = this.component._boardFilterPriority;
         const cardType = this.component._boardFilterCardType;
         const epicFilter = this.component._boardFilterEpic;
+        const assigneeFilter = new Set(this.component._boardFilterAssignees);
         const hideCompleted = this.component._boardHideCompleted;
         const hasFilter =
             search ||
             priority !== 'All' ||
             cardType !== 'All' ||
             epicFilter !== 'All' ||
+            assigneeFilter.size > 0 ||
             hideCompleted;
         const activeIdx = this.component._mobileActiveColumnIndex;
 
@@ -239,6 +288,14 @@ export default class FilterManager {
                     }
                 }
 
+                // Assignee filter
+                if (assigneeFilter.size > 0) {
+                    const assigneeValue = getAssigneeValue(card);
+                    if (!assigneeValue || !assigneeFilter.has(assigneeValue)) {
+                        return false;
+                    }
+                }
+
                 return true;
             });
 
@@ -297,6 +354,17 @@ export default class FilterManager {
     }
 
     /**
+     * Handles assignee multi-select changes
+     * @param {CustomEvent<{value: string[]}>} event - Change event from assignee filter
+     */
+    handleAssigneeFilter(event) {
+        const values = event.detail?.value;
+        this.component._boardFilterAssignees = Array.isArray(values)
+            ? [...values]
+            : [];
+    }
+
+    /**
      * Toggles the hide-completed filter on/off
      */
     handleToggleHideCompleted() {
@@ -312,6 +380,7 @@ export default class FilterManager {
         this.component._boardFilterPriority = 'All';
         this.component._boardFilterCardType = 'All';
         this.component._boardFilterEpic = 'All';
+        this.component._boardFilterAssignees = [];
         this.component._boardHideCompleted = false;
         if (this._searchDebounceTimer) {
             // eslint-disable-next-line @lwc/lwc/no-async-operation

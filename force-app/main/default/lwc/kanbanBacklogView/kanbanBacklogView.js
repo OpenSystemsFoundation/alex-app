@@ -18,6 +18,41 @@ import {
     removeStoreSubscription
 } from 'c/storeSubscriptionMixin';
 
+function getAssigneeName(card) {
+    return card?.assignee?.name?.trim() || '';
+}
+
+function getAssigneeValue(card) {
+    const assigneeId = card?.assigneeId || card?.assignee?.id;
+    if (assigneeId) {
+        return assigneeId;
+    }
+
+    const assigneeName = getAssigneeName(card);
+    return assigneeName ? `name:${assigneeName}` : '';
+}
+
+function buildAssigneeOptions(cards) {
+    const optionsByValue = new Map();
+
+    (cards || []).forEach((card) => {
+        const label = getAssigneeName(card);
+        const value = getAssigneeValue(card);
+
+        if (!label || !value || optionsByValue.has(value)) {
+            return;
+        }
+
+        optionsByValue.set(value, { label, value });
+    });
+
+    return Array.from(optionsByValue.values()).sort((left, right) =>
+        left.label.localeCompare(right.label, undefined, {
+            sensitivity: 'base'
+        })
+    );
+}
+
 export default class KanbanBacklogView extends LightningElement {
     /** @type {import('c/kanbanStore').Store} The Redux-style store instance */
     @api store;
@@ -28,6 +63,7 @@ export default class KanbanBacklogView extends LightningElement {
     @track filterPriority = 'All';
     @track filterCardType = 'All';
     @track filterEpic = 'All';
+    @track filterAssignees = [];
     @track viewMode = 'all'; // 'all' | 'refinement'
     @track sortBy = 'priority';
     @track showCreateForm = false;
@@ -97,6 +133,14 @@ export default class KanbanBacklogView extends LightningElement {
             cards = cards.filter(
                 (c) => c.epicId === this.filterEpic || c.epic?.id === this.filterEpic
             );
+        }
+
+        if (this.filterAssignees.length > 0) {
+            const assigneeFilter = new Set(this.filterAssignees);
+            cards = cards.filter((card) => {
+                const assigneeValue = getAssigneeValue(card);
+                return assigneeValue && assigneeFilter.has(assigneeValue);
+            });
         }
 
         // Enrich cards with selection state and UI helpers
@@ -327,6 +371,23 @@ export default class KanbanBacklogView extends LightningElement {
         return summaries != null && summaries.length > 0;
     }
 
+    get assigneeFilterOptions() {
+        if (!this._storeState) {
+            return [];
+        }
+
+        const cards =
+            this.viewMode === 'refinement'
+                ? selectors.getUnrefinedBacklogCards(this._storeState)
+                : selectors.getBacklogCards(this._storeState);
+
+        return buildAssigneeOptions(cards);
+    }
+
+    get hasAssigneeOptions() {
+        return this.assigneeFilterOptions.length > 0;
+    }
+
     get priorityOptions() {
         return [
             { label: 'High', value: 'High' },
@@ -345,11 +406,25 @@ export default class KanbanBacklogView extends LightningElement {
     }
 
     get backlogInfoText() {
+        if (this.hasActiveFilters) {
+            return `${this.backlogCards.length} of ${this.cardCount} cards | ${this.totalStoryPoints} pts`;
+        }
         return `${this.cardCount} cards | ${this.totalStoryPoints} pts`;
     }
 
     get hasBacklogInfoText() {
         return !this.isBacklogSaving;
+    }
+
+    get hasActiveFilters() {
+        return !!(
+            this.searchTerm.trim() ||
+            this.viewMode !== 'all' ||
+            this.filterPriority !== 'All' ||
+            this.filterCardType !== 'All' ||
+            this.filterEpic !== 'All' ||
+            this.filterAssignees.length > 0
+        );
     }
 
     // ===================================================================
@@ -374,6 +449,20 @@ export default class KanbanBacklogView extends LightningElement {
 
     handleEpicFilterChange(event) {
         this.filterEpic = this.extractEventValue(event);
+    }
+
+    handleAssigneeFilterChange(event) {
+        const values = event.detail?.value;
+        this.filterAssignees = Array.isArray(values) ? [...values] : [];
+    }
+
+    handleClearFilters() {
+        this.searchTerm = '';
+        this.viewMode = 'all';
+        this.filterPriority = 'All';
+        this.filterCardType = 'All';
+        this.filterEpic = 'All';
+        this.filterAssignees = [];
     }
 
     extractEventValue(event) {

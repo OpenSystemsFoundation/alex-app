@@ -16,10 +16,14 @@
             show-epic-filter={hasEpics}
             epic-value={filterEpic}
             epic-options={epicFilterOptions}
+            show-assignee-filter={hasAssigneeOptions}
+            assignee-value={filterAssignees}
+            assignee-options={assigneeFilterOptions}
             show-info-text={hasBacklogInfoText}
             info-text={backlogInfoText}
             show-busy-state={isBacklogSaving}
             busy-label="Saving..."
+            show-clear-filters={hasActiveFilters}
             show-new-sprint={isSprintBoard}
             show-new-card
             onsearchinput={handleSearchChange}
@@ -27,6 +31,8 @@
             onprioritychange={handlePriorityFilterChange}
             oncardtypechange={handleCardTypeFilterChange}
             onepicchange={handleEpicFilterChange}
+            onassigneechange={handleAssigneeFilterChange}
+            onclearfilters={handleClearFilters}
             oncreatesprint={handleToggleCreateSprintForm}
             oncreatecard={handleToggleCreateForm}
         ></c-kanban-filter-bar>

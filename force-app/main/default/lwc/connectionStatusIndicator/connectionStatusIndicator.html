@@ -28,12 +28,14 @@
                 class={statusClass}
                 title={detailedStatus}
             >
-                <lightning-icon
-                    icon-name={statusIcon}
-                    alternative-text={statusText}
-                    size="x-small"
-                    class="slds-m-right_x-small"
-                ></lightning-icon>
+                <template lwc:if={showStatusIcon}>
+                    <lightning-icon
+                        icon-name={statusIcon}
+                        alternative-text={statusText}
+                        size="x-small"
+                        class="slds-m-right_x-small"
+                    ></lightning-icon>
+                </template>
                 <span class="status-text"
                     >{statusText}</span
                 >

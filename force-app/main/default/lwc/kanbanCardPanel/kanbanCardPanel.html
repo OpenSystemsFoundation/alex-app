@@ -17,7 +17,7 @@
                 class="card-panel__header slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-var-p-around_small"
             >
                 <div
-                    class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate"
+                    class="card-panel__header-main slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate"
                 >
                     <lightning-icon
                         icon-name="standard:task"
@@ -25,13 +25,15 @@
                         class="slds-var-m-right_x-small"
                     ></lightning-icon>
                     <h2
-                        class="slds-text-heading_small slds-truncate"
+                        class={cardNameClass}
+                        title={cardNameTitle}
+                        data-pretext-role="card-panel-title"
                     >
                         <a
                             href={cardRecordUrl}
                             data-card-id={card.Id}
                             onclick={handleNameClick}
-                            class="slds-text-link"
+                            class="card-panel__title-link slds-text-link"
                             >{card.Name}</a
                         >
                     </h2>
@@ -168,7 +170,7 @@
                                     class="epic-detail__children"
                                 >
                                     <template
-                                        for:each={epicDetail.childCards}
+                                        for:each={epicChildCards}
                                         for:item="child"
                                     >
                                         <div
@@ -181,7 +183,9 @@
                                                 class="epic-child-card__header"
                                             >
                                                 <span
-                                                    class="epic-child-card__name slds-truncate"
+                                                    class={child.nameClass}
+                                                    title={child.nameTitle}
+                                                    data-pretext-role="epic-child-name"
                                                     >{child.name}</span
                                                 >
                                                 <template
@@ -197,7 +201,9 @@
                                                 class="epic-child-card__meta"
                                             >
                                                 <span
-                                                    class="epic-child-card__subject slds-truncate"
+                                                    class={child.subjectClass}
+                                                    title={child.subjectTitle}
+                                                    data-pretext-role="epic-child-subject"
                                                     >{child.subject}</span
                                                 >
                                             </div>

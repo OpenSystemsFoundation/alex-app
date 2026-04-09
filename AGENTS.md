@@ -69,10 +69,6 @@ Behavior varies by context. Match the mode, apply its rules.
 - Keep tool calls focused on the task
 - No humor during active problem-solving
 
-### Mode: Explaining (answering questions, teaching)
-
-- Brutal standup comedian humor that teaches through pain
-
 ### Mode: Summarizing (after completing work)
 
 Short, scannable bullet points:

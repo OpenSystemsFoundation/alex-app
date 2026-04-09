@@ -127,6 +127,9 @@
                             show-epic-filter={hasEpics}
                             epic-value={_boardFilterEpic}
                             epic-options={epicFilterOptions}
+                            show-assignee-filter={hasAssigneeFilterOptions}
+                            assignee-value={_boardFilterAssignees}
+                            assignee-options={assigneeFilterOptions}
                             show-swimlane-filter
                             swimlane-value={_swimlaneMode}
                             swimlane-options={swimlaneModeOptions}
@@ -140,6 +143,7 @@
                             onprioritychange={handlePriorityFilter}
                             oncardtypechange={handleCardTypeFilter}
                             onepicchange={handleEpicFilter}
+                            onassigneechange={handleAssigneeFilter}
                             onswimlanechange={handleSwimlaneChange}
                             ontogglehidedone={handleToggleHideCompleted}
                             onclearfilters={handleClearFilters}
@@ -282,7 +286,9 @@
                                                         class="kanban-card__body slds-text-body_small"
                                                     >
                                                         <p
-                                                            class="slds-truncate"
+                                                            class={card.subjectClass}
+                                                            title={card.subjectTitle}
+                                                            data-pretext-role="swimlane-card-subject"
                                                         >
                                                             {card.subject}
                                                         </p>
@@ -492,22 +498,20 @@
 
                                                                 <!-- Card Title -->
                                                                 <div
-                                                                    class="slds-media__body slds-truncate"
+                                                                    class="slds-media__body kanban-card__header-body"
                                                                 >
                                                                     <h2
-                                                                        class="slds-card__header-title slds-truncate slds-text-body_small"
+                                                                        class="slds-card__header-title slds-text-body_small kanban-card__name-heading"
                                                                     >
                                                                         <a
                                                                             href={card.recordUrl}
-                                                                            class="slds-text-link slds-text-color_brand slds-truncate"
-                                                                            title={card.Name}
+                                                                            class={card.nameClass}
+                                                                            title={card.nameTitle}
                                                                             onclick={handleCardNameClick}
                                                                             data-card-id={card.Id}
+                                                                            data-pretext-role={card.nameMetricsRole}
                                                                         >
-                                                                            <span
-                                                                                class="slds-truncate"
-                                                                                >{card.Name}</span
-                                                                            >
+                                                                            {card.Name}
                                                                         </a>
                                                                     </h2>
 
@@ -556,7 +560,9 @@
                                                                     lwc:if={card.subject}
                                                                 >
                                                                     <p
-                                                                        class="slds-truncate slds-text-body_small"
+                                                                        class={card.subjectClass}
+                                                                        title={card.subjectTitle}
+                                                                        data-pretext-role="board-card-subject"
                                                                     >
                                                                         {card.subject}
                                                                     </p>
@@ -591,7 +597,7 @@
                                                                     lwc:if={card.hasEpic}
                                                                 >
                                                                     <div
-                                                                        class="epic-label"
+                                                                        class={card.epicLabelContainerClass}
                                                                     >
                                                                         <lightning-icon
                                                                             icon-name="utility:layers"
@@ -599,7 +605,9 @@
                                                                             class="epic-label__icon"
                                                                         ></lightning-icon>
                                                                         <span
-                                                                            class="epic-label__text slds-truncate"
+                                                                            class={card.epicLabelClass}
+                                                                            title={card.epicLabelTitle}
+                                                                            data-pretext-role="board-epic-label"
                                                                             >{card.epicLabel}</span
                                                                         >
                                                                     </div>
@@ -782,20 +790,18 @@
 
                                                                 <!-- Card Title (community URL) -->
                                                                 <div
-                                                                    class="slds-media__body slds-truncate"
+                                                                    class="slds-media__body kanban-card__header-body"
                                                                 >
                                                                     <h2
-                                                                        class="slds-card__header-title slds-truncate slds-text-body_small"
+                                                                        class="slds-card__header-title slds-text-body_small kanban-card__name-heading"
                                                                     >
                                                                         <a
                                                                             href={card.communityCardUrl}
-                                                                            class="slds-text-link slds-text-color_brand slds-truncate"
-                                                                            title={card.Name}
+                                                                            class={card.nameClass}
+                                                                            title={card.nameTitle}
+                                                                            data-pretext-role={card.nameMetricsRole}
                                                                         >
-                                                                            <span
-                                                                                class="slds-truncate"
-                                                                                >{card.Name}</span
-                                                                            >
+                                                                            {card.Name}
                                                                         </a>
                                                                     </h2>
 
@@ -844,7 +850,9 @@
                                                                     lwc:if={card.subject}
                                                                 >
                                                                     <p
-                                                                        class="slds-truncate slds-text-body_small"
+                                                                        class={card.subjectClass}
+                                                                        title={card.subjectTitle}
+                                                                        data-pretext-role="board-card-subject"
                                                                     >
                                                                         {card.subject}
                                                                     </p>
@@ -879,7 +887,7 @@
                                                                     lwc:if={card.hasEpic}
                                                                 >
                                                                     <div
-                                                                        class="epic-label"
+                                                                        class={card.epicLabelContainerClass}
                                                                     >
                                                                         <lightning-icon
                                                                             icon-name="utility:layers"
@@ -887,7 +895,9 @@
                                                                             class="epic-label__icon"
                                                                         ></lightning-icon>
                                                                         <span
-                                                                            class="epic-label__text slds-truncate"
+                                                                            class={card.epicLabelClass}
+                                                                            title={card.epicLabelTitle}
+                                                                            data-pretext-role="board-epic-label"
                                                                             >{card.epicLabel}</span
                                                                         >
                                                                     </div>

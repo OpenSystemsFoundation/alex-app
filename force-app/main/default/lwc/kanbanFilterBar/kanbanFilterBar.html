@@ -95,6 +95,50 @@
             </select>
         </template>
 
+        <template lwc:if={showAssigneeFilter}>
+            <div class="kanban-filter-bar__multiselect">
+                <button
+                    type="button"
+                    class={assigneeButtonClass}
+                    onclick={handleAssigneeDropdownToggle}
+                    title={assigneeButtonTitle}
+                    disabled={!hasAssigneeOptions}
+                >
+                    <span class="kanban-filter-bar__multiselect-label">
+                        {assigneeButtonLabel}
+                    </span>
+                    <span class="kanban-filter-bar__multiselect-caret"
+                        >▾</span
+                    >
+                </button>
+
+                <template lwc:if={_showAssigneeDropdown}>
+                    <div
+                        class="kanban-filter-bar__multiselect-panel"
+                        onclick={handleAssigneePanelClick}
+                    >
+                        <template
+                            for:each={assigneeOptionItems}
+                            for:item="opt"
+                        >
+                            <label
+                                key={opt.value}
+                                class="kanban-filter-bar__multiselect-option"
+                            >
+                                <input
+                                    type="checkbox"
+                                    data-value={opt.value}
+                                    checked={opt.checked}
+                                    onchange={handleAssigneeOptionToggle}
+                                />
+                                <span>{opt.label}</span>
+                            </label>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </template>
+
         <template lwc:if={showSwimlaneFilter}>
             <select
                 class="kanban-filter-bar__select"
