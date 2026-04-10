@@ -123,7 +123,9 @@ public class CardUpdateRequest {
             card.OpenSF__Color__c = color;
         }
         if (hasDueDate) {
-            card.OpenSF__DueDate__c = Date.valueOf(dueDate);
+            card.OpenSF__DueDate__c = String.isNotBlank(dueDate)
+                ? Date.valueOf(dueDate)
+                : null;
         }
         if (hasStoryPoints) {
             card.OpenSF__StoryPoints__c = storyPoints;
@@ -143,7 +145,7 @@ public class CardUpdateRequest {
         if (hasPeerReviewerId) {
             card.OpenSF__PeerReviewer__c = peerReviewerId;
         }
-        if (hasNeedsRefinement) {
+        if (hasNeedsRefinement && needsRefinement != null) {
             card.OpenSF__NeedsRefinement__c = needsRefinement;
         }
         if (hasColumnId) {

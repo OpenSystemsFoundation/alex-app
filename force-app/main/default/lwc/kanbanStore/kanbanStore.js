@@ -75,6 +75,13 @@ export {
     loadEpicSummariesAsync,
     loadEpicDetailAsync
 } from './thunks/epicThunks';
+export {
+    createColumnAsync,
+    updateColumnAsync,
+    deleteColumnAsync,
+    reorderColumnAsync,
+    createColumnsFromTemplateAsync
+} from './thunks/columnThunks';
 
 // Undo/Redo exports
 export { createUndoManager } from './undo/undoManager';
@@ -90,6 +97,7 @@ import * as cardThunks from './thunks/cardThunks';
 import * as sprintThunks from './thunks/sprintThunks';
 import * as analyticsThunks from './thunks/analyticsThunks';
 import * as epicThunks from './thunks/epicThunks';
+import * as columnThunks from './thunks/columnThunks';
 
 export {
     actions,
@@ -99,5 +107,6 @@ export {
     cardThunks,
     sprintThunks,
     analyticsThunks,
-    epicThunks
+    epicThunks,
+    columnThunks
 };

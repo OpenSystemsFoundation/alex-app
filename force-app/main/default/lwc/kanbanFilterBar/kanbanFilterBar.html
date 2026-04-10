@@ -15,6 +15,54 @@
             />
         </div>
 
+        <template lwc:if={showAssigneeFilter}>
+            <div class="kanban-filter-bar__multiselect">
+                <button
+                    type="button"
+                    class={assigneeButtonClass}
+                    onclick={handleAssigneeDropdownToggle}
+                    title={assigneeButtonTitle}
+                    disabled={isAssigneeFilterDisabled}
+                >
+                    <span
+                        class="kanban-filter-bar__multiselect-label"
+                    >
+                        {assigneeButtonLabel}
+                    </span>
+                    <lightning-icon
+                        icon-name="utility:chevrondown"
+                        size="xx-small"
+                        class="kanban-filter-bar__multiselect-caret"
+                    ></lightning-icon>
+                </button>
+
+                <template lwc:if={_showAssigneeDropdown}>
+                    <div
+                        class="kanban-filter-bar__multiselect-panel"
+                        onclick={handleAssigneePanelClick}
+                    >
+                        <template
+                            for:each={assigneeOptionItems}
+                            for:item="opt"
+                        >
+                            <label
+                                key={opt.value}
+                                class="kanban-filter-bar__multiselect-option"
+                            >
+                                <input
+                                    type="checkbox"
+                                    data-value={opt.value}
+                                    checked={opt.checked}
+                                    onchange={handleAssigneeOptionToggle}
+                                />
+                                <span>{opt.label}</span>
+                            </label>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </template>
+
         <template lwc:if={showViewFilter}>
             <select
                 class="kanban-filter-bar__select"
@@ -93,53 +141,6 @@
                     </option>
                 </template>
             </select>
-        </template>
-
-        <template lwc:if={showAssigneeFilter}>
-            <div class="kanban-filter-bar__multiselect">
-                <button
-                    type="button"
-                    class={assigneeButtonClass}
-                    onclick={handleAssigneeDropdownToggle}
-                    title={assigneeButtonTitle}
-                    disabled={isAssigneeFilterDisabled}
-                >
-                    <span
-                        class="kanban-filter-bar__multiselect-label"
-                    >
-                        {assigneeButtonLabel}
-                    </span>
-                    <span
-                        class="kanban-filter-bar__multiselect-caret"
-                        >v</span
-                    >
-                </button>
-
-                <template lwc:if={_showAssigneeDropdown}>
-                    <div
-                        class="kanban-filter-bar__multiselect-panel"
-                        onclick={handleAssigneePanelClick}
-                    >
-                        <template
-                            for:each={assigneeOptionItems}
-                            for:item="opt"
-                        >
-                            <label
-                                key={opt.value}
-                                class="kanban-filter-bar__multiselect-option"
-                            >
-                                <input
-                                    type="checkbox"
-                                    data-value={opt.value}
-                                    checked={opt.checked}
-                                    onchange={handleAssigneeOptionToggle}
-                                />
-                                <span>{opt.label}</span>
-                            </label>
-                        </template>
-                    </div>
-                </template>
-            </div>
         </template>
 
         <template lwc:if={showSwimlaneFilter}>

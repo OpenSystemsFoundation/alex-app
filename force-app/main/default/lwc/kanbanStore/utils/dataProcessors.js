@@ -146,7 +146,7 @@ export const enrichCardData = (card, cardTypeIcons) => {
         ...card,
         priorityClass: getPriorityClass(card.priority),
         assigneeInitials: getInitials(card.assignee?.name),
-        hasAssignee: !!card.assigneeId,
+        hasAssignee: !!card.assigneeId && !!card.assignee,
         formattedDueDate: card.dueDate ? formatDate(card.dueDate) : null,
         isOverdue: card.dueDate ? new Date(card.dueDate) < new Date() : false,
         hasStoryPoints:

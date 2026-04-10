@@ -300,22 +300,6 @@
                                                             {card.subject}
                                                         </p>
                                                         <template
-                                                            lwc:if={card.hasEpicProgress}
-                                                        >
-                                                            <div
-                                                                class="epic-progress"
-                                                            >
-                                                                <div
-                                                                    class="epic-progress__bar"
-                                                                >
-                                                                    <div
-                                                                        class="epic-progress__fill"
-                                                                        style={card.epicProgress.progressPercent}
-                                                                    ></div>
-                                                                </div>
-                                                            </div>
-                                                        </template>
-                                                        <template
                                                             lwc:if={card.hasStoryPoints}
                                                         >
                                                             <span
@@ -573,30 +557,6 @@
                                                                     >
                                                                         {card.subject}
                                                                     </p>
-                                                                </template>
-
-                                                                <!-- Epic Progress Bar (for epic-type cards) -->
-                                                                <template
-                                                                    lwc:if={card.hasEpicProgress}
-                                                                >
-                                                                    <div
-                                                                        class="epic-progress"
-                                                                    >
-                                                                        <div
-                                                                            class="epic-progress__bar"
-                                                                        >
-                                                                            <div
-                                                                                class="epic-progress__fill"
-                                                                                style={card.epicProgress.progressPercent}
-                                                                            ></div>
-                                                                        </div>
-                                                                        <span
-                                                                            class="epic-progress__label"
-                                                                        >
-                                                                            {card.epicProgress.completedCards}/{card.epicProgress.totalCards}
-                                                                            cards
-                                                                        </span>
-                                                                    </div>
                                                                 </template>
 
                                                                 <!-- Epic Label (for child cards belonging to an epic) -->
@@ -865,30 +825,6 @@
                                                                     </p>
                                                                 </template>
 
-                                                                <!-- Epic Progress Bar (community) -->
-                                                                <template
-                                                                    lwc:if={card.hasEpicProgress}
-                                                                >
-                                                                    <div
-                                                                        class="epic-progress"
-                                                                    >
-                                                                        <div
-                                                                            class="epic-progress__bar"
-                                                                        >
-                                                                            <div
-                                                                                class="epic-progress__fill"
-                                                                                style={card.epicProgress.progressPercent}
-                                                                            ></div>
-                                                                        </div>
-                                                                        <span
-                                                                            class="epic-progress__label"
-                                                                        >
-                                                                            {card.epicProgress.completedCards}/{card.epicProgress.totalCards}
-                                                                            cards
-                                                                        </span>
-                                                                    </div>
-                                                                </template>
-
                                                                 <!-- Epic Label (community) -->
                                                                 <template
                                                                     lwc:if={card.hasEpic}
@@ -1057,7 +993,7 @@
         <template lwc:if={showColumnsContent}>
             <div class="kanban-columns-container">
                 <c-column-management
-                    board-id={recordId}
+                    store={store}
                 ></c-column-management>
             </div>
         </template>

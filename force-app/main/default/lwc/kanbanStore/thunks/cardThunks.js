@@ -190,9 +190,11 @@ export const updateCardAsync = (cardId, updates, clientId = null) => {
             // Call server to persist changes
             const updatedCard = await updateCardApex(params);
 
-            // Server returns the full card, we could dispatch another update
-            // if we want to ensure server state matches, but optimistic update
-            // should be sufficient for now
+            // Apply server's full DTO back to store so relationship
+            // objects (assignee, epic, peerReviewer) are populated
+            if (updatedCard) {
+                dispatch(updateCardAction(cardId, updatedCard));
+            }
 
             return {
                 success: true,

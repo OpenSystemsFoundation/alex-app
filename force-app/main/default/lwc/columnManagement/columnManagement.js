@@ -1,11 +1,17 @@
-import { LightningElement, api, track } from 'lwc';
+import { LightningElement, api } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import getColumns from '@salesforce/apex/ColumnManagementController.getColumns';
-import createColumn from '@salesforce/apex/ColumnManagementController.createColumn';
-import updateColumn from '@salesforce/apex/ColumnManagementController.updateColumn';
-import deleteColumn from '@salesforce/apex/ColumnManagementController.deleteColumn';
-import reorderColumn from '@salesforce/apex/ColumnManagementController.reorderColumn';
-import createDefaultColumns from '@salesforce/apex/ColumnManagementController.createDefaultColumns';
+import {
+    selectors,
+    createColumnAsync,
+    updateColumnAsync,
+    deleteColumnAsync,
+    reorderColumnAsync,
+    createColumnsFromTemplateAsync
+} from 'c/kanbanStore';
+import {
+    applyStoreSubscription,
+    removeStoreSubscription
+} from 'c/storeSubscriptionMixin';
 
 const COLUMN_CATEGORY_OPTIONS = [
     { label: 'Backlog', value: 'Backlog' },
@@ -69,23 +75,10 @@ const TEMPLATE_OPTIONS = [
 ];
 
 export default class ColumnManagement extends LightningElement {
-    /** @type {string} */
-    @api
-    get boardId() {
-        return this._boardId;
-    }
-    set boardId(value) {
-        const changed = this._boardId !== value;
-        this._boardId = value;
-        if (changed && value) {
-            this.loadColumns();
-        }
-    }
+    /** @type {import('c/kanbanStore').KanbanStore} */
+    @api store;
 
-    @track columns = [];
-
-    _boardId = '';
-    isLoadingColumns = false;
+    _storeState;
     isSaving = false;
     showDeleteModal = false;
     deleteColumnId = null;
@@ -98,52 +91,52 @@ export default class ColumnManagement extends LightningElement {
     colorOptions = COLOR_OPTIONS;
     templateOptions = TEMPLATE_OPTIONS;
 
+    connectedCallback() {
+        if (this.store) {
+            applyStoreSubscription(this, this.store);
+        }
+    }
+
+    disconnectedCallback() {
+        removeStoreSubscription(this);
+    }
+
     // =========================================================================
     // Computed Properties
     // =========================================================================
 
+    /**
+     * Columns from the shared store, enriched for the management UI.
+     */
+    get columns() {
+        const storeColumns = this._storeState
+            ? selectors.getColumns(this._storeState)
+            : [];
+        return storeColumns.map((col, index) => ({
+            ...col,
+            index,
+            recordUrl: `/lightning/r/OpenSF__Column__c/${col.Id}/view`,
+            cardCountLabel: `${col.cardCount || 0} cards`,
+            colorStyle: `background-color: ${col.color || '#1B96FF'}`,
+            wipLimitLabel: col.wipLimit ? `WIP: ${col.wipLimit}` : '',
+            cssClass:
+                'column-item' +
+                (this.dragOverColumnId === col.Id ? ' drag-over' : '')
+        }));
+    }
+
     get showColumnList() {
-        return (
-            this._boardId &&
-            !this.isLoadingColumns &&
-            this.columns.length > 0
-        );
+        return !this.isLoadingColumns && this.columns.length > 0;
     }
 
     get showNoColumnsMessage() {
-        return (
-            this._boardId &&
-            !this.isLoadingColumns &&
-            this.columns.length === 0
-        );
+        return !this.isLoadingColumns && this.columns.length === 0;
     }
 
-    // =========================================================================
-    // Column Loading
-    // =========================================================================
-
-    async loadColumns() {
-        if (!this._boardId) return;
-
-        this.isLoadingColumns = true;
-        try {
-            const cols = await getColumns({ boardId: this._boardId });
-            this.columns = cols.map((col, index) => ({
-                ...col,
-                index,
-                recordUrl: `/lightning/r/OpenSF__Column__c/${col.Id}/view`,
-                cardCountLabel: `${col.cardCount || 0} cards`,
-                colorStyle: `background-color: ${col.color || '#1B96FF'}`,
-                wipLimitLabel: col.wipLimit ? `WIP: ${col.wipLimit}` : '',
-                cssClass:
-                    'column-item' +
-                    (this.dragOverColumnId === col.Id ? ' drag-over' : '')
-            }));
-        } catch (error) {
-            this.showError('Error loading columns', error);
-        } finally {
-            this.isLoadingColumns = false;
-        }
+    get isLoadingColumns() {
+        return this._storeState
+            ? selectors.getIsLoading(this._storeState)
+            : true;
     }
 
     // =========================================================================
@@ -153,21 +146,9 @@ export default class ColumnManagement extends LightningElement {
     async handleNewColumn() {
         this.isSaving = true;
         try {
-            const lastPosition =
-                this.columns.length > 0
-                    ? this.columns[this.columns.length - 1].position
-                    : null;
-            await createColumn({
-                boardId: this._boardId,
-                columnHeader: 'New Column',
-                category: 'To Do',
-                color: '#1B96FF',
-                status: 'To Do',
-                wipLimit: null,
-                previousPosition: lastPosition,
-                nextPosition: null
-            });
-            await this.loadColumns();
+            await this.store.dispatch(
+                createColumnAsync('New Column', 'To Do', '#1B96FF', 'To Do', null)
+            );
         } catch (error) {
             this.showError('Error creating column', error);
         } finally {
@@ -186,16 +167,14 @@ export default class ColumnManagement extends LightningElement {
         const templateName = event.currentTarget.dataset.template;
         this.isSaving = true;
         try {
-            await createDefaultColumns({
-                boardId: this._boardId,
-                templateName
-            });
+            await this.store.dispatch(
+                createColumnsFromTemplateAsync(templateName)
+            );
             this.showToast(
                 'Success',
                 'Template columns created',
                 'success'
             );
-            await this.loadColumns();
         } catch (error) {
             this.showError('Error creating template', error);
         } finally {
@@ -239,24 +218,11 @@ export default class ColumnManagement extends LightningElement {
 
     async saveColumnField(columnId, field, value) {
         try {
-            await updateColumn({
-                columnId,
-                updates: { [field]: value }
-            });
-            this.columns = this.columns.map((col) => {
-                if (col.Id !== columnId) return col;
-                const updated = { ...col, [field]: value };
-                if (field === 'color') {
-                    updated.colorStyle = `background-color: ${value || '#1B96FF'}`;
-                }
-                if (field === 'wipLimit') {
-                    updated.wipLimitLabel = value ? `WIP: ${value}` : '';
-                }
-                return updated;
-            });
+            await this.store.dispatch(
+                updateColumnAsync(columnId, { [field]: value })
+            );
         } catch (error) {
             this.showError('Error saving', error);
-            await this.loadColumns();
         }
     }
 
@@ -280,11 +246,12 @@ export default class ColumnManagement extends LightningElement {
     async handleConfirmDelete() {
         this.isSaving = true;
         try {
-            await deleteColumn({ columnId: this.deleteColumnId });
+            await this.store.dispatch(
+                deleteColumnAsync(this.deleteColumnId)
+            );
             this.showToast('Success', 'Column deleted', 'success');
             this.showDeleteModal = false;
             this.deleteColumnId = null;
-            await this.loadColumns();
         } catch (error) {
             this.showError('Error deleting column', error);
         } finally {
@@ -346,44 +313,28 @@ export default class ColumnManagement extends LightningElement {
         if (!this.dragColumnId || !this.dragOverColumnId) return;
         if (this.dragColumnId === this.dragOverColumnId) return;
 
-        const dragIndex = this.columns.findIndex(
+        const columns = this.columns;
+        const dragIndex = columns.findIndex(
             (c) => c.Id === this.dragColumnId
         );
-        const dropIndex = this.columns.findIndex(
+        const dropIndex = columns.findIndex(
             (c) => c.Id === this.dragOverColumnId
         );
 
         if (dragIndex === -1 || dropIndex === -1) return;
 
-        // Compute new neighbors
-        const reordered = [...this.columns];
+        // Build reordered array from store columns (not enriched)
+        const storeColumns = selectors.getColumns(this._storeState);
+        const reordered = [...storeColumns];
         const [moved] = reordered.splice(dragIndex, 1);
         reordered.splice(dropIndex, 0, moved);
 
-        const prevPosition =
-            dropIndex > 0 ? reordered[dropIndex - 1].position : null;
-        const nextPosition =
-            dropIndex < reordered.length - 1
-                ? reordered[dropIndex + 1].position
-                : null;
-
-        // Optimistic update
-        this.columns = reordered.map((col, index) => ({
-            ...col,
-            index,
-            cssClass: 'column-item'
-        }));
-
         try {
-            await reorderColumn({
-                columnId: this.dragColumnId,
-                previousPosition: prevPosition,
-                nextPosition: nextPosition
-            });
-            await this.loadColumns();
+            await this.store.dispatch(
+                reorderColumnAsync(this.dragColumnId, dropIndex, reordered)
+            );
         } catch (error) {
             this.showError('Error reordering column', error);
-            await this.loadColumns();
         }
     }
 

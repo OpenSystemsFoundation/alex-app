@@ -4,8 +4,8 @@
  * @module epicThunks
  */
 
-import { setEpicSummaries } from '../state/actions';
-import { setEpicSummaryMap } from '../utils/dataProcessors';
+import { setEpicSummaries, setColumns } from '../state/actions';
+import { setEpicSummaryMap, enrichCardData } from '../utils/dataProcessors';
 import getEpicSummaries from '@salesforce/apex/KanbanBoardController.getEpicSummaries';
 import getEpicDetail from '@salesforce/apex/KanbanBoardController.getEpicDetail';
 
@@ -15,11 +15,22 @@ import getEpicDetail from '@salesforce/apex/KanbanBoardController.getEpicDetail'
  * @returns {Function} Thunk function
  */
 export const loadEpicSummariesAsync = (boardId) => {
-    return async (dispatch) => {
+    return async (dispatch, getState) => {
         try {
             const summaries = await getEpicSummaries({ boardId });
             setEpicSummaryMap(summaries || []);
             dispatch(setEpicSummaries(summaries || []));
+
+            // Re-enrich cards so epic progress bars render on initial load
+            const state = getState();
+            if (state.columns && state.columns.length > 0) {
+                const reEnriched = state.columns.map((col) => ({
+                    ...col,
+                    cards: (col.cards || []).map((card) => enrichCardData(card))
+                }));
+                dispatch(setColumns(reEnriched));
+            }
+
             return summaries;
         } catch (error) {
             // Non-critical — log but don't propagate

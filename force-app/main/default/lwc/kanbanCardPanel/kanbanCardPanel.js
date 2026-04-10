@@ -1,7 +1,6 @@
 import { LightningElement, api, track, wire } from 'lwc';
-import { loadScript } from 'lightning/platformResourceLoader';
-import PRETEXT_RESOURCE from '@salesforce/resourceUrl/pretext';
 import { NavigationMixin } from 'lightning/navigation';
+import { PretextManager } from './pretextHelper';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { updateCardAsync, deleteCardAsync } from 'c/kanbanStore';
 import getModalSettings from '@salesforce/apex/KanbanBoardController.getModalSettings';
@@ -108,30 +107,6 @@ const DESCRIPTION_TEMPLATES = {
 const MIN_PANEL_WIDTH = 300;
 const MAX_PANEL_WIDTH = 800;
 const DELETE_CONFIRM_TIMEOUT = 3000;
-const PRETEXT_CARD_TITLE_MAX_LINES = 2;
-const PRETEXT_EPIC_CHILD_NAME_MAX_LINES = 2;
-const PRETEXT_EPIC_CHILD_SUBJECT_MAX_LINES = 2;
-const PRETEXT_CARD_TITLE_FALLBACK_CLASS =
-    'card-panel__title card-panel__title--single-line slds-text-heading_small';
-const PRETEXT_CARD_TITLE_MULTI_LINE_CLASS =
-    'card-panel__title card-panel__title--two-line slds-text-heading_small';
-const PRETEXT_EPIC_CHILD_NAME_FALLBACK_CLASS =
-    'epic-child-card__name epic-child-card__name--single-line';
-const PRETEXT_EPIC_CHILD_NAME_MULTI_LINE_CLASS =
-    'epic-child-card__name epic-child-card__name--two-line';
-const PRETEXT_EPIC_CHILD_SUBJECT_FALLBACK_CLASS =
-    'epic-child-card__subject epic-child-card__subject--single-line';
-const PRETEXT_EPIC_CHILD_SUBJECT_MULTI_LINE_CLASS =
-    'epic-child-card__subject epic-child-card__subject--two-line';
-
-let pretextLoadPromise;
-
-function getPretextApi() {
-    if (typeof window !== 'undefined' && window.Pretext) {
-        return window.Pretext;
-    }
-    return null;
-}
 
 export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     /** @type {CardDTO} The card data to display in the panel */
@@ -203,19 +178,7 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     _boundHandleResize;
     _boundHandleResizeEnd;
     _lastLoadedCardId;
-    _pretextApi = null;
-    _pretextLoadState = 'idle';
-    _pretextTextMetrics = {
-        cardTitle: null,
-        epicChildName: null,
-        epicChildSubject: null
-    };
-    _pretextLayoutCache = new Map();
-    _decoratedEpicChildrenCache = {
-        childCardsRef: null,
-        version: -1,
-        value: []
-    };
+    _pretext = new PretextManager(this);
 
     @wire(getModalSettings)
     wiredModalSettings({ data, error }) {
@@ -237,8 +200,8 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
 
     renderedCallback() {
         if (this.isOpen) {
-            this.initializePretext();
-            this.updatePretextTextMetrics();
+            this._pretext.initialize();
+            this._pretext.updateTextMetrics();
         }
 
         if (
@@ -286,23 +249,11 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     }
 
     get cardNameClass() {
-        return this.getMeasuredTextDecoration(
-            this.card?.Name,
-            'cardTitle',
-            PRETEXT_CARD_TITLE_MAX_LINES,
-            PRETEXT_CARD_TITLE_FALLBACK_CLASS,
-            PRETEXT_CARD_TITLE_MULTI_LINE_CLASS
-        ).className;
+        return this._pretext.getCardNameDecoration(this.card?.Name).className;
     }
 
     get cardNameTitle() {
-        return this.getMeasuredTextDecoration(
-            this.card?.Name,
-            'cardTitle',
-            PRETEXT_CARD_TITLE_MAX_LINES,
-            PRETEXT_CARD_TITLE_FALLBACK_CLASS,
-            PRETEXT_CARD_TITLE_MULTI_LINE_CLASS
-        ).title;
+        return this._pretext.getCardNameDecoration(this.card?.Name).title;
     }
 
     handleNameClick(event) {
@@ -345,29 +296,7 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
 
     get epicChildCards() {
         const childCards = this.epicDetail?.childCards;
-        if (!childCards || childCards.length === 0) {
-            return [];
-        }
-
-        const cache = this._decoratedEpicChildrenCache;
-        if (
-            cache.childCardsRef === childCards &&
-            cache.version === this._pretextLayoutVersion
-        ) {
-            return cache.value;
-        }
-
-        const decoratedChildCards = childCards.map((child) =>
-            this.decorateEpicChild(child)
-        );
-
-        this._decoratedEpicChildrenCache = {
-            childCardsRef: childCards,
-            version: this._pretextLayoutVersion,
-            value: decoratedChildCards
-        };
-
-        return decoratedChildCards;
+        return this._pretext.getDecoratedEpicChildren(childCards);
     }
 
     get epicProgressPercent() {
@@ -413,7 +342,7 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     }
 
     get cardType() {
-        return this.card?.OpenSF__CardType__c || null;
+        return this.card?.cardType || this.card?.OpenSF__CardType__c || null;
     }
 
     get hasTemplate() {
@@ -431,211 +360,6 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
 
     get showApplyTemplate() {
         return this.hasTemplate && this.descriptionField;
-    }
-
-    async initializePretext() {
-        if (
-            this._pretextLoadState === 'loading' ||
-            this._pretextLoadState === 'ready'
-        ) {
-            return;
-        }
-
-        this._pretextLoadState = 'loading';
-
-        try {
-            if (!getPretextApi()) {
-                if (!pretextLoadPromise) {
-                    pretextLoadPromise = loadScript(this, PRETEXT_RESOURCE);
-                }
-                await pretextLoadPromise;
-            }
-
-            const pretext = getPretextApi();
-            if (
-                !pretext ||
-                typeof pretext.prepare !== 'function' ||
-                typeof pretext.layout !== 'function'
-            ) {
-                throw new Error(
-                    'Pretext global was not initialized after loadScript.'
-                );
-            }
-
-            this._pretextApi = pretext;
-            this._pretextLoadState = 'ready';
-            this.updatePretextTextMetrics();
-        } catch (error) {
-            this._pretextLoadState = 'failed';
-            pretextLoadPromise = null;
-        }
-    }
-
-    decorateEpicChild(child) {
-        const nameDecoration = this.getMeasuredTextDecoration(
-            child?.name,
-            'epicChildName',
-            PRETEXT_EPIC_CHILD_NAME_MAX_LINES,
-            PRETEXT_EPIC_CHILD_NAME_FALLBACK_CLASS,
-            PRETEXT_EPIC_CHILD_NAME_MULTI_LINE_CLASS
-        );
-        const subjectDecoration = this.getMeasuredTextDecoration(
-            child?.subject,
-            'epicChildSubject',
-            PRETEXT_EPIC_CHILD_SUBJECT_MAX_LINES,
-            PRETEXT_EPIC_CHILD_SUBJECT_FALLBACK_CLASS,
-            PRETEXT_EPIC_CHILD_SUBJECT_MULTI_LINE_CLASS
-        );
-
-        return {
-            ...child,
-            nameClass: nameDecoration.className,
-            nameTitle: nameDecoration.title,
-            subjectClass: subjectDecoration.className,
-            subjectTitle: subjectDecoration.title
-        };
-    }
-
-    getMeasuredTextDecoration(
-        text,
-        metricsKey,
-        maxLines,
-        fallbackClass,
-        multiLineClass
-    ) {
-        if (!text) {
-            return {
-                className: fallbackClass,
-                title: null
-            };
-        }
-
-        const metrics = this._pretextTextMetrics[metricsKey];
-        const layout = this.measureTextLayout(text, metrics);
-        const shouldClampToMultiLine =
-            layout != null &&
-            layout.lineCount > 1 &&
-            metrics != null &&
-            this._pretextApi != null;
-
-        return {
-            className: shouldClampToMultiLine ? multiLineClass : fallbackClass,
-            title: layout != null && layout.lineCount > maxLines ? text : null
-        };
-    }
-
-    measureTextLayout(text, metrics) {
-        if (!text || !metrics || !this._pretextApi) {
-            return null;
-        }
-
-        const cacheKey = `${metrics.signature}::${text}`;
-        const cachedLayout = this._pretextLayoutCache.get(cacheKey);
-        if (cachedLayout) {
-            return cachedLayout;
-        }
-
-        try {
-            const prepared = this._pretextApi.prepare(text, metrics.font);
-            const layout = this._pretextApi.layout(
-                prepared,
-                metrics.width,
-                metrics.lineHeight
-            );
-            this._pretextLayoutCache.set(cacheKey, layout);
-            return layout;
-        } catch (error) {
-            return null;
-        }
-    }
-
-    updatePretextTextMetrics() {
-        const nextCardTitleMetrics = this.readPretextTextMetrics(
-            '[data-pretext-role="card-panel-title"]'
-        );
-        const nextEpicChildNameMetrics = this.readPretextTextMetrics(
-            '[data-pretext-role="epic-child-name"]'
-        );
-        const nextEpicChildSubjectMetrics = this.readPretextTextMetrics(
-            '[data-pretext-role="epic-child-subject"]'
-        );
-
-        const cardTitleChanged = this.setPretextTextMetrics(
-            'cardTitle',
-            nextCardTitleMetrics
-        );
-        const epicChildNameChanged = this.setPretextTextMetrics(
-            'epicChildName',
-            nextEpicChildNameMetrics
-        );
-        const epicChildSubjectChanged = this.setPretextTextMetrics(
-            'epicChildSubject',
-            nextEpicChildSubjectMetrics
-        );
-
-        if (
-            cardTitleChanged ||
-            epicChildNameChanged ||
-            epicChildSubjectChanged
-        ) {
-            this._pretextLayoutCache.clear();
-            this._decoratedEpicChildrenCache = {
-                childCardsRef: null,
-                version: -1,
-                value: []
-            };
-            this._pretextLayoutVersion += 1;
-        }
-    }
-
-    setPretextTextMetrics(key, metrics) {
-        const currentMetrics = this._pretextTextMetrics[key];
-        if (
-            currentMetrics?.signature === metrics?.signature &&
-            currentMetrics?.width === metrics?.width &&
-            currentMetrics?.lineHeight === metrics?.lineHeight
-        ) {
-            return false;
-        }
-
-        this._pretextTextMetrics[key] = metrics;
-        return true;
-    }
-
-    readPretextTextMetrics(selector) {
-        const sampleElement = this.template.querySelector(selector);
-        if (!sampleElement) {
-            return null;
-        }
-
-        const width = Math.max(
-            0,
-            Math.floor(sampleElement.getBoundingClientRect().width)
-        );
-        if (!width) {
-            return null;
-        }
-
-        const styles = window.getComputedStyle(sampleElement);
-        const fontSize = parseFloat(styles.fontSize) || 13;
-        const lineHeight = Number.isFinite(parseFloat(styles.lineHeight))
-            ? parseFloat(styles.lineHeight)
-            : Math.round(fontSize * 1.35 * 100) / 100;
-        const font =
-            styles.font && styles.font !== ''
-                ? styles.font
-                : `${styles.fontStyle || 'normal'} ${
-                      styles.fontWeight || '500'
-                  } ${styles.fontSize || `${fontSize}px`} ${
-                      styles.fontFamily || 'Arial, sans-serif'
-                  }`;
-
-        return {
-            font,
-            width,
-            lineHeight,
-            signature: `${width}|${lineHeight}|${font}`
-        };
     }
 
     handleApplyTemplate() {
