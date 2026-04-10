@@ -107,6 +107,26 @@ export default class SubscriptionManager extends LightningElement {
     }
 
     /**
+     * Force resubscribe: unsubscribe first, then subscribe fresh.
+     * Use when recovering from polling/error/disconnected states.
+     */
+    @api
+    resubscribe() {
+        this.healthMonitor.stop();
+        this.retryManager.clearTimeout();
+
+        if (this.subscription && this.subscription.channel) {
+            unsubscribe(this.subscription, () => {
+                this.subscription = {};
+                this.subscribe();
+            });
+        } else {
+            this.subscription = {};
+            this.subscribe();
+        }
+    }
+
+    /**
      * Register error listener for platform event errors
      */
     @api

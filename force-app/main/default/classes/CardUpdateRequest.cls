@@ -67,11 +67,19 @@ public class CardUpdateRequest {
             req.hasDueDate = true;
         }
         if (updates.containsKey('storyPoints')) {
-            req.storyPoints = (Decimal) updates.get('storyPoints');
+            Object spVal = updates.get('storyPoints');
+            if (spVal instanceof Decimal) {
+                req.storyPoints = (Decimal) spVal;
+            } else if (spVal instanceof String && String.isNotBlank((String) spVal)) {
+                req.storyPoints = Decimal.valueOf((String) spVal);
+            } else {
+                req.storyPoints = null;
+            }
             req.hasStoryPoints = true;
         }
         if (updates.containsKey('assigneeId')) {
-            req.assigneeId = (Id) updates.get('assigneeId');
+            Object aVal = updates.get('assigneeId');
+            req.assigneeId = (aVal instanceof String && String.isBlank((String) aVal)) ? null : (Id) aVal;
             req.hasAssigneeId = true;
         }
         if (updates.containsKey('status')) {
@@ -83,11 +91,13 @@ public class CardUpdateRequest {
             req.hasCardType = true;
         }
         if (updates.containsKey('epicId')) {
-            req.epicId = (Id) updates.get('epicId');
+            Object eVal = updates.get('epicId');
+            req.epicId = (eVal instanceof String && String.isBlank((String) eVal)) ? null : (Id) eVal;
             req.hasEpicId = true;
         }
         if (updates.containsKey('peerReviewerId')) {
-            req.peerReviewerId = (Id) updates.get('peerReviewerId');
+            Object prVal = updates.get('peerReviewerId');
+            req.peerReviewerId = (prVal instanceof String && String.isBlank((String) prVal)) ? null : (Id) prVal;
             req.hasPeerReviewerId = true;
         }
         if (updates.containsKey('needsRefinement')) {

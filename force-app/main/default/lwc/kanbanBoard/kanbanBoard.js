@@ -1,7 +1,6 @@
 import { LightningElement, api, track, wire } from 'lwc';
-import { loadScript } from 'lightning/platformResourceLoader';
-import PRETEXT_RESOURCE from '@salesforce/resourceUrl/pretext';
 import { createStore, selectors } from 'c/kanbanStore';
+import { PretextManager } from 'c/pretextService';
 import getKanbanConfig from '@salesforce/apex/KanbanBoardController.getKanbanConfig';
 import EventHandler from './handlers/eventHandler';
 import RequestTracker from './helpers/requestTracker';
@@ -17,32 +16,19 @@ import MobileNavigationManager from './managers/mobileNavigationManager';
 import ContextMenuManager from './managers/contextMenuManager';
 import { generateClientId } from './helpers/clientIdGenerator';
 
-const PRETEXT_PROBE_TEXT = 'Realtime sync';
-const PRETEXT_PROBE_FONT = '14px Helvetica';
-const PRETEXT_PROBE_WIDTH = 96;
-const PRETEXT_PROBE_LINE_HEIGHT = 18;
-const PRETEXT_CARD_NAME_MAX_LINES = 2;
-const PRETEXT_CARD_SUBJECT_MAX_LINES = 2;
-const PRETEXT_EPIC_LABEL_MAX_LINES = 2;
-const PRETEXT_CARD_NAME_FALLBACK_CLASS =
+const CARD_NAME_MAX_LINES = 2;
+const CARD_SUBJECT_MAX_LINES = 2;
+const EPIC_LABEL_MAX_LINES = 2;
+const CARD_NAME_FALLBACK_CLASS =
     'kanban-card__name kanban-card__name--single-line slds-text-link slds-text-color_brand';
-const PRETEXT_CARD_NAME_MULTI_LINE_CLASS =
+const CARD_NAME_MULTI_LINE_CLASS =
     'kanban-card__name kanban-card__name--two-line slds-text-link slds-text-color_brand';
-const PRETEXT_CARD_SUBJECT_FALLBACK_CLASS =
+const CARD_SUBJECT_FALLBACK_CLASS =
     'kanban-card__subject kanban-card__subject--single-line';
-const PRETEXT_EPIC_LABEL_FALLBACK_CLASS =
+const EPIC_LABEL_FALLBACK_CLASS =
     'epic-label__text epic-label__text--single-line';
-const PRETEXT_EPIC_LABEL_MULTI_LINE_CLASS =
+const EPIC_LABEL_MULTI_LINE_CLASS =
     'epic-label__text epic-label__text--two-line';
-
-let pretextLoadPromise;
-
-function getPretextApi() {
-    if (typeof window !== 'undefined' && window.Pretext) {
-        return window.Pretext;
-    }
-    return null;
-}
 
 // Flip this locally or set localStorage['alex.debug.undoRedo'] = 'true'
 // when you want the dev-only undo/redo controls visible.
@@ -175,23 +161,20 @@ export default class KanbanBoard extends LightningElement {
     @track _canRedo = false;
     _keyboardHandler = null;
     _undoManagerUnsubscribe = null;
-    _pretextApi = null;
-    _pretextLoadState = 'idle';
     @track _pretextLayoutVersion = 0;
-    _pretextTextMetrics = {
-        boardSubject: null,
-        swimlaneSubject: null,
-        boardCardNameWithAssignee: null,
-        boardCardNameWithoutAssignee: null,
-        boardEpicLabel: null
-    };
-    _pretextLayoutCache = new Map();
     _pretextDecoratedColumnsCache = {
         columnsRef: null,
         context: null,
         version: -1,
         value: []
     };
+    _pretext = new PretextManager(this, {
+        boardSubject: '[data-pretext-role="board-card-subject"]',
+        swimlaneSubject: '[data-pretext-role="swimlane-card-subject"]',
+        boardCardNameWithAssignee: '[data-pretext-role="board-card-name-with-assignee"]',
+        boardCardNameWithoutAssignee: '[data-pretext-role="board-card-name-without-assignee"]',
+        boardEpicLabel: '[data-pretext-role="board-epic-label"]'
+    });
 
     // Drag state
     dragData = null;
@@ -501,7 +484,7 @@ export default class KanbanBoard extends LightningElement {
 
         // Initialize lifecycle (lazy getters handle instance creation)
         this.lifecycleManager.initialize();
-        this.initializePretextProbe();
+        this._pretext.initialize();
     }
     renderedCallback() {
         if (this.lifecycleManager) {
@@ -514,7 +497,15 @@ export default class KanbanBoard extends LightningElement {
             this.initializeDynamicHeight();
         }
 
-        this.updatePretextTextMetrics();
+        if (this._pretext.updateMetrics()) {
+            this._pretextDecoratedColumnsCache = {
+                columnsRef: null,
+                context: null,
+                version: -1,
+                value: []
+            };
+            this._pretextLayoutVersion = this._pretext.layoutVersion;
+        }
     }
 
     disconnectedCallback() {
@@ -548,58 +539,6 @@ export default class KanbanBoard extends LightningElement {
     // =============================================================================
     // Data Loading
     // =============================================================================
-
-    async initializePretextProbe() {
-        if (
-            this._pretextLoadState === 'loading' ||
-            this._pretextLoadState === 'ready'
-        ) {
-            return;
-        }
-
-        this._pretextLoadState = 'loading';
-
-        try {
-            if (!pretextLoadPromise) {
-                pretextLoadPromise = loadScript(this, PRETEXT_RESOURCE);
-            }
-
-            await pretextLoadPromise;
-
-            const pretext = getPretextApi();
-            if (
-                !pretext ||
-                typeof pretext.prepare !== 'function' ||
-                typeof pretext.layout !== 'function'
-            ) {
-                throw new Error(
-                    'Pretext global was not initialized after loadScript.'
-                );
-            }
-
-            const prepared = pretext.prepare(
-                PRETEXT_PROBE_TEXT,
-                PRETEXT_PROBE_FONT
-            );
-            const probeResult = pretext.layout(
-                prepared,
-                PRETEXT_PROBE_WIDTH,
-                PRETEXT_PROBE_LINE_HEIGHT
-            );
-
-            this._pretextApi = pretext;
-            this._pretextLoadState = 'ready';
-            console.info(
-                '[pretext] static resource loaded under LWS sandbox',
-                probeResult
-            );
-            this.updatePretextTextMetrics();
-        } catch (error) {
-            this._pretextLoadState = 'failed';
-            pretextLoadPromise = null;
-            console.error('[pretext] failed to load static resource', error);
-        }
-    }
 
     getColumnsWithPretextLayout(columns, context) {
         const version = this._pretextLayoutVersion;
@@ -655,12 +594,12 @@ export default class KanbanBoard extends LightningElement {
         const metricsKey = card.hasAssignee
             ? 'boardCardNameWithAssignee'
             : 'boardCardNameWithoutAssignee';
-        const decoration = this.getMeasuredTextDecoration(
+        const decoration = this._pretext.getDecoration(
             card.Name,
             metricsKey,
-            PRETEXT_CARD_NAME_MAX_LINES,
-            PRETEXT_CARD_NAME_FALLBACK_CLASS,
-            PRETEXT_CARD_NAME_MULTI_LINE_CLASS
+            CARD_NAME_MAX_LINES,
+            CARD_NAME_FALLBACK_CLASS,
+            CARD_NAME_MULTI_LINE_CLASS
         );
 
         return {
@@ -675,11 +614,11 @@ export default class KanbanBoard extends LightningElement {
     getCardSubjectDecoration(card, context) {
         const metricsKey =
             context === 'board' ? 'boardSubject' : 'swimlaneSubject';
-        const decoration = this.getMeasuredTextDecoration(
+        const decoration = this._pretext.getDecoration(
             card.subject,
             metricsKey,
-            PRETEXT_CARD_SUBJECT_MAX_LINES,
-            PRETEXT_CARD_SUBJECT_FALLBACK_CLASS,
+            CARD_SUBJECT_MAX_LINES,
+            CARD_SUBJECT_FALLBACK_CLASS,
             'kanban-card__subject kanban-card__subject--two-line'
         );
 
@@ -694,12 +633,12 @@ export default class KanbanBoard extends LightningElement {
             return {};
         }
 
-        const decoration = this.getMeasuredTextDecoration(
+        const decoration = this._pretext.getDecoration(
             card.epicLabel,
             'boardEpicLabel',
-            PRETEXT_EPIC_LABEL_MAX_LINES,
-            PRETEXT_EPIC_LABEL_FALLBACK_CLASS,
-            PRETEXT_EPIC_LABEL_MULTI_LINE_CLASS
+            EPIC_LABEL_MAX_LINES,
+            EPIC_LABEL_FALLBACK_CLASS,
+            EPIC_LABEL_MULTI_LINE_CLASS
         );
 
         return {
@@ -708,170 +647,6 @@ export default class KanbanBoard extends LightningElement {
                 ? 'epic-label epic-label--two-line'
                 : 'epic-label',
             epicLabelTitle: decoration.title
-        };
-    }
-
-    getMeasuredTextDecoration(
-        text,
-        metricsKey,
-        maxLines,
-        fallbackClass,
-        multiLineClass
-    ) {
-        if (!text) {
-            return {
-                className: fallbackClass,
-                isMultiLine: false,
-                title: null
-            };
-        }
-
-        const metrics = this._pretextTextMetrics[metricsKey];
-        const layout = this.measureTextLayout(text, metrics);
-        const isMultiLine =
-            layout != null &&
-            layout.lineCount > 1 &&
-            metrics != null &&
-            this._pretextApi != null;
-
-        return {
-            className: isMultiLine ? multiLineClass : fallbackClass,
-            isMultiLine,
-            title: layout != null && layout.lineCount > maxLines ? text : null
-        };
-    }
-
-    measureTextLayout(text, metrics) {
-        if (!text || !metrics || !this._pretextApi) {
-            return null;
-        }
-
-        const cacheKey = `${metrics.signature}::${text}`;
-        const cachedLayout = this._pretextLayoutCache.get(cacheKey);
-        if (cachedLayout) {
-            return cachedLayout;
-        }
-
-        try {
-            const prepared = this._pretextApi.prepare(text, metrics.font);
-            const layout = this._pretextApi.layout(
-                prepared,
-                metrics.width,
-                metrics.lineHeight
-            );
-            this._pretextLayoutCache.set(cacheKey, layout);
-            return layout;
-        } catch (error) {
-            console.warn('[pretext] card text measurement failed', error);
-            return null;
-        }
-    }
-
-    updatePretextTextMetrics() {
-        const nextBoardSubjectMetrics = this.readPretextTextMetrics(
-            '[data-pretext-role="board-card-subject"]'
-        );
-        const nextSwimlaneSubjectMetrics = this.readPretextTextMetrics(
-            '[data-pretext-role="swimlane-card-subject"]'
-        );
-        const nextBoardCardNameWithAssigneeMetrics =
-            this.readPretextTextMetrics(
-                '[data-pretext-role="board-card-name-with-assignee"]'
-            );
-        const nextBoardCardNameWithoutAssigneeMetrics =
-            this.readPretextTextMetrics(
-                '[data-pretext-role="board-card-name-without-assignee"]'
-            );
-        const nextBoardEpicLabelMetrics = this.readPretextTextMetrics(
-            '[data-pretext-role="board-epic-label"]'
-        );
-
-        const boardSubjectChanged = this.setPretextTextMetrics(
-            'boardSubject',
-            nextBoardSubjectMetrics
-        );
-        const swimlaneSubjectChanged = this.setPretextTextMetrics(
-            'swimlaneSubject',
-            nextSwimlaneSubjectMetrics
-        );
-        const boardCardNameWithAssigneeChanged = this.setPretextTextMetrics(
-            'boardCardNameWithAssignee',
-            nextBoardCardNameWithAssigneeMetrics
-        );
-        const boardCardNameWithoutAssigneeChanged = this.setPretextTextMetrics(
-            'boardCardNameWithoutAssignee',
-            nextBoardCardNameWithoutAssigneeMetrics
-        );
-        const boardEpicLabelChanged = this.setPretextTextMetrics(
-            'boardEpicLabel',
-            nextBoardEpicLabelMetrics
-        );
-
-        if (
-            boardSubjectChanged ||
-            swimlaneSubjectChanged ||
-            boardCardNameWithAssigneeChanged ||
-            boardCardNameWithoutAssigneeChanged ||
-            boardEpicLabelChanged
-        ) {
-            this._pretextLayoutCache.clear();
-            this._pretextDecoratedColumnsCache = {
-                columnsRef: null,
-                context: null,
-                version: -1,
-                value: []
-            };
-            this._pretextLayoutVersion += 1;
-        }
-    }
-
-    setPretextTextMetrics(context, metrics) {
-        const currentMetrics = this._pretextTextMetrics[context];
-        if (
-            currentMetrics?.signature === metrics?.signature &&
-            currentMetrics?.width === metrics?.width &&
-            currentMetrics?.lineHeight === metrics?.lineHeight
-        ) {
-            return false;
-        }
-
-        this._pretextTextMetrics[context] = metrics;
-        return true;
-    }
-
-    readPretextTextMetrics(selector) {
-        const sampleElement = this.template.querySelector(selector);
-        if (!sampleElement) {
-            return null;
-        }
-
-        const width = Math.max(
-            0,
-            Math.floor(sampleElement.getBoundingClientRect().width)
-        );
-        if (!width) {
-            return null;
-        }
-
-        const styles = window.getComputedStyle(sampleElement);
-        const fontSize = parseFloat(styles.fontSize) || 13;
-        const lineHeight = Number.isFinite(parseFloat(styles.lineHeight))
-            ? parseFloat(styles.lineHeight)
-            : Math.round(fontSize * 1.35 * 100) / 100;
-        const font =
-            styles.font && styles.font !== ''
-                ? styles.font
-                : `${styles.fontStyle || 'normal'} ${
-                      styles.fontWeight || '500'
-                  } ${styles.fontSize || `${fontSize}px`} ${
-                      styles.fontFamily || 'Arial, sans-serif'
-                  }`;
-
-        return {
-            font,
-            width,
-            lineHeight,
-            signature: `${width}|${lineHeight}|${font}`
         };
     }
 
@@ -1057,12 +832,32 @@ export default class KanbanBoard extends LightningElement {
         this._isRefreshing = true;
         try {
             await this.loadBoardData();
+            // Reconnect to platform events if not currently connected
+            this._reconnectSubscriptions();
         } finally {
             // Keep spinning for at least 600ms so user sees feedback
             // eslint-disable-next-line @lwc/lwc/no-async-operation
             setTimeout(() => {
                 this._isRefreshing = false;
             }, 600);
+        }
+    }
+
+    /**
+     * Attempt to reconnect platform event subscriptions
+     * when status is polling, error, or disconnected
+     */
+    _reconnectSubscriptions() {
+        const status = this._subscriptionStatus;
+        if (
+            this.subscriptionManager &&
+            status !== 'connected' &&
+            status !== 'connecting'
+        ) {
+            if (this.boardDataLoader) {
+                this.boardDataLoader.stopPolling();
+            }
+            this.subscriptionManager.resubscribe();
         }
     }
 

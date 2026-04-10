@@ -43,6 +43,8 @@
                                     size="xx-small"
                                     alternative-text="Drag to reorder"
                                     class="drag-handle"
+                                    onmousedown={handleDragHandleMouseDown}
+                                    onmouseup={handleDragHandleMouseUp}
                                 ></lightning-icon>
                                 <a
                                     href={column.recordUrl}

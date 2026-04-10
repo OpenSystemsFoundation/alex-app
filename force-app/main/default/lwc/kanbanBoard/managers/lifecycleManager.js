@@ -95,14 +95,13 @@ export default class LifecycleManager {
         const status = this.component._subscriptionStatus;
         if (
             this.component.subscriptionManager &&
-            (status === 'polling' ||
-                status === 'error' ||
-                status === 'disconnected')
+            status !== 'connected' &&
+            status !== 'connecting'
         ) {
             if (this.component.boardDataLoader) {
                 this.component.boardDataLoader.stopPolling();
             }
-            this.component.subscriptionManager.subscribe();
+            this.component.subscriptionManager.resubscribe();
         }
     }
 }

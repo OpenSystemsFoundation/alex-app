@@ -1,13 +1,31 @@
 import { LightningElement, api, track, wire } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
-import { PretextManager } from './pretextHelper';
+import { PretextManager } from 'c/pretextService';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+
+const CARD_TITLE_MAX_LINES = 2;
+const CARD_TITLE_FALLBACK_CLASS =
+    'card-panel__title card-panel__title--single-line slds-text-heading_small';
+const CARD_TITLE_MULTI_LINE_CLASS =
+    'card-panel__title card-panel__title--two-line slds-text-heading_small';
+const EPIC_CHILD_NAME_MAX_LINES = 2;
+const EPIC_CHILD_NAME_FALLBACK_CLASS =
+    'epic-child-card__name epic-child-card__name--single-line';
+const EPIC_CHILD_NAME_MULTI_LINE_CLASS =
+    'epic-child-card__name epic-child-card__name--two-line';
+const EPIC_CHILD_SUBJECT_MAX_LINES = 2;
+const EPIC_CHILD_SUBJECT_FALLBACK_CLASS =
+    'epic-child-card__subject epic-child-card__subject--single-line';
+const EPIC_CHILD_SUBJECT_MULTI_LINE_CLASS =
+    'epic-child-card__subject epic-child-card__subject--two-line';
 import { updateCardAsync, deleteCardAsync } from 'c/kanbanStore';
 import getModalSettings from '@salesforce/apex/KanbanBoardController.getModalSettings';
 import getCardComments from '@salesforce/apex/KanbanBoardController.getCardComments';
 import addCardComment from '@salesforce/apex/KanbanBoardController.addCardComment';
 import updateCardComment from '@salesforce/apex/KanbanBoardController.updateCardComment';
 import deleteCardComment from '@salesforce/apex/KanbanBoardController.deleteCardComment';
+import getCardFiles from '@salesforce/apex/KanbanBoardController.getCardFiles';
+import deleteCardFile from '@salesforce/apex/KanbanBoardController.deleteCardFile';
 import userId from '@salesforce/user/Id';
 import getEpicDetail from '@salesforce/apex/KanbanBoardController.getEpicDetail';
 
@@ -178,7 +196,11 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     _boundHandleResize;
     _boundHandleResizeEnd;
     _lastLoadedCardId;
-    _pretext = new PretextManager(this);
+    _pretext = new PretextManager(this, {
+        cardTitle: '[data-pretext-role="card-panel-title"]',
+        epicChildName: '[data-pretext-role="epic-child-name"]',
+        epicChildSubject: '[data-pretext-role="epic-child-subject"]'
+    });
 
     @wire(getModalSettings)
     wiredModalSettings({ data, error }) {
@@ -201,7 +223,7 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     renderedCallback() {
         if (this.isOpen) {
             this._pretext.initialize();
-            this._pretext.updateTextMetrics();
+            this._pretext.updateMetrics();
         }
 
         if (
@@ -249,11 +271,17 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     }
 
     get cardNameClass() {
-        return this._pretext.getCardNameDecoration(this.card?.Name).className;
+        return this._pretext.getDecoration(
+            this.card?.Name, 'cardTitle', CARD_TITLE_MAX_LINES,
+            CARD_TITLE_FALLBACK_CLASS, CARD_TITLE_MULTI_LINE_CLASS
+        ).className;
     }
 
     get cardNameTitle() {
-        return this._pretext.getCardNameDecoration(this.card?.Name).title;
+        return this._pretext.getDecoration(
+            this.card?.Name, 'cardTitle', CARD_TITLE_MAX_LINES,
+            CARD_TITLE_FALLBACK_CLASS, CARD_TITLE_MULTI_LINE_CLASS
+        ).title;
     }
 
     handleNameClick(event) {
@@ -296,7 +324,26 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
 
     get epicChildCards() {
         const childCards = this.epicDetail?.childCards;
-        return this._pretext.getDecoratedEpicChildren(childCards);
+        if (!childCards || childCards.length === 0) {
+            return [];
+        }
+        return childCards.map((child) => {
+            const nameDecoration = this._pretext.getDecoration(
+                child?.name, 'epicChildName', EPIC_CHILD_NAME_MAX_LINES,
+                EPIC_CHILD_NAME_FALLBACK_CLASS, EPIC_CHILD_NAME_MULTI_LINE_CLASS
+            );
+            const subjectDecoration = this._pretext.getDecoration(
+                child?.subject, 'epicChildSubject', EPIC_CHILD_SUBJECT_MAX_LINES,
+                EPIC_CHILD_SUBJECT_FALLBACK_CLASS, EPIC_CHILD_SUBJECT_MULTI_LINE_CLASS
+            );
+            return {
+                ...child,
+                nameClass: nameDecoration.className,
+                nameTitle: nameDecoration.title,
+                subjectClass: subjectDecoration.className,
+                subjectTitle: subjectDecoration.title
+            };
+        });
     }
 
     get epicProgressPercent() {
@@ -722,8 +769,20 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     }
 
     async loadFiles() {
-        // File attachments are available in Alexandra (paid)
-        this.files = [];
+        try {
+            const rawFiles = await getCardFiles({ cardId: this.card.Id });
+            this.files = (rawFiles || []).map((f) => ({
+                contentDocumentId: f.contentDocumentId,
+                title: f.title,
+                fileExtension: f.fileExtension,
+                iconName: this._getFileIcon(f.fileExtension),
+                formattedSize: this._formatFileSize(f.contentSize),
+                downloadUrl: `/sfc/servlet.shepherd/version/download/${f.latestVersionId}`
+            }));
+        } catch (error) {
+            console.error('Error loading files:', error);
+            this.files = [];
+        }
         this._filesLoaded = true;
     }
 
@@ -739,8 +798,27 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
         await this.loadFiles();
     }
 
-    handleDeleteFile() {
-        // File attachments are available in Alexandra (paid)
+    async handleDeleteFile(event) {
+        const fileId = event.currentTarget.dataset.fileId;
+        try {
+            await deleteCardFile({ contentDocumentId: fileId });
+            this.files = this.files.filter((f) => f.contentDocumentId !== fileId);
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Success',
+                    message: 'File deleted',
+                    variant: 'success'
+                })
+            );
+        } catch (error) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error',
+                    message: 'Failed to delete file',
+                    variant: 'error'
+                })
+            );
+        }
     }
 
     handleDownloadFile(event) {

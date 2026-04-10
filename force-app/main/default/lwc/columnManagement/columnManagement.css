@@ -26,7 +26,7 @@
     background: white;
     border: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
     border-radius: 0.5rem;
-    cursor: grab;
+    cursor: default;
     overflow: visible;
     transition:
         box-shadow 0.15s ease,
@@ -54,6 +54,7 @@
     height: 6px;
     width: 100%;
     flex-shrink: 0;
+    border-radius: 0.5rem 0.5rem 0 0;
 }
 
 /* Card Body */
@@ -76,7 +77,6 @@
     color: var(--slds-g-color-neutral-base-50, #aeaeae);
     cursor: grab;
 }
-
 /* Column Name Link */
 .column-name-link {
     font-weight: 600;

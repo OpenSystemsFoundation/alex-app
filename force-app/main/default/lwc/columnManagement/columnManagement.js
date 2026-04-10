@@ -263,7 +263,21 @@ export default class ColumnManagement extends LightningElement {
     // Drag and Drop for Column Reordering
     // =========================================================================
 
+    _dragHandleActive = false;
+
+    handleDragHandleMouseDown() {
+        this._dragHandleActive = true;
+    }
+
+    handleDragHandleMouseUp() {
+        this._dragHandleActive = false;
+    }
+
     handleColumnDragStart(event) {
+        if (!this._dragHandleActive) {
+            event.preventDefault();
+            return;
+        }
         this.dragColumnId = event.currentTarget.dataset.columnId;
         event.dataTransfer.effectAllowed = 'move';
         // eslint-disable-next-line @lwc/lwc/no-async-operation
@@ -276,6 +290,7 @@ export default class ColumnManagement extends LightningElement {
     }
 
     handleColumnDragEnd() {
+        this._dragHandleActive = false;
         const el = this.template.querySelector(
             `[data-column-id="${this.dragColumnId}"]`
         );
@@ -297,7 +312,15 @@ export default class ColumnManagement extends LightningElement {
     handleColumnDragEnter(event) {
         event.preventDefault();
         const targetId = event.currentTarget.dataset.columnId;
-        if (targetId === this.dragColumnId) return;
+
+        // Moving back to the source column cancels the drop target
+        if (targetId === this.dragColumnId) {
+            this.template.querySelectorAll('.column-item').forEach((item) => {
+                item.classList.remove('drag-over');
+            });
+            this.dragOverColumnId = null;
+            return;
+        }
 
         this.template.querySelectorAll('.column-item').forEach((item) => {
             item.classList.remove('drag-over');

@@ -1,4 +1,4 @@
-import { createCardAsync, deleteCardAsync } from 'c/kanbanStore';
+import { createCardAsync } from 'c/kanbanStore';
 
 /**
  * Handles card-related operations (create, update, delete)
@@ -52,23 +52,13 @@ export default class CardOperations {
     }
 
     /**
-     * Handle card deleted
+     * Handle card deleted - UI cleanup only.
+     * The actual deletion is already performed by the caller
+     * (e.g. kanbanCardPanel.performDelete or contextMenuManager).
      */
-    async handleCardDeleted(cardId) {
+    handleCardDeleted(cardId) {
         if (!cardId) {
             return;
-        }
-
-        // Delete on server then remove from store
-        try {
-            await this.component.store.dispatch(deleteCardAsync(cardId));
-        } catch (error) {
-            if (this.component.toastManager) {
-                this.component.toastManager.showError(
-                    'Error deleting card',
-                    error
-                );
-            }
         }
 
         this.component.showCardDetail = false;

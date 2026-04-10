@@ -1,4 +1,8 @@
-import { moveCardToBacklogAsync, moveCardAsync } from 'c/kanbanStore';
+import {
+    moveCardToBacklogAsync,
+    moveCardAsync,
+    deleteCardAsync
+} from 'c/kanbanStore';
 
 /**
  * Manages board-level context menu state and actions for the Kanban board.
@@ -124,6 +128,18 @@ export default class ContextMenuManager {
                 );
                 break;
             case 'delete':
+                try {
+                    await this.component.store.dispatch(
+                        deleteCardAsync(cardId)
+                    );
+                } catch (error) {
+                    if (this.component.toastManager) {
+                        this.component.toastManager.showError(
+                            'Error deleting card',
+                            error
+                        );
+                    }
+                }
                 this.component.cardOperations.handleCardDeleted(cardId);
                 break;
             default:

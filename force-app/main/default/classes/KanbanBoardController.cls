@@ -594,4 +594,66 @@ public with sharing class KanbanBoardController {
     public static KanbanConfigResult getKanbanConfig() {
         return KanbanBoardService.getKanbanConfig();
     }
+
+    // =========================================================================
+    // Card File Methods
+    // =========================================================================
+
+    /**
+     * Get files attached to a card
+     */
+    @AuraEnabled
+    public static List<CardFileDTO> getCardFiles(Id cardId) {
+        try {
+            List<CardFileDTO> result = new List<CardFileDTO>();
+            for (ContentDocumentLink cdl : [
+                SELECT
+                    ContentDocumentId,
+                    ContentDocument.Title,
+                    ContentDocument.FileExtension,
+                    ContentDocument.ContentSize,
+                    ContentDocument.LatestPublishedVersionId
+                FROM ContentDocumentLink
+                WHERE LinkedEntityId = :cardId
+                ORDER BY ContentDocument.CreatedDate DESC
+            ]) {
+                result.add(new CardFileDTO(cdl));
+            }
+            return result;
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading files: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Delete a file attached to a card
+     */
+    @AuraEnabled
+    public static void deleteCardFile(Id contentDocumentId) {
+        try {
+            delete [SELECT Id FROM ContentDocument WHERE Id = :contentDocumentId LIMIT 1];
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error deleting file: ' + e.getMessage()
+            );
+        }
+    }
+
+    public class CardFileDTO {
+        @AuraEnabled public String contentDocumentId;
+        @AuraEnabled public String title;
+        @AuraEnabled public String fileExtension;
+        @AuraEnabled public Integer contentSize;
+        @AuraEnabled public String latestVersionId;
+
+        public CardFileDTO(ContentDocumentLink cdl) {
+            this.contentDocumentId = cdl.ContentDocumentId;
+            this.title = cdl.ContentDocument.Title;
+            this.fileExtension = cdl.ContentDocument.FileExtension;
+            this.contentSize = (Integer) cdl.ContentDocument.ContentSize;
+            this.latestVersionId = cdl.ContentDocument.LatestPublishedVersionId;
+        }
+    }
 }
