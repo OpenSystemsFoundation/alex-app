@@ -134,8 +134,21 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
         return this._card;
     }
     set card(value) {
+        const previousId = this._card?.Id;
         this._card = value;
         this.epicDetail = null;
+        this._fieldSnapshot = null;
+
+        // Force form remount when switching to a different card
+        // so lightning-input-field values reset to the new record
+        if (value?.Id && value.Id !== previousId) {
+            this._formReady = false;
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            Promise.resolve().then(() => {
+                this._formReady = true;
+            });
+        }
+
         if (value?.cardType === 'Epic' && value?.Id) {
             this.loadEpicDetail(value.Id);
         }
@@ -177,6 +190,7 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     @track modalSettings;
     @track formFields = [];
     @track deleteConfirmState = false;
+    @track _formReady = true;
     @track panelWidth = 400;
     @track files = [];
     @track filesExpanded = true;
@@ -235,6 +249,41 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
             this.loadComments();
             this.loadFiles();
         }
+    }
+
+    /**
+     * Called when lightning-record-edit-form finishes loading the record.
+     * Snapshots field values so we can detect dirty state later.
+     */
+    handleFormLoad() {
+        const inputFields = this.template.querySelectorAll(
+            'lightning-input-field'
+        );
+        this._fieldSnapshot = new Map();
+        inputFields.forEach((field) => {
+            this._fieldSnapshot.set(field.fieldName, field.value);
+        });
+    }
+
+    /**
+     * Check if any form fields have been modified since the card was loaded.
+     * @returns {boolean}
+     */
+    @api
+    hasPendingChanges() {
+        if (!this._fieldSnapshot) {
+            return false;
+        }
+        const inputFields = this.template.querySelectorAll(
+            'lightning-input-field'
+        );
+        for (const field of inputFields) {
+            const original = this._fieldSnapshot.get(field.fieldName);
+            if (field.value !== original) {
+                return true;
+            }
+        }
+        return false;
     }
 
     processFields(fieldNames) {
@@ -661,7 +710,7 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
                     variant: 'success'
                 })
             );
-            this.handleClose();
+            this._closePanel();
         } catch (error) {
             const message =
                 error.body && error.body.message
@@ -719,7 +768,7 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
                 })
             );
         }
-        this.handleClose();
+        this._closePanel();
     }
 
     // =========================================================================
@@ -879,8 +928,23 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     }
 
     handleClose() {
+        if (this.hasPendingChanges()) {
+            // eslint-disable-next-line no-alert
+            const discard = confirm(
+                'You have unsaved changes. Discard and close?'
+            );
+            if (!discard) {
+                return;
+            }
+        }
+        this._closePanel();
+    }
+
+    /** Internal close — skips the dirty check (used after save/delete) */
+    _closePanel() {
         this.deleteConfirmState = false;
         this._lastLoadedCardId = null;
+        this._fieldSnapshot = null;
         this.comments = [];
         this.files = [];
         this._filesLoaded = false;

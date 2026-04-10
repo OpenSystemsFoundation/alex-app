@@ -17,9 +17,30 @@ export default class CardOperations {
 
     /**
      * Handle card click to open detail view
-     * Searches both columns and backlog cards
+     * Searches both columns and backlog cards.
+     * Warns if the currently open card has unsaved changes.
      */
     handleCardClick(cardId) {
+        // If switching to a different card while one is already open, check for unsaved edits
+        if (
+            this.component.showCardDetail &&
+            this.component.selectedCard?.Id &&
+            this.component.selectedCard.Id !== cardId
+        ) {
+            const panel = this.component.template.querySelector(
+                'c-kanban-card-panel'
+            );
+            if (panel && panel.hasPendingChanges()) {
+                // eslint-disable-next-line no-alert
+                const discard = confirm(
+                    'You have unsaved changes. Discard and switch cards?'
+                );
+                if (!discard) {
+                    return;
+                }
+            }
+        }
+
         let card = this.findCard(cardId);
 
         // Also check backlog cards if not found in columns

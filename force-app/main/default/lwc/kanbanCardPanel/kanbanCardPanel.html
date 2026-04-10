@@ -51,9 +51,11 @@
             <div
                 class="card-panel__body slds-var-p-around_small"
             >
+                <template lwc:if={_formReady}>
                 <lightning-record-edit-form
                     object-api-name="OpenSF__Card__c"
                     record-id={card.Id}
+                    onload={handleFormLoad}
                 >
                     <div
                         class="slds-form slds-form_stacked"
@@ -109,6 +111,7 @@
                         </div>
                     </div>
                 </lightning-record-edit-form>
+                </template>
 
                 <!-- Epic Detail Section (only for Epic-type cards) -->
                 <template lwc:if={isEpicCard}>
