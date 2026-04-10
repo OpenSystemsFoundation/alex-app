@@ -29,6 +29,7 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    contain: strict;
 }
 
 /* ---------- Unified Top Bar: one row for everything ---------- */

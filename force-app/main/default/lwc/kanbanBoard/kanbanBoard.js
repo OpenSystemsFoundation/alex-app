@@ -867,8 +867,8 @@ export default class KanbanBoard extends LightningElement {
             Math.floor(viewportHeight - topOffset)
         );
 
-        // Apply 10% reduction to avoid overflow
-        const calculatedHeight = Math.max(300, Math.floor(availableHeight * 0.9));
+        // Fill to viewport edge minus flexipage bottom padding
+        const calculatedHeight = Math.max(300, availableHeight - 80);
 
         // Update CSS custom property on wrapper
         this._wrapperElement.style.setProperty(
