@@ -23,6 +23,13 @@
                         Board
                     </button>
                     <button
+                        class={columnsTabButtonClass}
+                        data-tab-id="columns"
+                        onclick={handleTabClick}
+                    >
+                        Columns
+                    </button>
+                    <button
                         class={analyticsTabButtonClass}
                         onclick={handleAnalyticsTabClick}
                     >
@@ -1043,6 +1050,15 @@
                         onnavigatetocard={handlePanelNavigateToCard}
                     ></c-kanban-card-panel>
                 </template>
+            </div>
+        </template>
+
+        <!-- Columns Tab Content (internal only) -->
+        <template lwc:if={showColumnsContent}>
+            <div class="kanban-columns-container">
+                <c-column-management
+                    board-id={recordId}
+                ></c-column-management>
             </div>
         </template>
     </div>

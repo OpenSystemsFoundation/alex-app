@@ -123,10 +123,8 @@ export default class KanbanBoard extends LightningElement {
     _recordId;
     _store = null;
     _storeUnsubscribe = null;
-    _resizeObserver = null;
+    _heightInitialized = false;
     _wrapperElement = null;
-    _windowResizeHandler = null;
-    _windowScrollHandler = null;
     _clientId = null; // Unique ID for this browser window/tab
 
     // Reactive state - only track what needs reactivity
@@ -510,8 +508,9 @@ export default class KanbanBoard extends LightningElement {
             this.lifecycleManager.initializeChildComponents(this.template);
         }
 
-        // Initialize dynamic height calculation
-        if (!this._resizeObserver) {
+        // Initialize dynamic height calculation (once)
+        if (!this._heightInitialized) {
+            this._heightInitialized = true;
             this.initializeDynamicHeight();
         }
 
@@ -525,31 +524,7 @@ export default class KanbanBoard extends LightningElement {
         }
 
         // Cleanup resize observer
-        if (this._resizeObserver) {
-            this._resizeObserver.disconnect();
-            this._resizeObserver = null;
-        }
-
-        // Cleanup window resize listener
-        if (this._windowResizeHandler) {
-            window.removeEventListener('resize', this._windowResizeHandler);
-            if (window.visualViewport) {
-                window.visualViewport.removeEventListener(
-                    'resize',
-                    this._windowResizeHandler
-                );
-                window.visualViewport.removeEventListener(
-                    'scroll',
-                    this._windowResizeHandler
-                );
-            }
-            this._windowResizeHandler = null;
-        }
-
-        if (this._windowScrollHandler) {
-            window.removeEventListener('scroll', this._windowScrollHandler);
-            this._windowScrollHandler = null;
-        }
+        this._heightInitialized = false;
 
         // Cleanup keyboard listener
         if (this._keyboardHandler) {
@@ -1252,38 +1227,8 @@ export default class KanbanBoard extends LightningElement {
             return;
         }
 
-        // Initial height calculation
+        // Calculate height once at load time with a 10% reduction
         this.updateBoardHeight();
-
-        // Create ResizeObserver to handle viewport changes, zoom, etc.
-        this._resizeObserver = new ResizeObserver(() => {
-            this.updateBoardHeight();
-            this.updatePretextTextMetrics();
-        });
-
-        // Observe the wrapper element
-        this._resizeObserver.observe(this._wrapperElement);
-
-        // Also observe viewport changes via window resize
-        this._windowResizeHandler = () => {
-            this.updateBoardHeight();
-            this.updatePretextTextMetrics();
-        };
-        window.addEventListener('resize', this._windowResizeHandler);
-        this._windowScrollHandler = this.updateBoardHeight.bind(this);
-        window.addEventListener('scroll', this._windowScrollHandler, {
-            passive: true
-        });
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener(
-                'resize',
-                this._windowResizeHandler
-            );
-            window.visualViewport.addEventListener(
-                'scroll',
-                this._windowResizeHandler
-            );
-        }
     }
 
     updateBoardHeight() {
@@ -1299,10 +1244,13 @@ export default class KanbanBoard extends LightningElement {
                 window.innerHeight
         );
         const topOffset = Math.max(0, Math.ceil(rect.top));
-        const calculatedHeight = Math.max(
+        const availableHeight = Math.max(
             0,
-            Math.floor(viewportHeight - topOffset - 1)
+            Math.floor(viewportHeight - topOffset)
         );
+
+        // Apply 10% reduction to avoid overflow
+        const calculatedHeight = Math.max(300, Math.floor(availableHeight * 0.9));
 
         // Update CSS custom property on wrapper
         this._wrapperElement.style.setProperty(
@@ -1343,12 +1291,22 @@ export default class KanbanBoard extends LightningElement {
         return !this.experienceCloud && this.isBacklogTabActive;
     }
 
+    get showColumnsContent() {
+        return !this.experienceCloud && this.activeTab === 'columns';
+    }
+
     get isAnalyticsTabActive() {
         return this.showAnalytics;
     }
 
     get boardTabButtonClass() {
         return this.activeTab === 'board'
+            ? 'topbar-tab topbar-tab--active'
+            : 'topbar-tab';
+    }
+
+    get columnsTabButtonClass() {
+        return this.activeTab === 'columns'
             ? 'topbar-tab topbar-tab--active'
             : 'topbar-tab';
     }

@@ -62,7 +62,7 @@
             <targetReference>Add_to_columnRecords</targetReference>
         </connector>
     </assignments>
-    <description>Set up Columns on a Board</description>
+    <description>[DEPRECATED] Set up Columns on a Board. Use the Column Management tab instead.</description>
     <dynamicChoiceSets>
         <name>ColumnStatus</name>
         <dataType>Picklist</dataType>
@@ -322,7 +322,7 @@
             <targetReference>Column_Setup_Screen</targetReference>
         </connector>
     </start>
-    <status>Active</status>
+    <status>Obsolete</status>
     <variables>
         <name>boardRecord</name>
         <dataType>SObject</dataType>

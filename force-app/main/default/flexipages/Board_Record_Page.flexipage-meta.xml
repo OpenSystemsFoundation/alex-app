@@ -247,9 +247,6 @@
                             <value>Edit</value>
                         </valueListItems>
                         <valueListItems>
-                            <value>Board__c.Create_Column_Action</value>
-                        </valueListItems>
-                        <valueListItems>
                             <value>AssignRecordLabel</value>
                         </valueListItems>
                         <valueListItems>

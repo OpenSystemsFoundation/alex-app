@@ -4,6 +4,10 @@
         <application>Alex</application>
         <visible>true</visible>
     </applicationVisibilities>
+        <applicationVisibilities>
+        <application>AlexConsole</application>
+        <visible>true</visible>
+    </applicationVisibilities>
     <classAccesses>
         <apexClass>CardCommentService</apexClass>
         <enabled>true</enabled>

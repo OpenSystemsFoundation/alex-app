@@ -1,0 +1,230 @@
+<template>
+    <div class="column-mgmt-container">
+        <!-- Loading -->
+        <template lwc:if={isLoadingColumns}>
+            <lightning-spinner
+                alternative-text="Loading columns"
+                size="medium"
+            ></lightning-spinner>
+        </template>
+
+        <!-- Column List -->
+        <template lwc:if={showColumnList}>
+            <p
+                class="help-text slds-text-body_small slds-text-color_weak slds-m-bottom_small"
+            >
+                Drag columns to reorder. Edit fields directly — changes save
+                automatically.
+            </p>
+            <div
+                class="columns-list"
+                ondragover={handleColumnDragOver}
+                ondrop={handleColumnDrop}
+            >
+                <template for:each={columns} for:item="column">
+                    <div
+                        key={column.Id}
+                        class={column.cssClass}
+                        draggable="true"
+                        data-column-id={column.Id}
+                        data-index={column.index}
+                        ondragstart={handleColumnDragStart}
+                        ondragend={handleColumnDragEnd}
+                        ondragenter={handleColumnDragEnter}
+                    >
+                        <div
+                            class="column-color-bar"
+                            style={column.colorStyle}
+                        ></div>
+                        <div class="column-body">
+                            <div class="column-top-row">
+                                <lightning-icon
+                                    icon-name="utility:drag_and_drop"
+                                    size="xx-small"
+                                    alternative-text="Drag to reorder"
+                                    class="drag-handle"
+                                ></lightning-icon>
+                                <a
+                                    href={column.recordUrl}
+                                    class="column-name-link slds-truncate"
+                                    title={column.columnHeader}
+                                    >{column.columnHeader}</a
+                                >
+                                <lightning-badge
+                                    label={column.cardCountLabel}
+                                ></lightning-badge>
+                                <lightning-button-icon
+                                    icon-name="utility:delete"
+                                    alternative-text="Delete column"
+                                    data-column-id={column.Id}
+                                    onclick={handleDeleteColumn}
+                                    variant="bare"
+                                    size="small"
+                                ></lightning-button-icon>
+                            </div>
+                            <lightning-input
+                                label="Name"
+                                value={column.columnHeader}
+                                data-column-id={column.Id}
+                                data-field="columnHeader"
+                                onblur={handleInlineEdit}
+                                variant="label-stacked"
+                            ></lightning-input>
+                            <lightning-combobox
+                                label="Category"
+                                value={column.category}
+                                options={columnCategoryOptions}
+                                data-column-id={column.Id}
+                                data-field="category"
+                                onchange={handleInlineEdit}
+                                variant="label-stacked"
+                            ></lightning-combobox>
+                            <lightning-combobox
+                                label="Status"
+                                value={column.status}
+                                options={columnStatusOptions}
+                                data-column-id={column.Id}
+                                data-field="status"
+                                onchange={handleInlineEdit}
+                                variant="label-stacked"
+                            ></lightning-combobox>
+                            <lightning-combobox
+                                label="Color"
+                                value={column.color}
+                                options={colorOptions}
+                                data-column-id={column.Id}
+                                data-field="color"
+                                onchange={handleInlineEdit}
+                                variant="label-stacked"
+                            ></lightning-combobox>
+                            <lightning-input
+                                type="number"
+                                label="WIP Limit"
+                                value={column.wipLimit}
+                                data-column-id={column.Id}
+                                data-field="wipLimit"
+                                onblur={handleInlineEdit}
+                                min="0"
+                                variant="label-stacked"
+                            ></lightning-input>
+                        </div>
+                    </div>
+                </template>
+                <!-- Add Column placeholder card -->
+                <div
+                    class="column-item column-item--add"
+                    role="button"
+                    tabindex="0"
+                    onclick={handleNewColumn}
+                    onkeydown={handleAddColumnKeydown}
+                >
+                    <lightning-icon
+                        icon-name="utility:add"
+                        size="small"
+                    ></lightning-icon>
+                    <span class="add-column-text">Add Column</span>
+                </div>
+            </div>
+        </template>
+
+        <!-- No columns -->
+        <template lwc:if={showNoColumnsMessage}>
+            <div class="empty-state">
+                <lightning-icon
+                    icon-name="standard:column"
+                    size="large"
+                ></lightning-icon>
+                <h3 class="slds-m-top_medium">No Columns Yet</h3>
+                <p class="slds-text-color_weak slds-m-bottom_medium">
+                    Pick a template to get started, or add columns manually.
+                </p>
+                <div class="template-grid">
+                    <template
+                        for:each={templateOptions}
+                        for:item="tmpl"
+                    >
+                        <div
+                            key={tmpl.value}
+                            class="template-card"
+                            role="button"
+                            tabindex="0"
+                            data-template={tmpl.value}
+                            onclick={handleSelectTemplate}
+                            onkeydown={handleTemplateKeydown}
+                        >
+                            <lightning-icon
+                                icon-name={tmpl.icon}
+                                size="medium"
+                            ></lightning-icon>
+                            <span class="template-name">{tmpl.label}</span>
+                            <span
+                                class="template-desc slds-text-color_weak"
+                                >{tmpl.description}</span
+                            >
+                            <span class="template-cols"
+                                >{tmpl.columnsLabel}</span
+                            >
+                        </div>
+                    </template>
+                </div>
+                <lightning-button
+                    variant="neutral"
+                    label="Add Column Manually"
+                    onclick={handleNewColumn}
+                    icon-name="utility:add"
+                    class="slds-m-top_medium"
+                ></lightning-button>
+            </div>
+        </template>
+
+        <!-- Delete Confirmation Modal -->
+        <template lwc:if={showDeleteModal}>
+            <section
+                role="dialog"
+                tabindex="-1"
+                class="slds-modal slds-fade-in-open slds-modal_small"
+                aria-modal="true"
+                aria-labelledby="delete-modal-heading"
+            >
+                <div class="slds-modal__container">
+                    <button
+                        class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleCloseDeleteModal}
+                    >
+                        <lightning-icon
+                            icon-name="utility:close"
+                            alternative-text="Close"
+                            size="small"
+                            variant="inverse"
+                        ></lightning-icon>
+                    </button>
+                    <div class="slds-modal__header slds-theme_error">
+                        <h2
+                            id="delete-modal-heading"
+                            class="slds-modal__title slds-hyphenate"
+                        >
+                            Confirm Delete
+                        </h2>
+                    </div>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <p>{deleteMessage}</p>
+                    </div>
+                    <div class="slds-modal__footer">
+                        <lightning-button
+                            label="Cancel"
+                            onclick={handleCloseDeleteModal}
+                        ></lightning-button>
+                        <lightning-button
+                            variant="destructive"
+                            label="Delete"
+                            onclick={handleConfirmDelete}
+                            disabled={isSaving}
+                            class="slds-m-left_x-small"
+                        ></lightning-button>
+                    </div>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+    </div>
+</template>

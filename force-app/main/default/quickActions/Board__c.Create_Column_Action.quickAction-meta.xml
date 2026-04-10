@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <QuickAction xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>Start Screen Flow Column Setup</description>
+    <description>[DEPRECATED] Start Screen Flow Column Setup. Use the Column Management tab instead.</description>
     <flowDefinition>Column_Setup</flowDefinition>
     <label>Create Column</label>
     <optionsCreateFeedItem>false</optionsCreateFeedItem>
