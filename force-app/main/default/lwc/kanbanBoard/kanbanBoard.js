@@ -14,21 +14,9 @@ import FilterManager from './managers/filterManager';
 import SwimlaneManager from './managers/swimlaneManager';
 import MobileNavigationManager from './managers/mobileNavigationManager';
 import ContextMenuManager from './managers/contextMenuManager';
+import UndoRedoManager from './managers/undoRedoManager';
 import { generateClientId } from './helpers/clientIdGenerator';
-
-const CARD_NAME_MAX_LINES = 2;
-const CARD_SUBJECT_MAX_LINES = 2;
-const EPIC_LABEL_MAX_LINES = 2;
-const CARD_NAME_FALLBACK_CLASS =
-    'kanban-card__name kanban-card__name--single-line slds-text-link slds-text-color_brand';
-const CARD_NAME_MULTI_LINE_CLASS =
-    'kanban-card__name kanban-card__name--two-line slds-text-link slds-text-color_brand';
-const CARD_SUBJECT_FALLBACK_CLASS =
-    'kanban-card__subject kanban-card__subject--single-line';
-const EPIC_LABEL_FALLBACK_CLASS =
-    'epic-label__text epic-label__text--single-line';
-const EPIC_LABEL_MULTI_LINE_CLASS =
-    'epic-label__text epic-label__text--two-line';
+import { getColumnsWithPretextLayout } from './helpers/textDecorationHelper';
 
 // Flip this locally or set localStorage['alex.debug.undoRedo'] = 'true'
 // when you want the dev-only undo/redo controls visible.
@@ -161,6 +149,7 @@ export default class KanbanBoard extends LightningElement {
     @track _canRedo = false;
     _keyboardHandler = null;
     _undoManagerUnsubscribe = null;
+    _undoRedoManager = null;
     @track _pretextLayoutVersion = 0;
     _pretextDecoratedColumnsCache = {
         columnsRef: null,
@@ -227,7 +216,13 @@ export default class KanbanBoard extends LightningElement {
     get filteredColumns() {
         const filteredColumns = this.filterManager.getFilteredColumns();
         const context = this._swimlaneMode === 'none' ? 'board' : 'swimlane';
-        return this.getColumnsWithPretextLayout(filteredColumns, context);
+        return getColumnsWithPretextLayout(
+            this._pretext,
+            filteredColumns,
+            context,
+            this._pretextDecoratedColumnsCache,
+            this._pretextLayoutVersion
+        );
     }
 
     get hasActiveFilters() {
@@ -478,7 +473,8 @@ export default class KanbanBoard extends LightningElement {
         }
 
         // Keyboard shortcuts for undo/redo
-        this._keyboardHandler = this._handleKeyboard.bind(this);
+        this._undoRedoManager = new UndoRedoManager(this);
+        this._keyboardHandler = (e) => this._undoRedoManager.handleKeyboard(e);
         // eslint-disable-next-line @lwc/lwc/no-document-query
         document.addEventListener('keydown', this._keyboardHandler);
 
@@ -539,116 +535,6 @@ export default class KanbanBoard extends LightningElement {
     // =============================================================================
     // Data Loading
     // =============================================================================
-
-    getColumnsWithPretextLayout(columns, context) {
-        const version = this._pretextLayoutVersion;
-        const cache = this._pretextDecoratedColumnsCache;
-
-        if (
-            cache.columnsRef === columns &&
-            cache.context === context &&
-            cache.version === version
-        ) {
-            return cache.value;
-        }
-
-        if (!columns || columns.length === 0) {
-            return columns;
-        }
-
-        const decoratedColumns = columns.map((column) => ({
-            ...column,
-            cards: (column.cards || []).map((card) =>
-                this.decorateCardText(card, context)
-            )
-        }));
-
-        this._pretextDecoratedColumnsCache = {
-            columnsRef: columns,
-            context,
-            version,
-            value: decoratedColumns
-        };
-
-        return decoratedColumns;
-    }
-
-    decorateCardText(card, context) {
-        if (!card) {
-            return card;
-        }
-
-        return {
-            ...card,
-            ...this.getCardNameDecoration(card, context),
-            ...this.getCardSubjectDecoration(card, context),
-            ...this.getEpicLabelDecoration(card, context)
-        };
-    }
-
-    getCardNameDecoration(card, context) {
-        if (context !== 'board') {
-            return {};
-        }
-
-        const metricsKey = card.hasAssignee
-            ? 'boardCardNameWithAssignee'
-            : 'boardCardNameWithoutAssignee';
-        const decoration = this._pretext.getDecoration(
-            card.Name,
-            metricsKey,
-            CARD_NAME_MAX_LINES,
-            CARD_NAME_FALLBACK_CLASS,
-            CARD_NAME_MULTI_LINE_CLASS
-        );
-
-        return {
-            nameClass: decoration.className,
-            nameTitle: decoration.title,
-            nameMetricsRole: card.hasAssignee
-                ? 'board-card-name-with-assignee'
-                : 'board-card-name-without-assignee'
-        };
-    }
-
-    getCardSubjectDecoration(card, context) {
-        const metricsKey =
-            context === 'board' ? 'boardSubject' : 'swimlaneSubject';
-        const decoration = this._pretext.getDecoration(
-            card.subject,
-            metricsKey,
-            CARD_SUBJECT_MAX_LINES,
-            CARD_SUBJECT_FALLBACK_CLASS,
-            'kanban-card__subject kanban-card__subject--two-line'
-        );
-
-        return {
-            subjectClass: decoration.className,
-            subjectTitle: decoration.title
-        };
-    }
-
-    getEpicLabelDecoration(card, context) {
-        if (context !== 'board' || !card.hasEpic) {
-            return {};
-        }
-
-        const decoration = this._pretext.getDecoration(
-            card.epicLabel,
-            'boardEpicLabel',
-            EPIC_LABEL_MAX_LINES,
-            EPIC_LABEL_FALLBACK_CLASS,
-            EPIC_LABEL_MULTI_LINE_CLASS
-        );
-
-        return {
-            epicLabelClass: decoration.className,
-            epicLabelContainerClass: decoration.isMultiLine
-                ? 'epic-label epic-label--two-line'
-                : 'epic-label',
-            epicLabelTitle: decoration.title
-        };
-    }
 
     async loadBoardData() {
         if (!this._recordId) {
@@ -924,74 +810,11 @@ export default class KanbanBoard extends LightningElement {
     }
 
     handleUndo() {
-        if (!this.showUndoRedoButtons) return;
-        const um = this.store.undoManager;
-        if (!um || !um.canUndo()) return;
-        this.store
-            .performUndo()
-            .then((success) => {
-                this._refreshUndoRedoState();
-                if (!success && this.toastManager) {
-                    this.toastManager.showWarning(
-                        'Cannot undo — card was modified by another user.'
-                    );
-                }
-            })
-            .catch((err) => {
-                this._refreshUndoRedoState();
-                if (this.toastManager) {
-                    this.toastManager.showError('Undo failed', err);
-                }
-            });
+        this._undoRedoManager?.handleUndo();
     }
 
     handleRedo() {
-        if (!this.showUndoRedoButtons) return;
-        const um = this.store.undoManager;
-        if (!um || !um.canRedo()) return;
-        this.store
-            .performRedo()
-            .then((success) => {
-                this._refreshUndoRedoState();
-                if (!success && this.toastManager) {
-                    this.toastManager.showWarning(
-                        'Cannot redo — card was modified by another user.'
-                    );
-                }
-            })
-            .catch((err) => {
-                this._refreshUndoRedoState();
-                if (this.toastManager) {
-                    this.toastManager.showError('Redo failed', err);
-                }
-            });
-    }
-
-    _handleKeyboard(event) {
-        if (!this.showUndoRedoButtons) return;
-
-        const isMeta = event.metaKey || event.ctrlKey;
-        if (!isMeta) return;
-
-        // Ignore when typing in inputs/textareas
-        const tag = event.target?.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-
-        if (event.key === 'z' || event.key === 'Z') {
-            if (event.shiftKey) {
-                // Ctrl+Shift+Z or Cmd+Shift+Z → Redo
-                event.preventDefault();
-                this.handleRedo();
-            } else {
-                // Ctrl+Z or Cmd+Z → Undo
-                event.preventDefault();
-                this.handleUndo();
-            }
-        } else if (event.key === 'y' || event.key === 'Y') {
-            // Ctrl+Y → Redo (Windows/Linux)
-            event.preventDefault();
-            this.handleRedo();
-        }
+        this._undoRedoManager?.handleRedo();
     }
 
     handleWindowFocus() {

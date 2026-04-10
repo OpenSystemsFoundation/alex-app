@@ -6,17 +6,15 @@ import {
     createBacklogCardAsync,
     updateBacklogCardAsync,
     deleteBacklogCardsAsync,
-    reorderBacklogCardAsync,
     moveCardsToSprintAsync,
-    moveCardAsync,
-    createSprintAsync,
-    addCardsToBacklogSprintAsync,
-    removeCardFromBacklogSprintAsync
+    createSprintAsync
 } from 'c/kanbanStore';
 import {
     applyStoreSubscription,
     removeStoreSubscription
 } from 'c/storeSubscriptionMixin';
+import BacklogContextMenuHandler from './handlers/contextMenuHandler';
+import BacklogDragDropHandler from './handlers/dragDropHandler';
 
 function getAssigneeName(card) {
     return card?.assignee?.name?.trim() || '';
@@ -86,7 +84,12 @@ export default class KanbanBacklogView extends LightningElement {
     _contextMenuCardId = null;
     _contextMenuSprintId = null;
 
+    _contextMenuHandler;
+    _dragDropHandler;
+
     connectedCallback() {
+        this._contextMenuHandler = new BacklogContextMenuHandler(this);
+        this._dragDropHandler = new BacklogDragDropHandler(this);
         applyStoreSubscription(this, this.store);
     }
 
@@ -769,488 +772,50 @@ export default class KanbanBacklogView extends LightningElement {
     }
 
     // ===================================================================
-    // Event Handlers - Context Menu
+    // Event Handlers - Context Menu (delegated to BacklogContextMenuHandler)
     // ===================================================================
 
     handleContextMenu(event) {
-        event.preventDefault();
-        const cardId = event.currentTarget.dataset.cardId;
-        const rawSprintId = event.currentTarget.dataset.sprintId;
-        const sprintId =
-            rawSprintId && rawSprintId !== 'null' ? rawSprintId : null;
-        this._contextMenuCardId = cardId;
-        this._contextMenuSprintId = sprintId;
-
-        const contextMenu = this.template.querySelector(
-            'c-kanban-context-menu'
-        );
-        if (contextMenu) {
-            contextMenu.menuItems = this._buildContextMenuItems(
-                cardId,
-                sprintId
-            );
-            contextMenu.show(event.clientX, event.clientY);
-        }
-    }
-
-    _buildContextMenuItems(_cardId, cardSprintId) {
-        const items = [
-            {
-                label: 'Move to Top',
-                value: 'moveTop',
-                icon: 'utility:arrowup'
-            },
-            {
-                label: 'Move to Bottom',
-                value: 'moveBottom',
-                icon: 'utility:arrowdown'
-            }
-        ];
-
-        // Build "Move to Sprint" submenu with all available sprints
-        const sprintSubmenu = [];
-        for (const sprint of this.planningSprints) {
-            if (sprint.Id === cardSprintId) continue;
-            sprintSubmenu.push({
-                label: sprint.Name || `Sprint ${sprint.sprintNumber || ''}`,
-                value: sprint.Id
-            });
-        }
-        if (this.activeSprint) {
-            sprintSubmenu.push({
-                label: `${this.activeSprint.Name || 'Active Sprint'} (Board)`,
-                value: `active:${this.activeSprint.Id}`,
-                dividerBefore: sprintSubmenu.length > 0
-            });
-        }
-        if (sprintSubmenu.length > 0) {
-            items.push({
-                label: 'Move to Sprint',
-                value: 'moveToSprint',
-                icon: 'utility:forward',
-                submenu: sprintSubmenu
-            });
-        }
-
-        // Build "Move to Column" submenu (moves card to active sprint + column)
-        if (this.activeSprint) {
-            const cols = this._storeState?.columns || [];
-            const columnSubmenu = [];
-            for (const col of cols) {
-                columnSubmenu.push({
-                    label: col.columnHeader || col.Name || col.name,
-                    value: col.Id
-                });
-            }
-            if (columnSubmenu.length > 0) {
-                items.push({
-                    label: 'Move to Column',
-                    value: 'moveToColumn',
-                    icon: 'utility:right',
-                    submenu: columnSubmenu
-                });
-            }
-        }
-
-        // Remove from sprint (only if card is in a planning sprint)
-        if (cardSprintId) {
-            items.push({
-                label: 'Remove from Sprint',
-                value: 'removeFromSprint',
-                icon: 'utility:back'
-            });
-        }
-
-        items.push(
-            {
-                label: 'Set Priority',
-                value: 'setPriority',
-                icon: 'utility:priority',
-                dividerBefore: true,
-                submenu: [
-                    { label: 'High', value: 'High' },
-                    { label: 'Medium', value: 'Medium' },
-                    { label: 'Low', value: 'Low' }
-                ]
-            },
-            {
-                label: 'Toggle Refinement',
-                value: 'toggleRefinement',
-                icon: 'utility:search'
-            },
-            {
-                label: 'Delete',
-                value: 'delete',
-                icon: 'utility:delete',
-                dividerBefore: true
-            }
-        );
-
-        return items;
+        this._contextMenuHandler.handleContextMenu(event);
     }
 
     get contextMenuItems() {
-        return this._buildContextMenuItems(null, null);
+        return this._contextMenuHandler.buildMenuItems(null, null);
     }
 
-    async handleContextMenuSelect(event) {
-        const { value, subValue } = event.detail;
-        const cardId = this._contextMenuCardId;
-        const sprintId = this._contextMenuSprintId;
-        if (!cardId || !this.store) return;
-
-        switch (value) {
-            case 'moveTop': {
-                const topIdx = this._getMoveTopIndex(sprintId);
-                await this.store.dispatch(
-                    reorderBacklogCardAsync(cardId, topIdx)
-                );
-                break;
-            }
-            case 'moveBottom': {
-                const bottomIdx = this._getMoveBottomIndex(sprintId);
-                await this.store.dispatch(
-                    reorderBacklogCardAsync(cardId, bottomIdx)
-                );
-                break;
-            }
-            case 'moveToSprint':
-                if (subValue) {
-                    await this._handleMoveToSprint(cardId, sprintId, subValue);
-                }
-                break;
-            case 'moveToColumn':
-                if (subValue && this.activeSprint) {
-                    await this._handleMoveToColumn(cardId, sprintId, subValue);
-                }
-                break;
-            case 'removeFromSprint':
-                if (sprintId) {
-                    await this.store.dispatch(
-                        removeCardFromBacklogSprintAsync(sprintId, cardId)
-                    );
-                }
-                break;
-            case 'setPriority':
-                if (subValue) {
-                    await this.store.dispatch(
-                        updateBacklogCardAsync(cardId, { priority: subValue })
-                    );
-                }
-                break;
-            case 'toggleRefinement': {
-                const card = this.backlogCards.find((c) => c.Id === cardId);
-                if (card) {
-                    await this.store.dispatch(
-                        updateBacklogCardAsync(cardId, {
-                            needsRefinement: !card.needsRefinement
-                        })
-                    );
-                }
-                break;
-            }
-            case 'delete':
-                await this.store.dispatch(deleteBacklogCardsAsync([cardId]));
-                break;
-            default:
-                break;
-        }
-    }
-
-    async _handleMoveToSprint(cardId, currentSprintId, targetValue) {
-        // Remove from current planning sprint if applicable
-        if (currentSprintId) {
-            await this.store.dispatch(
-                removeCardFromBacklogSprintAsync(currentSprintId, cardId)
-            );
-        }
-
-        if (targetValue.startsWith('active:')) {
-            // Move to active sprint (puts card on the board)
-            const activeSprintId = targetValue.replace('active:', '');
-            await this.store.dispatch(
-                moveCardsToSprintAsync(activeSprintId, [cardId])
-            );
-        } else {
-            // Move to a planning sprint (stays in backlog)
-            await this.store.dispatch(
-                addCardsToBacklogSprintAsync(targetValue, [cardId])
-            );
-        }
-    }
-
-    async _handleMoveToColumn(cardId, currentSprintId, targetColumnId) {
-        // Remove from current planning sprint if applicable
-        if (currentSprintId) {
-            await this.store.dispatch(
-                removeCardFromBacklogSprintAsync(currentSprintId, cardId)
-            );
-        }
-
-        // Move card to the active sprint (this puts it on the board in the first column)
-        await this.store.dispatch(
-            moveCardsToSprintAsync(this.activeSprint.Id, [cardId])
-        );
-
-        // Now move it to the target column
-        await this.store.dispatch(moveCardAsync(cardId, targetColumnId, 0));
-    }
-
-    _getMoveTopIndex(sprintId) {
-        if (!sprintId) return 0;
-        const state = this.store.getState();
-        const allCards = state.backlogCards || [];
-        const sprintCardIds = this._getSprintCardIds(sprintId);
-        for (let i = 0; i < allCards.length; i++) {
-            if (sprintCardIds.has(allCards[i].Id)) return i;
-        }
-        return 0;
-    }
-
-    _getMoveBottomIndex(sprintId) {
-        const state = this.store.getState();
-        const allCards = state.backlogCards || [];
-        if (!sprintId) return allCards.length - 1;
-        const sprintCardIds = this._getSprintCardIds(sprintId);
-        let lastIndex = -1;
-        for (let i = 0; i < allCards.length; i++) {
-            if (sprintCardIds.has(allCards[i].Id)) lastIndex = i;
-        }
-        return lastIndex >= 0 ? lastIndex : allCards.length - 1;
+    handleContextMenuSelect(event) {
+        this._contextMenuHandler.handleSelect(event);
     }
 
     // ===================================================================
-    // Event Handlers - Drag Reorder
+    // Event Handlers - Drag Reorder (delegated to BacklogDragDropHandler)
     // ===================================================================
-
-    _dragSourceSprintId = null;
 
     handleDragStart(event) {
-        const cardId = event.currentTarget.dataset.cardId;
-        const rawSprintId = event.currentTarget.dataset.sprintId;
-        this.draggedCardId = cardId;
-        this._dragSourceSprintId =
-            rawSprintId && rawSprintId !== 'null' ? rawSprintId : null;
-        event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/plain', cardId);
-
-        // Use rAF so browser captures the element before we style it
-        // eslint-disable-next-line @lwc/lwc/no-async-operation
-        requestAnimationFrame(() => {
-            event.target.classList.add('dragging');
-        });
+        this._dragDropHandler.handleDragStart(event);
     }
 
     handleDragOver(event) {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'move';
-
-        if (!this.draggedCardId) return;
-
-        const row = event.currentTarget;
-        const targetIndex = Number(row.dataset.index);
-
-        // Determine if cursor is in top or bottom half of row
-        const rect = row.getBoundingClientRect();
-        const midpoint = rect.top + rect.height / 2;
-        const insertAfter = event.clientY > midpoint;
-        const effectiveIndex = insertAfter ? targetIndex + 1 : targetIndex;
-
-        if (this.dragOverIndex === effectiveIndex) return;
-
-        // Clear previous indicator
-        this._clearDropIndicators();
-
-        // Show drop indicator (CSS only — no state mutation during drag)
-        if (insertAfter) {
-            row.classList.add('drag-indicator-below');
-        } else {
-            row.classList.add('drag-indicator-above');
-        }
-        this._lastHighlightedRow = row;
-
-        this.dragOverIndex = effectiveIndex;
-        this._dragTargetIndex = effectiveIndex;
-    }
-
-    _lastHighlightedRow = null;
-
-    _clearDropIndicators() {
-        if (this._lastHighlightedRow) {
-            this._lastHighlightedRow.classList.remove(
-                'drag-indicator-above',
-                'drag-indicator-below'
-            );
-            this._lastHighlightedRow = null;
-        }
+        this._dragDropHandler.handleDragOver(event);
     }
 
     handleDragEnd(event) {
-        event.currentTarget.classList.remove('dragging');
-        this._clearDropIndicators();
-        this._clearHeaderDropIndicators();
-        // If drop didn't fire (e.g. dropped outside), reset drag state
-        if (this.draggedCardId) {
-            this.draggedCardId = null;
-            this.dragOverIndex = null;
-            this._dragTargetIndex = null;
-            this._dragSourceSprintId = null;
-        }
+        this._dragDropHandler.handleDragEnd(event);
     }
 
-    // --- Section header drop zone handlers ---
-
     handleSectionHeaderDragOver(event) {
-        if (!this.draggedCardId) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'move';
-        event.currentTarget.classList.add('drag-indicator-header');
+        this._dragDropHandler.handleSectionHeaderDragOver(event);
     }
 
     handleSectionHeaderDragLeave(event) {
-        event.currentTarget.classList.remove('drag-indicator-header');
+        this._dragDropHandler.handleSectionHeaderDragLeave(event);
     }
 
-    _clearHeaderDropIndicators() {
-        const headers = this.template.querySelectorAll('.sprint-header-row');
-        headers.forEach((h) => h.classList.remove('drag-indicator-header'));
+    handleSectionHeaderDrop(event) {
+        this._dragDropHandler.handleSectionHeaderDrop(event);
     }
 
-    async handleSectionHeaderDrop(event) {
-        event.preventDefault();
-        this._clearDropIndicators();
-        this._clearHeaderDropIndicators();
-
-        const cardId = this.draggedCardId;
-        const sourceSprintId = this._dragSourceSprintId;
-        this.draggedCardId = null;
-        this.dragOverIndex = null;
-        this._dragTargetIndex = null;
-        this._dragSourceSprintId = null;
-
-        if (!cardId || !this.store) return;
-
-        const rawTargetId = event.currentTarget.dataset.sprintId;
-        const targetSprintId =
-            rawTargetId && rawTargetId !== 'ungrouped' ? rawTargetId : null;
-
-        // No-op if same section
-        if (sourceSprintId === targetSprintId) return;
-
-        try {
-            await this._moveCardBetweenSections(
-                cardId,
-                sourceSprintId,
-                targetSprintId
-            );
-        } catch (error) {
-            this.dispatchEvent(
-                new CustomEvent('error', {
-                    detail: { message: 'Failed to move card' }
-                })
-            );
-        }
-    }
-
-    // --- Card row drop handler (with cross-section support) ---
-
-    async handleDrop(event) {
-        event.preventDefault();
-        this._clearDropIndicators();
-        this._clearHeaderDropIndicators();
-
-        const cardId = this.draggedCardId;
-        const targetIndex = this._dragTargetIndex;
-        const sourceSprintId = this._dragSourceSprintId;
-        this.draggedCardId = null;
-        this.dragOverIndex = null;
-        this._dragTargetIndex = null;
-        this._dragSourceSprintId = null;
-
-        if (cardId == null || !this.store) return;
-
-        // Detect target section from the drop target row
-        const rawTargetSprintId = event.currentTarget.dataset.sprintId;
-        const targetSprintId =
-            rawTargetSprintId && rawTargetSprintId !== 'null'
-                ? rawTargetSprintId
-                : null;
-
-        // Cross-section drop: move card between sprint/backlog sections
-        if (sourceSprintId !== targetSprintId) {
-            try {
-                await this._moveCardBetweenSections(
-                    cardId,
-                    sourceSprintId,
-                    targetSprintId
-                );
-            } catch (error) {
-                this.dispatchEvent(
-                    new CustomEvent('error', {
-                        detail: { message: 'Failed to move card' }
-                    })
-                );
-                return;
-            }
-            // Fall through to reorder the card to the drop position
-        }
-
-        if (targetIndex == null) return;
-
-        // Compute the target index in the unfiltered backlog array.
-        // _dragTargetIndex is based on the filtered/displayed list.
-        // Convert to the unfiltered array index using the card at that position.
-        const state = this.store.getState();
-        const allCards = state.backlogCards || [];
-        const oldIndex = allCards.findIndex((c) => c.Id === cardId);
-        if (oldIndex === -1) return;
-
-        // Find the anchor card from the drop target row
-        const anchorCardId = event.currentTarget.dataset.cardId;
-        let newIndex;
-        if (anchorCardId) {
-            newIndex = allCards.findIndex((c) => c.Id === anchorCardId);
-            if (newIndex === -1) {
-                newIndex = allCards.length - 1;
-            } else if (newIndex > oldIndex) {
-                newIndex = Math.max(0, newIndex - 1);
-            }
-        } else if (targetIndex >= this.backlogCards.length) {
-            newIndex = allCards.length - 1;
-        } else {
-            const anchorCard = this.backlogCards[targetIndex];
-            newIndex = allCards.findIndex((c) => c.Id === anchorCard.Id);
-            if (newIndex > oldIndex) {
-                newIndex = Math.max(0, newIndex - 1);
-            }
-        }
-
-        // Reorder locally + persist to server in one dispatch
-        try {
-            await this.store.dispatch(
-                reorderBacklogCardAsync(cardId, newIndex)
-            );
-        } catch (error) {
-            this.dispatchEvent(
-                new CustomEvent('error', {
-                    detail: { message: 'Failed to save card position' }
-                })
-            );
-        }
-    }
-
-    async _moveCardBetweenSections(cardId, sourceSprintId, targetSprintId) {
-        // Remove from source sprint if it was in one
-        if (sourceSprintId) {
-            await this.store.dispatch(
-                removeCardFromBacklogSprintAsync(sourceSprintId, cardId)
-            );
-        }
-        // Add to target sprint if dropping into one (not back to ungrouped)
-        if (targetSprintId) {
-            await this.store.dispatch(
-                addCardsToBacklogSprintAsync(targetSprintId, [cardId])
-            );
-        }
+    handleDrop(event) {
+        this._dragDropHandler.handleDrop(event);
     }
 }
