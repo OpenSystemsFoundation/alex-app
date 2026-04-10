@@ -966,6 +966,7 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
         this._resizing = true;
         this._resizeStartX = event.clientX;
         this._resizeStartWidth = this.panelWidth;
+        this._panelEl = this.template.querySelector('.card-panel');
 
         this._boundHandleResize = this.handleResize.bind(this);
         this._boundHandleResizeEnd = this.handleResizeEnd.bind(this);
@@ -984,16 +985,24 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
             MIN_PANEL_WIDTH,
             Math.min(this.maxPanelWidth, newWidth)
         );
-        this.panelWidth = newWidth;
-        this.dispatchEvent(
-            new CustomEvent('panelresize', {
-                detail: { width: newWidth }
-            })
-        );
+        this._lastResizeWidth = newWidth;
+        if (this._panelEl) {
+            this._panelEl.style.width = `${newWidth}px`;
+        }
     }
 
     handleResizeEnd() {
         this._resizing = false;
+        if (this._lastResizeWidth != null) {
+            this.panelWidth = this._lastResizeWidth;
+            this.dispatchEvent(
+                new CustomEvent('panelresize', {
+                    detail: { width: this._lastResizeWidth }
+                })
+            );
+            this._lastResizeWidth = null;
+        }
+        this._panelEl = null;
         window.removeEventListener('mousemove', this._boundHandleResize);
         window.removeEventListener('mouseup', this._boundHandleResizeEnd);
         this._boundHandleResize = null;
