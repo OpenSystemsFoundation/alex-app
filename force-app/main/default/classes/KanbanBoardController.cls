@@ -431,6 +431,37 @@ public with sharing class KanbanBoardController {
         }
     }
 
+    /**
+     * Delete a sprint (Planning status only)
+     */
+    @AuraEnabled
+    public static void deleteSprint(Id sprintId) {
+        try {
+            SprintService.deleteSprint(sprintId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error deleting sprint: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Reorder a sprint (move up or down)
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.SprintDTO> reorderSprint(
+        Id sprintId,
+        String direction
+    ) {
+        try {
+            return SprintService.reorderSprint(sprintId, direction);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error reordering sprint: ' + e.getMessage()
+            );
+        }
+    }
+
     // =========================================================================
     // Card Comment Methods
     // =========================================================================

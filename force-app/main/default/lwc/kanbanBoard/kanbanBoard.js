@@ -1,6 +1,5 @@
 import { LightningElement, api, track, wire } from 'lwc';
 import { createStore, selectors } from 'c/kanbanStore';
-import { PretextManager } from 'c/pretextService';
 import getKanbanConfig from '@salesforce/apex/KanbanBoardController.getKanbanConfig';
 import EventHandler from './handlers/eventHandler';
 import RequestTracker from './helpers/requestTracker';
@@ -16,7 +15,7 @@ import MobileNavigationManager from './managers/mobileNavigationManager';
 import ContextMenuManager from './managers/contextMenuManager';
 import UndoRedoManager from './managers/undoRedoManager';
 import { generateClientId } from './helpers/clientIdGenerator';
-import { getColumnsWithPretextLayout } from './helpers/textDecorationHelper';
+import { getColumnsWithDecoratedText } from './helpers/textDecorationHelper';
 
 // Flip this locally or set localStorage['alex.debug.undoRedo'] = 'true'
 // when you want the dev-only undo/redo controls visible.
@@ -150,20 +149,11 @@ export default class KanbanBoard extends LightningElement {
     _keyboardHandler = null;
     _undoManagerUnsubscribe = null;
     _undoRedoManager = null;
-    @track _pretextLayoutVersion = 0;
-    _pretextDecoratedColumnsCache = {
+    _decoratedColumnsCache = {
         columnsRef: null,
         context: null,
-        version: -1,
         value: []
     };
-    _pretext = new PretextManager(this, {
-        boardSubject: '[data-pretext-role="board-card-subject"]',
-        swimlaneSubject: '[data-pretext-role="swimlane-card-subject"]',
-        boardCardNameWithAssignee: '[data-pretext-role="board-card-name-with-assignee"]',
-        boardCardNameWithoutAssignee: '[data-pretext-role="board-card-name-without-assignee"]',
-        boardEpicLabel: '[data-pretext-role="board-epic-label"]'
-    });
 
     // Drag state
     dragData = null;
@@ -216,12 +206,10 @@ export default class KanbanBoard extends LightningElement {
     get filteredColumns() {
         const filteredColumns = this.filterManager.getFilteredColumns();
         const context = this._swimlaneMode === 'none' ? 'board' : 'swimlane';
-        return getColumnsWithPretextLayout(
-            this._pretext,
+        return getColumnsWithDecoratedText(
             filteredColumns,
             context,
-            this._pretextDecoratedColumnsCache,
-            this._pretextLayoutVersion
+            this._decoratedColumnsCache
         );
     }
 
@@ -480,7 +468,6 @@ export default class KanbanBoard extends LightningElement {
 
         // Initialize lifecycle (lazy getters handle instance creation)
         this.lifecycleManager.initialize();
-        this._pretext.initialize();
     }
     renderedCallback() {
         if (this.lifecycleManager) {
@@ -491,16 +478,6 @@ export default class KanbanBoard extends LightningElement {
         if (!this._heightInitialized) {
             this._heightInitialized = true;
             this.initializeDynamicHeight();
-        }
-
-        if (this._pretext.updateMetrics()) {
-            this._pretextDecoratedColumnsCache = {
-                columnsRef: null,
-                context: null,
-                version: -1,
-                value: []
-            };
-            this._pretextLayoutVersion = this._pretext.layoutVersion;
         }
     }
 
@@ -981,6 +958,18 @@ export default class KanbanBoard extends LightningElement {
         return this.activeSprint?.Id || null;
     }
 
+    get hasNoActiveSprint() {
+        return this.isSprintBoard && !this.activeSprint;
+    }
+
+    get hasActiveSprint() {
+        return !!this.activeSprint;
+    }
+
+    get defaultSprintDurationDays() {
+        return this._storeState?.board?.defaultSprintDurationDays || 14;
+    }
+
     // =============================================================================
     // Tab Event Handlers
     // =============================================================================
@@ -1074,6 +1063,16 @@ export default class KanbanBoard extends LightningElement {
 
     handleCompleteSprint() {
         this.showSprintComplete = true;
+    }
+
+    handleBacklogStartSprint(event) {
+        const { sprint } = event.detail;
+        this.editSprint = sprint || null;
+        this.showSprintModal = true;
+    }
+
+    handleGoToBacklog() {
+        this.activeTab = 'backlog';
     }
 
     handleShowReports() {

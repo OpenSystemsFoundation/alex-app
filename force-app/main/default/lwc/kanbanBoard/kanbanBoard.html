@@ -145,7 +145,6 @@
                             show-info-text={hasActiveFilters}
                             info-text={filterSummary}
                             show-clear-filters={hasActiveFilters}
-                            show-new-sprint={isSprintBoard}
                             onsearchinput={handleBoardSearch}
                             onprioritychange={handlePriorityFilter}
                             oncardtypechange={handleCardTypeFilter}
@@ -154,9 +153,30 @@
                             onswimlanechange={handleSwimlaneChange}
                             ontogglehidedone={handleToggleHideCompleted}
                             onclearfilters={handleClearFilters}
-                            oncreatesprint={handleCreateSprint}
                         ></c-kanban-filter-bar>
                     </template>
+
+                    <!-- No Active Sprint Empty State (sprint board only) -->
+                    <template lwc:if={hasNoActiveSprint}>
+                        <div class="kanban-no-sprint-state">
+                            <lightning-icon
+                                icon-name="utility:sprint"
+                                size="large"
+                                class="kanban-no-sprint-state__icon"
+                            ></lightning-icon>
+                            <h2 class="kanban-no-sprint-state__title">No Active Sprint</h2>
+                            <p class="kanban-no-sprint-state__body">
+                                Start a sprint from the Backlog tab to see cards here.
+                            </p>
+                            <lightning-button
+                                label="Go to Backlog"
+                                variant="brand"
+                                icon-name="utility:list"
+                                onclick={handleGoToBacklog}
+                            ></lightning-button>
+                        </div>
+                    </template>
+                    <template lwc:else>
 
                     <!-- Mobile Column Selector -->
                     <div class="mobile-column-selector">
@@ -295,7 +315,6 @@
                                                         <p
                                                             class={card.subjectClass}
                                                             title={card.subjectTitle}
-                                                            data-pretext-role="swimlane-card-subject"
                                                         >
                                                             {card.subject}
                                                         </p>
@@ -500,7 +519,6 @@
                                                                             title={card.nameTitle}
                                                                             onclick={handleCardNameClick}
                                                                             data-card-id={card.Id}
-                                                                            data-pretext-role={card.nameMetricsRole}
                                                                         >
                                                                             {card.Name}
                                                                         </a>
@@ -553,7 +571,6 @@
                                                                     <p
                                                                         class={card.subjectClass}
                                                                         title={card.subjectTitle}
-                                                                        data-pretext-role="board-card-subject"
                                                                     >
                                                                         {card.subject}
                                                                     </p>
@@ -574,7 +591,6 @@
                                                                         <span
                                                                             class={card.epicLabelClass}
                                                                             title={card.epicLabelTitle}
-                                                                            data-pretext-role="board-epic-label"
                                                                             >{card.epicLabel}</span
                                                                         >
                                                                     </div>
@@ -766,7 +782,6 @@
                                                                             href={card.communityCardUrl}
                                                                             class={card.nameClass}
                                                                             title={card.nameTitle}
-                                                                            data-pretext-role={card.nameMetricsRole}
                                                                         >
                                                                             {card.Name}
                                                                         </a>
@@ -819,7 +834,6 @@
                                                                     <p
                                                                         class={card.subjectClass}
                                                                         title={card.subjectTitle}
-                                                                        data-pretext-role="board-card-subject"
                                                                     >
                                                                         {card.subject}
                                                                     </p>
@@ -840,7 +854,6 @@
                                                                         <span
                                                                             class={card.epicLabelClass}
                                                                             title={card.epicLabelTitle}
-                                                                            data-pretext-role="board-epic-label"
                                                                             >{card.epicLabel}</span
                                                                         >
                                                                     </div>
@@ -934,6 +947,7 @@
                             </template>
                         </div>
                     </template>
+                    </template>
                 </div>
 
                 <!-- Card Detail Panel (Board tab, internal only) -->
@@ -970,6 +984,8 @@
                     oncardclick={handleBacklogCardClick}
                     onnavigatetocard={handleBacklogNavigateToCard}
                     onerror={handleBacklogError}
+                    onstartsprint={handleBacklogStartSprint}
+                    oncompletesprint={handleCompleteSprint}
                 ></c-kanban-backlog-view>
 
                 <!-- Card Detail Panel (Backlog tab) -->
@@ -1008,6 +1024,8 @@
                 board-id={recordId}
                 sprint={editSprint}
                 is-open={showSprintModal}
+                default-duration-days={defaultSprintDurationDays}
+                has-active-sprint={hasActiveSprint}
                 onclose={handleSprintModalClose}
                 onsprintcreated={handleSprintCreated}
                 onsprintstarted={handleSprintStarted}

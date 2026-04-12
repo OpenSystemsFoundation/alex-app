@@ -48,11 +48,6 @@
     color: inherit;
 }
 
-.card-panel__title--single-line {
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .card-panel__title--two-line {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -207,11 +202,6 @@
     color: rgb(1, 118, 211);
 }
 
-.epic-child-card__name--single-line {
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .epic-child-card__name--two-line {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -238,11 +228,6 @@
     display: block;
     font-size: 0.7rem;
     color: rgb(107, 114, 128);
-}
-
-.epic-child-card__subject--single-line {
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .epic-child-card__subject--two-line {

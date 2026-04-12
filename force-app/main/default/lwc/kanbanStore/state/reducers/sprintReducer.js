@@ -67,6 +67,40 @@ export const sprintReducer = (state, action) => {
             };
         }
 
+        case types.DELETE_SPRINT: {
+            const { sprintId: deletedSprintId } = action.payload;
+            // Find cards that were in this sprint so we can move them to bottom
+            const deletedSprintCardIds = new Set(
+                state.planningSprintCards
+                    .filter((sc) => sc.sprintId === deletedSprintId)
+                    .map((sc) => sc.cardId)
+            );
+            let newBacklogCards = state.backlogCards;
+            if (deletedSprintCardIds.size > 0) {
+                const kept = newBacklogCards.filter(
+                    (c) => !deletedSprintCardIds.has(c.Id)
+                );
+                const moved = newBacklogCards.filter((c) =>
+                    deletedSprintCardIds.has(c.Id)
+                );
+                newBacklogCards = [...kept, ...moved];
+            }
+            return {
+                ...state,
+                sprints: state.sprints.filter((s) => s.Id !== deletedSprintId),
+                planningSprintCards: state.planningSprintCards.filter(
+                    (sc) => sc.sprintId !== deletedSprintId
+                ),
+                backlogCards: newBacklogCards
+            };
+        }
+
+        case types.REORDER_SPRINTS:
+            return {
+                ...state,
+                sprints: action.payload || []
+            };
+
         default:
             return state;
     }

@@ -185,6 +185,37 @@
     min-height: 0;
 }
 
+/* ---------- No active sprint empty state ---------- */
+.kanban-no-sprint-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 3rem 1rem;
+    text-align: center;
+    color: rgb(107, 114, 128);
+}
+
+.kanban-no-sprint-state__icon {
+    --slds-c-icon-color-foreground-default: rgb(156, 163, 175);
+    margin-bottom: 1rem;
+}
+
+.kanban-no-sprint-state__title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: rgb(55, 65, 81);
+    margin: 0 0 0.5rem;
+}
+
+.kanban-no-sprint-state__body {
+    font-size: 0.875rem;
+    color: rgb(107, 114, 128);
+    margin: 0 0 1.25rem;
+    max-width: 320px;
+}
+
 /* ---------- Board: fills remaining flex space ---------- */
 .kanban-board {
     flex: 1;
@@ -341,11 +372,6 @@
     line-height: 1.2;
 }
 
-.kanban-card__name--single-line {
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .kanban-card__name--two-line {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -384,12 +410,6 @@
     font-weight: 500;
     overflow: hidden;
     word-break: break-word;
-}
-
-.kanban-card__subject--single-line {
-    display: block;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .kanban-card__subject--two-line {
@@ -1167,17 +1187,13 @@
 /* ---------- Epic Label Badge ---------- */
 .epic-label {
     display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.125rem;
     margin-top: 0.25rem;
     padding: 1px 6px;
     background: rgb(237, 233, 254);
     border-radius: 3px;
     max-width: 100%;
-}
-
-.epic-label--two-line {
-    align-items: flex-start;
 }
 
 .epic-label__icon {
@@ -1198,12 +1214,6 @@
     min-width: 0;
     overflow: hidden;
     word-break: break-word;
-}
-
-.epic-label__text--single-line {
-    display: block;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .epic-label__text--two-line {

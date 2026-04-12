@@ -10,6 +10,8 @@ import getSprintDataApex from '@salesforce/apex/KanbanBoardController.getSprintD
 import createSprintApex from '@salesforce/apex/KanbanBoardController.createSprint';
 import startSprintApex from '@salesforce/apex/KanbanBoardController.startSprint';
 import completeSprintApex from '@salesforce/apex/KanbanBoardController.completeSprint';
+import deleteSprintApex from '@salesforce/apex/KanbanBoardController.deleteSprint';
+import reorderSprintApex from '@salesforce/apex/KanbanBoardController.reorderSprint';
 import addCardsToSprintApex from '@salesforce/apex/KanbanBoardController.addCardsToSprint';
 import removeCardFromSprintApex from '@salesforce/apex/KanbanBoardController.removeCardFromSprint';
 import updateCardApex from '@salesforce/apex/KanbanBoardController.updateCard';
@@ -25,7 +27,9 @@ import {
     addCard,
     setPlanningSprintCards,
     addPlanningSprintCard,
-    removePlanningSprintCard
+    removePlanningSprintCard,
+    deleteSprint,
+    reorderSprints
 } from '../state/actions';
 import { findColumn } from '../state/selectors';
 import { calculateCardPosition } from '../utils/positionCalculator';
@@ -127,6 +131,63 @@ export const completeSprintAsync = (sprintId, dispositions) => {
             return { success: true, sprint };
         } catch (error) {
             console.error('Error completing sprint:', error);
+            throw error;
+        }
+    };
+};
+
+/**
+ * Delete a sprint (Planning status only)
+ */
+export const deleteSprintAsync = (sprintId) => {
+    return async (dispatch) => {
+        try {
+            await deleteSprintApex({ sprintId });
+            dispatch(deleteSprint(sprintId));
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting sprint:', error);
+            throw error;
+        }
+    };
+};
+
+/**
+ * Reorder a sprint (move up or down)
+ * @param {string} sprintId - Sprint ID
+ * @param {string} direction - 'up' or 'down'
+ */
+export const reorderSprintAsync = (sprintId, direction) => {
+    return async (dispatch, getState) => {
+        // Optimistic: swap in local state
+        const state = getState();
+        const sprints = [...(state.sprints || [])];
+        const currentIndex = sprints.findIndex((s) => s.Id === sprintId);
+        if (currentIndex < 0) return { success: false };
+
+        const targetIndex =
+            direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+        if (targetIndex < 0 || targetIndex >= sprints.length) {
+            return { success: false };
+        }
+
+        // Swap
+        const temp = sprints[currentIndex];
+        sprints[currentIndex] = sprints[targetIndex];
+        sprints[targetIndex] = temp;
+        dispatch(reorderSprints(sprints));
+
+        try {
+            const updatedSprints = await reorderSprintApex({
+                sprintId,
+                direction
+            });
+            dispatch(reorderSprints(updatedSprints));
+            return { success: true };
+        } catch (error) {
+            console.error('Error reordering sprint:', error);
+            // Rollback
+            dispatch(reorderSprints(state.sprints));
             throw error;
         }
     };

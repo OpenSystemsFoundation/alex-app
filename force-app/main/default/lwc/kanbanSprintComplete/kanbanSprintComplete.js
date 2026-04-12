@@ -76,10 +76,23 @@ export default class KanbanSprintComplete extends LightningElement {
     }
 
     get incompleteCardsWithDisposition() {
-        return this.incompleteCards.map((sc) => ({
-            ...sc,
-            disposition: this.dispositions[sc.cardId] || 'backlog'
-        }));
+        return this.incompleteCards.map((sc) => {
+            const card =
+                sc.card ||
+                (this._storeState
+                    ? selectors.findCard(this._storeState, sc.cardId)
+                    : null);
+            return {
+                ...sc,
+                cardName: card?.Name || sc.cardId,
+                cardSubject: card?.subject || '',
+                hasSubject: !!card?.subject,
+                recordUrl: `/lightning/r/OpenSF__Card__c/${sc.cardId}/view`,
+                storyPoints: sc.storyPointsAtAdd || card?.storyPoints || 0,
+                hasPoints: !!(sc.storyPointsAtAdd || card?.storyPoints),
+                disposition: this.dispositions[sc.cardId] || 'backlog'
+            };
+        });
     }
 
     get hasIncompleteCards() {

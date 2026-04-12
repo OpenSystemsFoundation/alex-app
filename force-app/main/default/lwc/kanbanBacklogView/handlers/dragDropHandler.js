@@ -7,13 +7,16 @@
 import {
     reorderBacklogCardAsync,
     addCardsToBacklogSprintAsync,
-    removeCardFromBacklogSprintAsync
+    removeCardFromBacklogSprintAsync,
+    bulkReorderBacklogCardsAtIndexAsync,
+    setSelectedBacklogCards
 } from 'c/kanbanStore';
 
 export default class BacklogDragDropHandler {
     _host;
     _lastHighlightedRow = null;
     _dragSourceSprintId = null;
+    _dragCardIds = [];
 
     constructor(host) {
         this._host = host;
@@ -25,6 +28,21 @@ export default class BacklogDragDropHandler {
         this._host.draggedCardId = cardId;
         this._dragSourceSprintId =
             rawSprintId && rawSprintId !== 'null' ? rawSprintId : null;
+
+        // Multi-card: if the dragged card is part of a selection, drag them all;
+        // otherwise clear the selection (user started a new single-card drag)
+        const selectedCards = this._host.selectedCards || [];
+        if (selectedCards.length > 1 && selectedCards.includes(cardId)) {
+            this._dragCardIds = [...selectedCards];
+        } else {
+            this._dragCardIds = [cardId];
+            if (selectedCards.length > 0 && this._host.store) {
+                this._host.store.dispatch(
+                    setSelectedBacklogCards([])
+                );
+            }
+        }
+
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', cardId);
 
@@ -77,6 +95,7 @@ export default class BacklogDragDropHandler {
             this._host.dragOverIndex = null;
             this._host._dragTargetIndex = null;
             this._dragSourceSprintId = null;
+            this._dragCardIds = [];
         }
     }
 
@@ -97,13 +116,17 @@ export default class BacklogDragDropHandler {
         this._clearHeaderDropIndicators();
 
         const cardId = this._host.draggedCardId;
+        const cardIds = this._dragCardIds.length > 0
+            ? [...this._dragCardIds]
+            : cardId ? [cardId] : [];
         const sourceSprintId = this._dragSourceSprintId;
         this._host.draggedCardId = null;
         this._host.dragOverIndex = null;
         this._host._dragTargetIndex = null;
         this._dragSourceSprintId = null;
+        this._dragCardIds = [];
 
-        if (!cardId || !this._host.store) return;
+        if (cardIds.length === 0 || !this._host.store) return;
 
         const rawTargetId = event.currentTarget.dataset.sprintId;
         const targetSprintId =
@@ -113,11 +136,14 @@ export default class BacklogDragDropHandler {
         if (sourceSprintId === targetSprintId) return;
 
         try {
-            await this._moveCardBetweenSections(
-                cardId,
-                sourceSprintId,
-                targetSprintId
-            );
+            for (const id of cardIds) {
+                // eslint-disable-next-line no-await-in-loop
+                await this._moveCardBetweenSections(
+                    id,
+                    sourceSprintId,
+                    targetSprintId
+                );
+            }
         } catch (error) {
             this._host.dispatchEvent(
                 new CustomEvent('error', {
@@ -133,14 +159,19 @@ export default class BacklogDragDropHandler {
         this._clearHeaderDropIndicators();
 
         const cardId = this._host.draggedCardId;
+        const cardIds = this._dragCardIds.length > 0
+            ? [...this._dragCardIds]
+            : cardId ? [cardId] : [];
+        const isMulti = cardIds.length > 1;
         const targetIndex = this._host._dragTargetIndex;
         const sourceSprintId = this._dragSourceSprintId;
         this._host.draggedCardId = null;
         this._host.dragOverIndex = null;
         this._host._dragTargetIndex = null;
         this._dragSourceSprintId = null;
+        this._dragCardIds = [];
 
-        if (cardId == null || !this._host.store) return;
+        if (cardIds.length === 0 || !this._host.store) return;
 
         // Detect target section from the drop target row
         const rawTargetSprintId = event.currentTarget.dataset.sprintId;
@@ -149,14 +180,17 @@ export default class BacklogDragDropHandler {
                 ? rawTargetSprintId
                 : null;
 
-        // Cross-section drop: move card between sprint/backlog sections
+        // Cross-section drop: move card(s) between sprint/backlog sections
         if (sourceSprintId !== targetSprintId) {
             try {
-                await this._moveCardBetweenSections(
-                    cardId,
-                    sourceSprintId,
-                    targetSprintId
-                );
+                for (const id of cardIds) {
+                    // eslint-disable-next-line no-await-in-loop
+                    await this._moveCardBetweenSections(
+                        id,
+                        sourceSprintId,
+                        targetSprintId
+                    );
+                }
             } catch (error) {
                 this._host.dispatchEvent(
                     new CustomEvent('error', {
@@ -165,7 +199,7 @@ export default class BacklogDragDropHandler {
                 );
                 return;
             }
-            // Fall through to reorder the card to the drop position
+            // Fall through to reorder the card(s) to the drop position
         }
 
         if (targetIndex == null) return;
@@ -182,7 +216,7 @@ export default class BacklogDragDropHandler {
             newIndex = allCards.findIndex((c) => c.Id === anchorCardId);
             if (newIndex === -1) {
                 newIndex = allCards.length - 1;
-            } else if (newIndex > oldIndex) {
+            } else if (!isMulti && newIndex > oldIndex) {
                 newIndex = Math.max(0, newIndex - 1);
             }
         } else if (targetIndex >= this._host.backlogCards.length) {
@@ -190,15 +224,21 @@ export default class BacklogDragDropHandler {
         } else {
             const anchorCard = this._host.backlogCards[targetIndex];
             newIndex = allCards.findIndex((c) => c.Id === anchorCard.Id);
-            if (newIndex > oldIndex) {
+            if (!isMulti && newIndex > oldIndex) {
                 newIndex = Math.max(0, newIndex - 1);
             }
         }
 
         try {
-            await this._host.store.dispatch(
-                reorderBacklogCardAsync(cardId, newIndex)
-            );
+            if (isMulti) {
+                await this._host.store.dispatch(
+                    bulkReorderBacklogCardsAtIndexAsync(cardIds, newIndex)
+                );
+            } else {
+                await this._host.store.dispatch(
+                    reorderBacklogCardAsync(cardId, newIndex)
+                );
+            }
         } catch (error) {
             this._host.dispatchEvent(
                 new CustomEvent('error', {

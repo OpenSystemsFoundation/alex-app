@@ -91,6 +91,48 @@ export const backlogReducer = (state, action) => {
             };
         }
 
+        case types.BULK_REORDER_BACKLOG: {
+            const { cardIds, position } = action.payload;
+            const idSet = new Set(cardIds);
+            const otherCards = state.backlogCards.filter(
+                (c) => !idSet.has(c.Id)
+            );
+            const movedCards = state.backlogCards.filter((c) =>
+                idSet.has(c.Id)
+            );
+            return {
+                ...state,
+                backlogCards:
+                    position === 'top'
+                        ? [...movedCards, ...otherCards]
+                        : [...otherCards, ...movedCards]
+            };
+        }
+
+        case types.BULK_REORDER_BACKLOG_AT_INDEX: {
+            const { cardIds: bulkCardIds, newIndex: bulkIndex } =
+                action.payload;
+            const bulkIdSet = new Set(bulkCardIds);
+            const remaining = state.backlogCards.filter(
+                (c) => !bulkIdSet.has(c.Id)
+            );
+            // Preserve relative order of moved cards
+            const moved = state.backlogCards.filter((c) =>
+                bulkIdSet.has(c.Id)
+            );
+            // Clamp insert position to valid range in the remaining list
+            const insertAt = Math.min(bulkIndex, remaining.length);
+            const result = [
+                ...remaining.slice(0, insertAt),
+                ...moved,
+                ...remaining.slice(insertAt)
+            ];
+            return {
+                ...state,
+                backlogCards: result
+            };
+        }
+
         case types.SET_BACKLOG_VISIBLE:
             return {
                 ...state,

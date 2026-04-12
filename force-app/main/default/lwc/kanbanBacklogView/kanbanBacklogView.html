@@ -55,6 +55,28 @@
                         class="slds-var-m-right_x-small"
                     ></lightning-button>
                 </template>
+                <template lwc:if={hasBulkSprintOptions}>
+                    <lightning-combobox
+                        label="Move to Sprint"
+                        options={bulkSprintOptions}
+                        onchange={handleBulkMoveToSprint}
+                        variant="label-hidden"
+                        placeholder="Move to Sprint"
+                        class="backlog-filter slds-var-m-right_x-small"
+                    ></lightning-combobox>
+                </template>
+                <lightning-button-group class="slds-var-m-right_x-small">
+                    <lightning-button
+                        label="Move to Top"
+                        onclick={handleBulkMoveTop}
+                        icon-name="utility:arrowup"
+                    ></lightning-button>
+                    <lightning-button
+                        label="Move to Bottom"
+                        onclick={handleBulkMoveBottom}
+                        icon-name="utility:arrowdown"
+                    ></lightning-button>
+                </lightning-button-group>
                 <lightning-combobox
                     label="Set Priority"
                     options={priorityOptions}
@@ -195,6 +217,11 @@
                         Subject
                     </div>
                     <div
+                        class="backlog-cell backlog-cell--status"
+                    >
+                        Status
+                    </div>
+                    <div
                         class="backlog-cell backlog-cell--type"
                     >
                         Type
@@ -240,6 +267,7 @@
                                 class="sprint-header-row slds-grid slds-grid_vertical-align-center"
                                 data-sprint-id={section.sprintId}
                                 onclick={handleSprintHeaderClick}
+                                oncontextmenu={handleSprintContextMenu}
                                 ondragover={handleSectionHeaderDragOver}
                                 ondragleave={handleSectionHeaderDragLeave}
                                 ondrop={handleSectionHeaderDrop}
@@ -278,6 +306,69 @@
                                     {section.totalPoints}
                                     pts
                                 </div>
+                                <template
+                                    lwc:if={section.isActiveSprintSection}
+                                >
+                                    <span class="sprint-status-badge sprint-status-badge--active">Active</span>
+                                    <div class="sprint-header__actions" onclick={handleSprintActionClick}>
+                                        <button
+                                            class="sprint-action-btn sprint-action-btn--complete"
+                                            data-sprint-id={section.sprintId}
+                                            onclick={handleCompleteActiveSprint}
+                                            title="Complete Sprint"
+                                        >
+                                            Complete Sprint
+                                        </button>
+                                    </div>
+                                </template>
+                                <template
+                                    lwc:if={section.isPlanningSprintSection}
+                                >
+                                    <span class="sprint-status-badge sprint-status-badge--planning">Planning</span>
+                                    <div class="sprint-header__actions" onclick={handleSprintActionClick}>
+                                        <template lwc:if={section.canStartSprint}>
+                                            <button
+                                                class="sprint-action-btn sprint-action-btn--start"
+                                                data-sprint-id={section.sprintId}
+                                                onclick={handleStartSprint}
+                                                title="Start Sprint"
+                                            >
+                                                Start Sprint
+                                            </button>
+                                        </template>
+                                        <template lwc:if={section.isConfirmingDelete}>
+                                            <span class="sprint-delete-confirm-label">Delete sprint?</span>
+                                            <button
+                                                class="sprint-action-btn sprint-action-btn--delete-confirm"
+                                                onclick={handleConfirmDeleteSprint}
+                                                title="Confirm delete"
+                                            >
+                                                Yes, delete
+                                            </button>
+                                            <button
+                                                class="sprint-action-btn sprint-action-btn--cancel"
+                                                onclick={handleCancelDeleteSprint}
+                                                title="Cancel"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </template>
+                                        <template lwc:else>
+                                            <button
+                                                class="sprint-action-btn sprint-action-btn--delete"
+                                                data-sprint-id={section.sprintId}
+                                                onclick={handleDeleteSprint}
+                                                title="Delete Sprint"
+                                            >
+                                                <lightning-icon
+                                                    icon-name="utility:delete"
+                                                    size="xx-small"
+                                                    alternative-text="Delete"
+                                                ></lightning-icon>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </template>
                             </div>
                         </template>
 
@@ -405,6 +496,16 @@
                                         title={card.subject}
                                     >
                                         {card.subject}
+                                    </div>
+
+                                    <!-- Status -->
+                                    <div
+                                        class="backlog-cell backlog-cell--status slds-truncate"
+                                        title={card.statusLabel}
+                                    >
+                                        <template lwc:if={card.statusLabel}>
+                                            <span class={card.statusBadgeClass}>{card.statusLabel}</span>
+                                        </template>
                                     </div>
 
                                     <!-- Type -->

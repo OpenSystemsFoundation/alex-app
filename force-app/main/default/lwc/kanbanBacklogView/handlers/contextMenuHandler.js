@@ -11,7 +11,9 @@ import {
     moveCardsToSprintAsync,
     moveCardAsync,
     addCardsToBacklogSprintAsync,
-    removeCardFromBacklogSprintAsync
+    removeCardFromBacklogSprintAsync,
+    bulkMoveBacklogCardsAsync,
+    setSelectedBacklogCards
 } from 'c/kanbanStore';
 
 export default class BacklogContextMenuHandler {
@@ -29,6 +31,11 @@ export default class BacklogContextMenuHandler {
             rawSprintId && rawSprintId !== 'null' ? rawSprintId : null;
         this._host._contextMenuCardId = cardId;
         this._host._contextMenuSprintId = sprintId;
+
+        // Determine if this is a multi-select context menu
+        const selectedCards = this._host.selectedCards || [];
+        this._host._contextMenuIsMulti =
+            selectedCards.length > 1 && selectedCards.includes(cardId);
 
         const contextMenu = this._host.template.querySelector(
             'c-kanban-context-menu'
@@ -142,31 +149,71 @@ export default class BacklogContextMenuHandler {
         const store = this._host.store;
         if (!cardId || !store) return;
 
+        const isMulti = this._host._contextMenuIsMulti;
+        const cardIds = isMulti ? [...this._host.selectedCards] : [cardId];
+
         switch (value) {
             case 'moveTop': {
-                const topIdx = this._getMoveTopIndex(sprintId);
-                await store.dispatch(reorderBacklogCardAsync(cardId, topIdx));
+                if (isMulti) {
+                    await store.dispatch(
+                        bulkMoveBacklogCardsAsync(cardIds, 'top')
+                    );
+                } else {
+                    const topIdx = this._getMoveTopIndex(sprintId);
+                    await store.dispatch(
+                        reorderBacklogCardAsync(cardId, topIdx)
+                    );
+                }
                 break;
             }
             case 'moveBottom': {
-                const bottomIdx = this._getMoveBottomIndex(sprintId);
-                await store.dispatch(
-                    reorderBacklogCardAsync(cardId, bottomIdx)
-                );
+                if (isMulti) {
+                    await store.dispatch(
+                        bulkMoveBacklogCardsAsync(cardIds, 'bottom')
+                    );
+                } else {
+                    const bottomIdx = this._getMoveBottomIndex(sprintId);
+                    await store.dispatch(
+                        reorderBacklogCardAsync(cardId, bottomIdx)
+                    );
+                }
                 break;
             }
             case 'moveToSprint':
                 if (subValue) {
-                    await this._moveToSprint(cardId, sprintId, subValue);
+                    if (isMulti) {
+                        await this._bulkMoveToSprint(cardIds, subValue);
+                    } else {
+                        await this._moveToSprint(cardId, sprintId, subValue);
+                    }
                 }
                 break;
             case 'moveToColumn':
                 if (subValue && this._host.activeSprint) {
-                    await this._moveToColumn(cardId, sprintId, subValue);
+                    if (isMulti) {
+                        for (const cId of cardIds) {
+                            // eslint-disable-next-line no-await-in-loop
+                            await this._moveToColumn(cId, null, subValue);
+                        }
+                        store.dispatch(setSelectedBacklogCards([]));
+                    } else {
+                        await this._moveToColumn(cardId, sprintId, subValue);
+                    }
                 }
                 break;
             case 'removeFromSprint':
-                if (sprintId) {
+                if (isMulti) {
+                    for (const cId of cardIds) {
+                        const cSprintId = this._getCardSprintId(cId);
+                        if (cSprintId) {
+                            // eslint-disable-next-line no-await-in-loop
+                            await store.dispatch(
+                                removeCardFromBacklogSprintAsync(cSprintId, cId)
+                            );
+                        }
+                    }
+                    store.dispatch(setSelectedBacklogCards([]));
+                } else if (sprintId) {
                     await store.dispatch(
                         removeCardFromBacklogSprintAsync(sprintId, cardId)
                     );
@@ -174,9 +221,12 @@ export default class BacklogContextMenuHandler {
                 break;
             case 'setPriority':
                 if (subValue) {
-                    await store.dispatch(
-                        updateBacklogCardAsync(cardId, { priority: subValue })
+                    const promises = cardIds.map((cId) =>
+                        store.dispatch(
+                            updateBacklogCardAsync(cId, { priority: subValue })
+                        )
                     );
+                    await Promise.all(promises);
                 }
                 break;
             case 'toggleRefinement': {
@@ -184,16 +234,23 @@ export default class BacklogContextMenuHandler {
                     (c) => c.Id === cardId
                 );
                 if (card) {
-                    await store.dispatch(
-                        updateBacklogCardAsync(cardId, {
-                            needsRefinement: !card.needsRefinement
-                        })
+                    const newValue = !card.needsRefinement;
+                    const promises = cardIds.map((cId) =>
+                        store.dispatch(
+                            updateBacklogCardAsync(cId, {
+                                needsRefinement: newValue
+                            })
+                        )
                     );
+                    await Promise.all(promises);
                 }
                 break;
             }
             case 'delete':
-                await store.dispatch(deleteBacklogCardsAsync([cardId]));
+                await store.dispatch(deleteBacklogCardsAsync(cardIds));
+                if (isMulti) {
+                    store.dispatch(setSelectedBacklogCards([]));
+                }
                 break;
             default:
                 break;
@@ -256,5 +313,41 @@ export default class BacklogContextMenuHandler {
             if (sprintCardIds.has(allCards[i].Id)) lastIndex = i;
         }
         return lastIndex >= 0 ? lastIndex : allCards.length - 1;
+    }
+
+    async _bulkMoveToSprint(cardIds, targetValue) {
+        const store = this._host.store;
+        // Remove each card from its current sprint first
+        for (const cId of cardIds) {
+            const currentSprintId = this._getCardSprintId(cId);
+            if (currentSprintId) {
+                // eslint-disable-next-line no-await-in-loop
+                await store.dispatch(
+                    removeCardFromBacklogSprintAsync(currentSprintId, cId)
+                );
+            }
+        }
+        // Add all cards to target sprint
+        if (targetValue.startsWith('active:')) {
+            const activeSprintId = targetValue.replace('active:', '');
+            await store.dispatch(
+                moveCardsToSprintAsync(activeSprintId, cardIds)
+            );
+        } else {
+            for (const cId of cardIds) {
+                // eslint-disable-next-line no-await-in-loop
+                await store.dispatch(
+                    addCardsToBacklogSprintAsync(targetValue, [cId])
+                );
+            }
+        }
+        store.dispatch(setSelectedBacklogCards([]));
+    }
+
+    _getCardSprintId(cardId) {
+        const state = this._host.store.getState();
+        const sprintCards = state.planningSprintCards || [];
+        const match = sprintCards.find((sc) => sc.cardId === cardId);
+        return match ? match.sprintId : null;
     }
 }

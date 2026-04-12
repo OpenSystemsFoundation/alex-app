@@ -28,6 +28,7 @@ public with sharing class SprintService {
             boardId
         );
         Decimal nextNumber = 1;
+        Decimal maxSortOrder = 0;
         if (!existingSprints.isEmpty()) {
             for (OpenSF__Sprint__c s : existingSprints) {
                 if (
@@ -35,6 +36,12 @@ public with sharing class SprintService {
                     s.OpenSF__SprintNumber__c >= nextNumber
                 ) {
                     nextNumber = s.OpenSF__SprintNumber__c + 1;
+                }
+                if (
+                    s.OpenSF__SortOrder__c != null &&
+                    s.OpenSF__SortOrder__c >= maxSortOrder
+                ) {
+                    maxSortOrder = s.OpenSF__SortOrder__c;
                 }
             }
         }
@@ -48,6 +55,7 @@ public with sharing class SprintService {
             OpenSF__StartDate__c = startDate,
             OpenSF__EndDate__c = endDate,
             OpenSF__SprintNumber__c = nextNumber,
+            OpenSF__SortOrder__c = maxSortOrder + 1,
             OpenSF__TotalStoryPoints__c = 0,
             OpenSF__CompletedStoryPoints__c = 0
         );
@@ -273,6 +281,36 @@ public with sharing class SprintService {
     }
 
     /**
+     * Delete a sprint — only Planning-status sprints may be deleted
+     */
+    public static void deleteSprint(Id sprintId) {
+        OpenSF__Sprint__c sprint = SprintSelector.getSprintById(sprintId);
+
+        if (
+            sprint.OpenSF__Status__c !=
+            KanbanEnums.sprintStatusValue(KanbanEnums.SprintStatus.PLANNING)
+        ) {
+            throw new AuraHandledException(
+                'Only sprints in Planning status can be deleted.'
+            );
+        }
+
+        // Delete all SprintCard junction records first
+        List<OpenSF__SprintCard__c> cards = [
+            SELECT Id
+            FROM OpenSF__SprintCard__c
+            WHERE OpenSF__Sprint__c = :sprintId
+            WITH USER_MODE
+        ];
+        if (!cards.isEmpty()) {
+            delete cards;
+        }
+
+        // Delete the sprint
+        delete sprint;
+    }
+
+    /**
      * Add cards to a sprint
      */
     public static List<KanbanBoardDTO.SprintCardDTO> addCardsToSprint(
@@ -371,6 +409,79 @@ public with sharing class SprintService {
                 KanbanEnums.SprintEventType.CARD_REMOVED
             ),
             sprint
+        );
+    }
+
+    /**
+     * Reorder a sprint by swapping sort orders with its neighbor.
+     * @param sprintId The sprint to move
+     * @param direction 'up' or 'down'
+     * @return Updated list of all sprints for the board
+     */
+    public static List<KanbanBoardDTO.SprintDTO> reorderSprint(
+        Id sprintId,
+        String direction
+    ) {
+        OpenSF__Sprint__c sprint = SprintSelector.getSprintById(sprintId);
+        List<OpenSF__Sprint__c> allSprints = SprintSelector.getSprintsByBoardId(
+            sprint.OpenSF__Board__c
+        );
+
+        // Find current index
+        Integer currentIndex = -1;
+        for (Integer i = 0; i < allSprints.size(); i++) {
+            if (allSprints[i].Id == sprintId) {
+                currentIndex = i;
+                break;
+            }
+        }
+
+        if (currentIndex < 0) {
+            throw new AuraHandledException('Sprint not found in board.');
+        }
+
+        Integer targetIndex = direction == 'up'
+            ? currentIndex - 1
+            : currentIndex + 1;
+        if (targetIndex < 0 || targetIndex >= allSprints.size()) {
+            // Already at boundary — return current list unchanged
+            return KanbanBoardDTO.convertSprints(allSprints);
+        }
+
+        // Swap sort orders
+        OpenSF__Sprint__c currentSprint = allSprints[currentIndex];
+        OpenSF__Sprint__c neighborSprint = allSprints[targetIndex];
+
+        Decimal currentOrder = currentSprint.OpenSF__SortOrder__c;
+        Decimal neighborOrder = neighborSprint.OpenSF__SortOrder__c;
+
+        List<OpenSF__Sprint__c> toUpdate = new List<OpenSF__Sprint__c>();
+
+        // If either is null, assign sequential values to all sprints first
+        if (currentOrder == null || neighborOrder == null) {
+            for (Integer i = 0; i < allSprints.size(); i++) {
+                allSprints[i].OpenSF__SortOrder__c = i + 1;
+            }
+            currentOrder = currentIndex + 1;
+            neighborOrder = targetIndex + 1;
+            // Swap after sequential assignment
+            currentSprint.OpenSF__SortOrder__c = neighborOrder;
+            neighborSprint.OpenSF__SortOrder__c = currentOrder;
+            toUpdate.addAll(allSprints);
+        } else {
+            // Simple swap
+            currentSprint.OpenSF__SortOrder__c = neighborOrder;
+            neighborSprint.OpenSF__SortOrder__c = currentOrder;
+            toUpdate.add(currentSprint);
+            toUpdate.add(neighborSprint);
+        }
+
+        update Security.stripInaccessible(AccessType.UPDATABLE, toUpdate)
+            .getRecords();
+
+        // Return refreshed list in new order
+        return KanbanBoardDTO.convertSprints(
+            SprintSelector.getSprintsByBoardId(sprint.OpenSF__Board__c)
         );
     }
 

@@ -74,7 +74,8 @@ public with sharing class KanbanBoardSelector {
                 OpenSF__EmailNotifications__c,
                 OpenSF__SalesforceNotifications__c,
                 OpenSF__ActiveSprint__c,
-                OpenSF__DoneCardRetentionDays__c
+                OpenSF__DoneCardRetentionDays__c,
+                OpenSF__DefaultSprintDurationDays__c
             FROM OpenSF__Board__c
             WHERE Id = :boardId
             WITH USER_MODE

@@ -7,7 +7,11 @@ import {
     updateBacklogCardAsync,
     deleteBacklogCardsAsync,
     moveCardsToSprintAsync,
-    createSprintAsync
+    createSprintAsync,
+    deleteSprintAsync,
+    reorderSprintAsync,
+    addCardsToBacklogSprintAsync,
+    bulkMoveBacklogCardsAsync
 } from 'c/kanbanStore';
 import {
     applyStoreSubscription,
@@ -68,6 +72,7 @@ export default class KanbanBacklogView extends LightningElement {
     @track showCreateSprintForm = false;
     @track _storeState = null;
     @track _collapsedSprints = {};
+    @track _deleteSprintConfirmId = null;
 
     // Inline create form fields
     @track newCardSubject = '';
@@ -202,7 +207,61 @@ export default class KanbanBacklogView extends LightningElement {
         const sprintCardMap = this._getSprintCardMap();
         const cardsInSprints = new Set();
 
-        // Sprint sections (at top)
+        // Active sprint section (top — show cards from board columns)
+        const active = this.activeSprint;
+        if (active) {
+            const sprintCards = selectors.getSprintCards(this._storeState) || [];
+            const isCollapsed = !!this._collapsedSprints[active.Id];
+
+            // Build card list from board columns for display
+            let activeCards = [];
+            if (!isCollapsed) {
+                const columns = this._storeState?.columns || [];
+                const activeSprintCardMap = new Map();
+                for (const sc of sprintCards) {
+                    activeSprintCardMap.set(sc.cardId, sc);
+                }
+                for (const col of columns) {
+                    for (const card of col.cards || []) {
+                        const sc = activeSprintCardMap.get(card.Id);
+                        activeCards.push({
+                            ...card,
+                            __sectionIndex: activeCards.length,
+                            __sprintId: active.Id,
+                            columnName: col.columnHeader || col.Name || col.name,
+                            statusLabel: col.columnHeader || col.Name || col.name,
+                            statusBadgeClass: 'status-badge status-badge--active',
+                            completedInSprint: sc?.completedInSprint || false,
+                            recordUrl: `/lightning/r/OpenSF__Card__c/${card.Id}/view`,
+                            priorityBadgeClass: `slds-badge priority-${(card.priority || 'none').toLowerCase()}`
+                        });
+                    }
+                }
+            }
+
+            sections.push({
+                key: active.Id,
+                isSprintSection: true,
+                isActiveSprintSection: true,
+                isPlanningSprintSection: false,
+                sprintId: active.Id,
+                sprintLabel: active.Name || `Sprint ${active.sprintNumber || ''}`,
+                status: 'Active',
+                goal: active.goal || '',
+                hasGoal: !!active.goal,
+                cardCount: sprintCards.length,
+                totalPoints: active.totalStoryPoints || 0,
+                completedPoints: active.completedStoryPoints || 0,
+                isExpanded: !isCollapsed,
+                isCollapsed,
+                chevronIcon: isCollapsed
+                    ? 'utility:chevronright'
+                    : 'utility:chevrondown',
+                cards: activeCards
+            });
+        }
+
+        // Planning sprint sections
         for (const sprint of this.planningSprints) {
             const sprintCardIds = sprintCardMap.get(sprint.Id) || new Set();
             const sprintCards = allCards.filter((c) => sprintCardIds.has(c.Id));
@@ -212,9 +271,13 @@ export default class KanbanBacklogView extends LightningElement {
             sections.push({
                 key: sprint.Id,
                 isSprintSection: true,
+                isActiveSprintSection: false,
+                isPlanningSprintSection: true,
+                canStartSprint: !this.hasActiveSprint,
                 sprintId: sprint.Id,
                 sprintLabel:
                     sprint.Name || `Sprint ${sprint.sprintNumber || ''}`,
+                status: 'Planning',
                 goal: sprint.goal || '',
                 hasGoal: !!sprint.goal,
                 cardCount: sprintCards.length,
@@ -222,6 +285,8 @@ export default class KanbanBacklogView extends LightningElement {
                     (s, c) => s + (c.storyPoints || 0),
                     0
                 ),
+                isConfirmingDelete:
+                    this._deleteSprintConfirmId === sprint.Id,
                 isExpanded: !isCollapsed,
                 isCollapsed,
                 chevronIcon: isCollapsed
@@ -232,7 +297,9 @@ export default class KanbanBacklogView extends LightningElement {
                     : sprintCards.map((card, idx) => ({
                           ...card,
                           __sectionIndex: idx,
-                          __sprintId: sprint.Id
+                          __sprintId: sprint.Id,
+                          statusLabel: 'Backlog',
+                          statusBadgeClass: 'status-badge'
                       }))
             });
         }
@@ -246,6 +313,8 @@ export default class KanbanBacklogView extends LightningElement {
             key: 'ungrouped',
             isSprintSection: false,
             isBacklogSection: true,
+            isActiveSprintSection: false,
+            isPlanningSprintSection: false,
             isExpanded: !isBacklogCollapsed,
             isCollapsed: isBacklogCollapsed,
             chevronIcon: isBacklogCollapsed
@@ -261,7 +330,9 @@ export default class KanbanBacklogView extends LightningElement {
                 : ungroupedCards.map((card, idx) => ({
                       ...card,
                       __sectionIndex: idx,
-                      __sprintId: null
+                      __sprintId: null,
+                      statusLabel: 'Backlog',
+                      statusBadgeClass: 'status-badge'
                   }))
         });
 
@@ -438,27 +509,33 @@ export default class KanbanBacklogView extends LightningElement {
 
     handleSearchChange(event) {
         this.searchTerm = this.extractEventValue(event);
+        this._clearSelectionOnFilterChange();
     }
 
     handleViewModeChange(event) {
         this.viewMode = this.extractEventValue(event);
+        this._clearSelectionOnFilterChange();
     }
 
     handlePriorityFilterChange(event) {
         this.filterPriority = this.extractEventValue(event);
+        this._clearSelectionOnFilterChange();
     }
 
     handleCardTypeFilterChange(event) {
         this.filterCardType = this.extractEventValue(event);
+        this._clearSelectionOnFilterChange();
     }
 
     handleEpicFilterChange(event) {
         this.filterEpic = this.extractEventValue(event);
+        this._clearSelectionOnFilterChange();
     }
 
     handleAssigneeFilterChange(event) {
         const values = event.detail?.value;
         this.filterAssignees = Array.isArray(values) ? [...values] : [];
+        this._clearSelectionOnFilterChange();
     }
 
     handleClearFilters() {
@@ -468,10 +545,17 @@ export default class KanbanBacklogView extends LightningElement {
         this.filterCardType = 'All';
         this.filterEpic = 'All';
         this.filterAssignees = [];
+        this._clearSelectionOnFilterChange();
     }
 
     extractEventValue(event) {
         return event.detail?.value ?? event.target?.value ?? '';
+    }
+
+    _clearSelectionOnFilterChange() {
+        if (this.hasSelectedCards && this.store) {
+            this.store.dispatch(setSelectedBacklogCards([]));
+        }
     }
 
     handleToggleCreateForm() {
@@ -605,6 +689,65 @@ export default class KanbanBacklogView extends LightningElement {
     }
 
     // ===================================================================
+    // Event Handlers - Sprint Actions (from section headers)
+    // ===================================================================
+
+    handleStartSprint(event) {
+        event.stopPropagation();
+        const sprintId = event.currentTarget.dataset.sprintId;
+        const sprint = this.planningSprints.find((s) => s.Id === sprintId);
+        this.dispatchEvent(
+            new CustomEvent('startsprint', {
+                bubbles: true,
+                composed: true,
+                detail: { sprint }
+            })
+        );
+    }
+
+    async handleDeleteSprint(event) {
+        event.stopPropagation();
+        const sprintId = event.currentTarget.dataset.sprintId;
+        this._deleteSprintConfirmId = sprintId;
+    }
+
+    async handleConfirmDeleteSprint(event) {
+        event.stopPropagation();
+        const sprintId = this._deleteSprintConfirmId;
+        this._deleteSprintConfirmId = null;
+        if (!sprintId) return;
+        try {
+            await this.store.dispatch(deleteSprintAsync(sprintId));
+        } catch (error) {
+            this.dispatchEvent(
+                new CustomEvent('error', {
+                    detail: { message: 'Failed to delete sprint' }
+                })
+            );
+        }
+    }
+
+    handleCancelDeleteSprint(event) {
+        event.stopPropagation();
+        this._deleteSprintConfirmId = null;
+    }
+
+    handleCompleteActiveSprint(event) {
+        event.stopPropagation();
+        this.dispatchEvent(
+            new CustomEvent('completesprint', {
+                bubbles: true,
+                composed: true
+            })
+        );
+    }
+
+    handleSprintActionClick(event) {
+        // Prevent button clicks in action area from toggling sprint collapse
+        event.stopPropagation();
+    }
+
+    // ===================================================================
     // Event Handlers - Sprint Sections
     // ===================================================================
 
@@ -634,9 +777,39 @@ export default class KanbanBacklogView extends LightningElement {
     }
 
     handleCardSelect(event) {
+        event.stopPropagation();
         const cardId = event.currentTarget.dataset.cardId;
-        if (this.store) {
+        if (!this.store || !cardId) return;
+
+        const nativeEvent = event.detail?.nativeEvent || event;
+        const shiftKey = nativeEvent.shiftKey;
+
+        if (shiftKey && this._lastSelectedCardId) {
+            // Shift+click: range select
+            const allCards = this.backlogCards;
+            const lastIdx = allCards.findIndex(
+                (c) => c.Id === this._lastSelectedCardId
+            );
+            const curIdx = allCards.findIndex((c) => c.Id === cardId);
+            if (lastIdx >= 0 && curIdx >= 0) {
+                const start = Math.min(lastIdx, curIdx);
+                const end = Math.max(lastIdx, curIdx);
+                const rangeIds = allCards
+                    .slice(start, end + 1)
+                    .map((c) => c.Id);
+                // Merge with existing selection
+                const existing = new Set(this.selectedCards);
+                for (const id of rangeIds) {
+                    existing.add(id);
+                }
+                this.store.dispatch(
+                    setSelectedBacklogCards([...existing])
+                );
+            }
+        } else {
+            // Normal click: toggle individual
             this.store.dispatch(toggleBacklogCardSelection(cardId));
+            this._lastSelectedCardId = cardId;
         }
     }
 
@@ -704,6 +877,65 @@ export default class KanbanBacklogView extends LightningElement {
         }
     }
 
+    get bulkSprintOptions() {
+        return this.planningSprints.map((s) => ({
+            label: s.Name || `Sprint ${s.sprintNumber || ''}`,
+            value: s.Id
+        }));
+    }
+
+    get hasBulkSprintOptions() {
+        return this.planningSprints.length > 0;
+    }
+
+    async handleBulkMoveToSprint(event) {
+        const sprintId = event.detail.value;
+        if (!this.store || !this.hasSelectedCards || !sprintId) return;
+
+        try {
+            await this.store.dispatch(
+                addCardsToBacklogSprintAsync(sprintId, this.selectedCards)
+            );
+            this.store.dispatch(setSelectedBacklogCards([]));
+        } catch (error) {
+            this.dispatchEvent(
+                new CustomEvent('error', {
+                    detail: { message: 'Failed to move cards to sprint' }
+                })
+            );
+        }
+    }
+
+    async handleBulkMoveTop() {
+        if (!this.store || !this.hasSelectedCards) return;
+        try {
+            await this.store.dispatch(
+                bulkMoveBacklogCardsAsync(this.selectedCards, 'top')
+            );
+        } catch (error) {
+            this.dispatchEvent(
+                new CustomEvent('error', {
+                    detail: { message: 'Failed to move cards' }
+                })
+            );
+        }
+    }
+
+    async handleBulkMoveBottom() {
+        if (!this.store || !this.hasSelectedCards) return;
+        try {
+            await this.store.dispatch(
+                bulkMoveBacklogCardsAsync(this.selectedCards, 'bottom')
+            );
+        } catch (error) {
+            this.dispatchEvent(
+                new CustomEvent('error', {
+                    detail: { message: 'Failed to move cards' }
+                })
+            );
+        }
+    }
+
     // ===================================================================
     // Event Handlers - Card Actions
     // ===================================================================
@@ -748,12 +980,51 @@ export default class KanbanBacklogView extends LightningElement {
         ) {
             return;
         }
+
         const cardId = event.currentTarget.dataset.cardId;
-        if (cardId) {
-            this.dispatchEvent(
-                new CustomEvent('cardclick', { detail: { cardId } })
-            );
+        if (!cardId) return;
+
+        // Ctrl+click or Meta+click: toggle selection
+        if (event.ctrlKey || event.metaKey) {
+            if (this.store) {
+                this.store.dispatch(toggleBacklogCardSelection(cardId));
+                this._lastSelectedCardId = cardId;
+            }
+            return;
         }
+
+        // Shift+click: range select
+        if (event.shiftKey && this._lastSelectedCardId && this.store) {
+            const allCards = this.backlogCards;
+            const lastIdx = allCards.findIndex(
+                (c) => c.Id === this._lastSelectedCardId
+            );
+            const curIdx = allCards.findIndex((c) => c.Id === cardId);
+            if (lastIdx >= 0 && curIdx >= 0) {
+                const start = Math.min(lastIdx, curIdx);
+                const end = Math.max(lastIdx, curIdx);
+                const rangeIds = allCards
+                    .slice(start, end + 1)
+                    .map((c) => c.Id);
+                const existing = new Set(this.selectedCards);
+                for (const id of rangeIds) {
+                    existing.add(id);
+                }
+                this.store.dispatch(
+                    setSelectedBacklogCards([...existing])
+                );
+            }
+            return;
+        }
+
+        // Clear selection when opening a card via normal click
+        if (this.hasSelectedCards && this.store) {
+            this.store.dispatch(setSelectedBacklogCards([]));
+        }
+
+        this.dispatchEvent(
+            new CustomEvent('cardclick', { detail: { cardId } })
+        );
     }
 
     async handleRefinementToggle(event) {
@@ -784,7 +1055,78 @@ export default class KanbanBacklogView extends LightningElement {
     }
 
     handleContextMenuSelect(event) {
+        const { value } = event.detail;
+        if (value === 'sprintMoveUp') {
+            this._handleSprintReorder('up');
+            return;
+        }
+        if (value === 'sprintMoveDown') {
+            this._handleSprintReorder('down');
+            return;
+        }
         this._contextMenuHandler.handleSelect(event);
+    }
+
+    // ===================================================================
+    // Event Handlers - Sprint Context Menu (right-click on sprint headers)
+    // ===================================================================
+
+    handleSprintContextMenu(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const sprintId = event.currentTarget.dataset.sprintId;
+        if (!sprintId) return;
+
+        // Ignore right-clicks on active sprint headers
+        const active = this.activeSprint;
+        if (active && active.Id === sprintId) return;
+
+        this._contextMenuSprintTarget = sprintId;
+
+        const sections = this.backlogSections.filter(
+            (s) => s.isSprintSection
+        );
+        const idx = sections.findIndex((s) => s.sprintId === sprintId);
+        const isFirst = idx === 0;
+        const isLast = idx === sections.length - 1;
+
+        const items = [];
+        if (!isFirst) {
+            items.push({
+                label: 'Move Up',
+                value: 'sprintMoveUp',
+                icon: 'utility:arrowup'
+            });
+        }
+        if (!isLast) {
+            items.push({
+                label: 'Move Down',
+                value: 'sprintMoveDown',
+                icon: 'utility:arrowdown'
+            });
+        }
+
+        if (items.length === 0) return;
+
+        const contextMenu = this.template.querySelector(
+            'c-kanban-context-menu'
+        );
+        if (contextMenu) {
+            contextMenu.menuItems = items;
+            contextMenu.show(event.clientX, event.clientY);
+        }
+    }
+
+    async _handleSprintReorder(direction) {
+        const sprintId = this._contextMenuSprintTarget;
+        if (!sprintId || !this.store) return;
+        try {
+            await this.store.dispatch(
+                reorderSprintAsync(sprintId, direction)
+            );
+        } catch (err) {
+            console.error('Sprint reorder failed:', err);
+        }
     }
 
     // ===================================================================

@@ -266,6 +266,16 @@ export const updateSprint = (sprintId, updates) => ({
     payload: { sprintId, updates }
 });
 
+export const deleteSprint = (sprintId) => ({
+    type: types.DELETE_SPRINT,
+    payload: { sprintId }
+});
+
+export const reorderSprints = (sprints) => ({
+    type: types.REORDER_SPRINTS,
+    payload: sprints
+});
+
 // ===================================================================
 // Backlog Action Creators
 // ===================================================================
@@ -293,6 +303,16 @@ export const updateBacklogCard = (cardId, updates) => ({
 export const reorderBacklog = (cardId, newIndex) => ({
     type: types.REORDER_BACKLOG,
     payload: { cardId, newIndex }
+});
+
+export const bulkReorderBacklog = (cardIds, position) => ({
+    type: types.BULK_REORDER_BACKLOG,
+    payload: { cardIds, position }
+});
+
+export const bulkReorderBacklogAtIndex = (cardIds, newIndex) => ({
+    type: types.BULK_REORDER_BACKLOG_AT_INDEX,
+    payload: { cardIds, newIndex }
 });
 
 export const setBacklogSyncing = (syncing) => ({

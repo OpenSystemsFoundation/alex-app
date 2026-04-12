@@ -72,6 +72,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Board__c.DefaultSprintDurationDays__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Board__c.Type__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -298,6 +303,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Sprint__c.TotalStoryPoints__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Sprint__c.SortOrder__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

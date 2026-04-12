@@ -1,22 +1,12 @@
 import { LightningElement, api, track, wire } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
-import { PretextManager } from 'c/pretextService';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
-const CARD_TITLE_MAX_LINES = 2;
-const CARD_TITLE_FALLBACK_CLASS =
-    'card-panel__title card-panel__title--single-line slds-text-heading_small';
-const CARD_TITLE_MULTI_LINE_CLASS =
+const CARD_TITLE_CLASS =
     'card-panel__title card-panel__title--two-line slds-text-heading_small';
-const EPIC_CHILD_NAME_MAX_LINES = 2;
-const EPIC_CHILD_NAME_FALLBACK_CLASS =
-    'epic-child-card__name epic-child-card__name--single-line';
-const EPIC_CHILD_NAME_MULTI_LINE_CLASS =
+const EPIC_CHILD_NAME_CLASS =
     'epic-child-card__name epic-child-card__name--two-line';
-const EPIC_CHILD_SUBJECT_MAX_LINES = 2;
-const EPIC_CHILD_SUBJECT_FALLBACK_CLASS =
-    'epic-child-card__subject epic-child-card__subject--single-line';
-const EPIC_CHILD_SUBJECT_MULTI_LINE_CLASS =
+const EPIC_CHILD_SUBJECT_CLASS =
     'epic-child-card__subject epic-child-card__subject--two-line';
 import { updateCardAsync, deleteCardAsync } from 'c/kanbanStore';
 import getModalSettings from '@salesforce/apex/KanbanBoardController.getModalSettings';
@@ -203,18 +193,12 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     // Epic state
     @track epicDetail = null;
     @track epicDetailLoading = false;
-    @track _pretextLayoutVersion = 0;
 
     _resizing = false;
     _deleteTimer;
     _boundHandleResize;
     _boundHandleResizeEnd;
     _lastLoadedCardId;
-    _pretext = new PretextManager(this, {
-        cardTitle: '[data-pretext-role="card-panel-title"]',
-        epicChildName: '[data-pretext-role="epic-child-name"]',
-        epicChildSubject: '[data-pretext-role="epic-child-subject"]'
-    });
 
     @wire(getModalSettings)
     wiredModalSettings({ data, error }) {
@@ -235,11 +219,6 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     }
 
     renderedCallback() {
-        if (this.isOpen) {
-            this._pretext.initialize();
-            this._pretext.updateMetrics();
-        }
-
         if (
             this.isOpen &&
             this.card?.Id &&
@@ -320,17 +299,11 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     }
 
     get cardNameClass() {
-        return this._pretext.getDecoration(
-            this.card?.Name, 'cardTitle', CARD_TITLE_MAX_LINES,
-            CARD_TITLE_FALLBACK_CLASS, CARD_TITLE_MULTI_LINE_CLASS
-        ).className;
+        return CARD_TITLE_CLASS;
     }
 
     get cardNameTitle() {
-        return this._pretext.getDecoration(
-            this.card?.Name, 'cardTitle', CARD_TITLE_MAX_LINES,
-            CARD_TITLE_FALLBACK_CLASS, CARD_TITLE_MULTI_LINE_CLASS
-        ).title;
+        return this.card?.Name || null;
     }
 
     handleNameClick(event) {
@@ -377,20 +350,12 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
             return [];
         }
         return childCards.map((child) => {
-            const nameDecoration = this._pretext.getDecoration(
-                child?.name, 'epicChildName', EPIC_CHILD_NAME_MAX_LINES,
-                EPIC_CHILD_NAME_FALLBACK_CLASS, EPIC_CHILD_NAME_MULTI_LINE_CLASS
-            );
-            const subjectDecoration = this._pretext.getDecoration(
-                child?.subject, 'epicChildSubject', EPIC_CHILD_SUBJECT_MAX_LINES,
-                EPIC_CHILD_SUBJECT_FALLBACK_CLASS, EPIC_CHILD_SUBJECT_MULTI_LINE_CLASS
-            );
             return {
                 ...child,
-                nameClass: nameDecoration.className,
-                nameTitle: nameDecoration.title,
-                subjectClass: subjectDecoration.className,
-                subjectTitle: subjectDecoration.title
+                nameClass: EPIC_CHILD_NAME_CLASS,
+                nameTitle: child?.name || null,
+                subjectClass: EPIC_CHILD_SUBJECT_CLASS,
+                subjectTitle: child?.subject || null
             };
         });
     }

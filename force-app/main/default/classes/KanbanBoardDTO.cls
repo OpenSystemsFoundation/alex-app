@@ -27,6 +27,8 @@ public with sharing class KanbanBoardDTO {
         public Id activeSprintId;
         @AuraEnabled
         public Decimal doneCardRetentionDays;
+        @AuraEnabled
+        public Decimal defaultSprintDurationDays;
 
         public BoardDTO(OpenSF__Board__c board) {
             this.Id = board.Id;
@@ -47,6 +49,11 @@ public with sharing class KanbanBoardDTO {
                 this.doneCardRetentionDays = board.OpenSF__DoneCardRetentionDays__c;
             } catch (Exception e) {
                 this.doneCardRetentionDays = 7;
+            }
+            try {
+                this.defaultSprintDurationDays = board.OpenSF__DefaultSprintDurationDays__c;
+            } catch (Exception e) {
+                this.defaultSprintDurationDays = 14;
             }
         }
     }
@@ -322,6 +329,8 @@ public with sharing class KanbanBoardDTO {
         public Decimal completedStoryPoints;
         @AuraEnabled
         public Decimal velocity;
+        @AuraEnabled
+        public Decimal sortOrder;
 
         public SprintDTO(OpenSF__Sprint__c sprint) {
             this.Id = sprint.Id;
@@ -335,6 +344,7 @@ public with sharing class KanbanBoardDTO {
             this.totalStoryPoints = sprint.OpenSF__TotalStoryPoints__c;
             this.completedStoryPoints = sprint.OpenSF__CompletedStoryPoints__c;
             this.velocity = sprint.OpenSF__Velocity__c;
+            this.sortOrder = sprint.OpenSF__SortOrder__c;
         }
     }
 
@@ -376,6 +386,9 @@ public with sharing class KanbanBoardDTO {
             this.completedInSprint = sc.OpenSF__CompletedInSprint__c;
             this.completedDate = sc.OpenSF__CompletedDate__c;
             this.position = sc.OpenSF__Position__c;
+            if (sc.OpenSF__Card__r != null) {
+                this.card = new CardDTO(sc.OpenSF__Card__r);
+            }
         }
     }
 

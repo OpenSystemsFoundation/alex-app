@@ -23,6 +23,8 @@ import {
     updateBacklogCard,
     removeBacklogCard,
     reorderBacklog,
+    bulkReorderBacklog,
+    bulkReorderBacklogAtIndex,
     setBacklogSyncing,
     setBacklogCards
 } from '../state/actions';
@@ -356,6 +358,110 @@ export const reorderBacklogCardAsync = (cardId, newIndex) => {
             // Clear syncing FIRST so the setBacklogCards dispatch isn't blocked
             dispatch(setBacklogSyncing(false));
             // Revert to the pre-reorder order so UI matches server
+            dispatch(setBacklogCards(previousCards));
+            throw error;
+        } finally {
+            dispatch(setBacklogSyncing(false));
+        }
+    };
+};
+
+/**
+ * Bulk move multiple backlog cards to the top or bottom of the backlog.
+ * Optimistically reorders, then persists positions sequentially so each
+ * card uses the updated neighbor positions from prior iterations.
+ *
+ * @param {string[]} cardIds - Card IDs to move
+ * @param {'top'|'bottom'} position - Where to move cards
+ * @returns {Function} Thunk function
+ */
+export const bulkMoveBacklogCardsAsync = (cardIds, position) => {
+    return async (dispatch, getState) => {
+        const previousCards = getState().backlogCards || [];
+
+        dispatch(bulkReorderBacklog(cardIds, position));
+        dispatch(setBacklogSyncing(true));
+
+        try {
+            for (const cardId of cardIds) {
+                const currentCards = getState().backlogCards || [];
+                const idx = currentCards.findIndex((c) => c.Id === cardId);
+                if (idx === -1) continue;
+
+                const previousCardPosition =
+                    idx > 0 ? currentCards[idx - 1].position : null;
+                const nextCardPosition =
+                    idx < currentCards.length - 1
+                        ? currentCards[idx + 1].position
+                        : null;
+
+                const newPosition = await reorderBacklogCardApex({
+                    cardId,
+                    previousCardPosition,
+                    nextCardPosition
+                });
+
+                if (newPosition) {
+                    dispatch(
+                        updateBacklogCard(cardId, { position: newPosition })
+                    );
+                }
+            }
+        } catch (error) {
+            console.error('Error in bulk move:', error);
+            dispatch(setBacklogSyncing(false));
+            dispatch(setBacklogCards(previousCards));
+            throw error;
+        } finally {
+            dispatch(setBacklogSyncing(false));
+        }
+    };
+};
+
+/**
+ * Bulk reorder multiple backlog cards to a specific index.
+ * Used when dragging a multi-selection to a drop target.
+ * Optimistically moves all cards, then persists positions sequentially.
+ *
+ * @param {string[]} cardIds - Card IDs to move (in their current relative order)
+ * @param {number} targetIndex - Target index in the backlog list
+ * @returns {Function} Thunk function
+ */
+export const bulkReorderBacklogCardsAtIndexAsync = (cardIds, targetIndex) => {
+    return async (dispatch, getState) => {
+        const previousCards = getState().backlogCards || [];
+
+        dispatch(bulkReorderBacklogAtIndex(cardIds, targetIndex));
+        dispatch(setBacklogSyncing(true));
+
+        try {
+            for (const cardId of cardIds) {
+                const currentCards = getState().backlogCards || [];
+                const idx = currentCards.findIndex((c) => c.Id === cardId);
+                if (idx === -1) continue;
+
+                const previousCardPosition =
+                    idx > 0 ? currentCards[idx - 1].position : null;
+                const nextCardPosition =
+                    idx < currentCards.length - 1
+                        ? currentCards[idx + 1].position
+                        : null;
+
+                const newPosition = await reorderBacklogCardApex({
+                    cardId,
+                    previousCardPosition,
+                    nextCardPosition
+                });
+
+                if (newPosition) {
+                    dispatch(
+                        updateBacklogCard(cardId, { position: newPosition })
+                    );
+                }
+            }
+        } catch (error) {
+            console.error('Error in bulk reorder at index:', error);
+            dispatch(setBacklogSyncing(false));
             dispatch(setBacklogCards(previousCards));
             throw error;
         } finally {

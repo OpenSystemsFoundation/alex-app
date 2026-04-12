@@ -49,6 +49,17 @@
                         </div>
 
                         <div
+                            class="slds-form-element slds-var-m-bottom_small"
+                        >
+                            <lightning-combobox
+                                label="Sprint Duration"
+                                value={duration}
+                                options={durationOptions}
+                                onchange={handleDurationChange}
+                            ></lightning-combobox>
+                        </div>
+
+                        <div
                             class="slds-grid slds-gutters_small slds-var-m-bottom_small"
                         >
                             <div
@@ -59,6 +70,7 @@
                                     label="Start Date"
                                     value={startDate}
                                     onchange={handleStartDateChange}
+                                    required
                                 ></lightning-input>
                             </div>
                             <div
@@ -69,6 +81,7 @@
                                     label="End Date"
                                     value={endDate}
                                     onchange={handleEndDateChange}
+                                    required
                                 ></lightning-input>
                             </div>
                         </div>
@@ -82,22 +95,22 @@
                     >
                         Cancel
                     </button>
-                    <template lwc:if={canStart}>
-                        <button
-                            class="slds-button slds-button_outline-brand"
-                            onclick={handleStartSprint}
-                            disabled={isProcessing}
-                        >
-                            Start Sprint
-                        </button>
-                    </template>
                     <button
-                        class="slds-button slds-button_brand"
+                        class="slds-button slds-button_neutral"
                         onclick={handleSave}
                         disabled={isProcessing}
                     >
                         {saveLabel}
                     </button>
+                    <template lwc:if={canStart}>
+                        <button
+                            class="slds-button slds-button_brand"
+                            onclick={handleStartSprint}
+                            disabled={isStartDisabled}
+                        >
+                            {startLabel}
+                        </button>
+                    </template>
                 </div>
             </div>
         </section>

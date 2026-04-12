@@ -148,12 +148,27 @@
                                 class="slds-grid slds-grid_vertical-align-center slds-var-p-vertical_x-small slds-border_bottom"
                             >
                                 <div
-                                    class="slds-col slds-size_1-of-2 slds-truncate"
+                                    class="slds-col slds-size_1-of-2"
                                 >
-                                    <span
-                                        class="slds-text-body_regular"
-                                        >{sc.cardId}</span
+                                    <div class="slds-truncate">
+                                        <a
+                                            href={sc.recordUrl}
+                                            class="slds-text-link"
+                                            title={sc.cardName}
+                                            target="_blank"
+                                            >{sc.cardName}</a
+                                        >
+                                    </div>
+                                    <template
+                                        lwc:if={sc.hasSubject}
                                     >
+                                        <div
+                                            class="slds-text-body_small slds-text-color_weak slds-truncate"
+                                            title={sc.cardSubject}
+                                        >
+                                            {sc.cardSubject}
+                                        </div>
+                                    </template>
                                 </div>
                                 <div
                                     class="slds-col slds-size_1-of-2"
