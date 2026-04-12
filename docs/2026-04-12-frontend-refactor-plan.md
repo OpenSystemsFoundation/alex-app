@@ -36,11 +36,11 @@ Use Playwright against the live scratch org to systematically find what's broken
 | 1.3 Sprint interactions | Create sprint, complete sprint, sprint header, progress bar, card assignment |
 | 1.4 Card panel/CRUD | Open panel, edit fields, create card, delete card, inline backlog create |
 
-**Approach**: Interactive Playwright scripts against live org, capture console errors + visual state.
+**Approach**: Interactive Playwright scripts against live org, capture console errors + visual state throught the integrated browser tool.
 
 ### Phase 2: Fix Broken Code
 
-Fix bugs found in Phase 1 + code review, re-verify with E2E after each fix.
+Fix bugs found in Phase 1 + code review, re-verify with E2E after each fix. if needed, refactor where possible to also optimize the architecture to prevent and guard against issues. clean code principles apply here. long files are a main issue in the app currently.
 
 | Bug | Fix |
 |-----|-----|
@@ -64,7 +64,7 @@ Fix bugs found in Phase 1 + code review, re-verify with E2E after each fix.
 | 3.6 kanbanBacklogView | After mocks | Full LWC tests — rendering, interactions, store integration |
 | 3.7 Sprint components | After mocks | `kanbanSprintHeader`, `kanbanSprintModal`, `kanbanSprintComplete` |
 
-**Parallelism**: Tasks 3.1–3.5 are independent — subagents write them in parallel after 3.0.
+**Parallelism**: Tasks 3.1–3.5 are independent — subagents write them in parallel after 3.0. optimize the unit test architecture where possible. refactor where needed.
 
 ### Phase 4: Promote E2E Happy Paths to CI
 
@@ -75,7 +75,7 @@ Once interactions are stable, move working debug scripts into `e2e/specs/` as pr
 - Sprint create + complete lifecycle
 - Card CRUD (create, edit, delete)
 
-These run in `e2e-tests.yml` on every PR.
+These run in `e2e-tests.yml` on every PR. improve the overall architecture of the tests and refactor where possible to adhere to best practices of playwright tests.
 
 ## Execution Order
 
