@@ -199,7 +199,9 @@ export default class BacklogDragDropHandler {
                 );
                 return;
             }
-            // Fall through to reorder the card(s) to the drop position
+            // Cross-section move succeeded — don't fall through to reorder
+            // because backlogCards state is stale after the section change.
+            return;
         }
 
         if (targetIndex == null) return;

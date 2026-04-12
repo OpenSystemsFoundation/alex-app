@@ -384,7 +384,7 @@ export const getUnrefinedBacklogCards = (state) => {
  * Check if a backlog reorder is in-flight
  */
 export const isBacklogSyncing = (state) => {
-    return state.backlogSyncing || false;
+    return (state.backlogSyncing || 0) > 0;
 };
 
 // ===================================================================

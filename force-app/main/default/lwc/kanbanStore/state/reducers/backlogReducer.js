@@ -5,7 +5,7 @@ export const backlogReducer = (state, action) => {
         case types.SET_BACKLOG_CARDS:
             // Skip replacing backlog if a reorder is in-flight — the
             // server data is stale relative to the optimistic local order
-            if (state.backlogSyncing) {
+            if (state.backlogSyncing > 0) {
                 return state;
             }
             return {
@@ -13,11 +13,18 @@ export const backlogReducer = (state, action) => {
                 backlogCards: action.payload || []
             };
 
-        case types.SET_BACKLOG_SYNCING:
+        case types.SET_BACKLOG_SYNCING: {
+            // Use a counter so concurrent reorders don't interfere.
+            // true increments, false decrements (min 0).
+            const current = state.backlogSyncing || 0;
+            const next = action.payload
+                ? current + 1
+                : Math.max(0, current - 1);
             return {
                 ...state,
-                backlogSyncing: !!action.payload
+                backlogSyncing: next
             };
+        }
 
         case types.ADD_BACKLOG_CARD:
             return {

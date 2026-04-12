@@ -145,6 +145,14 @@ export default class DragDropHandler {
         event.preventDefault();
         event.stopPropagation();
 
+        // Clean up drag image in case dragend doesn't fire
+        if (this._dragImageElement && this._dragImageElement.parentNode) {
+            this._dragImageElement.parentNode.removeChild(
+                this._dragImageElement
+            );
+            this._dragImageElement = null;
+        }
+
         const cardsContainer = event.currentTarget;
         const targetColumnId = cardsContainer.dataset.columnId;
 

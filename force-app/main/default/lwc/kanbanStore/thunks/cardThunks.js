@@ -325,13 +325,13 @@ export const reorderBacklogCardAsync = (cardId, newIndex) => {
         dispatch(reorderBacklog(cardId, newIndex));
         dispatch(setBacklogSyncing(true));
 
+        let failed = false;
         try {
             // Get the reordered backlog to find neighboring positions
             const state = getState();
             const cards = state.backlogCards || [];
             const idx = cards.findIndex((c) => c.Id === cardId);
             if (idx === -1) {
-                dispatch(setBacklogSyncing(false));
                 return { success: true };
             }
 
@@ -355,13 +355,14 @@ export const reorderBacklogCardAsync = (cardId, newIndex) => {
             return { success: true };
         } catch (error) {
             console.error('Error reordering backlog card:', error);
-            // Clear syncing FIRST so the setBacklogCards dispatch isn't blocked
-            dispatch(setBacklogSyncing(false));
-            // Revert to the pre-reorder order so UI matches server
-            dispatch(setBacklogCards(previousCards));
+            failed = true;
             throw error;
         } finally {
+            // Decrement syncing counter first, then revert if needed
             dispatch(setBacklogSyncing(false));
+            if (failed) {
+                dispatch(setBacklogCards(previousCards));
+            }
         }
     };
 };
@@ -382,6 +383,7 @@ export const bulkMoveBacklogCardsAsync = (cardIds, position) => {
         dispatch(bulkReorderBacklog(cardIds, position));
         dispatch(setBacklogSyncing(true));
 
+        let failed = false;
         try {
             for (const cardId of cardIds) {
                 const currentCards = getState().backlogCards || [];
@@ -409,11 +411,13 @@ export const bulkMoveBacklogCardsAsync = (cardIds, position) => {
             }
         } catch (error) {
             console.error('Error in bulk move:', error);
-            dispatch(setBacklogSyncing(false));
-            dispatch(setBacklogCards(previousCards));
+            failed = true;
             throw error;
         } finally {
             dispatch(setBacklogSyncing(false));
+            if (failed) {
+                dispatch(setBacklogCards(previousCards));
+            }
         }
     };
 };
@@ -434,6 +438,7 @@ export const bulkReorderBacklogCardsAtIndexAsync = (cardIds, targetIndex) => {
         dispatch(bulkReorderBacklogAtIndex(cardIds, targetIndex));
         dispatch(setBacklogSyncing(true));
 
+        let failed = false;
         try {
             for (const cardId of cardIds) {
                 const currentCards = getState().backlogCards || [];
@@ -461,11 +466,13 @@ export const bulkReorderBacklogCardsAtIndexAsync = (cardIds, targetIndex) => {
             }
         } catch (error) {
             console.error('Error in bulk reorder at index:', error);
-            dispatch(setBacklogSyncing(false));
-            dispatch(setBacklogCards(previousCards));
+            failed = true;
             throw error;
         } finally {
             dispatch(setBacklogSyncing(false));
+            if (failed) {
+                dispatch(setBacklogCards(previousCards));
+            }
         }
     };
 };

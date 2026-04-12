@@ -224,6 +224,7 @@ export default class KanbanBacklogView extends LightningElement {
                 for (const col of columns) {
                     for (const card of col.cards || []) {
                         const sc = activeSprintCardMap.get(card.Id);
+                        if (!sc) continue; // skip cards not in this sprint
                         activeCards.push({
                             ...card,
                             __sectionIndex: activeCards.length,
