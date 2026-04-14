@@ -541,73 +541,6 @@ for (Integer i = 0; i < s4AllSubjects.size(); i++) {
 
 insert sprintCards;
 
-// 6. Create SprintSnapshots for Sprint 3 (completed sprint - full burndown data)
-List<OpenSF__SprintSnapshot__c> snapshots = new List<OpenSF__SprintSnapshot__c>();
-Integer s3Total = 29;
-Integer s3Cards = 6;
-// Simulate daily burndown over 14 days
-Integer[] dailyCompleted = new List<Integer>{
-    0,
-    0,
-    3,
-    3,
-    8,
-    8,
-    11,
-    11,
-    16,
-    16,
-    21,
-    21,
-    24,
-    26
-};
-Integer[] dailyCompCards = new List<Integer>{
-    0,
-    0,
-    1,
-    1,
-    2,
-    2,
-    3,
-    3,
-    4,
-    4,
-    5,
-    5,
-    5,
-    5
-};
-
-for (Integer d = 0; d < 14; d++) {
-    snapshots.add(
-        new OpenSF__SprintSnapshot__c(
-            OpenSF__Sprint__c = sprint3.Id,
-            OpenSF__SnapshotDate__c = today.addDays(-14 + d),
-            OpenSF__TotalPoints__c = s3Total,
-            OpenSF__CompletedPoints__c = dailyCompleted[d],
-            OpenSF__RemainingPoints__c = s3Total - dailyCompleted[d],
-            OpenSF__CardCount__c = s3Cards,
-            OpenSF__CompletedCardCount__c = dailyCompCards[d]
-        )
-    );
-}
-
-// Sprint 4 snapshot (day 1 only - just started)
-snapshots.add(
-    new OpenSF__SprintSnapshot__c(
-        OpenSF__Sprint__c = sprint4.Id,
-        OpenSF__SnapshotDate__c = today,
-        OpenSF__TotalPoints__c = 28,
-        OpenSF__CompletedPoints__c = 2,
-        OpenSF__RemainingPoints__c = 26,
-        OpenSF__CardCount__c = 6,
-        OpenSF__CompletedCardCount__c = 1
-    )
-);
-
-insert snapshots;
-
 System.debug('CREATED Running Sprint Board: ' + board.Id);
 System.debug(
     'Sprints: S1(Completed) S2(Completed) S3(Completed) S4(Active=' +
@@ -618,7 +551,5 @@ System.debug(
     'Cards: ' +
         cards.size() +
         ' | SprintCards: ' +
-        sprintCards.size() +
-        ' | Snapshots: ' +
-        snapshots.size()
+        sprintCards.size()
 );

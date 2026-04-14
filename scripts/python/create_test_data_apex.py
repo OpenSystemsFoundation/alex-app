@@ -61,13 +61,11 @@ def run_apex_script(apex_file):
         print(f"  ERROR: Apex script not found: {filepath}")
         return False
 
-    # Use powershell to run sf CLI (required on this Windows machine)
-    command = f'powershell.exe -Command "sf apex run --file \'{filepath}\'"'
+    command = ["sf", "apex", "run", "--file", filepath]
 
     try:
         result = subprocess.run(
             command,
-            shell=True,
             capture_output=True,
             text=True,
             timeout=120,
