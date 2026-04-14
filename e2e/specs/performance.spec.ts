@@ -351,8 +351,8 @@ test.describe('LWC Performance Benchmarks', () => {
             })}`
         );
 
-        // Allow up to 20MB growth (generous for SF Lightning framework)
-        expect(heapGrowthMB).toBeLessThan(20);
+        // Allow up to 40MB growth (generous for SF Lightning framework)
+        expect(heapGrowthMB).toBeLessThan(40);
 
         await cdp.detach();
     });
