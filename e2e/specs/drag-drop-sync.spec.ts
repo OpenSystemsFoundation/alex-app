@@ -6,7 +6,7 @@ import { test, expect } from '../fixtures/multi-user';
  */
 
 const SYNC_TIMEOUT = 30_000;
-const SF_TIMEOUT = 45_000;
+const SF_TIMEOUT = 60_000;
 
 test.describe('Drag & Drop Sync — real-time collaboration', () => {
     test.beforeEach(async () => {

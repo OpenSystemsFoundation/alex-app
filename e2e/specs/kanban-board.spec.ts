@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures';
 import { sfUpdate } from '../helpers/sf-data';
 
-const SF_TIMEOUT = 45_000;
+const SF_TIMEOUT = 60_000;
 
 test.describe('Alex Kanban Board', () => {
     test.beforeEach(async () => {

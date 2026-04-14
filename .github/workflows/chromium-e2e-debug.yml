@@ -113,27 +113,6 @@ jobs:
             grep: ${{ inputs.grep || '' }}
             debug: ${{ inputs.debug || false }}
 
-    team-management:
-        name: Team Management
-        uses: ./.github/workflows/e2e-suite.yml
-        secrets: inherit
-        with:
-            suite-name: team-management
-            specs: 'team-management.spec.ts'
-            create-retro-data: false
-            grep: ${{ inputs.grep || '' }}
-            debug: ${{ inputs.debug || false }}
-
-    card-linking:
-        name: Card Linking
-        uses: ./.github/workflows/e2e-suite.yml
-        secrets: inherit
-        with:
-            suite-name: card-linking
-            specs: 'card-linking.spec.ts'
-            grep: ${{ inputs.grep || '' }}
-            debug: ${{ inputs.debug || false }}
-
     # --- Core Board & Sprints ---
 
     kanban-board:
@@ -169,19 +148,6 @@ jobs:
             grep: ${{ inputs.grep || '' }}
             debug: ${{ inputs.debug || false }}
 
-    # --- Design Thinking Extension ---
-
-    design-thinking:
-        name: Design Thinking
-        uses: ./.github/workflows/e2e-suite.yml
-        secrets: inherit
-        with:
-            suite-name: design-thinking
-            specs: 'design-thinking.spec.ts'
-            create-retro-data: false
-            grep: ${{ inputs.grep || '' }}
-            debug: ${{ inputs.debug || false }}
-
     # --- Multi-user Suites ---
 
     drag-drop-sync:
@@ -194,12 +160,4 @@ jobs:
             grep: ${{ inputs.grep || '' }}
             debug: ${{ inputs.debug || false }}
 
-    design-thinking-sync:
-        name: Design Thinking Sync
-        uses: ./.github/workflows/e2e-multi-user.yml
-        secrets: inherit
-        with:
-            suite-name: design-thinking-sync
-            specs: 'design-thinking-sync.spec.ts'
-            grep: ${{ inputs.grep || '' }}
-            debug: ${{ inputs.debug || false }}
+

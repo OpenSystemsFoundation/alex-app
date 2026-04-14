@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures';
 import { sfApexRun } from '../helpers/sf-data';
 
-const SF_TIMEOUT = 45_000;
+const SF_TIMEOUT = 60_000;
 
 /**
  * Helper to open a card panel and wait for comments section

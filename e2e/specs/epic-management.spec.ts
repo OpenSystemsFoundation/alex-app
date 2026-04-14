@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures';
 
-const SF_TIMEOUT = 45_000;
+const SF_TIMEOUT = 60_000;
 
 test.describe('Epic Management', () => {
     test.beforeEach(async () => {
@@ -84,9 +84,9 @@ test.describe('Epic Management', () => {
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.waitForCards();
 
-        // Find the swimlane dropdown (it's after the filter separator)
+        // Find the swimlane dropdown (last select in filter bar)
         const swimlaneSelect = boardPage.page.locator(
-            'select.board-filter-select >> nth=-1'
+            'select.kanban-filter-bar__select >> nth=-1'
         );
 
         // Select "By Epic" swimlane mode

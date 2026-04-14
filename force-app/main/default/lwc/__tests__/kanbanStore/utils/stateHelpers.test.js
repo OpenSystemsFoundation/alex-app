@@ -61,14 +61,14 @@ describe('moveCardInState', () => {
 });
 
 describe('addCardToState', () => {
-    it('adds card to target column sorted by position', () => {
-        const existing = buildCard({ Id: 'a', position: '1000' });
-        const newCard = buildCard({ Id: 'b', position: '500' });
+    it('adds card to target column sorted by position (lexicographic)', () => {
+        const existing = buildCard({ Id: 'a', position: '2000' });
+        const newCard = buildCard({ Id: 'b', position: '1000' });
         const col = buildColumn({ Id: 'col1', cards: [existing] });
 
         const result = addCardToState([col], newCard, 'col1');
         expect(result[0].cards).toHaveLength(2);
-        expect(result[0].cards[0].Id).toBe('b'); // position 500 comes first
+        expect(result[0].cards[0].Id).toBe('b'); // '1000' < '2000' lexicographically
         expect(result[0].cardCount).toBe(2);
     });
 

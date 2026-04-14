@@ -30,27 +30,32 @@ export class BoardPage extends BasePage {
         this.backlogTab = page.locator('[data-tab-id="backlog"]');
 
         // Toolbar
-        this.searchInput = page.locator('.board-filter-search');
+        this.searchInput = page.locator('.kanban-filter-bar__search-input');
         this.refreshBtn = page.locator(
             'button.topbar-icon-btn[title="Refresh"]'
         );
         this.addCardButtons = page.locator('.add-card-button');
 
-        // Filters
+        // Filters — board filter bar renders: priority (nth=0), card type (nth=1), then optional epic, swimlane
         this.priorityFilter = page.locator(
-            'select.board-filter-select >> nth=0'
+            'select.kanban-filter-bar__select >> nth=0'
         );
-        this.typeFilter = page.locator('select.board-filter-select >> nth=1');
+        this.typeFilter = page.locator(
+            'select.kanban-filter-bar__select >> nth=1'
+        );
     }
 
     /**
      * Navigate to a specific board by ID.
+     * Waits for the board wrapper to render and initial network activity to settle.
      */
     async open(baseUrl: string, boardId: string): Promise<void> {
         await this.goto(
             `${baseUrl}/lightning/r/OpenSF__Board__c/${boardId}/view`
         );
         await this.waitForComponent('.kanban-board-wrapper');
+        // Give SF Lightning a moment to finish rendering after the wrapper appears
+        await this.page.waitForLoadState('domcontentloaded');
     }
 
     /** Get a column wrapper by its Salesforce column ID. */
@@ -131,7 +136,7 @@ export class BoardPage extends BasePage {
         // Click the backlog tab button and verify it becomes active
         await this.backlogTab.click();
         await expect(this.backlogTab).toHaveClass(/topbar-tab--active/, {
-            timeout: 5_000
+            timeout: 15_000
         });
         // Wait for the backlog view container
         await this.page

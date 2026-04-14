@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures';
 
-const SF_TIMEOUT = 45_000;
+const SF_TIMEOUT = 60_000;
 
 test.describe('Card Detail Panel', () => {
     test.beforeEach(async () => {

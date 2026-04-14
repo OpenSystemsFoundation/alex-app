@@ -6,8 +6,12 @@ const storageState = path.join(__dirname, 'e2e', '.auth', 'storageState.json');
 export default defineConfig({
     testDir: './e2e/specs',
     timeout: 120_000,
+    expect: {
+        timeout: 30_000
+    },
     retries: 1,
-    workers: process.env.CI ? 2 : undefined,
+    /* Scratch orgs have limited API throughput — keep concurrency low */
+    workers: process.env.CI ? 2 : 3,
     fullyParallel: true,
     globalSetup: './e2e/global-setup.ts',
     snapshotPathTemplate:
@@ -16,7 +20,10 @@ export default defineConfig({
         headless: true,
         screenshot: 'only-on-failure',
         trace: 'on-first-retry',
-        storageState
+        storageState,
+        /* Salesforce Lightning pages take 10-30s to fully render */
+        navigationTimeout: 60_000,
+        actionTimeout: 15_000
     },
     projects: [
         {

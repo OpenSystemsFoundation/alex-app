@@ -42,35 +42,13 @@ jobs:
             persistent: true
             cache-key: ${{ github.head_ref || github.ref_name }}
 
-    admin:
-        name: Admin Panel
+    analytics:
+        name: Analytics
         uses: ./.github/workflows/e2e-suite.yml
         secrets: inherit
         with:
-            suite-name: admin
-            specs: 'admin-management.spec.ts'
-            create-retro-data: false
-            persistent: true
-            cache-key: ${{ github.head_ref || github.ref_name }}
-
-    retro-analytics:
-        name: Retro & Analytics
-        uses: ./.github/workflows/e2e-suite.yml
-        secrets: inherit
-        with:
-            suite-name: retro-analytics
-            specs: 'analytics.spec.ts retrospective.spec.ts'
-            create-retro-data: true
-            persistent: true
-            cache-key: ${{ github.head_ref || github.ref_name }}
-
-    planning-poker:
-        name: Planning Poker
-        uses: ./.github/workflows/e2e-suite.yml
-        secrets: inherit
-        with:
-            suite-name: planning-poker
-            specs: 'planning-poker.spec.ts'
+            suite-name: analytics
+            specs: 'analytics.spec.ts'
             create-retro-data: false
             persistent: true
             cache-key: ${{ github.head_ref || github.ref_name }}
@@ -82,7 +60,40 @@ jobs:
         with:
             suite-name: unhappy-paths
             specs: 'unhappy-paths.spec.ts'
-            create-retro-data: true
+            create-retro-data: false
+            persistent: true
+            cache-key: ${{ github.head_ref || github.ref_name }}
+
+    card-features:
+        name: Card Features
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: card-features
+            specs: 'card-comments.spec.ts card-files.spec.ts'
+            create-retro-data: false
+            persistent: true
+            cache-key: ${{ github.head_ref || github.ref_name }}
+
+    epics:
+        name: Epics
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: epics
+            specs: 'epic-management.spec.ts'
+            create-retro-data: false
+            persistent: true
+            cache-key: ${{ github.head_ref || github.ref_name }}
+
+    undo-redo:
+        name: Undo/Redo
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: undo-redo
+            specs: 'undo-redo.spec.ts'
+            create-retro-data: false
             persistent: true
             cache-key: ${{ github.head_ref || github.ref_name }}
 
@@ -102,10 +113,11 @@ jobs:
         needs:
             - board-core
             - backlog-sprint
-            - admin
-            - retro-analytics
-            - planning-poker
+            - analytics
             - unhappy-paths
+            - card-features
+            - epics
+            - undo-redo
             - multi-user
         if: always()
         timeout-minutes: 5
@@ -126,9 +138,9 @@ jobs:
                       const path = require('path');
 
                       const suites = [
-                        'board-core', 'backlog-sprint', 'admin',
-                        'retro-analytics', 'planning-poker',
-                        'unhappy-paths', 'multi-user'
+                        'board-core', 'backlog-sprint', 'analytics',
+                        'unhappy-paths', 'card-features', 'epics',
+                        'undo-redo', 'multi-user'
                       ];
 
                       let totalPassed = 0, totalFailed = 0, totalSkipped = 0, totalFlaky = 0;
@@ -166,7 +178,7 @@ jobs:
 
                       const status = allPassed ? 'PASS' : 'FAIL';
                       const summary = `**${totalPassed} passed** | **${totalFailed} failed** | **${totalSkipped} skipped** | **${totalFlaky} flaky**`;
-                      const comment = `### [${status}] E2E Tests (7 feature suites)\n\n${summary}\n\n${body}`;
+                      const comment = `### [${status}] E2E Tests (8 feature suites)\n\n${summary}\n\n${body}`;
 
                       const maxLen = 65000;
                       const truncated = comment.length > maxLen
@@ -174,7 +186,7 @@ jobs:
                         : comment;
 
                       // Update existing comment or create new one
-                      const marker = 'E2E Tests (7 feature suites)';
+                      const marker = 'E2E Tests (10 feature suites)';
                       const { data: comments } = await github.rest.issues.listComments({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
@@ -200,9 +212,9 @@ jobs:
             - name: Post Workflow Summary
               if: always()
               run: |
-                  echo "## E2E Test Results -- 7 Feature Suites" >> "$GITHUB_STEP_SUMMARY"
+                  echo "## E2E Test Results -- 10 Feature Suites" >> "$GITHUB_STEP_SUMMARY"
                   echo "" >> "$GITHUB_STEP_SUMMARY"
-                  for suite in board-core backlog-sprint admin retro-analytics planning-poker unhappy-paths multi-user; do
+                  for suite in board-core backlog-sprint admin retro-analytics planning-poker unhappy-paths card-features team-epics undo-redo multi-user; do
                     FILE="suite-outputs/e2e-output-${suite}/playwright-output.txt"
                     if [ -f "$FILE" ]; then
                       SUMMARY=$(tail -3 "$FILE" | head -1)
@@ -220,5 +232,8 @@ jobs:
                   needs.retro-analytics.result == 'failure' ||
                   needs.planning-poker.result == 'failure' ||
                   needs.unhappy-paths.result == 'failure' ||
+                  needs.card-features.result == 'failure' ||
+                  needs.team-epics.result == 'failure' ||
+                  needs.undo-redo.result == 'failure' ||
                   needs.multi-user.result == 'failure'
               run: exit 1

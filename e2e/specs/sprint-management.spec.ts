@@ -6,7 +6,7 @@ import {
     type BoardData
 } from '../helpers/sf-data';
 
-const SF_TIMEOUT = 45_000;
+const SF_TIMEOUT = 60_000;
 
 /**
  * Sprint Management -- E2E tests.
@@ -35,7 +35,9 @@ test.describe('Sprint Management', () => {
         boardPage
     }) => {
         await boardPage.open(sprintBoard.baseUrl, sprintBoard.boardId);
-        await boardPage.waitForCards();
+        // Sprint-type boards with no active sprint may show no cards,
+        // so wait for topbar instead of cards
+        await boardPage.page.locator('.kanban-topbar').waitFor({ state: 'visible', timeout: SF_TIMEOUT });
 
         // The sprint header is inside the topbar, rendered via lwc:if={isSprintBoard}.
         // The store needs to have loaded board.type === 'Sprint' for this to appear.
@@ -68,7 +70,9 @@ test.describe('Sprint Management', () => {
         boardPage
     }) => {
         await boardPage.open(sprintBoard.baseUrl, sprintBoard.boardId);
-        await boardPage.waitForCards();
+        // Sprint-type boards with no active sprint may show no cards,
+        // so wait for topbar instead of cards
+        await boardPage.page.locator('.kanban-topbar').waitFor({ state: 'visible', timeout: SF_TIMEOUT });
 
         const sprintHeader = boardPage.page.locator(
             '.sprint-inline, c-kanban-sprint-header, opensf-kanban-sprint-header'
@@ -141,7 +145,9 @@ test.describe('Sprint Management', () => {
         }
 
         await boardPage.open(sprintBoard.baseUrl, sprintBoard.boardId);
-        await boardPage.waitForCards();
+        // Sprint-type boards may show no cards without SprintCard records,
+        // so wait for topbar instead of cards
+        await boardPage.page.locator('.kanban-topbar').waitFor({ state: 'visible', timeout: SF_TIMEOUT });
 
         const sprintHeader = boardPage.page.locator(
             '.sprint-inline, c-kanban-sprint-header, opensf-kanban-sprint-header'
@@ -189,7 +195,9 @@ test.describe('Sprint Management', () => {
         }
 
         await boardPage.open(sprintBoard.baseUrl, sprintBoard.boardId);
-        await boardPage.waitForCards();
+        // Sprint-type boards may show no cards without SprintCard records,
+        // so wait for topbar instead of cards
+        await boardPage.page.locator('.kanban-topbar').waitFor({ state: 'visible', timeout: SF_TIMEOUT });
 
         const sprintHeader = boardPage.page.locator(
             '.sprint-inline, c-kanban-sprint-header, opensf-kanban-sprint-header'
@@ -227,7 +235,9 @@ test.describe('Sprint Management', () => {
 
     test('sprint reports button opens reports modal', async ({ boardPage }) => {
         await boardPage.open(sprintBoard.baseUrl, sprintBoard.boardId);
-        await boardPage.waitForCards();
+        // Sprint-type boards may show no cards without SprintCard records,
+        // so wait for topbar instead of cards
+        await boardPage.page.locator('.kanban-topbar').waitFor({ state: 'visible', timeout: SF_TIMEOUT });
 
         const sprintHeader = boardPage.page.locator(
             '.sprint-inline, c-kanban-sprint-header, opensf-kanban-sprint-header'

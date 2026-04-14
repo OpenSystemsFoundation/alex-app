@@ -10,7 +10,7 @@ export class BasePage {
 
     constructor(page: Page) {
         this.page = page;
-        this.timeout = 45_000;
+        this.timeout = 60_000;
     }
 
     /**
@@ -22,6 +22,7 @@ export class BasePage {
             waitUntil: 'domcontentloaded',
             timeout: this.timeout
         });
+        await this.dismissDialogs();
     }
 
     /**

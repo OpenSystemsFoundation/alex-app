@@ -282,48 +282,6 @@ All releases are manual — main can have bugs, and managed package creation is 
 
 ---
 
-## Fiber: Design Thinking
-
-**When:** Working in `force-app/**/design*` or `e2e/specs/design-thinking*`
-
-### Architecture
-
-```
-DesignSessionController (@AuraEnabled) → DesignSessionService → DesignSessionSelector → DesignSessionDTO
-```
-
-Follows the same Controller → Service → Selector → DTO layering as Core Kanban.
-
-### Phase Pipeline
-
-```
-Empathize → Define → Ideate → Prototype → Test → Refined
-```
-
-Use `DesignEnums.DesignPhase` — never string literals. Cards graduate from Design Thinking into sprint-ready backlog via `DesignSessionCard__c` junction.
-
-### Data Model
-
-| Object | Purpose |
-|--------|---------|
-| `DesignSession__c` | Session lifecycle (Planning → Active → Completed) |
-| `DesignSessionCard__c` | Junction: cards ↔ sessions, tracks phase at entry/exit |
-| `DesignNote__c` | Sticky notes, clusters, positioned on canvas |
-| `DesignVote__c` | Dot voting, decision scoring |
-| `DesignArtifact__c` | Personas, journey maps, storyboards |
-| `DesignSessionEvent__e` | Platform event for real-time collaboration |
-
-### Store Integration
-
-Design Thinking has its own Redux slice: `designReducer.js`, `designActionTypes.js`, `designSelectors.js`, `designThunks.js` — all under `kanbanStore/state/reducers/` and `kanbanStore/thunks/`.
-
-### Tools (DesignEnums.Tool)
-
-Empathy Map, Affinity Diagram, Brainstorm, Feedback Grid, HMW Builder, SCAMPER, Mind Map, Crazy 8s, Storyboard Builder, Sketch Canvas, Decision Matrix, Acceptance Criteria, Dot Voting.
-
----
-
-## Fiber: Feature Development — C-K Navigation
 
 **When:** Implementing a new feature or user story
 
@@ -339,7 +297,6 @@ Which fibers does this feature touch? Read the relevant modules:
 | Real-time sync | `subscriptionManager`, Platform Event triggers, echo prevention |
 | UI components | `kanbanStore` shape, existing LWC components, Redux patterns |
 | Ordering/position | `LexoRank.cls`, `positionCalculator` |
-| Design Thinking | `DesignSessionService`, `DesignEnums`, design reducers/thunks |
 
 ### Step 2: Expand Concept (C→C)
 
@@ -368,8 +325,6 @@ Novel features live in the **tensor product** of fibers — combinations that ne
 | LexoRank | MPS Tensor | MI-based card ordering, entanglement-aware swimlanes |
 | Echo prevention | Planning Poker | Vote deduplication via clientRequestId |
 | Sprint snapshots | QAOA | Quantum-optimized sprint planning |
-| Design Thinking | MPSTensor | Affinity clustering via tensor decomposition |
-| Design Thinking | QAOA | Quantum-explored concept partitions for ideation |
 
 See [experiments/quantum-concept-discovery/](experiments/quantum-concept-discovery/RESULTS.md) for validated results and [claude/skills/ck-theory/](claude/skills/ck-theory/Skill.md) for structured C-K sessions.
 
@@ -404,8 +359,7 @@ Use `sf` directly (`/opt/node22/bin/sf`). Set `SFDX_DISABLE_DNS_CHECK=true` if D
 - **Sprint Management:** Lifecycle (Planning → Active → Completed), auto-numbering, completion wizard, SprintCard junction with soft-delete, story points, sprint header with progress bar
 - **Backlog:** Search + filtering, bulk actions, inline creation, drag-and-drop, context menu, refinement flags
 - **Analytics:** Burndown chart (Canvas), velocity chart, sprint summary table, daily snapshots via scheduler
-- **Design Thinking:** Session lifecycle, 6-phase pipeline (Empathize→Refined), collaborative tools (Empathy Map, Brainstorm, Feedback Grid, HMW Builder, Dot Voting), sticky note canvas, platform events for real-time sync, Redux store slice, card graduation to backlog
-- **Service Layer:** SprintService, SprintSelector, SprintCardTriggerHandler, KanbanCardService, KanbanBoardService, DesignSessionService, DesignSessionSelector
+- **Service Layer:** SprintService, SprintSelector, SprintCardTriggerHandler, KanbanCardService, KanbanBoardService
 - **Experiments:** Quantum concept discovery (QAOA cross-fiber exploration). See [experiments/](experiments/)
 
 ### What's Next

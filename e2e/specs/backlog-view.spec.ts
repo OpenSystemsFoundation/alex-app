@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures';
 
-const SF_TIMEOUT = 45_000;
+const SF_TIMEOUT = 60_000;
 
 test.describe('Backlog View', () => {
     test.beforeEach(async () => {
@@ -20,10 +20,9 @@ test.describe('Backlog View', () => {
 
         await boardPage.switchToBacklogTab();
 
-        // The backlog search is a lightning-input with placeholder "Search backlog..."
-        // Playwright pierces shadow DOM so we can find the inner input element
+        // The backlog filter bar's search input uses kanban-filter-bar__search-input
         const backlogSearch = boardPage.page.locator(
-            'lightning-input.backlog-search'
+            '.kanban-filter-bar__search-input'
         );
         await expect(backlogSearch).toBeVisible({ timeout: SF_TIMEOUT });
     });
@@ -110,7 +109,7 @@ test.describe('Backlog View', () => {
         await boardPage.switchToBacklogTab();
 
         const backlogSearch = boardPage.page.locator(
-            'lightning-input.backlog-search'
+            '.kanban-filter-bar__search-input'
         );
         await expect(backlogSearch).toBeVisible({ timeout: SF_TIMEOUT });
 
@@ -126,7 +125,7 @@ test.describe('Backlog View', () => {
         await boardPage.switchToBacklogTab();
 
         const backlogSearch = boardPage.page.locator(
-            'lightning-input.backlog-search'
+            '.kanban-filter-bar__search-input'
         );
         await expect(backlogSearch).toBeVisible({ timeout: SF_TIMEOUT });
     });
@@ -140,18 +139,18 @@ test.describe('Backlog View', () => {
 
         // Wait for backlog toolbar to be visible
         const backlogSearch = boardPage.page.locator(
-            'lightning-input.backlog-search'
+            '.kanban-filter-bar__search-input'
         );
         await expect(backlogSearch).toBeVisible({ timeout: SF_TIMEOUT });
 
-        // The backlog uses lightning-combobox components, not native <select>
-        const comboboxes = boardPage.page.locator(
-            'lightning-combobox.backlog-filter'
+        // The backlog uses native <select> elements with class kanban-filter-bar__select
+        const selects = boardPage.page.locator(
+            'select.kanban-filter-bar__select'
         );
-        // There should be at least 3 comboboxes: View, Priority, Type
-        await expect(comboboxes.first()).toBeVisible({ timeout: SF_TIMEOUT });
+        // There should be at least 3 selects: View, Priority, Type
+        await expect(selects.first()).toBeVisible({ timeout: SF_TIMEOUT });
 
-        const count = await comboboxes.count();
+        const count = await selects.count();
         expect(count).toBeGreaterThanOrEqual(3);
     });
 

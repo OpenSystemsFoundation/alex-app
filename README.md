@@ -14,7 +14,7 @@
 
 Alex is a free, open-source Kanban board for Salesforce that enables teams to visualize and manage their work with drag-and-drop simplicity. Built with Lightning Web Components (LWC), Alex provides real-time collaboration through platform events, allowing multiple users to work together seamlessly.
 
-> Looking for more? **Alexandra** is the paid edition with advanced features like Design Thinking, Planning Poker, Retrospectives, Roadmaps, Analytics, Swimlanes, Agentforce integration, and more -- available on AppExchange.
+> Looking for more? **Alexandra** is the paid edition with advanced features like Planning Poker, Retrospectives, Roadmaps, Analytics, Swimlanes, Agentforce integration, and more -- available on AppExchange.
 
 ### Key Features
 
