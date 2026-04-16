@@ -363,16 +363,16 @@ public with sharing class KanbanCardService {
     }
 
     /**
-     * Delete card
+     * Delete card. Enforces the caller's delete permission via
+     * Database.delete(USER_MODE), which throws NoAccessException if
+     * the user lacks delete rights on OpenSF__Card__c.
+     * Event published by trigger.
      */
     public static void deleteCard(Id cardId) {
-        if (!Schema.sObjectType.OpenSF__Card__c.isDeletable()) {
-            throw new AuraHandledException(
-                'Insufficient access to delete cards.'
-            );
-        }
-        delete new OpenSF__Card__c(Id = cardId);
-        // Event published by trigger
+        Database.delete(
+            new List<OpenSF__Card__c>{ new OpenSF__Card__c(Id = cardId) },
+            AccessLevel.USER_MODE
+        );
     }
 
     /**

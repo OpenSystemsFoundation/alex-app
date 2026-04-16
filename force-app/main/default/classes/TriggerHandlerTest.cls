@@ -358,15 +358,18 @@ private class TriggerHandlerTest {
             null
         );
 
+        // Drive the handler up to the default maxLoopCount (currently
+        // 20 — allowing for 2 trigger phases per DML × nested rollup
+        // updates). The (N+1)th call must throw.
+        Integer maxLoopCount = 20;
+
         Test.startTest();
-        handler.execute(); // First execution
-        handler.execute(); // Second execution
-        handler.execute(); // Third execution
-        handler.execute(); // Fourth execution
-        handler.execute(); // Fifth execution
+        for (Integer i = 0; i < maxLoopCount; i++) {
+            handler.execute();
+        }
 
         try {
-            handler.execute(); // Sixth execution should throw exception (default maxLoopCount is 5)
+            handler.execute(); // Should throw on exceeding maxLoopCount
             System.assert(false, 'Should have thrown TriggerHandlerException');
         } catch (Exception e) {
             System.assert(

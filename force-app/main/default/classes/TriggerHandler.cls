@@ -9,7 +9,12 @@ public virtual with sharing class TriggerHandler {
 
     // Instance properties
     protected String handlerName;
-    protected Integer maxLoopCount = 5;
+    // Recursion guard. Every trigger phase (before + after) counts as
+    // one execution, so a single user DML against this SObject costs
+    // at least 2. Nested chains (Card → Column rollup → Column trigger)
+    // can easily reach 10+ in legitimate transactions. The guard only
+    // needs to be low enough to prevent a runaway loop.
+    protected Integer maxLoopCount = 20;
 
     // Trigger context properties (set by dispatcher)
     protected Boolean isBefore;

@@ -1,8 +1,13 @@
 /**
  * TriggerContext - Stores context information for triggers
- * Used to pass clientRequestId from Apex methods to trigger handlers
+ * Used to pass clientRequestId from Apex methods to trigger handlers.
+ *
+ * Uses `inherited sharing` per AppExchange security guidance: this
+ * class only holds transient in-memory state (no DML/SOQL), so the
+ * sharing mode is determined by the caller. Avoids the unconditional
+ * `without sharing` keyword that reviewers flag.
  */
-public without sharing class TriggerContext {
+public inherited sharing class TriggerContext {
     // Thread-local storage for client request IDs
     // Map of record ID -> client request ID
     private static Map<Id, String> clientRequestIds = new Map<Id, String>();

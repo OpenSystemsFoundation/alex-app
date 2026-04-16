@@ -2,7 +2,7 @@
  * KanbanEnums - Strongly typed constants for the Alex Kanban application.
  * Replaces scattered string literals with compiler-enforced enums.
  */
-public class KanbanEnums {
+public inherited sharing class KanbanEnums {
     /**
      * Sprint lifecycle status values
      */
