@@ -55,12 +55,14 @@ public with sharing class SprintCardTriggerHandler extends TriggerHandler {
             sprintIds.add(sc.OpenSF__Sprint__c);
         }
 
-        // Get sprints with board IDs
+        // Get sprints with board IDs. Runs in trigger context on the
+        // user's behalf — enforce the caller's FLS/CRUD via USER_MODE.
         Map<Id, OpenSF__Sprint__c> sprintMap = new Map<Id, OpenSF__Sprint__c>(
             [
                 SELECT Id, OpenSF__Board__c
                 FROM OpenSF__Sprint__c
                 WHERE Id IN :sprintIds
+                WITH USER_MODE
             ]
         );
 

@@ -295,7 +295,8 @@ public with sharing class SprintService {
             );
         }
 
-        // Delete all SprintCard junction records first
+        // Delete all SprintCard junction records first. Enforce the
+        // caller's delete permission via Database.delete(USER_MODE).
         List<OpenSF__SprintCard__c> cards = [
             SELECT Id
             FROM OpenSF__SprintCard__c
@@ -303,11 +304,14 @@ public with sharing class SprintService {
             WITH USER_MODE
         ];
         if (!cards.isEmpty()) {
-            delete cards;
+            Database.delete(cards, AccessLevel.USER_MODE);
         }
 
-        // Delete the sprint
-        delete sprint;
+        // Delete the sprint with CRUD enforcement.
+        Database.delete(
+            new List<OpenSF__Sprint__c>{ sprint },
+            AccessLevel.USER_MODE
+        );
     }
 
     /**

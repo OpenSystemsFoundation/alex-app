@@ -3,7 +3,7 @@
  * Replaces Map<String, Object> with compile-time type safety.
  * Each field has a boolean flag indicating whether it was provided in the request.
  */
-public class CardUpdateRequest {
+public inherited sharing class CardUpdateRequest {
     // Field values
     public String subject;
     public String description;

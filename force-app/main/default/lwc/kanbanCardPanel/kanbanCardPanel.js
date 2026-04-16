@@ -815,7 +815,10 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     async handleDeleteFile(event) {
         const fileId = event.currentTarget.dataset.fileId;
         try {
-            await deleteCardFile({ contentDocumentId: fileId });
+            await deleteCardFile({
+                contentDocumentId: fileId,
+                cardId: this.card && this.card.Id
+            });
             this.files = this.files.filter((f) => f.contentDocumentId !== fileId);
             this.dispatchEvent(
                 new ShowToastEvent({

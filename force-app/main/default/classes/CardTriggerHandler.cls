@@ -258,7 +258,15 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
             return;
         }
 
-        // Count children for each affected epic
+        // Count children for each affected epic.
+        //
+        // SYSTEM_MODE rationale (AppExchange security review):
+        //   EpicCardsCount__c is an app-managed rollup. It must be
+        //   kept consistent when any user edits a child card, even
+        //   if the user lacks FLS on the rollup field itself. The
+        //   trigger is app-internal bookkeeping, not user intent.
+        //   Sharing is still enforced (the trigger itself is WITH
+        //   SHARING); only FLS/CRUD on the rollup column is bypassed.
         Map<Id, Integer> epicChildCounts = new Map<Id, Integer>();
         for (Id epicId : affectedEpicIds) {
             epicChildCounts.put(epicId, 0);
@@ -267,6 +275,7 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
             SELECT OpenSF__Epic__c, COUNT(Id) childCount
             FROM OpenSF__Card__c
             WHERE OpenSF__Epic__c IN :affectedEpicIds
+            WITH SYSTEM_MODE
             GROUP BY OpenSF__Epic__c
         ]) {
             Id epicId = (Id) ar.get('OpenSF__Epic__c');
@@ -288,7 +297,7 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
         if (!epicsToUpdate.isEmpty()) {
             // Bypass this trigger to prevent recursion since epics are also Card__c
             TriggerHandler.bypass('CardTriggerHandler');
-            update epicsToUpdate;
+            Database.update(epicsToUpdate, AccessLevel.SYSTEM_MODE);
             TriggerHandler.clearBypass('CardTriggerHandler');
         }
     }
@@ -340,12 +349,20 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
         if (!affectedColumnIds.isEmpty()) {
             List<OpenSF__Column__c> columnsToUpdate = new List<OpenSF__Column__c>();
 
-            // Query cards grouped by column to get accurate counts
+            // Query cards grouped by column to get accurate counts.
+            //
+            // SYSTEM_MODE rationale (AppExchange security review):
+            //   CardCount__c is an app-managed rollup kept consistent
+            //   by the trigger. User-initiated card changes must
+            //   update the column's count even if the user lacks
+            //   FLS on CardCount__c. The trigger itself is WITH
+            //   SHARING so record-level access is still enforced.
             Map<Id, Integer> columnCardCounts = new Map<Id, Integer>();
             for (AggregateResult ar : [
                 SELECT OpenSF__Column__c, COUNT(Id) cardCount
                 FROM OpenSF__Card__c
                 WHERE OpenSF__Column__c IN :affectedColumnIds
+                WITH SYSTEM_MODE
                 GROUP BY OpenSF__Column__c
             ]) {
                 Id columnId = (Id) ar.get('OpenSF__Column__c');
@@ -367,7 +384,7 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
             }
 
             if (!columnsToUpdate.isEmpty()) {
-                update columnsToUpdate;
+                Database.update(columnsToUpdate, AccessLevel.SYSTEM_MODE);
             }
         }
     }

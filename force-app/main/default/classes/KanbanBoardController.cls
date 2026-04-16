@@ -631,11 +631,24 @@ public with sharing class KanbanBoardController {
     // =========================================================================
 
     /**
-     * Get files attached to a card
+     * Get files attached to a card.
+     *
+     * Note: `ContentDocumentLink` doesn't support WITH USER_MODE /
+     * WITH SECURITY_ENFORCED because the object uses its own sharing
+     * rules (share to the linked entity). Access is enforced implicitly
+     * by the `LinkedEntityId = :cardId` filter — users only see links
+     * for cards they can access. We additionally verify the caller has
+     * read access to the card via `KanbanBoardSelector.getCardById`,
+     * which runs WITH USER_MODE and will throw QueryException if the
+     * card is inaccessible.
      */
     @AuraEnabled
     public static List<CardFileDTO> getCardFiles(Id cardId) {
         try {
+            // Authorization: require read access to the parent card.
+            // getCardById runs WITH USER_MODE and throws if inaccessible.
+            KanbanBoardSelector.getCardById(cardId);
+
             List<CardFileDTO> result = new List<CardFileDTO>();
             for (ContentDocumentLink cdl : [
                 SELECT
@@ -659,12 +672,65 @@ public with sharing class KanbanBoardController {
     }
 
     /**
-     * Delete a file attached to a card
+     * Delete a file attached to a card.
+     *
+     * Authorization model:
+     *   1. The caller must have a ContentDocumentLink to this document
+     *      via a Card record they can access (enforces record-level
+     *      sharing — users can't delete files on cards they can't see).
+     *   2. The caller must have delete permission on ContentDocument
+     *      (enforced by Database.delete with USER_MODE).
+     *
+     * Without these checks, any authenticated user could delete any
+     * ContentDocument in the org by guessing/enumerating its Id.
      */
     @AuraEnabled
-    public static void deleteCardFile(Id contentDocumentId) {
+    public static void deleteCardFile(Id contentDocumentId, Id cardId) {
         try {
-            delete [SELECT Id FROM ContentDocument WHERE Id = :contentDocumentId LIMIT 1];
+            if (contentDocumentId == null || cardId == null) {
+                throw new AuraHandledException(
+                    'Both contentDocumentId and cardId are required.'
+                );
+            }
+
+            // Authorization: verify the document is linked to a Card
+            // the caller can access. ContentDocumentLink sharing mirrors
+            // LinkedEntityId access, so this confirms the caller has
+            // read access to the parent card.
+            List<ContentDocumentLink> links = [
+                SELECT Id
+                FROM ContentDocumentLink
+                WHERE
+                    ContentDocumentId = :contentDocumentId
+                    AND LinkedEntityId = :cardId
+                LIMIT 1
+            ];
+            if (links.isEmpty()) {
+                throw new AuraHandledException(
+                    'File not found or access denied.'
+                );
+            }
+
+            // Additionally confirm the caller has read access to the
+            // parent card via a WITH USER_MODE query.
+            KanbanBoardSelector.getCardById(cardId);
+
+            // Enforce delete permission on ContentDocument.
+            List<ContentDocument> docs = [
+                SELECT Id
+                FROM ContentDocument
+                WHERE Id = :contentDocumentId
+                WITH USER_MODE
+                LIMIT 1
+            ];
+            if (docs.isEmpty()) {
+                throw new AuraHandledException(
+                    'File not found or access denied.'
+                );
+            }
+            Database.delete(docs, AccessLevel.USER_MODE);
+        } catch (AuraHandledException e) {
+            throw e;
         } catch (Exception e) {
             throw new AuraHandledException(
                 'Error deleting file: ' + e.getMessage()

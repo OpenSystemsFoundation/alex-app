@@ -136,13 +136,18 @@ public with sharing class ColumnManagementController {
     }
 
     /**
-     * Delete a column
+     * Delete a column. Enforces the caller's delete permission on
+     * Column__c via Database.delete(...AccessLevel.USER_MODE), which
+     * throws NoAccessException when the user lacks the permission.
      */
     @AuraEnabled
     public static void deleteColumn(Id columnId) {
         try {
             OpenSF__Column__c column = new OpenSF__Column__c(Id = columnId);
-            delete column;
+            Database.delete(
+                new List<OpenSF__Column__c>{ column },
+                AccessLevel.USER_MODE
+            );
         } catch (Exception e) {
             throw new AuraHandledException(
                 'Error deleting column: ' + e.getMessage()
@@ -281,7 +286,7 @@ public with sharing class ColumnManagementController {
                 new List<String>{ 'QA', 'Testing', 'Testing', '#FCC003' },
                 new List<String>{
                     'Staging',
-                    'Release',
+                    'Released',
                     'Release',
                     '#F38303'
                 },

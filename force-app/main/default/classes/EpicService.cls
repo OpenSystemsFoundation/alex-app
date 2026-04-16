@@ -38,6 +38,7 @@ public with sharing class EpicService {
                 SUM(OpenSF__StoryPoints__c) totalPoints
             FROM OpenSF__Card__c
             WHERE OpenSF__Epic__c IN :epicIds
+            WITH USER_MODE
             GROUP BY OpenSF__Epic__c, OpenSF__Column__r.OpenSF__Category__c
         ]) {
             Id epicId = (Id) ar.get('epicId');
@@ -97,7 +98,14 @@ public with sharing class EpicService {
         // Get the epic card itself
         OpenSF__Card__c epic = KanbanBoardSelector.getCardById(epicId);
         if (epic.OpenSF__CardType__c != 'Epic') {
-            throw new AuraHandledException('Card is not an Epic');
+            AuraHandledException ex = new AuraHandledException(
+                'Card is not an Epic'
+            );
+            // setMessage is required so getMessage() returns the real
+            // reason in test context (otherwise it reads
+            // "Script-thrown exception").
+            ex.setMessage('Card is not an Epic');
+            throw ex;
         }
 
         // Get child cards

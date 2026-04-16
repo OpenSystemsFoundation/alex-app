@@ -697,10 +697,13 @@ export default class KanbanBacklogView extends LightningElement {
         event.stopPropagation();
         const sprintId = event.currentTarget.dataset.sprintId;
         const sprint = this.planningSprints.find((s) => s.Id === sprintId);
+        // bubbles:true is sufficient — the parent kanbanBoard LWC is
+        // in the same shadow tree. composed:true is avoided to prevent
+        // events leaking outside the component (AppExchange rule
+        // AvoidLwcBubblesComposedTrue).
         this.dispatchEvent(
             new CustomEvent('startsprint', {
                 bubbles: true,
-                composed: true,
                 detail: { sprint }
             })
         );
@@ -737,8 +740,7 @@ export default class KanbanBacklogView extends LightningElement {
         event.stopPropagation();
         this.dispatchEvent(
             new CustomEvent('completesprint', {
-                bubbles: true,
-                composed: true
+                bubbles: true
             })
         );
     }
