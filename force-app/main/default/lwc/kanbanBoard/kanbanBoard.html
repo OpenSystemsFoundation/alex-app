@@ -1042,6 +1042,27 @@
                 onsprintcompleted={handleSprintCompleted}
             ></c-kanban-sprint-complete>
         </template>
+
+        <!-- Sprint Reports Modal -->
+        <template lwc:if={showSprintReports}>
+            <c-kanban-sprint-reports
+                store={store}
+                sprint-id={activeSprintId}
+                board-id={recordId}
+                is-open={showSprintReports}
+                onclose={handleSprintReportsClose}
+            ></c-kanban-sprint-reports>
+        </template>
+    </template>
+
+    <!-- Analytics Modal -->
+    <template lwc:if={showAnalytics}>
+        <c-kanban-analytics
+            store={store}
+            board-id={recordId}
+            is-open={showAnalytics}
+            onclose={handleAnalyticsClose}
+        ></c-kanban-analytics>
     </template>
 
     <!-- Reusable Managers -->

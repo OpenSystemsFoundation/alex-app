@@ -45,6 +45,46 @@ private class CardTriggerHandlerTest {
     }
 
     @isTest
+    static void testAfterInsertCreatesColumnHistory() {
+        OpenSF__Column__c column = [
+            SELECT Id, OpenSF__Board__c
+            FROM OpenSF__Column__c
+            LIMIT 1
+        ];
+
+        TestSettings.skipPlatformEvents = true;
+
+        Test.startTest();
+        OpenSF__Card__c card = new OpenSF__Card__c(
+            OpenSF__Board__c = column.OpenSF__Board__c,
+            OpenSF__Subject__c = 'History Card',
+            OpenSF__Column__c = column.Id,
+            OpenSF__LexoRankPosition__c = '0|h00000:',
+            OpenSF__Status__c = 'To Do',
+            OpenSF__CardType__c = 'Story'
+        );
+        insert card;
+        Test.stopTest();
+
+        List<OpenSF__CardColumnHistory__c> histories = [
+            SELECT OpenSF__Card__c, OpenSF__Column__c, OpenSF__ExitedAt__c
+            FROM OpenSF__CardColumnHistory__c
+            WHERE OpenSF__Card__c = :card.Id
+        ];
+        System.assertEquals(1, histories.size(), 'Should create 1 history row');
+        System.assertEquals(
+            column.Id,
+            histories[0].OpenSF__Column__c,
+            'History should point at the current column'
+        );
+        System.assertEquals(
+            null,
+            histories[0].OpenSF__ExitedAt__c,
+            'Open history entry should remain open'
+        );
+    }
+
+    @isTest
     static void testAfterUpdate() {
         OpenSF__Column__c column = [SELECT Id FROM OpenSF__Column__c LIMIT 1];
 
@@ -113,6 +153,111 @@ private class CardTriggerHandlerTest {
             WHERE Id = :card.Id
         ];
         System.assertEquals(0, deletedCards.size(), 'Card should be deleted');
+    }
+
+    @isTest
+    static void testAfterUpdateClosesOldHistoryAndCreatesNewEntry() {
+        OpenSF__Column__c sourceColumn = [
+            SELECT Id, OpenSF__Board__c
+            FROM OpenSF__Column__c
+            LIMIT 1
+        ];
+        OpenSF__Column__c targetColumn = TestFactory.createColumn(
+            sourceColumn.OpenSF__Board__c,
+            'Done'
+        );
+
+        TestSettings.skipPlatformEvents = true;
+
+        OpenSF__Card__c card = new OpenSF__Card__c(
+            OpenSF__Board__c = sourceColumn.OpenSF__Board__c,
+            OpenSF__Subject__c = 'Moved Card',
+            OpenSF__Column__c = sourceColumn.Id,
+            OpenSF__LexoRankPosition__c = '0|h00000:',
+            OpenSF__Status__c = 'To Do',
+            OpenSF__CardType__c = 'Story'
+        );
+        insert card;
+
+        Test.startTest();
+        card.OpenSF__Column__c = targetColumn.Id;
+        card.OpenSF__Status__c = 'Done';
+        update card;
+        Test.stopTest();
+
+        List<OpenSF__CardColumnHistory__c> histories = [
+            SELECT OpenSF__Column__c, OpenSF__ExitedAt__c
+            FROM OpenSF__CardColumnHistory__c
+            WHERE OpenSF__Card__c = :card.Id
+            ORDER BY CreatedDate ASC
+        ];
+        System.assertEquals(
+            2,
+            histories.size(),
+            'Move should create a second history row'
+        );
+        System.assertEquals(
+            sourceColumn.Id,
+            histories[0].OpenSF__Column__c,
+            'First history row should be the source column'
+        );
+        System.assertNotEquals(
+            null,
+            histories[0].OpenSF__ExitedAt__c,
+            'Source column history should be closed'
+        );
+        System.assertEquals(
+            targetColumn.Id,
+            histories[1].OpenSF__Column__c,
+            'Second history row should be the target column'
+        );
+        System.assertEquals(
+            null,
+            histories[1].OpenSF__ExitedAt__c,
+            'Target column history should remain open'
+        );
+    }
+
+    @isTest
+    static void testAfterDeleteClosesOpenHistory() {
+        OpenSF__Column__c column = [
+            SELECT Id, OpenSF__Board__c
+            FROM OpenSF__Column__c
+            LIMIT 1
+        ];
+
+        TestSettings.skipPlatformEvents = true;
+
+        OpenSF__Card__c card = new OpenSF__Card__c(
+            OpenSF__Board__c = column.OpenSF__Board__c,
+            OpenSF__Subject__c = 'Deleted History Card',
+            OpenSF__Column__c = column.Id,
+            OpenSF__LexoRankPosition__c = '0|h00000:',
+            OpenSF__Status__c = 'To Do',
+            OpenSF__CardType__c = 'Story'
+        );
+        insert card;
+
+        Test.startTest();
+        delete card;
+        Test.stopTest();
+
+        List<OpenSF__CardColumnHistory__c> histories = [
+            SELECT OpenSF__ExitedAt__c, OpenSF__DurationMinutes__c
+            FROM OpenSF__CardColumnHistory__c
+            WHERE OpenSF__Card__c = :card.Id
+        ];
+        System.assertEquals(1, histories.size(), 'Should retain history row');
+        System.assertNotEquals(
+            null,
+            histories[0].OpenSF__ExitedAt__c,
+            'Delete should close the open history row'
+        );
+        System.assertNotEquals(
+            null,
+            histories[0].OpenSF__DurationMinutes__c,
+            'Delete should record elapsed time'
+        );
     }
 
     @isTest

@@ -22,6 +22,7 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
     protected override void afterInsert() {
         this.newCards = (List<OpenSF__Card__c>) this.newList;
         updateColumnCounts(this.newCards, null);
+        trackColumnHistory(this.newCards, null);
         updateEpicCardCounts(this.newCards, null);
         publishCardEvents(
             this.newCards,
@@ -35,6 +36,7 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
         this.newCards = (List<OpenSF__Card__c>) this.newList;
         this.oldCardMap = (Map<Id, OpenSF__Card__c>) this.oldMap;
         updateColumnCounts(this.newCards, this.oldCardMap);
+        trackColumnHistory(this.newCards, this.oldCardMap);
         updateEpicCardCounts(this.newCards, this.oldCardMap);
         publishCardEvents(
             this.newCards,
@@ -47,6 +49,7 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
     protected override void afterDelete() {
         this.oldCards = (List<OpenSF__Card__c>) this.oldList;
         updateColumnCounts(null, null, this.oldCards);
+        closeColumnHistory(this.oldCards);
         updateEpicCardCounts(null, (Map<Id, OpenSF__Card__c>) this.oldMap);
         publishCardEvents(
             this.oldCards,
@@ -105,6 +108,102 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
                     ? oldCard.OpenSF__SequenceNumber__c + 1
                     : 1);
             }
+        }
+    }
+
+    /**
+     * Track column transitions for cycle time analytics.
+     * On insert: creates a new history entry if the card has a column.
+     * On update: if column changed, closes the old entry and opens a new one.
+     */
+    private void trackColumnHistory(
+        List<OpenSF__Card__c> newCards,
+        Map<Id, OpenSF__Card__c> oldCardMap
+    ) {
+        List<OpenSF__CardColumnHistory__c> toInsert = new List<OpenSF__CardColumnHistory__c>();
+        List<OpenSF__CardColumnHistory__c> toUpdate = new List<OpenSF__CardColumnHistory__c>();
+        Set<Id> cardsNeedingClose = new Set<Id>();
+
+        DateTime now = DateTime.now();
+
+        for (OpenSF__Card__c card : newCards) {
+            Id oldColumnId = (oldCardMap != null &&
+                oldCardMap.containsKey(card.Id))
+                ? oldCardMap.get(card.Id).OpenSF__Column__c
+                : null;
+
+            Boolean isInsert = (oldCardMap == null);
+            Boolean columnChanged =
+                !isInsert && (oldColumnId != card.OpenSF__Column__c);
+
+            if (columnChanged && oldColumnId != null) {
+                cardsNeedingClose.add(card.Id);
+            }
+
+            if ((isInsert || columnChanged) && card.OpenSF__Column__c != null) {
+                toInsert.add(
+                    new OpenSF__CardColumnHistory__c(
+                        OpenSF__Card__c = card.Id,
+                        OpenSF__Column__c = card.OpenSF__Column__c,
+                        OpenSF__Board__c = card.OpenSF__Board__c,
+                        OpenSF__EnteredAt__c = now
+                    )
+                );
+            }
+        }
+
+        if (!cardsNeedingClose.isEmpty()) {
+            List<OpenSF__CardColumnHistory__c> openEntries = [
+                SELECT Id, OpenSF__EnteredAt__c
+                FROM OpenSF__CardColumnHistory__c
+                WHERE
+                    OpenSF__Card__c IN :cardsNeedingClose
+                    AND OpenSF__ExitedAt__c = NULL
+            ];
+            for (OpenSF__CardColumnHistory__c entry : openEntries) {
+                entry.OpenSF__ExitedAt__c = now;
+                Long ms = now.getTime() - entry.OpenSF__EnteredAt__c.getTime();
+                entry.OpenSF__DurationMinutes__c = ms / 60000.0;
+                toUpdate.add(entry);
+            }
+        }
+
+        if (!toUpdate.isEmpty()) {
+            update Security.stripInaccessible(AccessType.UPDATABLE, toUpdate)
+                .getRecords();
+        }
+        if (!toInsert.isEmpty()) {
+            insert Security.stripInaccessible(AccessType.CREATABLE, toInsert)
+                .getRecords();
+        }
+    }
+
+    /**
+     * Close open column history entries when cards are deleted
+     */
+    private void closeColumnHistory(List<OpenSF__Card__c> deletedCards) {
+        Set<Id> cardIds = new Set<Id>();
+        for (OpenSF__Card__c card : deletedCards) {
+            cardIds.add(card.Id);
+        }
+        if (cardIds.isEmpty()) {
+            return;
+        }
+
+        DateTime now = DateTime.now();
+        List<OpenSF__CardColumnHistory__c> openEntries = [
+            SELECT Id, OpenSF__EnteredAt__c
+            FROM OpenSF__CardColumnHistory__c
+            WHERE OpenSF__Card__c IN :cardIds AND OpenSF__ExitedAt__c = NULL
+        ];
+        for (OpenSF__CardColumnHistory__c entry : openEntries) {
+            entry.OpenSF__ExitedAt__c = now;
+            Long ms = now.getTime() - entry.OpenSF__EnteredAt__c.getTime();
+            entry.OpenSF__DurationMinutes__c = ms / 60000.0;
+        }
+        if (!openEntries.isEmpty()) {
+            update Security.stripInaccessible(AccessType.UPDATABLE, openEntries)
+                .getRecords();
         }
     }
 

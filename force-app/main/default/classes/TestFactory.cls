@@ -365,6 +365,28 @@ public class TestFactory {
     }
 
     /**
+     * Creates a test SprintSnapshot
+     */
+    public static OpenSF__SprintSnapshot__c createSprintSnapshot(
+        Id sprintId,
+        Date snapshotDate,
+        Decimal totalPoints,
+        Decimal remainingPoints
+    ) {
+        OpenSF__SprintSnapshot__c snapshot = new OpenSF__SprintSnapshot__c(
+            OpenSF__Sprint__c = sprintId,
+            OpenSF__SnapshotDate__c = snapshotDate,
+            OpenSF__TotalPoints__c = totalPoints,
+            OpenSF__RemainingPoints__c = remainingPoints,
+            OpenSF__CompletedPoints__c = totalPoints - remainingPoints,
+            OpenSF__CardCount__c = 5,
+            OpenSF__CompletedCardCount__c = 2
+        );
+        insert snapshot;
+        return snapshot;
+    }
+
+    /**
      * Creates a test User (standard user, not for DML)
      * @param firstName First name of the user
      * @param lastName Last name of the user

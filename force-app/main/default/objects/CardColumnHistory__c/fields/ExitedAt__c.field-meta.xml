@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ExitedAt__c</fullName>
+    <description
+    >When the card left this column. Null if the card is still in this column.</description>
+    <externalId>false</externalId>
+    <label>Exited At</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

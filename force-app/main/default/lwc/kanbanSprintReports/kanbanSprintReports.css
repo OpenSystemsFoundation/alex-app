@@ -1,0 +1,15 @@
+.chart-container {
+    width: 100%;
+    min-height: 320px;
+    padding: 1rem 0;
+}
+
+.burndown-canvas,
+.velocity-canvas {
+    width: 100%;
+    height: 300px;
+}
+
+.slds-tabs_default__nav a {
+    cursor: pointer;
+}

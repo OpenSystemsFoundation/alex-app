@@ -393,6 +393,173 @@ public with sharing class KanbanBoardDTO {
     }
 
     /**
+     * Sprint Snapshot DTO
+     */
+    public class SprintSnapshotDTO {
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public Id sprintId;
+        @AuraEnabled
+        public Date snapshotDate;
+        @AuraEnabled
+        public Decimal totalPoints;
+        @AuraEnabled
+        public Decimal remainingPoints;
+        @AuraEnabled
+        public Decimal completedPoints;
+        @AuraEnabled
+        public Decimal cardCount;
+        @AuraEnabled
+        public Decimal completedCardCount;
+
+        public SprintSnapshotDTO(OpenSF__SprintSnapshot__c snap) {
+            this.Id = snap.Id;
+            this.sprintId = snap.OpenSF__Sprint__c;
+            this.snapshotDate = snap.OpenSF__SnapshotDate__c;
+            this.totalPoints = snap.OpenSF__TotalPoints__c;
+            this.remainingPoints = snap.OpenSF__RemainingPoints__c;
+            this.completedPoints = snap.OpenSF__CompletedPoints__c;
+            this.cardCount = snap.OpenSF__CardCount__c;
+            this.completedCardCount = snap.OpenSF__CompletedCardCount__c;
+        }
+    }
+
+    /**
+     * Card Custom Field configuration DTO
+     */
+    public virtual class CardCustomFieldDTO {
+        @AuraEnabled
+        public String fieldApiName;
+        @AuraEnabled
+        public String displayLabel;
+        @AuraEnabled
+        public String fieldType;
+        @AuraEnabled
+        public Decimal sortOrder;
+
+        public CardCustomFieldDTO() {
+        }
+
+        public CardCustomFieldDTO(OpenSF__CardCustomField__mdt field) {
+            this.fieldApiName = field.OpenSF__FieldApiName__c;
+            this.displayLabel = String.isNotBlank(field.OpenSF__DisplayLabel__c)
+                ? field.OpenSF__DisplayLabel__c
+                : field.OpenSF__FieldApiName__c.replace('__c', '');
+            this.fieldType = field.OpenSF__FieldType__c;
+            this.sortOrder = field.OpenSF__SortOrder__c;
+        }
+    }
+
+    /**
+     * Card Column History DTO for cycle time analytics
+     */
+    public class CardColumnHistoryDTO {
+        @AuraEnabled
+        public Id Id;
+        @AuraEnabled
+        public Id cardId;
+        @AuraEnabled
+        public Id columnId;
+        @AuraEnabled
+        public String columnName;
+        @AuraEnabled
+        public Id boardId;
+        @AuraEnabled
+        public DateTime enteredAt;
+        @AuraEnabled
+        public DateTime exitedAt;
+        @AuraEnabled
+        public Decimal durationMinutes;
+
+        public CardColumnHistoryDTO(OpenSF__CardColumnHistory__c h) {
+            this.Id = h.Id;
+            this.cardId = h.OpenSF__Card__c;
+            this.columnId = h.OpenSF__Column__c;
+            this.boardId = h.OpenSF__Board__c;
+            this.enteredAt = h.OpenSF__EnteredAt__c;
+            this.exitedAt = h.OpenSF__ExitedAt__c;
+            this.durationMinutes = h.OpenSF__DurationMinutes__c;
+            try {
+                this.columnName = h.OpenSF__Column__r.OpenSF__ColumnHeader__c;
+            } catch (Exception e) {
+                this.columnName = null;
+            }
+        }
+    }
+
+    /**
+     * Cycle time analytics result
+     */
+    public class CycleTimeResult {
+        @AuraEnabled
+        public List<ColumnCycleTime> columnTimes;
+        @AuraEnabled
+        public Decimal averageCycleTimeHours;
+        @AuraEnabled
+        public Decimal averageLeadTimeHours;
+        @AuraEnabled
+        public List<CardCycleTime> cardDetails;
+    }
+
+    public class ColumnCycleTime {
+        @AuraEnabled
+        public Id columnId;
+        @AuraEnabled
+        public String columnName;
+        @AuraEnabled
+        public Decimal averageMinutes;
+        @AuraEnabled
+        public Decimal medianMinutes;
+        @AuraEnabled
+        public Decimal minMinutes;
+        @AuraEnabled
+        public Decimal maxMinutes;
+        @AuraEnabled
+        public Integer cardCount;
+    }
+
+    public class CardCycleTime {
+        @AuraEnabled
+        public Id cardId;
+        @AuraEnabled
+        public String cardName;
+        @AuraEnabled
+        public String cardType;
+        @AuraEnabled
+        public Decimal cycleTimeHours;
+        @AuraEnabled
+        public Decimal leadTimeHours;
+        @AuraEnabled
+        public DateTime createdDate;
+        @AuraEnabled
+        public DateTime completedDate;
+    }
+
+    /**
+     * Cumulative flow data point
+     */
+    public class CumulativeFlowDataPoint {
+        @AuraEnabled
+        public Date snapshotDate;
+        @AuraEnabled
+        public Map<String, Integer> columnCounts;
+    }
+
+    /**
+     * Convert list of card column histories
+     */
+    public static List<CardColumnHistoryDTO> convertHistories(
+        List<OpenSF__CardColumnHistory__c> histories
+    ) {
+        List<CardColumnHistoryDTO> result = new List<CardColumnHistoryDTO>();
+        for (OpenSF__CardColumnHistory__c h : histories) {
+            result.add(new CardColumnHistoryDTO(h));
+        }
+        return result;
+    }
+
+    /**
      * Convert list of boards
      */
     public static List<BoardDTO> convertBoards(List<OpenSF__Board__c> boards) {
@@ -495,5 +662,18 @@ public with sharing class KanbanBoardDTO {
                 this.createdByPhotoUrl = null;
             }
         }
+    }
+
+    /**
+     * Convert list of sprint snapshots
+     */
+    public static List<SprintSnapshotDTO> convertSnapshots(
+        List<OpenSF__SprintSnapshot__c> snapshots
+    ) {
+        List<SprintSnapshotDTO> result = new List<SprintSnapshotDTO>();
+        for (OpenSF__SprintSnapshot__c snap : snapshots) {
+            result.add(new SprintSnapshotDTO(snap));
+        }
+        return result;
     }
 }

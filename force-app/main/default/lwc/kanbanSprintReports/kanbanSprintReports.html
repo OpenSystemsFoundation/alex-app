@@ -1,0 +1,252 @@
+<template>
+    <template lwc:if={isOpen}>
+        <section
+            role="dialog"
+            tabindex="-1"
+            aria-modal="true"
+            class="slds-modal slds-fade-in-open slds-modal_large"
+        >
+            <div class="slds-modal__container">
+                <div class="slds-modal__header">
+                    <button
+                        class="slds-button slds-button_icon slds-modal__close slds-button_icon-bare"
+                        title="Close"
+                        onclick={handleClose}
+                    >
+                        <lightning-icon
+                            icon-name="utility:close"
+                            alternative-text="Close"
+                            size="small"
+                        ></lightning-icon>
+                        <span class="slds-assistive-text"
+                            >Close</span
+                        >
+                    </button>
+                    <h2 class="slds-modal__title">
+                        Sprint Reports
+                    </h2>
+                </div>
+
+                <div
+                    class="slds-modal__content slds-var-p-around_medium"
+                >
+                    <!-- Tabs -->
+                    <div class="slds-tabs_default">
+                        <ul
+                            class="slds-tabs_default__nav"
+                            role="tablist"
+                        >
+                            <li
+                                class={burndownTabClass}
+                                role="presentation"
+                            >
+                                <a
+                                    role="tab"
+                                    data-tab="burndown"
+                                    onclick={handleTabClick}
+                                    >Burndown</a
+                                >
+                            </li>
+                            <li
+                                class={velocityTabClass}
+                                role="presentation"
+                            >
+                                <a
+                                    role="tab"
+                                    data-tab="velocity"
+                                    onclick={handleTabClick}
+                                    >Velocity</a
+                                >
+                            </li>
+                            <li
+                                class={summaryTabClass}
+                                role="presentation"
+                            >
+                                <a
+                                    role="tab"
+                                    data-tab="summary"
+                                    onclick={handleTabClick}
+                                    >Summary</a
+                                >
+                            </li>
+                        </ul>
+
+                        <!-- Burndown Tab -->
+                        <template lwc:if={isBurndownTab}>
+                            <div
+                                class="slds-tabs_default__content slds-show"
+                            >
+                                <template
+                                    lwc:if={isLoading}
+                                >
+                                    <lightning-spinner
+                                        alternative-text="Loading"
+                                        size="medium"
+                                    ></lightning-spinner>
+                                </template>
+                                <template
+                                    lwc:elseif={hasBurndownData}
+                                >
+                                    <div
+                                        class="chart-container"
+                                    >
+                                        <canvas
+                                            class="burndown-canvas"
+                                        ></canvas>
+                                    </div>
+                                </template>
+                                <template lwc:else>
+                                    <div
+                                        class="slds-text-align_center slds-var-p-around_large slds-text-color_weak"
+                                    >
+                                        No burndown data
+                                        available yet.
+                                        Snapshots are taken
+                                        daily.
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Velocity Tab -->
+                        <template lwc:if={isVelocityTab}>
+                            <div
+                                class="slds-tabs_default__content slds-show"
+                            >
+                                <template
+                                    lwc:if={isLoading}
+                                >
+                                    <lightning-spinner
+                                        alternative-text="Loading"
+                                        size="medium"
+                                    ></lightning-spinner>
+                                </template>
+                                <template
+                                    lwc:elseif={hasVelocityData}
+                                >
+                                    <div
+                                        class="chart-container"
+                                    >
+                                        <canvas
+                                            class="velocity-canvas"
+                                        ></canvas>
+                                    </div>
+                                    <div
+                                        class="slds-text-align_center slds-var-m-top_small"
+                                    >
+                                        <span
+                                            class="slds-text-body_small slds-text-color_weak"
+                                        >
+                                            Average
+                                            Velocity:
+                                            <strong
+                                                >{averageVelocity}</strong
+                                            >
+                                            points/sprint
+                                        </span>
+                                    </div>
+                                </template>
+                                <template lwc:else>
+                                    <div
+                                        class="slds-text-align_center slds-var-p-around_large slds-text-color_weak"
+                                    >
+                                        No completed sprints
+                                        yet. Velocity data
+                                        appears after
+                                        completing sprints.
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Summary Tab -->
+                        <template lwc:if={isSummaryTab}>
+                            <div
+                                class="slds-tabs_default__content slds-show slds-var-p-around_medium"
+                            >
+                                <template
+                                    lwc:if={hasVelocityData}
+                                >
+                                    <h3
+                                        class="slds-text-heading_small slds-var-m-bottom_medium"
+                                    >
+                                        Sprint History
+                                    </h3>
+                                    <table
+                                        class="slds-table slds-table_bordered slds-table_cell-buffer"
+                                    >
+                                        <thead>
+                                            <tr>
+                                                <th>
+                                                    Sprint
+                                                </th>
+                                                <th>
+                                                    Status
+                                                </th>
+                                                <th>
+                                                    Completed
+                                                    Points
+                                                </th>
+                                                <th>
+                                                    Total
+                                                    Points
+                                                </th>
+                                                <th>
+                                                    Velocity
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template
+                                                for:each={velocityData}
+                                                for:item="sprint"
+                                            >
+                                                <tr
+                                                    key={sprint.Id}
+                                                >
+                                                    <td>
+                                                        {sprint.Name}
+                                                    </td>
+                                                    <td>
+                                                        {sprint.status}
+                                                    </td>
+                                                    <td>
+                                                        {sprint.completedStoryPoints}
+                                                    </td>
+                                                    <td>
+                                                        {sprint.totalStoryPoints}
+                                                    </td>
+                                                    <td>
+                                                        {sprint.velocity}
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </template>
+                                <template lwc:else>
+                                    <div
+                                        class="slds-text-align_center slds-text-color_weak"
+                                    >
+                                        No sprint history
+                                        available.
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="slds-modal__footer">
+                    <button
+                        class="slds-button slds-button_neutral"
+                        onclick={handleClose}
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

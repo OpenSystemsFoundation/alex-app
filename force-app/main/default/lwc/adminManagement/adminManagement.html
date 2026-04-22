@@ -1,0 +1,640 @@
+<template>
+    <div class="admin-container">
+        <div class="admin-header">
+            <div class="header-content">
+                <lightning-icon
+                    icon-name="standard:settings"
+                    size="medium"
+                ></lightning-icon>
+                <div class="header-text">
+                    <h1 class="slds-text-heading_large">Admin Management</h1>
+                    <p class="slds-text-body_regular slds-text-color_weak">
+                        Configure boards, card fields, and app settings
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <template lwc:if={showOnboarding}>
+            <div class="onboarding-banner">
+                <lightning-card>
+                    <div slot="title">
+                        <lightning-icon
+                            icon-name="utility:setup"
+                            size="small"
+                            class="slds-m-right_x-small"
+                        ></lightning-icon>
+                        Getting Started
+                    </div>
+                    <div class="onboarding-content">
+                        <p class="slds-m-bottom_medium">
+                            Complete these steps to set up your workspace:
+                        </p>
+                        <lightning-progress-indicator
+                            current-step={onboardingCurrentStep}
+                            type="base"
+                            variant="base"
+                        >
+                            <lightning-progress-step
+                                label="Create a Board"
+                                value="board"
+                            ></lightning-progress-step>
+                            <lightning-progress-step
+                                label="Set Up Columns"
+                                value="columns"
+                            ></lightning-progress-step>
+                            <lightning-progress-step
+                                label="Assign Users"
+                                value="users"
+                            ></lightning-progress-step>
+                        </lightning-progress-indicator>
+                        <div class="onboarding-actions slds-m-top_medium">
+                            <template lwc:if={showCreateFirstBoard}>
+                                <lightning-button
+                                    variant="brand"
+                                    label="Create Your First Board"
+                                    onclick={handleQuickCreateBoard}
+                                    icon-name="utility:add"
+                                ></lightning-button>
+                            </template>
+                            <template lwc:if={showSetupColumns}>
+                                <p
+                                    class="slds-text-body_regular slds-m-bottom_small"
+                                >
+                                    Open a board from the list below and use the
+                                    <strong>Columns</strong> tab on the board
+                                    record page to configure stages.
+                                </p>
+                                <template lwc:if={hasBoards}>
+                                    <lightning-button
+                                        variant="neutral"
+                                        label="Open First Board"
+                                        onclick={handleOpenFirstBoard}
+                                        icon-name="utility:new_window"
+                                    ></lightning-button>
+                                </template>
+                            </template>
+                            <template lwc:if={showAssignUsers}>
+                                <p class="slds-text-body_regular">
+                                    Assign the <strong>Alex Admin</strong> or
+                                    <strong>Alex User</strong> permission sets to
+                                    your team members in Salesforce Setup.
+                                </p>
+                            </template>
+                        </div>
+                    </div>
+                </lightning-card>
+            </div>
+        </template>
+
+        <div class="admin-nav">
+            <lightning-tabset active-tab-value={activeTab}>
+                <lightning-tab
+                    label="Boards"
+                    value="boards"
+                    icon-name="standard:kanban"
+                    onactive={handleTabChange}
+                >
+                    <div class="section-content">
+                        <div class="section-header">
+                            <h2 class="slds-text-heading_medium">Boards</h2>
+                            <lightning-button
+                                variant="brand"
+                                label="New Board"
+                                onclick={handleNewBoard}
+                                icon-name="utility:add"
+                            ></lightning-button>
+                        </div>
+
+                        <template lwc:if={isLoading}>
+                            <lightning-spinner
+                                alternative-text="Loading"
+                                size="medium"
+                            ></lightning-spinner>
+                        </template>
+
+                        <template lwc:if={hasBoards}>
+                            <div class="boards-grid">
+                                <template for:each={boards} for:item="board">
+                                    <div key={board.Id} class="board-card">
+                                        <lightning-card>
+                                            <div slot="title">
+                                                <span class="board-name"
+                                                    >{board.Name}</span
+                                                >
+                                                <template lwc:if={board.active}>
+                                                    <lightning-badge
+                                                        label="Active"
+                                                        class="slds-m-left_x-small badge-active"
+                                                    ></lightning-badge>
+                                                </template>
+                                            </div>
+                                            <lightning-button-menu
+                                                slot="actions"
+                                                alternative-text="Board Actions"
+                                                menu-alignment="right"
+                                                icon-size="x-small"
+                                            >
+                                                <lightning-menu-item
+                                                    label="Edit"
+                                                    value="edit"
+                                                    data-board-id={board.Id}
+                                                    onclick={handleBoardAction}
+                                                    icon-name="utility:edit"
+                                                ></lightning-menu-item>
+                                                <lightning-menu-item
+                                                    label="Open Board"
+                                                    value="open"
+                                                    data-board-id={board.Id}
+                                                    onclick={handleBoardAction}
+                                                    icon-name="utility:new_window"
+                                                ></lightning-menu-item>
+                                                <lightning-menu-item
+                                                    label="Delete"
+                                                    value="delete"
+                                                    data-board-id={board.Id}
+                                                    onclick={handleBoardAction}
+                                                    icon-name="utility:delete"
+                                                ></lightning-menu-item>
+                                            </lightning-button-menu>
+                                            <div class="board-details">
+                                                <p
+                                                    class="board-description"
+                                                    lwc:if={board.description}
+                                                >
+                                                    {board.description}
+                                                </p>
+                                                <div class="board-meta">
+                                                    <span class="meta-item">
+                                                        <lightning-icon
+                                                            icon-name="utility:layout"
+                                                            size="xx-small"
+                                                        ></lightning-icon>
+                                                        {board.type}
+                                                    </span>
+                                                    <span class="meta-item">
+                                                        <lightning-icon
+                                                            icon-name="utility:check"
+                                                            size="xx-small"
+                                                        ></lightning-icon>
+                                                        {board.status}
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    class="board-actions-row slds-m-top_small"
+                                                >
+                                                    <lightning-button
+                                                        variant="neutral"
+                                                        label="Open Board"
+                                                        data-board-id={board.Id}
+                                                        onclick={handleOpenBoard}
+                                                        icon-name="utility:new_window"
+                                                    ></lightning-button>
+                                                </div>
+                                            </div>
+                                        </lightning-card>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <template lwc:if={noBoards}>
+                            <div class="empty-state">
+                                <lightning-icon
+                                    icon-name="standard:kanban"
+                                    size="large"
+                                ></lightning-icon>
+                                <h3 class="slds-m-top_medium">No Boards Yet</h3>
+                                <p class="slds-text-color_weak">
+                                    Create your first board to get started.
+                                </p>
+                                <lightning-button
+                                    variant="brand"
+                                    label="Create Board"
+                                    onclick={handleNewBoard}
+                                    icon-name="utility:add"
+                                    class="slds-m-top_medium"
+                                ></lightning-button>
+                            </div>
+                        </template>
+                    </div>
+                </lightning-tab>
+
+                <lightning-tab
+                    label="Card Fields"
+                    value="cardFields"
+                    icon-name="standard:custom"
+                    onactive={handleTabChange}
+                >
+                    <div class="section-content">
+                        <div class="section-header">
+                            <h2 class="slds-text-heading_medium">
+                                Card Custom Fields
+                            </h2>
+                            <lightning-button
+                                variant="brand"
+                                label="Add Field"
+                                onclick={handleNewCardField}
+                                icon-name="utility:add"
+                            ></lightning-button>
+                        </div>
+                        <p
+                            class="slds-text-body_small slds-text-color_weak slds-m-bottom_small"
+                        >
+                            Configure which fields appear on card bodies.
+                            Changes deploy via metadata and may take a moment to
+                            apply.
+                        </p>
+
+                        <template lwc:if={isLoadingCardFields}>
+                            <lightning-spinner
+                                alternative-text="Loading card fields"
+                                size="medium"
+                            ></lightning-spinner>
+                        </template>
+
+                        <template lwc:if={hasCardFields}>
+                            <div class="columns-list">
+                                <template
+                                    for:each={cardFields}
+                                    for:item="field"
+                                >
+                                    <div
+                                        key={field.developerName}
+                                        class="column-item"
+                                    >
+                                        <div class="column-info">
+                                            <span class="column-header-text"
+                                                >{field.displayLabel}</span
+                                            >
+                                            <span class="column-category"
+                                                >{field.fieldApiName} &bull;
+                                                {field.fieldType} &bull; Order:
+                                                {field.sortOrder}</span
+                                            >
+                                        </div>
+                                        <div class="column-card-count">
+                                            <span class={field.statusClass}
+                                                >{field.statusLabel}</span
+                                            >
+                                        </div>
+                                        <div class="column-actions">
+                                            <lightning-button-icon
+                                                icon-name="utility:edit"
+                                                alternative-text="Edit field"
+                                                data-developer-name={field.developerName}
+                                                onclick={handleEditCardField}
+                                                variant="border"
+                                                size="small"
+                                            ></lightning-button-icon>
+                                            <lightning-button-icon
+                                                icon-name="utility:delete"
+                                                alternative-text="Deactivate field"
+                                                data-developer-name={field.developerName}
+                                                onclick={handleDeactivateCardField}
+                                                variant="border"
+                                                size="small"
+                                            ></lightning-button-icon>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <template lwc:if={noCardFields}>
+                            <div class="empty-state">
+                                <lightning-icon
+                                    icon-name="standard:custom"
+                                    size="large"
+                                ></lightning-icon>
+                                <h3 class="slds-m-top_medium">
+                                    No Custom Fields Configured
+                                </h3>
+                                <p class="slds-text-color_weak">
+                                    Add fields to display additional information
+                                    on card bodies.
+                                </p>
+                                <lightning-button
+                                    variant="brand"
+                                    label="Add Field"
+                                    onclick={handleNewCardField}
+                                    icon-name="utility:add"
+                                    class="slds-m-top_medium"
+                                ></lightning-button>
+                            </div>
+                        </template>
+                    </div>
+                </lightning-tab>
+
+                <lightning-tab
+                    label="Settings"
+                    value="settings"
+                    icon-name="standard:settings"
+                    onactive={handleTabChange}
+                >
+                    <div class="section-content">
+                        <h2
+                            class="slds-text-heading_medium slds-m-bottom_medium"
+                        >
+                            Global Settings
+                        </h2>
+
+                        <lightning-card title="Permission Sets">
+                            <div class="settings-section">
+                                <p
+                                    class="slds-text-body_regular slds-m-bottom_small"
+                                >
+                                    Manage user access by assigning permission
+                                    sets in Salesforce Setup.
+                                </p>
+                                <div class="permission-sets-list">
+                                    <div class="permission-set-item">
+                                        <lightning-icon
+                                            icon-name="utility:shield"
+                                            size="small"
+                                        ></lightning-icon>
+                                        <div>
+                                            <strong>Alex Admin</strong>
+                                            <p class="slds-text-color_weak">
+                                                Full access to boards, analytics,
+                                                card field setup, and admin
+                                                features.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="permission-set-item">
+                                        <lightning-icon
+                                            icon-name="utility:user"
+                                            size="small"
+                                        ></lightning-icon>
+                                        <div>
+                                            <strong>Alex User</strong>
+                                            <p class="slds-text-color_weak">
+                                                Standard user access to boards,
+                                                cards, and analytics views.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning-card>
+
+                        <lightning-card title="About" class="slds-m-top_medium">
+                            <div class="settings-section">
+                                <div class="about-info">
+                                    <p><strong>Alex</strong> - Kanban Board Management</p>
+                                    <p class="slds-text-color_weak">
+                                        Namespace: OpenSF
+                                    </p>
+                                </div>
+                            </div>
+                        </lightning-card>
+                    </div>
+                </lightning-tab>
+            </lightning-tabset>
+        </div>
+
+        <template lwc:if={showBoardModal}>
+            <section
+                role="dialog"
+                tabindex="-1"
+                class="slds-modal slds-fade-in-open"
+                aria-modal="true"
+                aria-labelledby="board-modal-heading"
+            >
+                <div class="slds-modal__container">
+                    <button
+                        class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleCloseModal}
+                    >
+                        <lightning-icon
+                            icon-name="utility:close"
+                            alternative-text="Close"
+                            size="small"
+                            variant="inverse"
+                        ></lightning-icon>
+                    </button>
+                    <div class="slds-modal__header">
+                        <h2
+                            id="board-modal-heading"
+                            class="slds-modal__title slds-hyphenate"
+                        >
+                            {boardModalTitle}
+                        </h2>
+                    </div>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <lightning-input
+                            label="Board Name"
+                            value={boardForm.name}
+                            onchange={handleBoardFormChange}
+                            data-field="name"
+                            required
+                        ></lightning-input>
+                        <lightning-textarea
+                            label="Description"
+                            value={boardForm.description}
+                            onchange={handleBoardFormChange}
+                            data-field="description"
+                            class="slds-m-top_small"
+                        ></lightning-textarea>
+                        <lightning-combobox
+                            label="Board Type"
+                            value={boardForm.type}
+                            options={boardTypeOptions}
+                            onchange={handleBoardFormChange}
+                            data-field="type"
+                            class="slds-m-top_small"
+                        ></lightning-combobox>
+                        <template lwc:if={isEditingBoard}>
+                            <lightning-input
+                                type="toggle"
+                                label="Active"
+                                checked={boardForm.active}
+                                onchange={handleBoardFormChange}
+                                data-field="active"
+                                class="slds-m-top_small"
+                            ></lightning-input>
+                            <lightning-input
+                                type="toggle"
+                                label="Email Notifications"
+                                checked={boardForm.emailNotifications}
+                                onchange={handleBoardFormChange}
+                                data-field="emailNotifications"
+                                class="slds-m-top_small"
+                            ></lightning-input>
+                            <lightning-input
+                                type="toggle"
+                                label="Salesforce Notifications"
+                                checked={boardForm.salesforceNotifications}
+                                onchange={handleBoardFormChange}
+                                data-field="salesforceNotifications"
+                                class="slds-m-top_small"
+                            ></lightning-input>
+                        </template>
+                        <template lwc:if={showDefaultColumnsOption}>
+                            <lightning-input
+                                type="checkbox"
+                                label="Create with default columns (To Do, In Progress, In Review, Done)"
+                                checked={createWithDefaults}
+                                onchange={handleDefaultColumnsChange}
+                                class="slds-m-top_medium"
+                            ></lightning-input>
+                        </template>
+                    </div>
+                    <div class="slds-modal__footer">
+                        <lightning-button
+                            label="Cancel"
+                            onclick={handleCloseModal}
+                        ></lightning-button>
+                        <lightning-button
+                            variant="brand"
+                            label={boardModalSaveLabel}
+                            onclick={handleSaveBoard}
+                            disabled={isSaving}
+                            class="slds-m-left_x-small"
+                        ></lightning-button>
+                    </div>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <template lwc:if={showCardFieldModal}>
+            <section
+                role="dialog"
+                tabindex="-1"
+                class="slds-modal slds-fade-in-open"
+                aria-modal="true"
+                aria-labelledby="card-field-modal-heading"
+            >
+                <div class="slds-modal__container">
+                    <button
+                        class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleCloseCardFieldModal}
+                    >
+                        <lightning-icon
+                            icon-name="utility:close"
+                            alternative-text="Close"
+                            size="small"
+                            variant="inverse"
+                        ></lightning-icon>
+                    </button>
+                    <div class="slds-modal__header">
+                        <h2
+                            id="card-field-modal-heading"
+                            class="slds-modal__title slds-hyphenate"
+                        >
+                            {cardFieldModalTitle}
+                        </h2>
+                    </div>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <lightning-combobox
+                            label="Card Field"
+                            value={cardFieldForm.fieldApiName}
+                            options={cardFieldOptions}
+                            onchange={handleCardFieldFormChange}
+                            data-field="fieldApiName"
+                            required
+                            disabled={isEditingCardField}
+                        ></lightning-combobox>
+                        <lightning-input
+                            label="Display Label"
+                            value={cardFieldForm.displayLabel}
+                            onchange={handleCardFieldFormChange}
+                            data-field="displayLabel"
+                            placeholder="Leave blank to use field label"
+                            class="slds-m-top_small"
+                        ></lightning-input>
+                        <lightning-combobox
+                            label="Field Type"
+                            value={cardFieldForm.fieldType}
+                            options={fieldTypeOptions}
+                            onchange={handleCardFieldFormChange}
+                            data-field="fieldType"
+                            class="slds-m-top_small"
+                        ></lightning-combobox>
+                        <lightning-input
+                            type="number"
+                            label="Sort Order"
+                            value={cardFieldForm.sortOrder}
+                            onchange={handleCardFieldFormChange}
+                            data-field="sortOrder"
+                            class="slds-m-top_small"
+                        ></lightning-input>
+                        <lightning-input
+                            type="toggle"
+                            label="Active"
+                            checked={cardFieldForm.active}
+                            onchange={handleCardFieldFormChange}
+                            data-field="active"
+                            class="slds-m-top_small"
+                        ></lightning-input>
+                    </div>
+                    <div class="slds-modal__footer">
+                        <lightning-button
+                            label="Cancel"
+                            onclick={handleCloseCardFieldModal}
+                        ></lightning-button>
+                        <lightning-button
+                            variant="brand"
+                            label={cardFieldModalSaveLabel}
+                            onclick={handleSaveCardField}
+                            disabled={isSaving}
+                            class="slds-m-left_x-small"
+                        ></lightning-button>
+                    </div>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <template lwc:if={showDeleteModal}>
+            <section
+                role="dialog"
+                tabindex="-1"
+                class="slds-modal slds-fade-in-open slds-modal_small"
+                aria-modal="true"
+                aria-labelledby="delete-modal-heading"
+            >
+                <div class="slds-modal__container">
+                    <button
+                        class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleCloseDeleteModal}
+                    >
+                        <lightning-icon
+                            icon-name="utility:close"
+                            alternative-text="Close"
+                            size="small"
+                            variant="inverse"
+                        ></lightning-icon>
+                    </button>
+                    <div class="slds-modal__header">
+                        <h2
+                            id="delete-modal-heading"
+                            class="slds-modal__title slds-hyphenate"
+                        >
+                            Confirm Delete
+                        </h2>
+                    </div>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <p>{deleteMessage}</p>
+                    </div>
+                    <div class="slds-modal__footer">
+                        <lightning-button
+                            label="Cancel"
+                            onclick={handleCloseDeleteModal}
+                        ></lightning-button>
+                        <lightning-button
+                            variant="destructive"
+                            label="Delete"
+                            onclick={handleConfirmDelete}
+                            disabled={isSaving}
+                            class="slds-m-left_x-small"
+                        ></lightning-button>
+                    </div>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+    </div>
+</template>

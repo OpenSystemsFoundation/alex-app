@@ -418,6 +418,39 @@ public with sharing class KanbanBoardController {
     }
 
     /**
+     * Get burndown data for a sprint
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.SprintSnapshotDTO> getBurndownData(
+        Id sprintId
+    ) {
+        try {
+            return SprintService.getBurndownData(sprintId);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading burndown data: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Get velocity data for a board
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.SprintDTO> getVelocityData(
+        Id boardId,
+        Integer count
+    ) {
+        try {
+            return SprintService.getVelocityData(boardId, count);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading velocity data: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
      * Mark a card as completed in the sprint
      */
     @AuraEnabled
@@ -458,6 +491,44 @@ public with sharing class KanbanBoardController {
         } catch (Exception e) {
             throw new AuraHandledException(
                 'Error reordering sprint: ' + e.getMessage()
+            );
+        }
+    }
+
+    // =========================================================================
+    // Analytics Methods
+    // =========================================================================
+
+    /**
+     * Get cycle time analytics for a board
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.CycleTimeResult getCycleTimeAnalytics(
+        Id boardId,
+        Integer daysBack
+    ) {
+        try {
+            return AnalyticsService.getCycleTimeAnalytics(boardId, daysBack);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading cycle time analytics: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Get cumulative flow data for a board
+     */
+    @AuraEnabled
+    public static List<KanbanBoardDTO.CumulativeFlowDataPoint> getCumulativeFlowData(
+        Id boardId,
+        Integer daysBack
+    ) {
+        try {
+            return AnalyticsService.getCumulativeFlowData(boardId, daysBack);
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error loading cumulative flow data: ' + e.getMessage()
             );
         }
     }
@@ -542,6 +613,8 @@ public with sharing class KanbanBoardController {
         public List<KanbanBoardDTO.CardDTO> cards;
         @AuraEnabled
         public Map<String, String> cardTypeIcons;
+        @AuraEnabled
+        public List<KanbanBoardDTO.CardCustomFieldDTO> customFieldConfigs;
     }
 
     public class CardMoveResult {
