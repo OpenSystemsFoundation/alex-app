@@ -60,8 +60,7 @@ const TEMPLATE_OPTIONS = [
         value: 'scrum',
         label: 'Scrum Board',
         description: 'Full sprint workflow with backlog and testing',
-        columnsLabel:
-            'Backlog → To Do → In Progress → Testing → Review → Done',
+        columnsLabel: 'Backlog → To Do → In Progress → Testing → Review → Done',
         icon: 'utility:sprint'
     },
     {
@@ -147,7 +146,13 @@ export default class ColumnManagement extends LightningElement {
         this.isSaving = true;
         try {
             await this.store.dispatch(
-                createColumnAsync('New Column', 'To Do', '#1B96FF', 'To Do', null)
+                createColumnAsync(
+                    'New Column',
+                    'To Do',
+                    '#1B96FF',
+                    'To Do',
+                    null
+                )
             );
         } catch (error) {
             this.showError('Error creating column', error);
@@ -170,11 +175,7 @@ export default class ColumnManagement extends LightningElement {
             await this.store.dispatch(
                 createColumnsFromTemplateAsync(templateName)
             );
-            this.showToast(
-                'Success',
-                'Template columns created',
-                'success'
-            );
+            this.showToast('Success', 'Template columns created', 'success');
         } catch (error) {
             this.showError('Error creating template', error);
         } finally {
@@ -246,9 +247,7 @@ export default class ColumnManagement extends LightningElement {
     async handleConfirmDelete() {
         this.isSaving = true;
         try {
-            await this.store.dispatch(
-                deleteColumnAsync(this.deleteColumnId)
-            );
+            await this.store.dispatch(deleteColumnAsync(this.deleteColumnId));
             this.showToast('Success', 'Column deleted', 'success');
             this.showDeleteModal = false;
             this.deleteColumnId = null;
@@ -337,9 +336,7 @@ export default class ColumnManagement extends LightningElement {
         if (this.dragColumnId === this.dragOverColumnId) return;
 
         const columns = this.columns;
-        const dragIndex = columns.findIndex(
-            (c) => c.Id === this.dragColumnId
-        );
+        const dragIndex = columns.findIndex((c) => c.Id === this.dragColumnId);
         const dropIndex = columns.findIndex(
             (c) => c.Id === this.dragOverColumnId
         );

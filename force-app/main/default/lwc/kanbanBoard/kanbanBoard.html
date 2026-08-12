@@ -164,9 +164,17 @@
                                 size="large"
                                 class="kanban-no-sprint-state__icon"
                             ></lightning-icon>
-                            <h2 class="kanban-no-sprint-state__title">No Active Sprint</h2>
-                            <p class="kanban-no-sprint-state__body">
-                                Start a sprint from the Backlog tab to see cards here.
+                            <h2
+                                class="kanban-no-sprint-state__title"
+                            >
+                                No Active Sprint
+                            </h2>
+                            <p
+                                class="kanban-no-sprint-state__body"
+                            >
+                                Start a sprint from the
+                                Backlog tab to see cards
+                                here.
                             </p>
                             <lightning-button
                                 label="Go to Backlog"
@@ -177,776 +185,781 @@
                         </div>
                     </template>
                     <template lwc:else>
-
-                    <!-- Mobile Column Selector -->
-                    <div class="mobile-column-selector">
-                        <button
-                            class="mobile-nav-btn"
-                            onclick={handleMobilePrevColumn}
-                            disabled={isMobileFirstColumn}
-                        >
-                            <lightning-icon
-                                icon-name="utility:chevronleft"
-                                size="xx-small"
-                                alternative-text="Previous"
-                            ></lightning-icon>
-                        </button>
-                        <select
-                            class="mobile-column-select"
-                            onchange={handleMobileColumnChange}
-                            value={mobileActiveColumnId}
-                        >
-                            <template
-                                for:each={filteredColumns}
-                                for:item="col"
+                        <!-- Mobile Column Selector -->
+                        <div class="mobile-column-selector">
+                            <button
+                                class="mobile-nav-btn"
+                                onclick={handleMobilePrevColumn}
+                                disabled={isMobileFirstColumn}
                             >
-                                <option
-                                    key={col.Id}
-                                    value={col.Id}
-                                >
-                                    {col.columnHeader}
-                                    ({col.cardCount})
-                                </option>
-                            </template>
-                        </select>
-                        <button
-                            class="mobile-nav-btn"
-                            onclick={handleMobileNextColumn}
-                            disabled={isMobileLastColumn}
-                        >
-                            <lightning-icon
-                                icon-name="utility:chevronright"
-                                size="xx-small"
-                                alternative-text="Next"
-                            ></lightning-icon>
-                        </button>
-                        <span class="mobile-column-counter"
-                            >{mobileColumnCounter}</span
-                        >
-                    </div>
-
-                    <!-- Kanban Board (swimlane mode) -->
-                    <template lwc:if={hasSwimlanes}>
-                        <div
-                            class="kanban-board kanban-board--swimlanes slds-scrollable_x"
-                        >
-                            <!-- Column Headers Row -->
-                            <div
-                                class="swimlane-header-row"
+                                <lightning-icon
+                                    icon-name="utility:chevronleft"
+                                    size="xx-small"
+                                    alternative-text="Previous"
+                                ></lightning-icon>
+                            </button>
+                            <select
+                                class="mobile-column-select"
+                                onchange={handleMobileColumnChange}
+                                value={mobileActiveColumnId}
                             >
-                                <div
-                                    class="swimlane-label-cell"
-                                ></div>
                                 <template
                                     for:each={filteredColumns}
-                                    for:item="column"
+                                    for:item="col"
                                 >
-                                    <div
-                                        key={column.Id}
-                                        class="swimlane-col-header"
-                                        style={column.columnStyle}
+                                    <option
+                                        key={col.Id}
+                                        value={col.Id}
                                     >
-                                        <span
-                                            class="slds-truncate"
-                                            >{column.columnHeader}</span
-                                        >
-                                        <template
-                                            lwc:if={column.hasWipLimit}
-                                        >
-                                            <span
-                                                class="wip-badge"
-                                                >{column.cardCount}/{column.wipLimit}</span
-                                            >
-                                        </template>
-                                    </div>
+                                        {col.columnHeader}
+                                        ({col.cardCount})
+                                    </option>
                                 </template>
-                            </div>
-                            <!-- Swimlane Rows -->
-                            <template
-                                for:each={swimlanes}
-                                for:item="lane"
+                            </select>
+                            <button
+                                class="mobile-nav-btn"
+                                onclick={handleMobileNextColumn}
+                                disabled={isMobileLastColumn}
                             >
+                                <lightning-icon
+                                    icon-name="utility:chevronright"
+                                    size="xx-small"
+                                    alternative-text="Next"
+                                ></lightning-icon>
+                            </button>
+                            <span
+                                class="mobile-column-counter"
+                                >{mobileColumnCounter}</span
+                            >
+                        </div>
+
+                        <!-- Kanban Board (swimlane mode) -->
+                        <template lwc:if={hasSwimlanes}>
+                            <div
+                                class="kanban-board kanban-board--swimlanes slds-scrollable_x"
+                            >
+                                <!-- Column Headers Row -->
                                 <div
-                                    key={lane.key}
-                                    class="swimlane-row"
+                                    class="swimlane-header-row"
                                 >
                                     <div
                                         class="swimlane-label-cell"
-                                    >
-                                        <span
-                                            class="swimlane-label"
-                                            >{lane.label}</span
-                                        >
-                                        <span
-                                            class="swimlane-count"
-                                            >{lane.totalCards}</span
-                                        >
-                                    </div>
+                                    ></div>
                                     <template
-                                        for:each={lane.columns}
-                                        for:item="col"
+                                        for:each={filteredColumns}
+                                        for:item="column"
                                     >
                                         <div
-                                            key={col.laneKey}
-                                            class="swimlane-cell"
-                                            data-column-id={col.Id}
-                                            ondragover={handleDragOver}
-                                            ondrop={handleDrop}
+                                            key={column.Id}
+                                            class="swimlane-col-header"
+                                            style={column.columnStyle}
                                         >
-                                            <template
-                                                for:each={col.cards}
-                                                for:item="card"
+                                            <span
+                                                class="slds-truncate"
+                                                >{column.columnHeader}</span
                                             >
-                                                <article
-                                                    key={card.Id}
-                                                    class="kanban-card"
-                                                    data-card-id={card.Id}
-                                                    data-column-id={col.Id}
-                                                    draggable="true"
-                                                    ondragstart={handleDragStart}
-                                                    ondragend={handleDragEnd}
-                                                    onclick={handleCardClick}
-                                                    oncontextmenu={handleBoardCardContextMenu}
-                                                    style={card.cardStyle}
-                                                >
-                                                    <div
-                                                        class="kanban-card__body slds-text-body_small"
-                                                    >
-                                                        <p
-                                                            class={card.subjectClass}
-                                                            title={card.subjectTitle}
-                                                        >
-                                                            {card.subject}
-                                                        </p>
-                                                        <template
-                                                            lwc:if={card.hasStoryPoints}
-                                                        >
-                                                            <span
-                                                                class="swimlane-card-sp"
-                                                                >{card.storyPoints}</span
-                                                            >
-                                                        </template>
-                                                    </div>
-                                                </article>
-                                            </template>
-                                        </div>
-                                    </template>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
-
-                    <!-- Kanban Board (normal mode, no swimlanes) -->
-                    <template lwc:else>
-                        <div
-                            class="kanban-board slds-grid slds-scrollable_x"
-                            ontouchstart={handleTouchStart}
-                            ontouchend={handleTouchEnd}
-                        >
-                            <template lwc:if={hasColumns}>
-                                <template
-                                    for:each={filteredColumns}
-                                    for:item="column"
-                                >
-                                    <!-- Kanban Column -->
-                                    <div
-                                        key={column.Id}
-                                        class={column.mobileColumnClass}
-                                        data-column-id={column.Id}
-                                        style={column.columnStyle}
-                                    >
-                                        <!-- Column Header -->
-                                        <div
-                                            class="kanban-column__header slds-grid slds-grid_align-spread slds-grid_vertical-align-center"
-                                        >
-                                            <div
-                                                class="slds-col slds-truncate"
-                                            >
-                                                <h2
-                                                    class="slds-text-heading_small slds-truncate"
-                                                >
-                                                    <template
-                                                        lwc:if={experienceCloud}
-                                                    >
-                                                        <a
-                                                            href={column.communityColumnUrl}
-                                                            class="slds-text-link slds-text-color_brand slds-truncate"
-                                                            title={column.columnHeader}
-                                                        >
-                                                            <span
-                                                                class="slds-truncate"
-                                                                >{column.columnHeader}</span
-                                                            >
-                                                        </a>
-                                                    </template>
-                                                    <template
-                                                        lwc:else
-                                                    >
-                                                        <a
-                                                            href={column.columnUrl}
-                                                            class="slds-text-link slds-text-color_brand slds-truncate"
-                                                            title={column.columnHeader}
-                                                            onclick={handleColumnClick}
-                                                            data-column-id={column.Id}
-                                                        >
-                                                            <span
-                                                                class="slds-truncate"
-                                                                >{column.columnHeader}</span
-                                                            >
-                                                        </a>
-                                                    </template>
-                                                </h2>
-                                            </div>
-
-                                            <!-- WIP Limit Badge -->
                                             <template
                                                 lwc:if={column.hasWipLimit}
                                             >
                                                 <span
-                                                    class={column.wipBadgeClass}
+                                                    class="wip-badge"
                                                     >{column.cardCount}/{column.wipLimit}</span
                                                 >
                                             </template>
-
-                                            <!-- Add Card Button (internal only) -->
-                                            <template
-                                                lwc:if={isInternalMode}
-                                            >
-                                                <div
-                                                    class="add-button-wrapper"
-                                                >
-                                                    <button
-                                                        class="add-card-button slds-button slds-button_icon slds-button_icon-border-filled"
-                                                        data-column-id={column.Id}
-                                                        onclick={handleAddCard}
-                                                        title="Add New Card"
-                                                    >
-                                                        <lightning-icon
-                                                            icon-name="utility:add"
-                                                            alternative-text="Add New Card"
-                                                            size="small"
-                                                        ></lightning-icon>
-                                                        <span
-                                                            class="slds-assistive-text"
-                                                            >Add
-                                                            New
-                                                            Card</span
-                                                        >
-                                                    </button>
-                                                </div>
-                                            </template>
                                         </div>
-
-                                        <!-- Scrollable Card Wrapper (internal: drag-drop enabled) -->
+                                    </template>
+                                </div>
+                                <!-- Swimlane Rows -->
+                                <template
+                                    for:each={swimlanes}
+                                    for:item="lane"
+                                >
+                                    <div
+                                        key={lane.key}
+                                        class="swimlane-row"
+                                    >
+                                        <div
+                                            class="swimlane-label-cell"
+                                        >
+                                            <span
+                                                class="swimlane-label"
+                                                >{lane.label}</span
+                                            >
+                                            <span
+                                                class="swimlane-count"
+                                                >{lane.totalCards}</span
+                                            >
+                                        </div>
                                         <template
-                                            lwc:if={isInternalMode}
+                                            for:each={lane.columns}
+                                            for:item="col"
                                         >
                                             <div
-                                                class="kanban-column__card-wrapper slds-scrollable_y"
-                                                data-column-id={column.Id}
+                                                key={col.laneKey}
+                                                class="swimlane-cell"
+                                                data-column-id={col.Id}
                                                 ondragover={handleDragOver}
                                                 ondrop={handleDrop}
                                             >
                                                 <template
-                                                    lwc:if={column.cards.length}
+                                                    for:each={col.cards}
+                                                    for:item="card"
                                                 >
-                                                    <template
-                                                        for:each={column.cards}
-                                                        for:item="card"
+                                                    <article
+                                                        key={card.Id}
+                                                        class="kanban-card"
+                                                        data-card-id={card.Id}
+                                                        data-column-id={col.Id}
+                                                        draggable="true"
+                                                        ondragstart={handleDragStart}
+                                                        ondragend={handleDragEnd}
+                                                        onclick={handleCardClick}
+                                                        oncontextmenu={handleBoardCardContextMenu}
+                                                        style={card.cardStyle}
                                                     >
-                                                        <article
-                                                            key={card.Id}
-                                                            class="kanban-card"
-                                                            data-card-id={card.Id}
-                                                            data-column-id={column.Id}
-                                                            draggable="true"
-                                                            ondragstart={handleDragStart}
-                                                            ondragend={handleDragEnd}
-                                                            onclick={handleCardClick}
-                                                            oncontextmenu={handleBoardCardContextMenu}
-                                                            style={card.cardStyle}
+                                                        <div
+                                                            class="kanban-card__body slds-text-body_small"
                                                         >
-                                                            <!-- Card Header -->
-                                                            <header
-                                                                class="slds-media slds-media_center slds-has-flexi-truncate slds-var-p-bottom_xx-small"
+                                                            <p
+                                                                class={card.subjectClass}
+                                                                title={card.subjectTitle}
                                                             >
-                                                                <template
-                                                                    lwc:if={card.hasAssignee}
-                                                                >
-                                                                    <!-- Assignee Avatar -->
-                                                                    <div
-                                                                        class="slds-media__figure"
-                                                                    >
-                                                                        <template
-                                                                            lwc:if={card.assignee.photoUrl}
-                                                                        >
-                                                                            <span
-                                                                                class="slds-avatar slds-avatar_circle"
-                                                                            >
-                                                                                <img
-                                                                                    src={card.assignee.photoUrl}
-                                                                                    alt={card.assignee.name}
-                                                                                    title={card.assignee.name}
-                                                                                />
-                                                                            </span>
-                                                                        </template>
-                                                                        <template
-                                                                            lwc:else
-                                                                        >
-                                                                            <span
-                                                                                class="slds-avatar slds-avatar_circle slds-avatar_medium slds-avatar_small@mobile"
-                                                                            >
-                                                                                <span
-                                                                                    class="slds-avatar__initials"
-                                                                                >
-                                                                                    {card.assigneeInitials}
-                                                                                </span>
-                                                                            </span>
-                                                                        </template>
-                                                                    </div>
-                                                                </template>
-
-                                                                <!-- Card Title -->
-                                                                <div
-                                                                    class="slds-media__body kanban-card__header-body"
-                                                                >
-                                                                    <h2
-                                                                        class="slds-card__header-title slds-text-body_small kanban-card__name-heading"
-                                                                    >
-                                                                        <a
-                                                                            href={card.recordUrl}
-                                                                            class={card.nameClass}
-                                                                            title={card.nameTitle}
-                                                                            onclick={handleCardNameClick}
-                                                                            data-card-id={card.Id}
-                                                                        >
-                                                                            {card.Name}
-                                                                        </a>
-                                                                    </h2>
-
-                                                                    <p
-                                                                        class="slds-text-body_small slds-truncate card-type-line"
-                                                                    >
-                                                                        <template
-                                                                            lwc:if={card.cardTypeIconName}
-                                                                        >
-                                                                            <lightning-icon
-                                                                                icon-name={card.cardTypeIconName}
-                                                                                size="xx-small"
-                                                                                class="card-type-icon"
-                                                                            ></lightning-icon>
-                                                                        </template>
-                                                                        <template
-                                                                            lwc:if={card.cardType}
-                                                                        >
-                                                                            <span
-                                                                                >{card.cardType}</span
-                                                                            >
-                                                                            <template
-                                                                                lwc:if={card.status}
-                                                                            >
-                                                                                <span
-                                                                                    >&nbsp;-&nbsp;</span
-                                                                                >
-                                                                            </template>
-                                                                        </template>
-                                                                        <template
-                                                                            lwc:if={card.status}
-                                                                        >
-                                                                            <span>
-                                                                                {card.status}
-                                                                            </span>
-                                                                        </template>
-                                                                    </p>
-                                                                </div>
-                                                            </header>
-
-                                                            <!-- Card Body -->
-                                                            <div
-                                                                class="kanban-card__body slds-text-body_regular slds-var-p-top_small"
-                                                            >
-                                                                <template
-                                                                    lwc:if={card.subject}
-                                                                >
-                                                                    <p
-                                                                        class={card.subjectClass}
-                                                                        title={card.subjectTitle}
-                                                                    >
-                                                                        {card.subject}
-                                                                    </p>
-                                                                </template>
-
-                                                                <!-- Epic Label (for child cards belonging to an epic) -->
-                                                                <template
-                                                                    lwc:if={card.hasEpic}
-                                                                >
-                                                                    <div
-                                                                        class={card.epicLabelContainerClass}
-                                                                    >
-                                                                        <lightning-icon
-                                                                            icon-name="utility:layers"
-                                                                            size="xx-small"
-                                                                            class="epic-label__icon"
-                                                                        ></lightning-icon>
-                                                                        <span
-                                                                            class={card.epicLabelClass}
-                                                                            title={card.epicLabelTitle}
-                                                                            >{card.epicLabel}</span
-                                                                        >
-                                                                    </div>
-                                                                </template>
-
-                                                                <!-- Custom Fields -->
-                                                                <template
-                                                                    lwc:if={card.hasCustomFields}
-                                                                >
-                                                                    <div
-                                                                        class="kanban-card__custom-fields"
-                                                                    >
-                                                                        <template
-                                                                            for:each={card.customFieldEntries}
-                                                                            for:item="cf"
-                                                                        >
-                                                                            <span
-                                                                                key={cf.key}
-                                                                                class="custom-field-pill"
-                                                                                title={cf.label}
-                                                                            >
-                                                                                <span
-                                                                                    class="custom-field-label"
-                                                                                    >{cf.label}:</span
-                                                                                >
-                                                                                {cf.value}
-                                                                            </span>
-                                                                        </template>
-                                                                    </div>
-                                                                </template>
-
-                                                                <!-- Card Icons -->
-                                                                <div
-                                                                    class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-spread"
-                                                                >
-                                                                    <!-- Left side: Priority and Due Date -->
-                                                                    <div
-                                                                        class="slds-grid slds-grid_vertical-align-center"
-                                                                    >
-                                                                        <template
-                                                                            lwc:if={card.priority}
-                                                                        >
-                                                                            <div
-                                                                                class="slds-var-p-right_small"
-                                                                            >
-                                                                                <span
-                                                                                    class="slds-badge priority-pill slds-var-p-vertical_xxx-small slds-var-p-horizontal_small"
-                                                                                >
-                                                                                    <span
-                                                                                        class={card.priorityClass}
-                                                                                    >
-                                                                                        {card.priority}
-                                                                                    </span>
-                                                                                </span>
-                                                                            </div>
-                                                                        </template>
-
-                                                                        <template
-                                                                            lwc:if={card.formattedDueDate}
-                                                                        >
-                                                                            <div>
-                                                                                <span
-                                                                                    class="slds-badge due-date-pill slds-var-p-vertical_xxx-small slds-var-p-horizontal_small"
-                                                                                >
-                                                                                    <lightning-icon
-                                                                                        icon-name="utility:clock"
-                                                                                        size="xx-small"
-                                                                                        class="date-icon"
-                                                                                    ></lightning-icon>
-                                                                                    <span
-                                                                                        class={card.isOverdue}
-                                                                                    >
-                                                                                        {card.formattedDueDate}
-                                                                                    </span>
-                                                                                </span>
-                                                                            </div>
-                                                                        </template>
-                                                                    </div>
-
-                                                                    <!-- Right side: Story Points -->
-                                                                    <template
-                                                                        lwc:if={card.hasStoryPoints}
-                                                                    >
-                                                                        <div
-                                                                            class="slds-text-body_small slds-text-color_weak"
-                                                                        >
-                                                                            <span
-                                                                                class="slds-text-title slds-text-heading_small"
-                                                                                ><strong
-                                                                                    >{card.storyPoints}</strong
-                                                                                ></span
-                                                                            >
-                                                                        </div>
-                                                                    </template>
-                                                                </div>
-                                                            </div>
-
-                                                            <!-- Debug: LexoRank -->
+                                                                {card.subject}
+                                                            </p>
                                                             <template
-                                                                lwc:if={showDebugInfo}
+                                                                lwc:if={card.hasStoryPoints}
                                                             >
-                                                                <div
-                                                                    class="debug-lexorank"
+                                                                <span
+                                                                    class="swimlane-card-sp"
+                                                                    >{card.storyPoints}</span
                                                                 >
-                                                                    <template
-                                                                        lwc:if={card.position}
-                                                                    >
-                                                                        {card.position}
-                                                                    </template>
-                                                                    <template
-                                                                        lwc:else
-                                                                    >
-                                                                        <em
-                                                                            >null</em
-                                                                        >
-                                                                    </template>
-                                                                </div>
                                                             </template>
-                                                        </article>
-                                                    </template>
-                                                </template>
-                                            </div>
-                                        </template>
-
-                                        <!-- Scrollable Card Wrapper (Experience Cloud: read-only, no drag-drop) -->
-                                        <template lwc:else>
-                                            <div
-                                                class="kanban-column__card-wrapper slds-scrollable_y"
-                                            >
-                                                <template
-                                                    lwc:if={column.cards.length}
-                                                >
-                                                    <template
-                                                        for:each={column.cards}
-                                                        for:item="card"
-                                                    >
-                                                        <article
-                                                            key={card.Id}
-                                                            class="kanban-card"
-                                                            style={card.cardStyle}
-                                                        >
-                                                            <!-- Card Header -->
-                                                            <header
-                                                                class="slds-media slds-media_center slds-has-flexi-truncate slds-var-p-bottom_xx-small"
-                                                            >
-                                                                <template
-                                                                    lwc:if={card.hasAssignee}
-                                                                >
-                                                                    <div
-                                                                        class="slds-media__figure"
-                                                                    >
-                                                                        <template
-                                                                            lwc:if={card.assignee.photoUrl}
-                                                                        >
-                                                                            <span
-                                                                                class="slds-avatar slds-avatar_circle"
-                                                                            >
-                                                                                <img
-                                                                                    src={card.assignee.photoUrl}
-                                                                                    alt={card.assignee.name}
-                                                                                    title={card.assignee.name}
-                                                                                />
-                                                                            </span>
-                                                                        </template>
-                                                                        <template
-                                                                            lwc:else
-                                                                        >
-                                                                            <span
-                                                                                class="slds-avatar slds-avatar_circle slds-avatar_medium slds-avatar_small@mobile"
-                                                                            >
-                                                                                <span
-                                                                                    class="slds-avatar__initials"
-                                                                                >
-                                                                                    {card.assigneeInitials}
-                                                                                </span>
-                                                                            </span>
-                                                                        </template>
-                                                                    </div>
-                                                                </template>
-
-                                                                <!-- Card Title (community URL) -->
-                                                                <div
-                                                                    class="slds-media__body kanban-card__header-body"
-                                                                >
-                                                                    <h2
-                                                                        class="slds-card__header-title slds-text-body_small kanban-card__name-heading"
-                                                                    >
-                                                                        <a
-                                                                            href={card.communityCardUrl}
-                                                                            class={card.nameClass}
-                                                                            title={card.nameTitle}
-                                                                        >
-                                                                            {card.Name}
-                                                                        </a>
-                                                                    </h2>
-
-                                                                    <p
-                                                                        class="slds-text-body_small slds-truncate card-type-line"
-                                                                    >
-                                                                        <template
-                                                                            lwc:if={card.cardTypeIconName}
-                                                                        >
-                                                                            <lightning-icon
-                                                                                icon-name={card.cardTypeIconName}
-                                                                                size="xx-small"
-                                                                                class="card-type-icon"
-                                                                            ></lightning-icon>
-                                                                        </template>
-                                                                        <template
-                                                                            lwc:if={card.cardType}
-                                                                        >
-                                                                            <span
-                                                                                >{card.cardType}</span
-                                                                            >
-                                                                            <template
-                                                                                lwc:if={card.status}
-                                                                            >
-                                                                                <span
-                                                                                    >&nbsp;-&nbsp;</span
-                                                                                >
-                                                                            </template>
-                                                                        </template>
-                                                                        <template
-                                                                            lwc:if={card.status}
-                                                                        >
-                                                                            <span>
-                                                                                {card.status}
-                                                                            </span>
-                                                                        </template>
-                                                                    </p>
-                                                                </div>
-                                                            </header>
-
-                                                            <!-- Card Body -->
-                                                            <div
-                                                                class="kanban-card__body slds-text-body_regular slds-var-p-top_small"
-                                                            >
-                                                                <template
-                                                                    lwc:if={card.subject}
-                                                                >
-                                                                    <p
-                                                                        class={card.subjectClass}
-                                                                        title={card.subjectTitle}
-                                                                    >
-                                                                        {card.subject}
-                                                                    </p>
-                                                                </template>
-
-                                                                <!-- Epic Label (community) -->
-                                                                <template
-                                                                    lwc:if={card.hasEpic}
-                                                                >
-                                                                    <div
-                                                                        class={card.epicLabelContainerClass}
-                                                                    >
-                                                                        <lightning-icon
-                                                                            icon-name="utility:layers"
-                                                                            size="xx-small"
-                                                                            class="epic-label__icon"
-                                                                        ></lightning-icon>
-                                                                        <span
-                                                                            class={card.epicLabelClass}
-                                                                            title={card.epicLabelTitle}
-                                                                            >{card.epicLabel}</span
-                                                                        >
-                                                                    </div>
-                                                                </template>
-
-                                                                <!-- Card Icons -->
-                                                                <div
-                                                                    class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-spread"
-                                                                >
-                                                                    <div
-                                                                        class="slds-grid slds-grid_vertical-align-center"
-                                                                    >
-                                                                        <template
-                                                                            lwc:if={card.priority}
-                                                                        >
-                                                                            <div
-                                                                                class="slds-var-p-right_small"
-                                                                            >
-                                                                                <span
-                                                                                    class="slds-badge priority-pill slds-var-p-vertical_xxx-small slds-var-p-horizontal_small"
-                                                                                >
-                                                                                    <span
-                                                                                        class={card.priorityClass}
-                                                                                    >
-                                                                                        {card.priority}
-                                                                                    </span>
-                                                                                </span>
-                                                                            </div>
-                                                                        </template>
-
-                                                                        <template
-                                                                            lwc:if={card.formattedDueDate}
-                                                                        >
-                                                                            <div>
-                                                                                <span
-                                                                                    class="slds-badge due-date-pill slds-var-p-vertical_xxx-small slds-var-p-horizontal_small"
-                                                                                >
-                                                                                    <lightning-icon
-                                                                                        icon-name="utility:clock"
-                                                                                        size="xx-small"
-                                                                                        class="date-icon"
-                                                                                    ></lightning-icon>
-                                                                                    <span
-                                                                                        class={card.isOverdue}
-                                                                                    >
-                                                                                        {card.formattedDueDate}
-                                                                                    </span>
-                                                                                </span>
-                                                                            </div>
-                                                                        </template>
-                                                                    </div>
-
-                                                                    <template
-                                                                        lwc:if={card.hasStoryPoints}
-                                                                    >
-                                                                        <div
-                                                                            class="slds-text-body_small slds-text-color_weak"
-                                                                        >
-                                                                            <span
-                                                                                class="slds-text-title slds-text-heading_small"
-                                                                                ><strong
-                                                                                    >{card.storyPoints}</strong
-                                                                                ></span
-                                                                            >
-                                                                        </div>
-                                                                    </template>
-                                                                </div>
-                                                            </div>
-                                                        </article>
-                                                    </template>
+                                                        </div>
+                                                    </article>
                                                 </template>
                                             </div>
                                         </template>
                                     </div>
                                 </template>
-                            </template>
+                            </div>
+                        </template>
 
-                            <!-- Empty Board State -->
-                            <template lwc:else>
-                                <div
-                                    class="slds-text-align_center slds-var-m-top_medium slds-var-p-around_medium"
+                        <!-- Kanban Board (normal mode, no swimlanes) -->
+                        <template lwc:else>
+                            <div
+                                class="kanban-board slds-grid slds-scrollable_x"
+                                ontouchstart={handleTouchStart}
+                                ontouchend={handleTouchEnd}
+                            >
+                                <template
+                                    lwc:if={hasColumns}
                                 >
-                                    <p
-                                        class="slds-text-body_regular"
+                                    <template
+                                        for:each={filteredColumns}
+                                        for:item="column"
                                     >
-                                        No columns found.
-                                        Please add columns
-                                        to this board!
-                                    </p>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
+                                        <!-- Kanban Column -->
+                                        <div
+                                            key={column.Id}
+                                            class={column.mobileColumnClass}
+                                            data-column-id={column.Id}
+                                            style={column.columnStyle}
+                                        >
+                                            <!-- Column Header -->
+                                            <div
+                                                class="kanban-column__header slds-grid slds-grid_align-spread slds-grid_vertical-align-center"
+                                            >
+                                                <div
+                                                    class="slds-col slds-truncate"
+                                                >
+                                                    <h2
+                                                        class="slds-text-heading_small slds-truncate"
+                                                    >
+                                                        <template
+                                                            lwc:if={experienceCloud}
+                                                        >
+                                                            <a
+                                                                href={column.communityColumnUrl}
+                                                                class="slds-text-link slds-text-color_brand slds-truncate"
+                                                                title={column.columnHeader}
+                                                            >
+                                                                <span
+                                                                    class="slds-truncate"
+                                                                    >{column.columnHeader}</span
+                                                                >
+                                                            </a>
+                                                        </template>
+                                                        <template
+                                                            lwc:else
+                                                        >
+                                                            <a
+                                                                href={column.columnUrl}
+                                                                class="slds-text-link slds-text-color_brand slds-truncate"
+                                                                title={column.columnHeader}
+                                                                onclick={handleColumnClick}
+                                                                data-column-id={column.Id}
+                                                            >
+                                                                <span
+                                                                    class="slds-truncate"
+                                                                    >{column.columnHeader}</span
+                                                                >
+                                                            </a>
+                                                        </template>
+                                                    </h2>
+                                                </div>
+
+                                                <!-- WIP Limit Badge -->
+                                                <template
+                                                    lwc:if={column.hasWipLimit}
+                                                >
+                                                    <span
+                                                        class={column.wipBadgeClass}
+                                                        >{column.cardCount}/{column.wipLimit}</span
+                                                    >
+                                                </template>
+
+                                                <!-- Add Card Button (internal only) -->
+                                                <template
+                                                    lwc:if={isInternalMode}
+                                                >
+                                                    <div
+                                                        class="add-button-wrapper"
+                                                    >
+                                                        <button
+                                                            class="add-card-button slds-button slds-button_icon slds-button_icon-border-filled"
+                                                            data-column-id={column.Id}
+                                                            onclick={handleAddCard}
+                                                            title="Add New Card"
+                                                        >
+                                                            <lightning-icon
+                                                                icon-name="utility:add"
+                                                                alternative-text="Add New Card"
+                                                                size="small"
+                                                            ></lightning-icon>
+                                                            <span
+                                                                class="slds-assistive-text"
+                                                                >Add
+                                                                New
+                                                                Card</span
+                                                            >
+                                                        </button>
+                                                    </div>
+                                                </template>
+                                            </div>
+
+                                            <!-- Scrollable Card Wrapper (internal: drag-drop enabled) -->
+                                            <template
+                                                lwc:if={isInternalMode}
+                                            >
+                                                <div
+                                                    class="kanban-column__card-wrapper slds-scrollable_y"
+                                                    data-column-id={column.Id}
+                                                    ondragover={handleDragOver}
+                                                    ondrop={handleDrop}
+                                                >
+                                                    <template
+                                                        lwc:if={column.cards.length}
+                                                    >
+                                                        <template
+                                                            for:each={column.cards}
+                                                            for:item="card"
+                                                        >
+                                                            <article
+                                                                key={card.Id}
+                                                                class="kanban-card"
+                                                                data-card-id={card.Id}
+                                                                data-column-id={column.Id}
+                                                                draggable="true"
+                                                                ondragstart={handleDragStart}
+                                                                ondragend={handleDragEnd}
+                                                                onclick={handleCardClick}
+                                                                oncontextmenu={handleBoardCardContextMenu}
+                                                                style={card.cardStyle}
+                                                            >
+                                                                <!-- Card Header -->
+                                                                <header
+                                                                    class="slds-media slds-media_center slds-has-flexi-truncate slds-var-p-bottom_xx-small"
+                                                                >
+                                                                    <template
+                                                                        lwc:if={card.hasAssignee}
+                                                                    >
+                                                                        <!-- Assignee Avatar -->
+                                                                        <div
+                                                                            class="slds-media__figure"
+                                                                        >
+                                                                            <template
+                                                                                lwc:if={card.assignee.photoUrl}
+                                                                            >
+                                                                                <span
+                                                                                    class="slds-avatar slds-avatar_circle"
+                                                                                >
+                                                                                    <img
+                                                                                        src={card.assignee.photoUrl}
+                                                                                        alt={card.assignee.name}
+                                                                                        title={card.assignee.name}
+                                                                                    />
+                                                                                </span>
+                                                                            </template>
+                                                                            <template
+                                                                                lwc:else
+                                                                            >
+                                                                                <span
+                                                                                    class="slds-avatar slds-avatar_circle slds-avatar_medium slds-avatar_small@mobile"
+                                                                                >
+                                                                                    <span
+                                                                                        class="slds-avatar__initials"
+                                                                                    >
+                                                                                        {card.assigneeInitials}
+                                                                                    </span>
+                                                                                </span>
+                                                                            </template>
+                                                                        </div>
+                                                                    </template>
+
+                                                                    <!-- Card Title -->
+                                                                    <div
+                                                                        class="slds-media__body kanban-card__header-body"
+                                                                    >
+                                                                        <h2
+                                                                            class="slds-card__header-title slds-text-body_small kanban-card__name-heading"
+                                                                        >
+                                                                            <a
+                                                                                href={card.recordUrl}
+                                                                                class={card.nameClass}
+                                                                                title={card.nameTitle}
+                                                                                onclick={handleCardNameClick}
+                                                                                data-card-id={card.Id}
+                                                                            >
+                                                                                {card.Name}
+                                                                            </a>
+                                                                        </h2>
+
+                                                                        <p
+                                                                            class="slds-text-body_small slds-truncate card-type-line"
+                                                                        >
+                                                                            <template
+                                                                                lwc:if={card.cardTypeIconName}
+                                                                            >
+                                                                                <lightning-icon
+                                                                                    icon-name={card.cardTypeIconName}
+                                                                                    size="xx-small"
+                                                                                    class="card-type-icon"
+                                                                                ></lightning-icon>
+                                                                            </template>
+                                                                            <template
+                                                                                lwc:if={card.cardType}
+                                                                            >
+                                                                                <span
+                                                                                    >{card.cardType}</span
+                                                                                >
+                                                                                <template
+                                                                                    lwc:if={card.status}
+                                                                                >
+                                                                                    <span
+                                                                                        >&nbsp;-&nbsp;</span
+                                                                                    >
+                                                                                </template>
+                                                                            </template>
+                                                                            <template
+                                                                                lwc:if={card.status}
+                                                                            >
+                                                                                <span>
+                                                                                    {card.status}
+                                                                                </span>
+                                                                            </template>
+                                                                        </p>
+                                                                    </div>
+                                                                </header>
+
+                                                                <!-- Card Body -->
+                                                                <div
+                                                                    class="kanban-card__body slds-text-body_regular slds-var-p-top_small"
+                                                                >
+                                                                    <template
+                                                                        lwc:if={card.subject}
+                                                                    >
+                                                                        <p
+                                                                            class={card.subjectClass}
+                                                                            title={card.subjectTitle}
+                                                                        >
+                                                                            {card.subject}
+                                                                        </p>
+                                                                    </template>
+
+                                                                    <!-- Epic Label (for child cards belonging to an epic) -->
+                                                                    <template
+                                                                        lwc:if={card.hasEpic}
+                                                                    >
+                                                                        <div
+                                                                            class={card.epicLabelContainerClass}
+                                                                        >
+                                                                            <lightning-icon
+                                                                                icon-name="utility:layers"
+                                                                                size="xx-small"
+                                                                                class="epic-label__icon"
+                                                                            ></lightning-icon>
+                                                                            <span
+                                                                                class={card.epicLabelClass}
+                                                                                title={card.epicLabelTitle}
+                                                                                >{card.epicLabel}</span
+                                                                            >
+                                                                        </div>
+                                                                    </template>
+
+                                                                    <!-- Custom Fields -->
+                                                                    <template
+                                                                        lwc:if={card.hasCustomFields}
+                                                                    >
+                                                                        <div
+                                                                            class="kanban-card__custom-fields"
+                                                                        >
+                                                                            <template
+                                                                                for:each={card.customFieldEntries}
+                                                                                for:item="cf"
+                                                                            >
+                                                                                <span
+                                                                                    key={cf.key}
+                                                                                    class="custom-field-pill"
+                                                                                    title={cf.label}
+                                                                                >
+                                                                                    <span
+                                                                                        class="custom-field-label"
+                                                                                        >{cf.label}:</span
+                                                                                    >
+                                                                                    {cf.value}
+                                                                                </span>
+                                                                            </template>
+                                                                        </div>
+                                                                    </template>
+
+                                                                    <!-- Card Icons -->
+                                                                    <div
+                                                                        class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-spread"
+                                                                    >
+                                                                        <!-- Left side: Priority and Due Date -->
+                                                                        <div
+                                                                            class="slds-grid slds-grid_vertical-align-center"
+                                                                        >
+                                                                            <template
+                                                                                lwc:if={card.priority}
+                                                                            >
+                                                                                <div
+                                                                                    class="slds-var-p-right_small"
+                                                                                >
+                                                                                    <span
+                                                                                        class="slds-badge priority-pill slds-var-p-vertical_xxx-small slds-var-p-horizontal_small"
+                                                                                    >
+                                                                                        <span
+                                                                                            class={card.priorityClass}
+                                                                                        >
+                                                                                            {card.priority}
+                                                                                        </span>
+                                                                                    </span>
+                                                                                </div>
+                                                                            </template>
+
+                                                                            <template
+                                                                                lwc:if={card.formattedDueDate}
+                                                                            >
+                                                                                <div>
+                                                                                    <span
+                                                                                        class="slds-badge due-date-pill slds-var-p-vertical_xxx-small slds-var-p-horizontal_small"
+                                                                                    >
+                                                                                        <lightning-icon
+                                                                                            icon-name="utility:clock"
+                                                                                            size="xx-small"
+                                                                                            class="date-icon"
+                                                                                        ></lightning-icon>
+                                                                                        <span
+                                                                                            class={card.isOverdue}
+                                                                                        >
+                                                                                            {card.formattedDueDate}
+                                                                                        </span>
+                                                                                    </span>
+                                                                                </div>
+                                                                            </template>
+                                                                        </div>
+
+                                                                        <!-- Right side: Story Points -->
+                                                                        <template
+                                                                            lwc:if={card.hasStoryPoints}
+                                                                        >
+                                                                            <div
+                                                                                class="slds-text-body_small slds-text-color_weak"
+                                                                            >
+                                                                                <span
+                                                                                    class="slds-text-title slds-text-heading_small"
+                                                                                    ><strong
+                                                                                        >{card.storyPoints}</strong
+                                                                                    ></span
+                                                                                >
+                                                                            </div>
+                                                                        </template>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Debug: LexoRank -->
+                                                                <template
+                                                                    lwc:if={showDebugInfo}
+                                                                >
+                                                                    <div
+                                                                        class="debug-lexorank"
+                                                                    >
+                                                                        <template
+                                                                            lwc:if={card.position}
+                                                                        >
+                                                                            {card.position}
+                                                                        </template>
+                                                                        <template
+                                                                            lwc:else
+                                                                        >
+                                                                            <em
+                                                                                >null</em
+                                                                            >
+                                                                        </template>
+                                                                    </div>
+                                                                </template>
+                                                            </article>
+                                                        </template>
+                                                    </template>
+                                                </div>
+                                            </template>
+
+                                            <!-- Scrollable Card Wrapper (Experience Cloud: read-only, no drag-drop) -->
+                                            <template
+                                                lwc:else
+                                            >
+                                                <div
+                                                    class="kanban-column__card-wrapper slds-scrollable_y"
+                                                >
+                                                    <template
+                                                        lwc:if={column.cards.length}
+                                                    >
+                                                        <template
+                                                            for:each={column.cards}
+                                                            for:item="card"
+                                                        >
+                                                            <article
+                                                                key={card.Id}
+                                                                class="kanban-card"
+                                                                style={card.cardStyle}
+                                                            >
+                                                                <!-- Card Header -->
+                                                                <header
+                                                                    class="slds-media slds-media_center slds-has-flexi-truncate slds-var-p-bottom_xx-small"
+                                                                >
+                                                                    <template
+                                                                        lwc:if={card.hasAssignee}
+                                                                    >
+                                                                        <div
+                                                                            class="slds-media__figure"
+                                                                        >
+                                                                            <template
+                                                                                lwc:if={card.assignee.photoUrl}
+                                                                            >
+                                                                                <span
+                                                                                    class="slds-avatar slds-avatar_circle"
+                                                                                >
+                                                                                    <img
+                                                                                        src={card.assignee.photoUrl}
+                                                                                        alt={card.assignee.name}
+                                                                                        title={card.assignee.name}
+                                                                                    />
+                                                                                </span>
+                                                                            </template>
+                                                                            <template
+                                                                                lwc:else
+                                                                            >
+                                                                                <span
+                                                                                    class="slds-avatar slds-avatar_circle slds-avatar_medium slds-avatar_small@mobile"
+                                                                                >
+                                                                                    <span
+                                                                                        class="slds-avatar__initials"
+                                                                                    >
+                                                                                        {card.assigneeInitials}
+                                                                                    </span>
+                                                                                </span>
+                                                                            </template>
+                                                                        </div>
+                                                                    </template>
+
+                                                                    <!-- Card Title (community URL) -->
+                                                                    <div
+                                                                        class="slds-media__body kanban-card__header-body"
+                                                                    >
+                                                                        <h2
+                                                                            class="slds-card__header-title slds-text-body_small kanban-card__name-heading"
+                                                                        >
+                                                                            <a
+                                                                                href={card.communityCardUrl}
+                                                                                class={card.nameClass}
+                                                                                title={card.nameTitle}
+                                                                            >
+                                                                                {card.Name}
+                                                                            </a>
+                                                                        </h2>
+
+                                                                        <p
+                                                                            class="slds-text-body_small slds-truncate card-type-line"
+                                                                        >
+                                                                            <template
+                                                                                lwc:if={card.cardTypeIconName}
+                                                                            >
+                                                                                <lightning-icon
+                                                                                    icon-name={card.cardTypeIconName}
+                                                                                    size="xx-small"
+                                                                                    class="card-type-icon"
+                                                                                ></lightning-icon>
+                                                                            </template>
+                                                                            <template
+                                                                                lwc:if={card.cardType}
+                                                                            >
+                                                                                <span
+                                                                                    >{card.cardType}</span
+                                                                                >
+                                                                                <template
+                                                                                    lwc:if={card.status}
+                                                                                >
+                                                                                    <span
+                                                                                        >&nbsp;-&nbsp;</span
+                                                                                    >
+                                                                                </template>
+                                                                            </template>
+                                                                            <template
+                                                                                lwc:if={card.status}
+                                                                            >
+                                                                                <span>
+                                                                                    {card.status}
+                                                                                </span>
+                                                                            </template>
+                                                                        </p>
+                                                                    </div>
+                                                                </header>
+
+                                                                <!-- Card Body -->
+                                                                <div
+                                                                    class="kanban-card__body slds-text-body_regular slds-var-p-top_small"
+                                                                >
+                                                                    <template
+                                                                        lwc:if={card.subject}
+                                                                    >
+                                                                        <p
+                                                                            class={card.subjectClass}
+                                                                            title={card.subjectTitle}
+                                                                        >
+                                                                            {card.subject}
+                                                                        </p>
+                                                                    </template>
+
+                                                                    <!-- Epic Label (community) -->
+                                                                    <template
+                                                                        lwc:if={card.hasEpic}
+                                                                    >
+                                                                        <div
+                                                                            class={card.epicLabelContainerClass}
+                                                                        >
+                                                                            <lightning-icon
+                                                                                icon-name="utility:layers"
+                                                                                size="xx-small"
+                                                                                class="epic-label__icon"
+                                                                            ></lightning-icon>
+                                                                            <span
+                                                                                class={card.epicLabelClass}
+                                                                                title={card.epicLabelTitle}
+                                                                                >{card.epicLabel}</span
+                                                                            >
+                                                                        </div>
+                                                                    </template>
+
+                                                                    <!-- Card Icons -->
+                                                                    <div
+                                                                        class="kanban-card__body-icons slds-grid slds-wrap slds-grid_align-spread"
+                                                                    >
+                                                                        <div
+                                                                            class="slds-grid slds-grid_vertical-align-center"
+                                                                        >
+                                                                            <template
+                                                                                lwc:if={card.priority}
+                                                                            >
+                                                                                <div
+                                                                                    class="slds-var-p-right_small"
+                                                                                >
+                                                                                    <span
+                                                                                        class="slds-badge priority-pill slds-var-p-vertical_xxx-small slds-var-p-horizontal_small"
+                                                                                    >
+                                                                                        <span
+                                                                                            class={card.priorityClass}
+                                                                                        >
+                                                                                            {card.priority}
+                                                                                        </span>
+                                                                                    </span>
+                                                                                </div>
+                                                                            </template>
+
+                                                                            <template
+                                                                                lwc:if={card.formattedDueDate}
+                                                                            >
+                                                                                <div>
+                                                                                    <span
+                                                                                        class="slds-badge due-date-pill slds-var-p-vertical_xxx-small slds-var-p-horizontal_small"
+                                                                                    >
+                                                                                        <lightning-icon
+                                                                                            icon-name="utility:clock"
+                                                                                            size="xx-small"
+                                                                                            class="date-icon"
+                                                                                        ></lightning-icon>
+                                                                                        <span
+                                                                                            class={card.isOverdue}
+                                                                                        >
+                                                                                            {card.formattedDueDate}
+                                                                                        </span>
+                                                                                    </span>
+                                                                                </div>
+                                                                            </template>
+                                                                        </div>
+
+                                                                        <template
+                                                                            lwc:if={card.hasStoryPoints}
+                                                                        >
+                                                                            <div
+                                                                                class="slds-text-body_small slds-text-color_weak"
+                                                                            >
+                                                                                <span
+                                                                                    class="slds-text-title slds-text-heading_small"
+                                                                                    ><strong
+                                                                                        >{card.storyPoints}</strong
+                                                                                    ></span
+                                                                                >
+                                                                            </div>
+                                                                        </template>
+                                                                    </div>
+                                                                </div>
+                                                            </article>
+                                                        </template>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </template>
+
+                                <!-- Empty Board State -->
+                                <template lwc:else>
+                                    <div
+                                        class="slds-text-align_center slds-var-m-top_medium slds-var-p-around_medium"
+                                    >
+                                        <p
+                                            class="slds-text-body_regular"
+                                        >
+                                            No columns
+                                            found. Please
+                                            add columns to
+                                            this board!
+                                        </p>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
                     </template>
                 </div>
 

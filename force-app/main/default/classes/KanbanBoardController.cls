@@ -812,11 +812,16 @@ public with sharing class KanbanBoardController {
     }
 
     public class CardFileDTO {
-        @AuraEnabled public String contentDocumentId;
-        @AuraEnabled public String title;
-        @AuraEnabled public String fileExtension;
-        @AuraEnabled public Integer contentSize;
-        @AuraEnabled public String latestVersionId;
+        @AuraEnabled
+        public String contentDocumentId;
+        @AuraEnabled
+        public String title;
+        @AuraEnabled
+        public String fileExtension;
+        @AuraEnabled
+        public Integer contentSize;
+        @AuraEnabled
+        public String latestVersionId;
 
         public CardFileDTO(ContentDocumentLink cdl) {
             this.contentDocumentId = cdl.ContentDocumentId;

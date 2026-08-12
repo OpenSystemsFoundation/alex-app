@@ -100,7 +100,11 @@ private class AdminControllerTest {
         AdminController.OnboardingStatus status = AdminController.getOnboardingStatus();
         Test.stopTest();
 
-        System.assertEquals(true, status.hasBoardsCreated, 'Board should exist');
+        System.assertEquals(
+            true,
+            status.hasBoardsCreated,
+            'Board should exist'
+        );
         System.assertEquals(
             true,
             status.hasColumnsConfigured,

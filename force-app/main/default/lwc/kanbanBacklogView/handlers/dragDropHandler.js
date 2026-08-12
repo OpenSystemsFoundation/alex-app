@@ -37,9 +37,7 @@ export default class BacklogDragDropHandler {
         } else {
             this._dragCardIds = [cardId];
             if (selectedCards.length > 0 && this._host.store) {
-                this._host.store.dispatch(
-                    setSelectedBacklogCards([])
-                );
+                this._host.store.dispatch(setSelectedBacklogCards([]));
             }
         }
 
@@ -116,9 +114,12 @@ export default class BacklogDragDropHandler {
         this._clearHeaderDropIndicators();
 
         const cardId = this._host.draggedCardId;
-        const cardIds = this._dragCardIds.length > 0
-            ? [...this._dragCardIds]
-            : cardId ? [cardId] : [];
+        const cardIds =
+            this._dragCardIds.length > 0
+                ? [...this._dragCardIds]
+                : cardId
+                  ? [cardId]
+                  : [];
         const sourceSprintId = this._dragSourceSprintId;
         this._host.draggedCardId = null;
         this._host.dragOverIndex = null;
@@ -159,9 +160,12 @@ export default class BacklogDragDropHandler {
         this._clearHeaderDropIndicators();
 
         const cardId = this._host.draggedCardId;
-        const cardIds = this._dragCardIds.length > 0
-            ? [...this._dragCardIds]
-            : cardId ? [cardId] : [];
+        const cardIds =
+            this._dragCardIds.length > 0
+                ? [...this._dragCardIds]
+                : cardId
+                  ? [cardId]
+                  : [];
         const isMulti = cardIds.length > 1;
         const targetIndex = this._host._dragTargetIndex;
         const sourceSprintId = this._dragSourceSprintId;
@@ -275,9 +279,8 @@ export default class BacklogDragDropHandler {
     }
 
     _clearHeaderDropIndicators() {
-        const headers = this._host.template.querySelectorAll(
-            '.sprint-header-row'
-        );
+        const headers =
+            this._host.template.querySelectorAll('.sprint-header-row');
         headers.forEach((h) => h.classList.remove('drag-indicator-header'));
     }
 }

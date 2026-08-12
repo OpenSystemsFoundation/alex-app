@@ -9,8 +9,7 @@ const CARD_NAME_CLASS =
     'kanban-card__name kanban-card__name--two-line slds-text-link slds-text-color_brand';
 const CARD_SUBJECT_CLASS =
     'kanban-card__subject kanban-card__subject--two-line';
-const EPIC_LABEL_CLASS =
-    'epic-label__text epic-label__text--two-line';
+const EPIC_LABEL_CLASS = 'epic-label__text epic-label__text--two-line';
 
 /**
  * Decorate all cards in a set of columns with text classes and tooltips.
@@ -21,10 +20,7 @@ const EPIC_LABEL_CLASS =
  * @returns {Array} columns with decorated cards
  */
 export function getColumnsWithDecoratedText(columns, context, cache) {
-    if (
-        cache.columnsRef === columns &&
-        cache.context === context
-    ) {
+    if (cache.columnsRef === columns && cache.context === context) {
         return cache.value;
     }
 

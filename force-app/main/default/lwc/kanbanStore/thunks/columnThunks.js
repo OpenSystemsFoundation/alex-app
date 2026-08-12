@@ -170,11 +170,7 @@ export const deleteColumnAsync = (columnId) => {
  * @param {Array} reorderedColumns - Already-reordered columns array for optimistic UI
  * @returns {Function} Thunk function
  */
-export const reorderColumnAsync = (
-    columnId,
-    dropIndex,
-    reorderedColumns
-) => {
+export const reorderColumnAsync = (columnId, dropIndex, reorderedColumns) => {
     return async (dispatch, getState) => {
         const state = getState();
         const currentColumns = getColumns(state);

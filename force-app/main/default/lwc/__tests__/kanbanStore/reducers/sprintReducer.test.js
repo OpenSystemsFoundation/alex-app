@@ -16,8 +16,7 @@ import {
 
 beforeEach(() => resetIds());
 
-const run = (state, type, payload) =>
-    sprintReducer(state, { type, payload });
+const run = (state, type, payload) => sprintReducer(state, { type, payload });
 
 describe('sprintReducer', () => {
     describe('SET_SPRINT', () => {
@@ -86,18 +85,12 @@ describe('sprintReducer', () => {
     describe('DELETE_SPRINT', () => {
         it('removes sprint and its planning sprint cards', () => {
             const state = buildInitialState({
-                sprints: [
-                    buildSprint({ Id: 's1' }),
-                    buildSprint({ Id: 's2' })
-                ],
+                sprints: [buildSprint({ Id: 's1' }), buildSprint({ Id: 's2' })],
                 planningSprintCards: [
                     { sprintId: 's1', cardId: 'c1' },
                     { sprintId: 's2', cardId: 'c2' }
                 ],
-                backlogCards: [
-                    buildCard({ Id: 'c1' }),
-                    buildCard({ Id: 'c2' })
-                ]
+                backlogCards: [buildCard({ Id: 'c1' }), buildCard({ Id: 'c2' })]
             });
             const next = run(state, types.DELETE_SPRINT, { sprintId: 's1' });
             expect(next.sprints).toHaveLength(1);

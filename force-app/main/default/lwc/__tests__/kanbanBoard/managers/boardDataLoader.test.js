@@ -5,13 +5,10 @@
 jest.mock(
     'c/kanbanStore',
     () => ({
-        loadBoardData: jest.fn(
-            (boardId) =>
-                jest.fn(() => Promise.resolve({ success: true, boardId }))
+        loadBoardData: jest.fn((boardId) =>
+            jest.fn(() => Promise.resolve({ success: true, boardId }))
         ),
-        loadEpicSummariesAsync: jest.fn(
-            () => jest.fn(() => Promise.resolve())
-        ),
+        loadEpicSummariesAsync: jest.fn(() => jest.fn(() => Promise.resolve())),
         setLoading: jest.fn((val) => ({ type: 'SET_LOADING', payload: val })),
         setError: jest.fn((err) => ({ type: 'SET_ERROR', payload: err })),
         clearError: jest.fn(() => ({ type: 'CLEAR_ERROR' }))
@@ -171,7 +168,10 @@ describe('BoardDataLoader', () => {
 
             expect(component.store.dispatch).toHaveBeenCalledWith({
                 type: 'UPDATE_CARD',
-                payload: { cardId: 'c1', updates: { Id: 'c1', subject: 'Updated' } }
+                payload: {
+                    cardId: 'c1',
+                    updates: { Id: 'c1', subject: 'Updated' }
+                }
             });
             expect(component.store.dispatch).toHaveBeenCalledWith({
                 type: 'UPDATE_CARD',

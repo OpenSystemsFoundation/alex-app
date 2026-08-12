@@ -53,10 +53,7 @@ describe('LifecycleManager', () => {
 
             manager.initialize();
 
-            expect(spy).toHaveBeenCalledWith(
-                'focus',
-                expect.any(Function)
-            );
+            expect(spy).toHaveBeenCalledWith('focus', expect.any(Function));
             expect(component.windowFocusListener).not.toBeNull();
 
             spy.mockRestore();
@@ -198,9 +195,7 @@ describe('LifecycleManager', () => {
             expect(
                 component.subscriptionManager.resubscribe
             ).toHaveBeenCalled();
-            expect(
-                component.boardDataLoader.stopPolling
-            ).toHaveBeenCalled();
+            expect(component.boardDataLoader.stopPolling).toHaveBeenCalled();
         });
 
         it('does not resubscribe when already connected', () => {

@@ -17,8 +17,7 @@ import {
 
 beforeEach(() => resetIds());
 
-const run = (state, type, payload) =>
-    backlogReducer(state, { type, payload });
+const run = (state, type, payload) => backlogReducer(state, { type, payload });
 
 describe('backlogReducer', () => {
     // ─── SET_BACKLOG_CARDS ────────────────────────────────
@@ -227,11 +226,7 @@ describe('backlogReducer', () => {
                 cardId: 'a',
                 newIndex: 2
             });
-            expect(next.backlogCards.map((c) => c.Id)).toEqual([
-                'b',
-                'c',
-                'a'
-            ]);
+            expect(next.backlogCards.map((c) => c.Id)).toEqual(['b', 'c', 'a']);
         });
 
         it('returns state if card not found', () => {
@@ -260,11 +255,7 @@ describe('backlogReducer', () => {
                 cardIds: ['c'],
                 position: 'top'
             });
-            expect(next.backlogCards.map((c) => c.Id)).toEqual([
-                'c',
-                'a',
-                'b'
-            ]);
+            expect(next.backlogCards.map((c) => c.Id)).toEqual(['c', 'a', 'b']);
         });
 
         it('moves selected cards to bottom', () => {
@@ -278,11 +269,7 @@ describe('backlogReducer', () => {
                 cardIds: ['a'],
                 position: 'bottom'
             });
-            expect(next.backlogCards.map((c) => c.Id)).toEqual([
-                'b',
-                'c',
-                'a'
-            ]);
+            expect(next.backlogCards.map((c) => c.Id)).toEqual(['b', 'c', 'a']);
         });
     });
 

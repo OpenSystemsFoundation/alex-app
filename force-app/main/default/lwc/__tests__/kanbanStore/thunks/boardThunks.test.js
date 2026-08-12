@@ -27,7 +27,11 @@ import getBoardData from '@salesforce/apex/KanbanBoardController.getBoardData';
 import getBacklogCardsApex from '@salesforce/apex/KanbanBoardController.getBacklogCards';
 import { loadBoardData } from '../../../kanbanStore/thunks/boardThunks';
 import { loadSprintDataAsync } from '../../../kanbanStore/thunks/sprintThunks';
-import { processColumnsData, processCardsData, setCardTypeIconMap } from '../../../kanbanStore/utils/dataProcessors';
+import {
+    processColumnsData,
+    processCardsData,
+    setCardTypeIconMap
+} from '../../../kanbanStore/utils/dataProcessors';
 
 beforeEach(() => {
     jest.clearAllMocks();
@@ -70,12 +74,19 @@ describe('loadBoardData', () => {
         expect(getBoardData).toHaveBeenCalledWith({ boardId: 'b1' });
         expect(setCardTypeIconMap).toHaveBeenCalledWith({ Bug: 'bug-icon' });
         expect(processColumnsData).toHaveBeenCalledWith([{ Id: 'col1' }]);
-        expect(processCardsData).toHaveBeenCalledWith([{ Id: 'c1' }], [{ Id: 'col1' }]);
+        expect(processCardsData).toHaveBeenCalledWith(
+            [{ Id: 'c1' }],
+            [{ Id: 'col1' }]
+        );
 
         // setBoard dispatched with customFieldConfigs attached
-        const boardAction = dispatched.find((a) => a.type && a.type.includes('SET_BOARD'));
+        const boardAction = dispatched.find(
+            (a) => a.type && a.type.includes('SET_BOARD')
+        );
         expect(boardAction).toBeDefined();
-        expect(boardAction.payload.customFieldConfigs).toEqual([{ Id: 'cfg1' }]);
+        expect(boardAction.payload.customFieldConfigs).toEqual([
+            { Id: 'cfg1' }
+        ]);
 
         // Backlog cards loaded for non-Sprint boards
         expect(getBacklogCardsApex).toHaveBeenCalledWith({ boardId: 'b1' });
@@ -107,7 +118,9 @@ describe('loadBoardData', () => {
             cards: []
         };
         getBoardData.mockResolvedValue(boardData);
-        loadSprintDataAsync.mockReturnValue(jest.fn(() => Promise.reject(new Error('sprint fail'))));
+        loadSprintDataAsync.mockReturnValue(
+            jest.fn(() => Promise.reject(new Error('sprint fail')))
+        );
 
         const { dispatch } = createDispatch();
         const thunk = loadBoardData('b3');
