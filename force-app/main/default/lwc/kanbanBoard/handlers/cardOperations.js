@@ -1,3 +1,4 @@
+import LightningConfirm from 'lightning/confirm';
 import { createCardAsync } from 'c/kanbanStore';
 
 /**
@@ -20,7 +21,7 @@ export default class CardOperations {
      * Searches both columns and backlog cards.
      * Warns if the currently open card has unsaved changes.
      */
-    handleCardClick(cardId) {
+    async handleCardClick(cardId) {
         // If switching to a different card while one is already open, check for unsaved edits
         if (
             this.component.showCardDetail &&
@@ -31,10 +32,12 @@ export default class CardOperations {
                 'c-kanban-card-panel'
             );
             if (panel && panel.hasPendingChanges()) {
-                // eslint-disable-next-line no-alert
-                const discard = confirm(
-                    'You have unsaved changes. Discard and switch cards?'
-                );
+                const discard = await LightningConfirm.open({
+                    message:
+                        'You have unsaved changes. Discard and switch cards?',
+                    label: 'Unsaved changes',
+                    variant: 'header'
+                });
                 if (!discard) {
                     return;
                 }

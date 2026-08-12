@@ -64,7 +64,7 @@ public with sharing class SprintService {
                 new List<OpenSF__Sprint__c>{ sprint }
             )
             .getRecords();
-        insert strippedSprints;
+        Database.insert(strippedSprints, AccessLevel.USER_MODE);
 
         // Re-query to get auto-number name
         sprint = SprintSelector.getSprintById(strippedSprints[0].Id);

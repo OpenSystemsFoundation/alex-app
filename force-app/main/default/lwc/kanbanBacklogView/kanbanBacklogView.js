@@ -210,11 +210,12 @@ export default class KanbanBacklogView extends LightningElement {
         // Active sprint section (top — show cards from board columns)
         const active = this.activeSprint;
         if (active) {
-            const sprintCards = selectors.getSprintCards(this._storeState) || [];
+            const sprintCards =
+                selectors.getSprintCards(this._storeState) || [];
             const isCollapsed = !!this._collapsedSprints[active.Id];
 
             // Build card list from board columns for display
-            let activeCards = [];
+            const activeCards = [];
             if (!isCollapsed) {
                 const columns = this._storeState?.columns || [];
                 const activeSprintCardMap = new Map();
@@ -229,9 +230,12 @@ export default class KanbanBacklogView extends LightningElement {
                             ...card,
                             __sectionIndex: activeCards.length,
                             __sprintId: active.Id,
-                            columnName: col.columnHeader || col.Name || col.name,
-                            statusLabel: col.columnHeader || col.Name || col.name,
-                            statusBadgeClass: 'status-badge status-badge--active',
+                            columnName:
+                                col.columnHeader || col.Name || col.name,
+                            statusLabel:
+                                col.columnHeader || col.Name || col.name,
+                            statusBadgeClass:
+                                'status-badge status-badge--active',
                             completedInSprint: sc?.completedInSprint || false,
                             recordUrl: `/lightning/r/OpenSF__Card__c/${card.Id}/view`,
                             priorityBadgeClass: `slds-badge priority-${(card.priority || 'none').toLowerCase()}`
@@ -246,7 +250,8 @@ export default class KanbanBacklogView extends LightningElement {
                 isActiveSprintSection: true,
                 isPlanningSprintSection: false,
                 sprintId: active.Id,
-                sprintLabel: active.Name || `Sprint ${active.sprintNumber || ''}`,
+                sprintLabel:
+                    active.Name || `Sprint ${active.sprintNumber || ''}`,
                 status: 'Active',
                 goal: active.goal || '',
                 hasGoal: !!active.goal,
@@ -286,8 +291,7 @@ export default class KanbanBacklogView extends LightningElement {
                     (s, c) => s + (c.storyPoints || 0),
                     0
                 ),
-                isConfirmingDelete:
-                    this._deleteSprintConfirmId === sprint.Id,
+                isConfirmingDelete: this._deleteSprintConfirmId === sprint.Id,
                 isExpanded: !isCollapsed,
                 isCollapsed,
                 chevronIcon: isCollapsed
@@ -805,9 +809,7 @@ export default class KanbanBacklogView extends LightningElement {
                 for (const id of rangeIds) {
                     existing.add(id);
                 }
-                this.store.dispatch(
-                    setSelectedBacklogCards([...existing])
-                );
+                this.store.dispatch(setSelectedBacklogCards([...existing]));
             }
         } else {
             // Normal click: toggle individual
@@ -1013,9 +1015,7 @@ export default class KanbanBacklogView extends LightningElement {
                 for (const id of rangeIds) {
                     existing.add(id);
                 }
-                this.store.dispatch(
-                    setSelectedBacklogCards([...existing])
-                );
+                this.store.dispatch(setSelectedBacklogCards([...existing]));
             }
             return;
         }
@@ -1086,9 +1086,7 @@ export default class KanbanBacklogView extends LightningElement {
 
         this._contextMenuSprintTarget = sprintId;
 
-        const sections = this.backlogSections.filter(
-            (s) => s.isSprintSection
-        );
+        const sections = this.backlogSections.filter((s) => s.isSprintSection);
         const idx = sections.findIndex((s) => s.sprintId === sprintId);
         const isFirst = idx === 0;
         const isLast = idx === sections.length - 1;
@@ -1124,9 +1122,7 @@ export default class KanbanBacklogView extends LightningElement {
         const sprintId = this._contextMenuSprintTarget;
         if (!sprintId || !this.store) return;
         try {
-            await this.store.dispatch(
-                reorderSprintAsync(sprintId, direction)
-            );
+            await this.store.dispatch(reorderSprintAsync(sprintId, direction));
         } catch (err) {
             console.error('Sprint reorder failed:', err);
         }

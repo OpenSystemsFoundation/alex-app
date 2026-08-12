@@ -16,7 +16,7 @@ jest.mock('c/kanbanStore', () => ({
     }
 }));
 
-import { moveCardAsync, addCardsToSprintAsync } from 'c/kanbanStore';
+import { addCardsToSprintAsync } from 'c/kanbanStore';
 
 beforeEach(() => jest.clearAllMocks());
 
@@ -29,7 +29,8 @@ function createComponent(overrides = {}) {
         store: {
             getState: () => ({}),
             dispatch: jest.fn((thunk) => {
-                if (typeof thunk === 'function') return thunk(jest.fn(), () => ({}));
+                if (typeof thunk === 'function')
+                    return thunk(jest.fn(), () => ({}));
                 return thunk;
             })
         },
@@ -132,9 +133,9 @@ describe('Board DragDropHandler', () => {
             const event = createDragEvent('dragend');
             handler.handleDragEnd(event);
 
-            expect(
-                mockElement.parentNode.removeChild
-            ).toHaveBeenCalledWith(mockElement);
+            expect(mockElement.parentNode.removeChild).toHaveBeenCalledWith(
+                mockElement
+            );
             expect(handler._dragImageElement).toBeNull();
             expect(component.dragData).toBeNull();
         });
@@ -173,9 +174,9 @@ describe('Board DragDropHandler', () => {
 
             await handler.handleDrop(event);
 
-            expect(
-                mockDragImage.parentNode.removeChild
-            ).toHaveBeenCalledWith(mockDragImage);
+            expect(mockDragImage.parentNode.removeChild).toHaveBeenCalledWith(
+                mockDragImage
+            );
             expect(handler._dragImageElement).toBeNull();
         });
     });

@@ -39,7 +39,7 @@ public with sharing class AdminController {
                     new List<OpenSF__Board__c>{ board }
                 )
                 .getRecords();
-            insert boardsToInsert;
+            Database.insert(boardsToInsert, AccessLevel.USER_MODE);
             board.Id = boardsToInsert[0].Id;
 
             // Re-query to get all fields
@@ -93,11 +93,14 @@ public with sharing class AdminController {
                 );
             }
 
-            update Security.stripInaccessible(
-                    AccessType.UPDATABLE,
-                    new List<OpenSF__Board__c>{ board }
-                )
-                .getRecords();
+            Database.update(
+                Security.stripInaccessible(
+                        AccessType.UPDATABLE,
+                        new List<OpenSF__Board__c>{ board }
+                    )
+                    .getRecords(),
+                AccessLevel.USER_MODE
+            );
 
             OpenSF__Board__c updated = KanbanBoardSelector.getBoardById(
                 boardId
@@ -117,7 +120,7 @@ public with sharing class AdminController {
     public static void deleteBoard(Id boardId) {
         try {
             OpenSF__Board__c board = new OpenSF__Board__c(Id = boardId);
-            delete board;
+            Database.delete(board, AccessLevel.USER_MODE);
         } catch (Exception e) {
             throw new AuraHandledException(
                 'Error deleting board: ' + e.getMessage()
@@ -162,7 +165,7 @@ public with sharing class AdminController {
                     new List<OpenSF__Board__c>{ board }
                 )
                 .getRecords();
-            insert boardsToCreate;
+            Database.insert(boardsToCreate, AccessLevel.USER_MODE);
             board.Id = boardsToCreate[0].Id;
 
             // Create default columns
@@ -210,7 +213,7 @@ public with sharing class AdminController {
             for (OpenSF__Column__c c : colsToCreate) {
                 c.OpenSF__Board__c = board.Id;
             }
-            insert colsToCreate;
+            Database.insert(colsToCreate, AccessLevel.USER_MODE);
 
             // Re-query board with list fields
             OpenSF__Board__c created = BoardSelector.getBoardWithListFields(
@@ -274,6 +277,7 @@ public with sharing class AdminController {
      */
     @AuraEnabled
     public static String saveCardCustomField(Map<String, Object> fieldConfig) {
+        requireCardFieldManagePermission();
         try {
             String devName = (String) fieldConfig.get('developerName');
             String label = (String) fieldConfig.get('masterLabel');
@@ -323,6 +327,7 @@ public with sharing class AdminController {
      */
     @AuraEnabled
     public static String deactivateCardCustomField(String developerName) {
+        requireCardFieldManagePermission();
         try {
             Metadata.CustomMetadata cmd = new Metadata.CustomMetadata();
             cmd.fullName = 'OpenSF__CardCustomField__mdt.' + developerName;
@@ -349,7 +354,9 @@ public with sharing class AdminController {
     public static List<FieldOption> getAvailableCardFields() {
         try {
             List<FieldOption> options = new List<FieldOption>();
-            Map<String, Schema.SObjectField> fieldMap = OpenSF__Card__c.SObjectType.getDescribe()
+            Map<String, Schema.SObjectField> fieldMap = OpenSF__Card__c.SObjectType.getDescribe(
+                    SObjectDescribeOptions.DEFERRED
+                )
                 .fields.getMap();
 
             // Exclude system/standard fields and relationship fields
@@ -397,6 +404,19 @@ public with sharing class AdminController {
         } catch (Exception e) {
             throw new AuraHandledException(
                 'Error loading available fields: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Metadata deployments run in system context, so gate them behind an
+     * explicit custom permission (granted by the Alex_Admin permission set)
+     * instead of relying on Apex class access alone.
+     */
+    private static void requireCardFieldManagePermission() {
+        if (!FeatureManagement.checkPermission('ManageCardFields')) {
+            throw new AuraHandledException(
+                'You do not have permission to manage card custom fields.'
             );
         }
     }

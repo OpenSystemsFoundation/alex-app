@@ -155,7 +155,7 @@ public with sharing class KanbanCardService {
                 new List<OpenSF__Card__c>{ card }
             )
             .getRecords();
-        insert strippedCards;
+        Database.insert(strippedCards, AccessLevel.USER_MODE);
         card.Id = strippedCards[0].Id;
 
         // Event published by trigger
@@ -308,7 +308,7 @@ public with sharing class KanbanCardService {
                 new List<OpenSF__Card__c>{ card }
             )
             .getRecords();
-        insert strippedCards;
+        Database.insert(strippedCards, AccessLevel.USER_MODE);
         card.Id = strippedCards[0].Id;
 
         // Return full card data as DTO

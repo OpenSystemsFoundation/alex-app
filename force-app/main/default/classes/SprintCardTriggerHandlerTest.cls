@@ -45,9 +45,13 @@ private class SprintCardTriggerHandlerTest {
 
         Test.startTest();
         TriggerHandler.clearBypass('SprintCardTriggerHandler');
-        sc.OpenSF__CompletedInSprint__c = true;
-        sc.OpenSF__CompletedDate__c = DateTime.now();
-        update sc;
+        // Minimal sObject: re-sending the master-detail Sprint__c/Card__c
+        // fields fails FLS checks in the namespaced-scratch-org test context.
+        update new OpenSF__SprintCard__c(
+            Id = sc.Id,
+            OpenSF__CompletedInSprint__c = true,
+            OpenSF__CompletedDate__c = DateTime.now()
+        );
         Test.stopTest();
 
         OpenSF__SprintCard__c updated = [

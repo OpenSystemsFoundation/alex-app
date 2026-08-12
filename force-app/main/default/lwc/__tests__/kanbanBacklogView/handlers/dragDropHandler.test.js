@@ -11,16 +11,16 @@ import BacklogDragDropHandler from '../../../kanbanBacklogView/handlers/dragDrop
 
 jest.mock('c/kanbanStore', () => ({
     reorderBacklogCardAsync: jest.fn(
-        (cardId, newIndex) => () => Promise.resolve({ success: true })
+        (_cardId, _newIndex) => () => Promise.resolve({ success: true })
     ),
     addCardsToBacklogSprintAsync: jest.fn(
-        (sprintId, cardIds) => () => Promise.resolve({ success: true })
+        (_sprintId, _cardIds) => () => Promise.resolve({ success: true })
     ),
     removeCardFromBacklogSprintAsync: jest.fn(
-        (sprintId, cardId) => () => Promise.resolve({ success: true })
+        (_sprintId, _cardId) => () => Promise.resolve({ success: true })
     ),
     bulkReorderBacklogCardsAtIndexAsync: jest.fn(
-        (cardIds, idx) => () => Promise.resolve({ success: true })
+        (_cardIds, _idx) => () => Promise.resolve({ success: true })
     ),
     setSelectedBacklogCards: jest.fn((ids) => ({
         type: 'SET_SELECTED_BACKLOG_CARDS',

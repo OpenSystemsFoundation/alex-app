@@ -86,22 +86,12 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>CardColumnHistory__c.Card__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>CardColumnHistory__c.Column__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
         <field>CardColumnHistory__c.DurationMinutes__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>CardColumnHistory__c.EnteredAt__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

@@ -111,7 +111,9 @@ describe('moveCardAsync', () => {
         const { dispatch, getState } = createThunkEnv({ columns: [] });
 
         const thunk = moveCardAsync('c1', 'missing', 0);
-        await expect(thunk(dispatch, getState)).rejects.toThrow('Target column not found');
+        await expect(thunk(dispatch, getState)).rejects.toThrow(
+            'Target column not found'
+        );
     });
 
     it('throws on Apex error', async () => {
@@ -179,7 +181,9 @@ describe('createCardAsync', () => {
         const { dispatch, getState } = createThunkEnv({ columns: [] });
 
         const thunk = createCardAsync('missing', 'Test');
-        await expect(thunk(dispatch, getState)).rejects.toThrow('Column not found');
+        await expect(thunk(dispatch, getState)).rejects.toThrow(
+            'Column not found'
+        );
     });
 });
 
@@ -196,7 +200,11 @@ describe('updateCardAsync', () => {
         // First dispatch = optimistic, second = server response
         expect(dispatch).toHaveBeenCalledTimes(2);
         expect(updateCardApex).toHaveBeenCalledWith(
-            expect.objectContaining({ cardId: 'c1', updates: { subject: 'Updated' }, clientId: 'client1' })
+            expect.objectContaining({
+                cardId: 'c1',
+                updates: { subject: 'Updated' },
+                clientId: 'client1'
+            })
         );
     });
 
@@ -215,7 +223,10 @@ describe('createBacklogCardAsync', () => {
         const newCard = { Id: 'bg1', subject: 'Backlog Item' };
         createBacklogCardApex.mockResolvedValue(newCard);
 
-        const thunk = createBacklogCardAsync('board1', { subject: 'Backlog Item', cardType: 'Bug' });
+        const thunk = createBacklogCardAsync('board1', {
+            subject: 'Backlog Item',
+            cardType: 'Bug'
+        });
         const result = await thunk(dispatch);
 
         expect(result.success).toBe(true);
@@ -251,7 +262,10 @@ describe('updateBacklogCardAsync', () => {
 
         expect(result.success).toBe(true);
         expect(dispatch).toHaveBeenCalledTimes(1); // optimistic only
-        expect(updateCardApex).toHaveBeenCalledWith({ cardId: 'c1', updates: { priority: 'High' } });
+        expect(updateCardApex).toHaveBeenCalledWith({
+            cardId: 'c1',
+            updates: { priority: 'High' }
+        });
     });
 });
 
@@ -304,8 +318,11 @@ describe('reorderBacklogCardAsync', () => {
         const dispatched = [];
         const state = buildInitialState({ backlogCards: cards });
         const dispatch = jest.fn((action) => {
-            if (typeof action === 'function') return action(dispatch, () => state);
+            if (typeof action === 'function') {
+                return action(dispatch, () => state);
+            }
             dispatched.push(action);
+            return undefined;
         });
         const getState = jest.fn(() => state);
         reorderBacklogCardApex.mockResolvedValue('2500');
@@ -316,7 +333,9 @@ describe('reorderBacklogCardAsync', () => {
         // Verify dispatches: reorderBacklog, setBacklogSyncing(true), updateBacklogCard, setBacklogSyncing(false)
         expect(reorderBacklogCardApex).toHaveBeenCalled();
         // syncing should be set true then false
-        const syncActions = dispatched.filter((a) => a.type && a.type.includes('BACKLOG_SYNCING'));
+        const syncActions = dispatched.filter(
+            (a) => a.type && a.type.includes('BACKLOG_SYNCING')
+        );
         expect(syncActions.length).toBe(2);
         expect(syncActions[0].payload).toBe(true);
         expect(syncActions[1].payload).toBe(false);
@@ -330,8 +349,11 @@ describe('reorderBacklogCardAsync', () => {
         const dispatched = [];
         const state = buildInitialState({ backlogCards: cards });
         const dispatch = jest.fn((action) => {
-            if (typeof action === 'function') return action(dispatch, () => state);
+            if (typeof action === 'function') {
+                return action(dispatch, () => state);
+            }
             dispatched.push(action);
+            return undefined;
         });
         const getState = jest.fn(() => state);
         reorderBacklogCardApex.mockRejectedValue(new Error('Apex fail'));
@@ -351,7 +373,10 @@ describe('reorderBacklogCardAsync', () => {
         const cards = [buildCard({ Id: 'c1', position: '1000' })];
         const state = buildInitialState({ backlogCards: cards });
         const dispatch = jest.fn((action) => {
-            if (typeof action === 'function') return action(dispatch, () => state);
+            if (typeof action === 'function') {
+                return action(dispatch, () => state);
+            }
+            return undefined;
         });
         const getState = jest.fn(() => state);
 
@@ -374,8 +399,11 @@ describe('bulkMoveBacklogCardsAsync', () => {
         const dispatched = [];
         const state = buildInitialState({ backlogCards: cards });
         const dispatch = jest.fn((action) => {
-            if (typeof action === 'function') return action(dispatch, () => state);
+            if (typeof action === 'function') {
+                return action(dispatch, () => state);
+            }
             dispatched.push(action);
+            return undefined;
         });
         const getState = jest.fn(() => state);
         reorderBacklogCardApex.mockResolvedValue('500');
@@ -394,8 +422,11 @@ describe('bulkMoveBacklogCardsAsync', () => {
         const dispatched = [];
         const state = buildInitialState({ backlogCards: cards });
         const dispatch = jest.fn((action) => {
-            if (typeof action === 'function') return action(dispatch, () => state);
+            if (typeof action === 'function') {
+                return action(dispatch, () => state);
+            }
             dispatched.push(action);
+            return undefined;
         });
         const getState = jest.fn(() => state);
         reorderBacklogCardApex
@@ -422,8 +453,11 @@ describe('bulkReorderBacklogCardsAtIndexAsync', () => {
         const dispatched = [];
         const state = buildInitialState({ backlogCards: cards });
         const dispatch = jest.fn((action) => {
-            if (typeof action === 'function') return action(dispatch, () => state);
+            if (typeof action === 'function') {
+                return action(dispatch, () => state);
+            }
             dispatched.push(action);
+            return undefined;
         });
         const getState = jest.fn(() => state);
         reorderBacklogCardApex.mockResolvedValue('1500');
@@ -439,8 +473,11 @@ describe('bulkReorderBacklogCardsAtIndexAsync', () => {
         const dispatched = [];
         const state = buildInitialState({ backlogCards: cards });
         const dispatch = jest.fn((action) => {
-            if (typeof action === 'function') return action(dispatch, () => state);
+            if (typeof action === 'function') {
+                return action(dispatch, () => state);
+            }
             dispatched.push(action);
+            return undefined;
         });
         const getState = jest.fn(() => state);
         reorderBacklogCardApex.mockRejectedValue(new Error('fail'));
