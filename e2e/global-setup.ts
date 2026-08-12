@@ -34,16 +34,33 @@ async function globalSetup(): Promise<void> {
     // Authenticate and save session — use whichever browser is installed
     console.log('[global-setup] Authenticating via frontdoor...');
     let browser;
-    for (const browserType of [chromium, firefox, webkit]) {
-        try {
-            browser = await browserType.launch();
-            break;
-        } catch {
-            // Browser not installed, try next
+    // Route browser traffic through an outbound proxy when the
+    // environment requires one (e.g. sandboxed cloud runners)
+    const proxyOptions = process.env.HTTPS_PROXY
+        ? { proxy: { server: process.env.HTTPS_PROXY } }
+        : {};
+    // Optional override for environments with a pre-installed Chromium
+    // that doesn't match the Playwright version
+    if (process.env.PW_CHROMIUM_PATH) {
+        browser = await chromium.launch({
+            executablePath: process.env.PW_CHROMIUM_PATH,
+            ...proxyOptions
+        });
+    }
+    if (!browser) {
+        for (const browserType of [chromium, firefox, webkit]) {
+            try {
+                browser = await browserType.launch(proxyOptions);
+                break;
+            } catch {
+                // Browser not installed, try next
+            }
         }
     }
     if (!browser) throw new Error('No browser installed for global setup');
-    const context = await browser.newContext();
+    const context = await browser.newContext(
+        process.env.HTTPS_PROXY ? { ignoreHTTPSErrors: true } : {}
+    );
     const page = await context.newPage();
 
     await page.goto(loginUrl, {
