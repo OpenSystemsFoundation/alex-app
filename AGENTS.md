@@ -1,7 +1,7 @@
 # Agent Instructions — Type Universe
 
 > See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for technical architecture.
-> See [docs/roadmap/2026-03-23-homotopy-type-theory-agent-design.md](docs/roadmap/2026-03-23-homotopy-type-theory-agent-design.md) for the theory behind this structure.
+> See [docs/2026-08-12-security-review-prep-v67.md](docs/2026-08-12-security-review-prep-v67.md) for the security posture and API v67 notes.
 
 ---
 
@@ -46,6 +46,30 @@ NOT: 'Active'
 **When:** Receiving `Map<String, Object>` from LWC in `@AuraEnabled` methods
 **Do:** Convert to typed request internally via `CardUpdateRequest.fromMap(updates)`
 **Not:** Pass raw maps through service layer
+
+### API Version & Security [ALWAYS]
+
+- `sourceApiVersion` and every `<apiVersion>` tag are **67.0** — keep new
+  metadata at 67.0.
+- `WITH SECURITY_ENFORCED` is **removed at v67** — use `WITH USER_MODE` in
+  all SOQL. Exceptions: `__mdt` queries (CRUD/FLS doesn't apply) and
+  `ContentDocumentLink` (platform rejects USER_MODE; enforce access via the
+  parent record instead).
+- User-initiated DML: `Security.stripInaccessible(...)` **plus**
+  `Database.insert/update/delete(..., AccessLevel.USER_MODE)` — strip handles
+  FLS, USER_MODE handles object-level CRUD.
+- Trigger-internal bookkeeping on app-managed fields/objects (rollup counts,
+  column history): explicit `WITH SYSTEM_MODE` / `AccessLevel.SYSTEM_MODE`
+  with an inline "SYSTEM_MODE rationale" comment.
+- Every class declares sharing (`with sharing`, or `inherited sharing` for
+  utility/DTO classes).
+- `Metadata.Operations` calls must be gated by a custom permission check
+  (`FeatureManagement.checkPermission('ManageCardFields')` pattern).
+- Never re-send a non-reparentable master-detail field on `update` — build a
+  minimal sObject with `Id` + changed fields (in namespaced-org test context
+  this throws `fields being inaccessible`).
+- LWC: use `lightning/confirm` (`LightningConfirm.open`), never
+  `window.confirm`.
 
 **When:** Defining `@api` properties or event payloads in LWC
 **Do:** Add JSDoc `@type` annotations to `@api` properties, `@typedef` for event payloads
@@ -108,11 +132,17 @@ Every new backend feature follows this layering. No SOQL in controllers. No busi
 
 | Service | Responsibility |
 |---------|---------------|
-| `KanbanBoardController.cls` | @AuraEnabled API endpoints (8 methods) |
+| `KanbanBoardController.cls` | @AuraEnabled API endpoints (board/card/comment/file) |
+| `AdminController.cls` | Admin page: board CRUD, onboarding status, card custom fields (Metadata API, gated by `ManageCardFields`) |
+| `ColumnManagementController.cls` | Column CRUD, reordering, templates |
 | `KanbanBoardService.cls` | Board operations |
 | `KanbanCardService.cls` | Card CRUD and positioning |
 | `SprintService.cls` | Sprint lifecycle, velocity, snapshots |
+| `EpicService.cls` | Epic summaries and detail |
+| `CardCommentService.cls` | Card comments (author-only edit/delete) |
+| `AnalyticsService.cls` | Burndown/velocity data |
 | `KanbanBoardSelector.cls` | Board/column/card SOQL |
+| `BoardSelector.cls` | Board list SOQL + onboarding status |
 | `SprintSelector.cls` | Sprint/backlog SOQL |
 | `KanbanBoardDTO.cls` | BoardDTO, ColumnDTO, CardDTO, UserDTO, EpicDTO, SprintDTO, SprintCardDTO, SprintSnapshotDTO |
 
@@ -326,8 +356,6 @@ Novel features live in the **tensor product** of fibers — combinations that ne
 | Echo prevention | Planning Poker | Vote deduplication via clientRequestId |
 | Sprint snapshots | QAOA | Quantum-optimized sprint planning |
 
-See [experiments/quantum-concept-discovery/](experiments/quantum-concept-discovery/RESULTS.md) for validated results and [claude/skills/ck-theory/](claude/skills/ck-theory/Skill.md) for structured C-K sessions.
-
 ---
 
 ## Policies
@@ -362,6 +390,13 @@ Use `sf` directly (`/opt/node22/bin/sf`). Set `SFDX_DISABLE_DNS_CHECK=true` if D
 - **Service Layer:** SprintService, SprintSelector, SprintCardTriggerHandler, KanbanCardService, KanbanBoardService
 - **Experiments:** Quantum concept discovery (QAOA cross-fiber exploration). See [experiments/](experiments/)
 
+### What's Since Then (August 2026)
+
+- **API v67:** all metadata on 67.0; `WITH SECURITY_ENFORCED` fully migrated to `WITH USER_MODE`
+- **Admin Management:** board CRUD, onboarding checklist, admin-configurable card custom fields (`CardCustomField__mdt` via Metadata API, gated by the `ManageCardFields` custom permission)
+- **Reports & Dashboards:** custom report types + Kanban report folder
+- **Security review prep:** see [docs/2026-08-12-security-review-prep-v67.md](docs/2026-08-12-security-review-prep-v67.md) and [security-review/](security-review/README.md)
+
 ### What's Next
 
-See [README Roadmap](README.md) and [docs/2026-03-18-roadmap-and-analysis.md](docs/roadmap/2026-03-18-roadmap-and-analysis.md).
+See the [README Roadmap](README.md#roadmap).
