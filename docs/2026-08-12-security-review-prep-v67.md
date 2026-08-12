@@ -120,10 +120,18 @@ both no-ops when the corresponding env vars are unset:
 The sandboxed environment used for this review turned out to reset all
 network egress from any Chromium with an active DevTools (CDP) session —
 CLI navigation from the identical binary/arguments works, CDP-driven
-navigation is reset — so the suite could not complete locally. E2E
-validation for this branch runs through the repo's own
-`chromium-e2e-debug.yml` workflow (push to a `claude/*` branch → results as
-commit comments), which is the project's documented E2E debug loop.
+navigation is reset — so the suite could not complete locally.
+
+The fallback would be the repo's own CI loops, but **both E2E workflows
+(`chromium-e2e-debug.yml` and `e2e-tests.yml`) are currently disabled in
+GitHub Actions** (`disabled_manually`), so no E2E run could be triggered
+for this branch. To validate the branch end-to-end, either re-enable
+`chromium-e2e-debug.yml` in the Actions tab (any push to this `claude/*`
+branch then runs the suite and posts results as commit comments) or run
+`npm run test:e2e` locally against a scratch org per the README. Backend
+behavior is fully covered by the green Apex (218/218) and Jest (249/249)
+suites; the LWC changes on this branch are limited to the
+`lightning/confirm` swap and lint fixes, both covered by Jest.
 
 ## 7. Remaining false positives (for the review submission)
 
