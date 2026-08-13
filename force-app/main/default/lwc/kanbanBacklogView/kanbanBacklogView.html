@@ -65,7 +65,9 @@
                         class="backlog-filter slds-var-m-right_x-small"
                     ></lightning-combobox>
                 </template>
-                <lightning-button-group class="slds-var-m-right_x-small">
+                <lightning-button-group
+                    class="slds-var-m-right_x-small"
+                >
                     <lightning-button
                         label="Move to Top"
                         onclick={handleBulkMoveTop}
@@ -309,8 +311,14 @@
                                 <template
                                     lwc:if={section.isActiveSprintSection}
                                 >
-                                    <span class="sprint-status-badge sprint-status-badge--active">Active</span>
-                                    <div class="sprint-header__actions" onclick={handleSprintActionClick}>
+                                    <span
+                                        class="sprint-status-badge sprint-status-badge--active"
+                                        >Active</span
+                                    >
+                                    <div
+                                        class="sprint-header__actions"
+                                        onclick={handleSprintActionClick}
+                                    >
                                         <button
                                             class="sprint-action-btn sprint-action-btn--complete"
                                             data-sprint-id={section.sprintId}
@@ -324,9 +332,17 @@
                                 <template
                                     lwc:if={section.isPlanningSprintSection}
                                 >
-                                    <span class="sprint-status-badge sprint-status-badge--planning">Planning</span>
-                                    <div class="sprint-header__actions" onclick={handleSprintActionClick}>
-                                        <template lwc:if={section.canStartSprint}>
+                                    <span
+                                        class="sprint-status-badge sprint-status-badge--planning"
+                                        >Planning</span
+                                    >
+                                    <div
+                                        class="sprint-header__actions"
+                                        onclick={handleSprintActionClick}
+                                    >
+                                        <template
+                                            lwc:if={section.canStartSprint}
+                                        >
                                             <button
                                                 class="sprint-action-btn sprint-action-btn--start"
                                                 data-sprint-id={section.sprintId}
@@ -336,8 +352,14 @@
                                                 Start Sprint
                                             </button>
                                         </template>
-                                        <template lwc:if={section.isConfirmingDelete}>
-                                            <span class="sprint-delete-confirm-label">Delete sprint?</span>
+                                        <template
+                                            lwc:if={section.isConfirmingDelete}
+                                        >
+                                            <span
+                                                class="sprint-delete-confirm-label"
+                                                >Delete
+                                                sprint?</span
+                                            >
                                             <button
                                                 class="sprint-action-btn sprint-action-btn--delete-confirm"
                                                 onclick={handleConfirmDeleteSprint}
@@ -503,8 +525,13 @@
                                         class="backlog-cell backlog-cell--status slds-truncate"
                                         title={card.statusLabel}
                                     >
-                                        <template lwc:if={card.statusLabel}>
-                                            <span class={card.statusBadgeClass}>{card.statusLabel}</span>
+                                        <template
+                                            lwc:if={card.statusLabel}
+                                        >
+                                            <span
+                                                class={card.statusBadgeClass}
+                                                >{card.statusLabel}</span
+                                            >
                                         </template>
                                     </div>
 

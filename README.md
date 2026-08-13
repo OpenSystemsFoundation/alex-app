@@ -7,7 +7,7 @@
 
   [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE-MIT)
-  [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-v66.0-blue.svg)](https://developer.salesforce.com)
+  [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-v67.0-blue.svg)](https://developer.salesforce.com)
 </div>
 
 ## Overview
@@ -139,18 +139,22 @@ npm run test:unit:coverage
 
 ### End-to-End Tests (Playwright)
 
+E2E tests run against a scratch org. Set `SCRATCH_ORG_URL` to a frontdoor
+URL (`sf org open --url-only`) and `SF_TARGET_ORG` to your org alias first —
+specs skip automatically when `SCRATCH_ORG_URL` is not set.
+
 ```bash
 # Run all E2E tests
 npm run test:e2e
 
-# Run with UI mode
-npm run test:e2e:ui
-
 # Run in headed mode (see browser)
 npm run test:e2e:headed
 
-# Debug mode
-npm run test:e2e:debug
+# Open the HTML report of the last run
+npm run test:e2e:report
+
+# Validate E2E TypeScript
+npm run type-check:e2e
 ```
 
 ### Apex Tests
@@ -169,6 +173,7 @@ npm run test:all
 
 - [Architecture Documentation](docs/ARCHITECTURE.md)
 - [Quick Start Guide](docs/QUICKSTART.md)
+- [Security Review Prep & API v67 Upgrade](docs/2026-08-12-security-review-prep-v67.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [Agent Instructions](AGENTS.md)
 
@@ -179,15 +184,17 @@ npm run test:all
 ```
 alex-app/
 ├── force-app/main/default/
-│   ├── lwc/              # Lightning Web Components
-│   ├── classes/          # Apex classes
-│   ├── objects/          # Custom objects (Board, Column, Card)
+│   ├── lwc/              # Lightning Web Components (+ __tests__/ Jest specs)
+│   ├── classes/          # Apex classes and tests
+│   ├── objects/          # Custom objects (Board, Column, Card, Sprint, ...)
+│   ├── reports/          # Kanban report folder + reports
+│   ├── reportTypes/      # Custom report types
+│   ├── customPermissions/# Custom permissions (e.g. ManageCardFields)
 │   ├── tabs/             # Custom tabs
-│   └── permissionsets/   # Permission sets
-├── test/
-│   ├── unit/lwc/         # Jest unit tests
-│   └── e2e/              # Playwright E2E tests
-├── scripts/              # Utility scripts
+│   └── permissionsets/   # Alex_Admin / Alex_User permission sets
+├── e2e/                  # Playwright E2E tests (TypeScript)
+├── security-review/      # AppExchange security review scans + notes
+├── scripts/              # Utility scripts (Apex data scripts, tooling)
 └── config/               # Scratch org definitions
 ```
 
@@ -215,8 +222,10 @@ sf org assign permset --name Alex_Admin
 # Open scratch org
 sf org open
 
-# Run E2E tests against scratch org
-npm run test:e2e:scratch
+# Run E2E tests against the scratch org
+export SCRATCH_ORG_URL="$(sf org open --url-only)"
+export SF_TARGET_ORG=alex-scratch
+npm run test:e2e
 ```
 
 ## Contributing
@@ -249,12 +258,12 @@ This project is dual-licensed -- you may use it under either license at your cho
 
 ## Roadmap
 
-- [ ] CI/CD release pipeline (GitHub Actions for beta/GA package creation)
-- [ ] Cycle time & lead time analytics (how long cards spend in each column)
+- [x] CI/CD release pipeline (GitHub Actions for beta/GA package creation)
+- [x] Custom fields on cards (admin-configurable via `CardCustomField__mdt`)
+- [ ] Cycle time & lead time analytics (column history tracking is in place; UI pending)
 - [ ] Auto-create cards from Cases (Flow-driven)
 - [ ] Customer-facing boards via Experience Cloud
 - [ ] Approval gates on column transitions (Salesforce Approvals integration)
-- [ ] Custom fields on cards
 - [ ] Mobile companion
 
 ---

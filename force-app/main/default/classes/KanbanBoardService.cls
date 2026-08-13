@@ -89,7 +89,9 @@ public with sharing class KanbanBoardService {
         }
 
         // Validate fields exist on Card__c before querying
-        Map<String, Schema.SObjectField> cardFields = OpenSF__Card__c.SObjectType.getDescribe()
+        Map<String, Schema.SObjectField> cardFields = OpenSF__Card__c.SObjectType.getDescribe(
+                SObjectDescribeOptions.DEFERRED
+            )
             .fields.getMap();
         Set<String> validFields = new Set<String>();
         for (String fn : fieldNames) {
@@ -323,17 +325,13 @@ public with sharing class KanbanBoardService {
     }
 
     /**
-     * Get runtime config from the KanbanConfig hierarchy custom setting.
-     * Returns the effective values for the running user (org → profile → user).
+     * Get runtime config for developer features.
      */
     public static KanbanBoardController.KanbanConfigResult getKanbanConfig() {
-        KanbanBoardController.KanbanConfigResult result = new KanbanBoardController.KanbanConfigResult();
-        OpenSF__KanbanConfig__c cfg = OpenSF__KanbanConfig__c.getInstance();
-        if (cfg != null) {
-            result.showDebugInfo = cfg.OpenSF__ShowDebugInfo__c == true;
-            result.enableDevTools = cfg.OpenSF__EnableDevTools__c == true;
-        }
-        return result;
+        // The KanbanConfig__c hierarchy custom setting is a paid-only
+        // feature and is not packaged in the OSS version, so debug info
+        // and dev tools are always off here.
+        return new KanbanBoardController.KanbanConfigResult();
     }
 
     private static OpenSF__KanbanBoardSettings__mdt getModalSettingsRecord() {

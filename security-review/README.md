@@ -1,5 +1,14 @@
 # AppExchange Security Review — Alex Kanban App
 
+> **Update 2026-08-12:** a follow-up hardening pass upgraded the project to
+> API v67.0 (including the mandatory `SECURITY_ENFORCED` → `USER_MODE`
+> migration), fixed additional CRUD gaps in `AdminController`, and gated the
+> Metadata API endpoints behind the `ManageCardFields` custom permission.
+> The AppExchange-rule scan is now down to the single documented false
+> positive (FP-1). See
+> [docs/2026-08-12-security-review-prep-v67.md](../docs/2026-08-12-security-review-prep-v67.md)
+> and the `*-2026-08-12.json` scan artifacts in this folder.
+
 Review date: 2026-04-16
 Branch: `claude/appexchange-security-review-k52Ws`
 sourceApiVersion: 66.0

@@ -53,10 +53,14 @@ private class ColumnTriggerHandlerTest {
         insert column;
 
         Test.startTest();
-        // Update column - should trigger afterUpdate
-        column.OpenSF__ColumnHeader__c = 'In Progress';
-        column.OpenSF__Color__c = '#2E844A';
-        update column;
+        // Update column - should trigger afterUpdate.
+        // Minimal sObject: re-sending the master-detail Board__c field
+        // fails FLS checks in the namespaced-scratch-org test context.
+        update new OpenSF__Column__c(
+            Id = column.Id,
+            OpenSF__ColumnHeader__c = 'In Progress',
+            OpenSF__Color__c = '#2E844A'
+        );
         Test.stopTest();
 
         // Verify column was updated
@@ -161,13 +165,16 @@ private class ColumnTriggerHandlerTest {
         }
         insert columns;
 
-        // Update all columns
+        // Update all columns (minimal sObjects — see testAfterUpdate)
+        List<OpenSF__Column__c> columnUpdates = new List<OpenSF__Column__c>();
         for (OpenSF__Column__c col : columns) {
-            col.OpenSF__Color__c = '#1B96FF';
+            columnUpdates.add(
+                new OpenSF__Column__c(Id = col.Id, OpenSF__Color__c = '#1B96FF')
+            );
         }
 
         Test.startTest();
-        update columns;
+        update columnUpdates;
         Test.stopTest();
 
         // Verify all columns were updated
@@ -199,9 +206,12 @@ private class ColumnTriggerHandlerTest {
         );
         insert column;
 
-        // Update to trigger another event
-        column.OpenSF__ColumnHeader__c = 'Updated Column';
-        update column;
+        // Update to trigger another event (minimal sObject — see
+        // testAfterUpdate)
+        update new OpenSF__Column__c(
+            Id = column.Id,
+            OpenSF__ColumnHeader__c = 'Updated Column'
+        );
         Test.stopTest();
 
         // Verify the column operations completed successfully

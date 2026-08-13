@@ -13,14 +13,16 @@ private class ColumnManagementControllerTest {
         Test.stopTest();
 
         System.assertEquals(1, boards.size(), 'Should return one board');
-        System.assertEquals('Test Board', boards[0].Name, 'Board name should match');
+        System.assertEquals(
+            'Test Board',
+            boards[0].Name,
+            'Board name should match'
+        );
     }
 
     @isTest
     static void testGetColumns() {
-        OpenSF__Board__c board = [
-            SELECT Id FROM OpenSF__Board__c LIMIT 1
-        ];
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
 
         Test.startTest();
         List<KanbanBoardDTO.ColumnDTO> columns = ColumnManagementController.getColumns(
@@ -33,9 +35,7 @@ private class ColumnManagementControllerTest {
 
     @isTest
     static void testCreateColumn() {
-        OpenSF__Board__c board = [
-            SELECT Id FROM OpenSF__Board__c LIMIT 1
-        ];
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
 
         Test.startTest();
         KanbanBoardDTO.ColumnDTO col = ColumnManagementController.createColumn(
@@ -51,15 +51,21 @@ private class ColumnManagementControllerTest {
         Test.stopTest();
 
         System.assertNotEquals(null, col.Id, 'Column should be created');
-        System.assertEquals('New Column', col.columnHeader, 'Header should match');
-        System.assertEquals('In Progress', col.category, 'Category should match');
+        System.assertEquals(
+            'New Column',
+            col.columnHeader,
+            'Header should match'
+        );
+        System.assertEquals(
+            'In Progress',
+            col.category,
+            'Category should match'
+        );
     }
 
     @isTest
     static void testCreateColumnWithPosition() {
-        OpenSF__Board__c board = [
-            SELECT Id FROM OpenSF__Board__c LIMIT 1
-        ];
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
         List<KanbanBoardDTO.ColumnDTO> existing = ColumnManagementController.getColumns(
             board.Id
         );
@@ -87,9 +93,7 @@ private class ColumnManagementControllerTest {
 
     @isTest
     static void testUpdateColumn() {
-        OpenSF__Column__c col = [
-            SELECT Id FROM OpenSF__Column__c LIMIT 1
-        ];
+        OpenSF__Column__c col = [SELECT Id FROM OpenSF__Column__c LIMIT 1];
 
         Map<String, Object> updates = new Map<String, Object>{
             'columnHeader' => 'Updated Header',
@@ -115,9 +119,7 @@ private class ColumnManagementControllerTest {
 
     @isTest
     static void testDeleteColumn() {
-        OpenSF__Column__c col = [
-            SELECT Id FROM OpenSF__Column__c LIMIT 1
-        ];
+        OpenSF__Column__c col = [SELECT Id FROM OpenSF__Column__c LIMIT 1];
         Id colId = col.Id;
 
         Test.startTest();
@@ -125,16 +127,16 @@ private class ColumnManagementControllerTest {
         Test.stopTest();
 
         List<OpenSF__Column__c> remaining = [
-            SELECT Id FROM OpenSF__Column__c WHERE Id = :colId
+            SELECT Id
+            FROM OpenSF__Column__c
+            WHERE Id = :colId
         ];
         System.assertEquals(0, remaining.size(), 'Column should be deleted');
     }
 
     @isTest
     static void testReorderColumn() {
-        OpenSF__Board__c board = [
-            SELECT Id FROM OpenSF__Board__c LIMIT 1
-        ];
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
         List<KanbanBoardDTO.ColumnDTO> columns = ColumnManagementController.getColumns(
             board.Id
         );
@@ -174,8 +176,9 @@ private class ColumnManagementControllerTest {
     @isTest
     static void testGetColumnsNonExistentBoard() {
         // Use a fabricated ID that doesn't exist
-        Id fakeId = OpenSF__Board__c.SObjectType.getDescribe()
-            .getKeyPrefix() + '000000000001';
+        Id fakeId =
+            OpenSF__Board__c.SObjectType.getDescribe().getKeyPrefix() +
+            '000000000001';
 
         Test.startTest();
         List<KanbanBoardDTO.ColumnDTO> columns = ColumnManagementController.getColumns(
@@ -198,11 +201,31 @@ private class ColumnManagementControllerTest {
         );
         Test.stopTest();
 
-        System.assertEquals(4, columns.size(), 'Should create 4 default columns');
-        System.assertEquals('To Do', columns[0].columnHeader, 'First column should be To Do');
-        System.assertEquals('In Progress', columns[1].columnHeader, 'Second column should be In Progress');
-        System.assertEquals('Review', columns[2].columnHeader, 'Third column should be Review');
-        System.assertEquals('Done', columns[3].columnHeader, 'Fourth column should be Done');
+        System.assertEquals(
+            4,
+            columns.size(),
+            'Should create 4 default columns'
+        );
+        System.assertEquals(
+            'To Do',
+            columns[0].columnHeader,
+            'First column should be To Do'
+        );
+        System.assertEquals(
+            'In Progress',
+            columns[1].columnHeader,
+            'Second column should be In Progress'
+        );
+        System.assertEquals(
+            'Review',
+            columns[2].columnHeader,
+            'Third column should be Review'
+        );
+        System.assertEquals(
+            'Done',
+            columns[3].columnHeader,
+            'Fourth column should be Done'
+        );
 
         // Verify LexoRank ordering
         for (Integer i = 1; i < columns.size(); i++) {
@@ -224,9 +247,21 @@ private class ColumnManagementControllerTest {
         );
         Test.stopTest();
 
-        System.assertEquals(6, columns.size(), 'Scrum template should create 6 columns');
-        System.assertEquals('Backlog', columns[0].columnHeader, 'First column should be Backlog');
-        System.assertEquals('Done', columns[5].columnHeader, 'Last column should be Done');
+        System.assertEquals(
+            6,
+            columns.size(),
+            'Scrum template should create 6 columns'
+        );
+        System.assertEquals(
+            'Backlog',
+            columns[0].columnHeader,
+            'First column should be Backlog'
+        );
+        System.assertEquals(
+            'Done',
+            columns[5].columnHeader,
+            'Last column should be Done'
+        );
     }
 
     @isTest
@@ -240,8 +275,20 @@ private class ColumnManagementControllerTest {
         );
         Test.stopTest();
 
-        System.assertEquals(6, columns.size(), 'Release template should create 6 columns');
-        System.assertEquals('Backlog', columns[0].columnHeader, 'First column should be Backlog');
-        System.assertEquals('Released', columns[5].columnHeader, 'Last column should be Released');
+        System.assertEquals(
+            6,
+            columns.size(),
+            'Release template should create 6 columns'
+        );
+        System.assertEquals(
+            'Backlog',
+            columns[0].columnHeader,
+            'First column should be Backlog'
+        );
+        System.assertEquals(
+            'Released',
+            columns[5].columnHeader,
+            'Last column should be Released'
+        );
     }
 }

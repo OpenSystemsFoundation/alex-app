@@ -7,5 +7,6 @@
     <scale>0</scale>
     <required>false</required>
     <defaultValue>14</defaultValue>
-    <description>Default sprint duration in days. Used to pre-populate the end date when starting a sprint.</description>
+    <description
+    >Default sprint duration in days. Used to pre-populate the end date when starting a sprint.</description>
 </CustomField>

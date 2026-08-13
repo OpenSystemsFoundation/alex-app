@@ -48,7 +48,11 @@ export default class KanbanSprintModal extends LightningElement {
     }
 
     get canStart() {
-        return this.isEditMode && this.sprint.status === 'Planning' && !this.hasActiveSprint;
+        return (
+            this.isEditMode &&
+            this.sprint.status === 'Planning' &&
+            !this.hasActiveSprint
+        );
     }
 
     get isStartDisabled() {

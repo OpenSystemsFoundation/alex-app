@@ -138,9 +138,9 @@ describe('selectors', () => {
         });
 
         it('hasPendingOperations returns false when empty', () => {
-            expect(
-                selectors.hasPendingOperations(buildInitialState())
-            ).toBe(false);
+            expect(selectors.hasPendingOperations(buildInitialState())).toBe(
+                false
+            );
         });
 
         it('getSyncStatusMessage shows count for multiple ops', () => {

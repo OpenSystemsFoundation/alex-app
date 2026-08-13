@@ -78,11 +78,7 @@ describe('SubscriptionEventHandler', () => {
 
     describe('handleSubscriptionStatusMessage', () => {
         it('shows success toast for success variant', () => {
-            handler.handleSubscriptionStatusMessage(
-                'success',
-                'Connected',
-                ''
-            );
+            handler.handleSubscriptionStatusMessage('success', 'Connected', '');
 
             expect(component.toastManager.showSuccess).toHaveBeenCalledWith(
                 'Connected',
@@ -99,7 +95,11 @@ describe('SubscriptionEventHandler', () => {
 
             expect(
                 component.toastManager.showSubscriptionStatus
-            ).toHaveBeenCalledWith('Reconnecting', 'Trying again...', 'warning');
+            ).toHaveBeenCalledWith(
+                'Reconnecting',
+                'Trying again...',
+                'warning'
+            );
         });
 
         it('does nothing when toastManager is null', () => {
@@ -145,7 +145,9 @@ describe('SubscriptionEventHandler', () => {
         it('does not stop polling for non-connected status', () => {
             handler.handleSubscriptionStatusChange('connecting');
 
-            expect(component.boardDataLoader.stopPolling).not.toHaveBeenCalled();
+            expect(
+                component.boardDataLoader.stopPolling
+            ).not.toHaveBeenCalled();
         });
     });
 

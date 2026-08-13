@@ -26,6 +26,13 @@ DO:  import STATUS from '@salesforce/schema/OpenSF__Sprint__c.OpenSF__Status__c'
 - LWC: JSDoc `@type` on `@api` properties, `@typedef` for event payloads
 - E2E: TypeScript strict mode — run `npm run type-check:e2e` to validate
 
+## API v67 & Security (see AGENTS.md for the full list)
+
+- All metadata is API **67.0** — `WITH SECURITY_ENFORCED` no longer compiles; use `WITH USER_MODE`
+- User-initiated DML: `stripInaccessible` + `Database.<op>(..., AccessLevel.USER_MODE)`
+- Never re-send a non-reparentable master-detail field on `update` (breaks tests in namespaced orgs)
+- LWC confirmations: `lightning/confirm`, never `window.confirm`
+
 ## CLI
 
 Use `sf` directly (`/opt/node22/bin/sf`). Set `SFDX_DISABLE_DNS_CHECK=true` if DNS fails.

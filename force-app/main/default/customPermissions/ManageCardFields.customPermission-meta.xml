@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <isLicensed>false</isLicensed>
+    <label>Manage Card Custom Fields</label>
+    <description
+    >Allows deploying CardCustomField metadata configuration changes from the Admin Management page.</description>
+</CustomPermission>

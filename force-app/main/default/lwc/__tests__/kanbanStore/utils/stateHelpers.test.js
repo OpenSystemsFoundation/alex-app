@@ -166,10 +166,6 @@ describe('calculateDragState', () => {
 
         const result = calculateDragState(state, 'col1', 2);
         // c1 removed from index 0, then inserted at adjusted index (2-1=1)
-        expect(result[0].cards.map((c) => c.Id)).toEqual([
-            'c2',
-            'c1',
-            'c3'
-        ]);
+        expect(result[0].cards.map((c) => c.Id)).toEqual(['c2', 'c1', 'c3']);
     });
 });

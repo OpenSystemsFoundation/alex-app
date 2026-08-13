@@ -1,6 +1,37 @@
 import { test, expect } from '../fixtures';
+import { createIsolatedBoard, sfApexRun } from '../helpers/sf-data';
 
 const SF_TIMEOUT = 60_000;
+
+/**
+ * Create a backlog card (board reference, no column) via Apex,
+ * mirroring KanbanCardService.createBacklogCard's field set.
+ * Returns the new card's ID.
+ */
+function createBacklogCardViaApex(
+    boardId: string,
+    subject: string,
+    priority: string
+): string {
+    const output = sfApexRun(`
+OpenSF__Card__c card = new OpenSF__Card__c(
+    OpenSF__Board__c = '${boardId}',
+    OpenSF__Subject__c = '${subject.replace(/'/g, "\\'")}',
+    OpenSF__Priority__c = '${priority}',
+    OpenSF__NeedsRefinement__c = false,
+    OpenSF__SequenceNumber__c = 1
+);
+insert card;
+System.debug('E2E_CARD_ID:' + card.Id);
+`);
+    const match = output.match(/E2E_CARD_ID:([a-zA-Z0-9]{15,18})/);
+    if (!match) {
+        throw new Error(
+            `Failed to parse card ID from Apex output: ${output.substring(0, 500)}`
+        );
+    }
+    return match[1];
+}
 
 test.describe('Backlog View', () => {
     test.beforeEach(async () => {
@@ -158,20 +189,20 @@ test.describe('Backlog View', () => {
         boardPage,
         boardData
     }) => {
+        // The worker fixture assigns every card a column, so the backlog
+        // starts empty and the ungrouped section header would not render —
+        // seed our own backlog card to make it deterministic
+        createBacklogCardViaApex(
+            boardData.boardId,
+            `E2E backlog header ${Date.now()}`,
+            'Low'
+        );
+
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.switchToBacklogTab();
 
-        // Wait for backlog data to load and sections to build
         const backlogHeader = boardPage.page.locator('.backlog-header-row');
-        const visible = await backlogHeader
-            .isVisible({ timeout: SF_TIMEOUT })
-            .catch(() => false);
-        if (!visible) {
-            test.skip(
-                true,
-                'Backlog section header not rendered -- data may not have loaded'
-            );
-        }
+        await expect(backlogHeader).toBeVisible({ timeout: SF_TIMEOUT });
         await expect(backlogHeader.locator('strong')).toHaveText('Backlog');
         await expect(backlogHeader).toContainText(/\d+ cards/);
     });
@@ -180,79 +211,275 @@ test.describe('Backlog View', () => {
         boardPage,
         boardData
     }) => {
+        // The fixture cards all live in columns — seed a backlog card
+        // so the ungrouped section has a row to collapse
+        const cardId = createBacklogCardViaApex(
+            boardData.boardId,
+            `E2E collapse ${Date.now()}`,
+            'Low'
+        );
+
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.switchToBacklogTab();
 
         const backlogHeader = boardPage.page.locator('.backlog-header-row');
-        const visible = await backlogHeader
-            .isVisible({ timeout: SF_TIMEOUT })
-            .catch(() => false);
-        if (!visible) {
-            test.skip(
-                true,
-                'Backlog section header not rendered -- data may not have loaded'
-            );
-        }
+        await expect(backlogHeader).toBeVisible({ timeout: SF_TIMEOUT });
 
-        // Count visible rows before collapse
-        const rowsBefore = boardPage.page.locator(
+        const rows = boardPage.page.locator(
             '.backlog-row:not(.backlog-row--header)'
         );
-        const countBefore = await rowsBefore.count();
+        await expect(
+            boardPage.page.locator(`.backlog-row[data-card-id="${cardId}"]`)
+        ).toBeVisible({ timeout: SF_TIMEOUT });
+        const countBefore = await rows.count();
 
-        // Click to collapse
+        // The fixture board has no sprints, so the ungrouped section
+        // holds every row and collapsing it empties the list
         await backlogHeader.click();
-        await boardPage.page.waitForTimeout(500);
-
-        // Rows should be fewer or zero after collapse
-        const countAfter = await rowsBefore.count();
-        expect(countAfter).toBeLessThan(countBefore);
+        await expect(rows).toHaveCount(0);
 
         // Click again to expand
         await backlogHeader.click();
-        await boardPage.page.waitForTimeout(500);
-
-        const countExpanded = await rowsBefore.count();
-        expect(countExpanded).toBe(countBefore);
+        await expect(rows).toHaveCount(countBefore);
     });
 
-    test('context menu shows Move to Column option', async ({
+    test('inline create form adds a card to the backlog list', async ({
         boardPage,
         boardData
     }) => {
+        // Seed a backlog card so the row list renders and countBefore is
+        // captured from a loaded, non-empty state (fixture backlog is empty)
+        const seededId = createBacklogCardViaApex(
+            boardData.boardId,
+            `E2E inline seed ${Date.now()}`,
+            'Low'
+        );
+
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.switchToBacklogTab();
 
-        // Wait for backlog rows to appear
-        const firstRow = boardPage.page
-            .locator('.backlog-row:not(.backlog-row--header)')
-            .first();
-        const rowVisible = await firstRow
-            .isVisible({ timeout: SF_TIMEOUT })
-            .catch(() => false);
-        if (!rowVisible) {
-            test.skip(
-                true,
-                'Backlog rows not rendered -- data may not have loaded'
-            );
-        }
+        const rows = boardPage.page.locator(
+            '.backlog-row:not(.backlog-row--header)'
+        );
+        await expect(
+            boardPage.page.locator(`.backlog-row[data-card-id="${seededId}"]`)
+        ).toBeVisible({ timeout: SF_TIMEOUT });
+        const countBefore = await rows.count();
+
+        await boardPage.page.locator('button:has-text("New Card")').click();
+
+        // Inline form from kanbanBacklogView: .backlog-view__create-form
+        // wrapping the .create-input lightning-input
+        const createForm = boardPage.page.locator(
+            '.backlog-view__create-form:has(.create-input)'
+        );
+        await expect(createForm).toBeVisible({ timeout: 10_000 });
+
+        const subject = `E2E inline create ${Date.now()}`;
+        await createForm.locator('.create-input input').fill(subject);
+        await createForm.locator('button:has-text("Save")').click();
+
+        // The new row appears with the unique subject and the count grows
+        const newRow = boardPage.page.locator(
+            `.backlog-row:has(.backlog-cell--subject:has-text("${subject}"))`
+        );
+        await expect(newRow).toHaveCount(1, { timeout: SF_TIMEOUT });
+        await expect(rows).toHaveCount(countBefore + 1);
+    });
+
+    test('bulk set priority updates selected rows only', async ({
+        boardPage,
+        boardData
+    }) => {
+        // Own records: bulk actions mutate data, so never touch the
+        // shared fixture cards other tests read
+        const stamp = Date.now();
+        const cardA = createBacklogCardViaApex(
+            boardData.boardId,
+            `E2E bulk prio A ${stamp}`,
+            'Low'
+        );
+        const cardB = createBacklogCardViaApex(
+            boardData.boardId,
+            `E2E bulk prio B ${stamp}`,
+            'Low'
+        );
+        const cardC = createBacklogCardViaApex(
+            boardData.boardId,
+            `E2E bulk prio C ${stamp}`,
+            'Low'
+        );
+
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.switchToBacklogTab();
+
+        const rowA = boardPage.page.locator(
+            `.backlog-row[data-card-id="${cardA}"]`
+        );
+        const rowB = boardPage.page.locator(
+            `.backlog-row[data-card-id="${cardB}"]`
+        );
+        const rowC = boardPage.page.locator(
+            `.backlog-row[data-card-id="${cardC}"]`
+        );
+        await expect(rowA).toBeVisible({ timeout: SF_TIMEOUT });
+
+        // SLDS visually hides the native checkbox input, so click its label
+        await rowA.locator('.backlog-cell--checkbox label').click();
+        await rowB.locator('.backlog-cell--checkbox label').click();
+
+        const bulkBar = boardPage.page.locator('.backlog-view__bulk-actions');
+        await expect(bulkBar).toBeVisible({ timeout: 10_000 });
+        await expect(bulkBar).toContainText('2 selected');
+
+        // The Set Priority lightning-combobox is the only combobox in the
+        // bulk bar (Move to Sprint needs planning sprints, which the
+        // fixture board never has)
+        await bulkBar.locator('.slds-combobox__input').click();
+        await bulkBar.getByRole('option', { name: 'High' }).click();
+
+        await expect(rowA.locator('.backlog-cell--priority')).toHaveText(
+            'High',
+            { timeout: SF_TIMEOUT }
+        );
+        await expect(rowB.locator('.backlog-cell--priority')).toHaveText(
+            'High',
+            { timeout: SF_TIMEOUT }
+        );
+        // Unselected row keeps its original priority
+        await expect(rowC.locator('.backlog-cell--priority')).toHaveText('Low');
+    });
+
+    test('bulk delete removes the selected card', async ({
+        boardPage,
+        boardData
+    }) => {
+        const subject = `E2E bulk delete ${Date.now()}`;
+        const cardId = createBacklogCardViaApex(
+            boardData.boardId,
+            subject,
+            'Low'
+        );
+
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.switchToBacklogTab();
+
+        const row = boardPage.page.locator(
+            `.backlog-row[data-card-id="${cardId}"]`
+        );
+        await expect(row).toBeVisible({ timeout: SF_TIMEOUT });
+
+        const rows = boardPage.page.locator(
+            '.backlog-row:not(.backlog-row--header)'
+        );
+        const countBefore = await rows.count();
+
+        await row.locator('.backlog-cell--checkbox label').click();
+
+        const bulkBar = boardPage.page.locator('.backlog-view__bulk-actions');
+        await expect(bulkBar).toBeVisible({ timeout: 10_000 });
+        await expect(bulkBar).toContainText('1 selected');
+
+        await bulkBar.locator('button:has-text("Delete")').click();
+
+        await expect(row).toHaveCount(0, { timeout: SF_TIMEOUT });
+        await expect(
+            boardPage.page.locator(
+                `.backlog-cell--subject:has-text("${subject}")`
+            )
+        ).toHaveCount(0);
+        await expect(rows).toHaveCount(countBefore - 1);
+    });
+
+    test('select all selects every row and clear resets selection', async ({
+        boardPage,
+        boardData
+    }) => {
+        // Seed a backlog card — select-all needs at least one row, and
+        // the fixture board's cards all start in columns
+        const cardId = createBacklogCardViaApex(
+            boardData.boardId,
+            `E2E select all ${Date.now()}`,
+            'Low'
+        );
+
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.switchToBacklogTab();
+
+        const rows = boardPage.page.locator(
+            '.backlog-row:not(.backlog-row--header)'
+        );
+        await expect(
+            boardPage.page.locator(`.backlog-row[data-card-id="${cardId}"]`)
+        ).toBeVisible({ timeout: SF_TIMEOUT });
+        const rowCount = await rows.count();
+
+        // Header row select-all checkbox (label click, input is hidden)
+        await boardPage.page
+            .locator('.backlog-row--header .backlog-cell--checkbox label')
+            .click();
+
+        const bulkBar = boardPage.page.locator('.backlog-view__bulk-actions');
+        await expect(bulkBar).toBeVisible({ timeout: 10_000 });
+        await expect(bulkBar).toContainText(`${rowCount} selected`);
+        await expect(
+            rows
+                .first()
+                .locator('.backlog-cell--checkbox input[type="checkbox"]')
+        ).toBeChecked();
+
+        await bulkBar.locator('button:has-text("Clear")').click();
+
+        // Bulk bar unrenders and every checkbox (rows + header) unchecks
+        await expect(bulkBar).toHaveCount(0, { timeout: 10_000 });
+        await expect(
+            boardPage.page.locator(
+                '.backlog-view__table input[type="checkbox"]:checked'
+            )
+        ).toHaveCount(0);
+    });
+
+    test('context menu shows Move to Column option', async ({ boardPage }) => {
+        // "Move to Column" only renders when an active sprint exists
+        // (contextMenuHandler.js), and sprints only load for Sprint-type
+        // boards (boardThunks.js) — so provision a dedicated board
+        const board = createIsolatedBoard('backlog-ctx', 'Sprint');
+        const baseUrl = new URL(process.env.SCRATCH_ORG_URL || '').origin;
+        sfApexRun(`
+OpenSF__Sprint__c sprint = new OpenSF__Sprint__c(
+    OpenSF__Board__c = '${board.boardId}',
+    OpenSF__Goal__c = 'E2E backlog context menu',
+    OpenSF__StartDate__c = Date.today(),
+    OpenSF__EndDate__c = Date.today().addDays(14),
+    OpenSF__Status__c = 'Active'
+);
+insert sprint;
+`);
+        // Isolated-board cards all live in columns, so seed a backlog
+        // card to have a row to right-click
+        const cardId = createBacklogCardViaApex(
+            board.boardId,
+            `E2E ctx menu ${Date.now()}`,
+            'Low'
+        );
+
+        await boardPage.open(baseUrl, board.boardId);
+        await boardPage.switchToBacklogTab();
+
+        const row = boardPage.page.locator(
+            `.backlog-row[data-card-id="${cardId}"]`
+        );
+        await expect(row).toBeVisible({ timeout: SF_TIMEOUT });
 
         // Right-click to open context menu
-        await firstRow.click({ button: 'right' });
+        await row.click({ button: 'right' });
 
-        // Context menu should appear with Move to Column option
-        const contextMenu = boardPage.page.locator(
-            '.context-menu, opensf-kanban-context-menu, c-kanban-context-menu'
-        );
+        const contextMenu = boardPage.page.locator('.context-menu');
         await expect(contextMenu).toBeVisible({ timeout: 5000 });
 
-        const moveToColumn = contextMenu.getByText('Move to Column');
-        // Move to Column only shows when there's an active sprint
-        // If visible, verify it exists; if not, that's expected for non-sprint boards
-        const isVisible = await moveToColumn.isVisible().catch(() => false);
-        if (isVisible) {
-            await expect(moveToColumn).toBeVisible();
-        }
+        await expect(
+            contextMenu.getByRole('menuitem', { name: 'Move to Column' })
+        ).toBeVisible();
     });
 
     test('drag card to sprint header moves it to sprint', async ({

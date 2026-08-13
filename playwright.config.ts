@@ -23,12 +23,31 @@ export default defineConfig({
         storageState,
         /* Salesforce Lightning pages take 10-30s to fully render */
         navigationTimeout: 60_000,
-        actionTimeout: 15_000
+        actionTimeout: 15_000,
+        /* Route browser traffic through an outbound proxy when the
+           environment requires one (e.g. sandboxed cloud runners) */
+        ...(process.env.HTTPS_PROXY
+            ? {
+                  proxy: { server: process.env.HTTPS_PROXY },
+                  ignoreHTTPSErrors: true
+              }
+            : {})
     },
     projects: [
         {
             name: 'chromium',
-            use: { browserName: 'chromium' }
+            use: {
+                browserName: 'chromium',
+                /* Optional override for environments with a pre-installed
+                   Chromium that doesn't match the Playwright version */
+                ...(process.env.PW_CHROMIUM_PATH
+                    ? {
+                          launchOptions: {
+                              executablePath: process.env.PW_CHROMIUM_PATH
+                          }
+                      }
+                    : {})
+            }
         },
         {
             name: 'firefox',

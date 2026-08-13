@@ -48,7 +48,9 @@ public with sharing class SprintSelector {
             FROM OpenSF__Sprint__c
             WHERE OpenSF__Board__c = :boardId
             WITH USER_MODE
-            ORDER BY OpenSF__SortOrder__c ASC NULLS LAST, OpenSF__SprintNumber__c ASC
+            ORDER BY
+                OpenSF__SortOrder__c ASC NULLS LAST,
+                OpenSF__SprintNumber__c ASC
         ];
     }
 
@@ -241,7 +243,8 @@ public with sharing class SprintSelector {
                 OpenSF__SprintNumber__c,
                 OpenSF__TotalStoryPoints__c,
                 OpenSF__CompletedStoryPoints__c,
-                OpenSF__Velocity__c
+                OpenSF__Velocity__c,
+                OpenSF__SortOrder__c
             FROM OpenSF__Sprint__c
             WHERE
                 OpenSF__Board__c = :boardId

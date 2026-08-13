@@ -127,7 +127,14 @@ runs:
 
         - name: Deploy Source (base package only)
           shell: bash
-          run: sf project deploy start --source-dir force-app --target-org ${{ inputs.org-alias }} --ignore-conflicts
+          # Retry once: scratch-org deploys occasionally fail with transient
+          # "unable to obtain exclusive access to this record" row locks
+          run: |
+              sf project deploy start --source-dir force-app --target-org ${{ inputs.org-alias }} --ignore-conflicts || {
+                echo "Deploy failed -- retrying once after 30s..."
+                sleep 30
+                sf project deploy start --source-dir force-app --target-org ${{ inputs.org-alias }} --ignore-conflicts
+              }
 
         - name: Assign Permission Sets
           if: steps.provision.outputs.org_created == 'true'

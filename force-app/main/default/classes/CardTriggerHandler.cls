@@ -49,7 +49,8 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
     protected override void afterDelete() {
         this.oldCards = (List<OpenSF__Card__c>) this.oldList;
         updateColumnCounts(null, null, this.oldCards);
-        closeColumnHistory(this.oldCards);
+        // Column history rows are master-detail children of Card__c and
+        // cascade-delete with the card — no close-out update is needed.
         updateEpicCardCounts(null, (Map<Id, OpenSF__Card__c>) this.oldMap);
         publishCardEvents(
             this.oldCards,
@@ -152,6 +153,11 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
             }
         }
 
+        // SYSTEM_MODE rationale: CardColumnHistory__c is an app-managed
+        // audit trail written only from this trigger. Stripping fields the
+        // user can't edit would silently corrupt cycle-time analytics, so
+        // the bookkeeping runs in system mode. Record-level sharing is
+        // still enforced because this class is `with sharing`.
         if (!cardsNeedingClose.isEmpty()) {
             List<OpenSF__CardColumnHistory__c> openEntries = [
                 SELECT Id, OpenSF__EnteredAt__c
@@ -159,6 +165,7 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
                 WHERE
                     OpenSF__Card__c IN :cardsNeedingClose
                     AND OpenSF__ExitedAt__c = NULL
+                WITH SYSTEM_MODE
             ];
             for (OpenSF__CardColumnHistory__c entry : openEntries) {
                 entry.OpenSF__ExitedAt__c = now;
@@ -169,41 +176,10 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
         }
 
         if (!toUpdate.isEmpty()) {
-            update Security.stripInaccessible(AccessType.UPDATABLE, toUpdate)
-                .getRecords();
+            Database.update(toUpdate, AccessLevel.SYSTEM_MODE);
         }
         if (!toInsert.isEmpty()) {
-            insert Security.stripInaccessible(AccessType.CREATABLE, toInsert)
-                .getRecords();
-        }
-    }
-
-    /**
-     * Close open column history entries when cards are deleted
-     */
-    private void closeColumnHistory(List<OpenSF__Card__c> deletedCards) {
-        Set<Id> cardIds = new Set<Id>();
-        for (OpenSF__Card__c card : deletedCards) {
-            cardIds.add(card.Id);
-        }
-        if (cardIds.isEmpty()) {
-            return;
-        }
-
-        DateTime now = DateTime.now();
-        List<OpenSF__CardColumnHistory__c> openEntries = [
-            SELECT Id, OpenSF__EnteredAt__c
-            FROM OpenSF__CardColumnHistory__c
-            WHERE OpenSF__Card__c IN :cardIds AND OpenSF__ExitedAt__c = NULL
-        ];
-        for (OpenSF__CardColumnHistory__c entry : openEntries) {
-            entry.OpenSF__ExitedAt__c = now;
-            Long ms = now.getTime() - entry.OpenSF__EnteredAt__c.getTime();
-            entry.OpenSF__DurationMinutes__c = ms / 60000.0;
-        }
-        if (!openEntries.isEmpty()) {
-            update Security.stripInaccessible(AccessType.UPDATABLE, openEntries)
-                .getRecords();
+            Database.insert(toInsert, AccessLevel.SYSTEM_MODE);
         }
     }
 

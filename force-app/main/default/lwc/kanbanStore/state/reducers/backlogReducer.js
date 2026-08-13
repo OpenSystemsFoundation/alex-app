@@ -124,9 +124,7 @@ export const backlogReducer = (state, action) => {
                 (c) => !bulkIdSet.has(c.Id)
             );
             // Preserve relative order of moved cards
-            const moved = state.backlogCards.filter((c) =>
-                bulkIdSet.has(c.Id)
-            );
+            const moved = state.backlogCards.filter((c) => bulkIdSet.has(c.Id));
             // Clamp insert position to valid range in the remaining list
             const insertAt = Math.min(bulkIndex, remaining.length);
             const result = [

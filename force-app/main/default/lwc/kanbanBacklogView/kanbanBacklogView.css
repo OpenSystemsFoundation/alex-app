@@ -487,7 +487,9 @@
     border-radius: 0.25rem;
     border: 1px solid;
     cursor: pointer;
-    transition: background-color 0.1s ease, border-color 0.1s ease;
+    transition:
+        background-color 0.1s ease,
+        border-color 0.1s ease;
     white-space: nowrap;
 }
 

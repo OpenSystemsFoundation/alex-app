@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures/multi-user';
+import { sfUpdate } from '../helpers/sf-data';
 
 /**
  * Multi-user card synchronization tests.
@@ -34,20 +35,11 @@ test.describe('Card Sync — real-time collaboration', () => {
             userA.page.locator('article.kanban-card:has-text("New Card")')
         ).toBeVisible({ timeout: SYNC_TIMEOUT });
 
-        // User B sees the new card via platform event (with refresh fallback)
-        const newCardOnB = userB.page.locator(
-            'article.kanban-card:has-text("New Card")'
-        );
-        const visibleViaEvent = await newCardOnB
-            .isVisible({ timeout: SYNC_TIMEOUT })
-            .catch(() => false);
-
-        if (!visibleViaEvent) {
-            await userB.board.refresh();
-            await userB.board.waitForCards();
-        }
-
-        await expect(newCardOnB).toBeVisible({ timeout: SYNC_TIMEOUT });
+        // User B sees the new card via platform event — no refresh fallback;
+        // this test intentionally fails if platform events are down.
+        await expect(
+            userB.page.locator('article.kanban-card:has-text("New Card")')
+        ).toBeVisible({ timeout: SYNC_TIMEOUT });
     });
 
     test('card subject edited by User A updates on User B screen', async ({
@@ -72,21 +64,20 @@ test.describe('Card Sync — real-time collaboration', () => {
             timeout: SYNC_TIMEOUT
         });
 
-        // User A clicks the card to open it (navigates away)
-        await userA.board.cardLink(cardId).click();
-        await userA.page.waitForURL('**/OpenSF__Card__c/**', {
+        // User A edits the subject via the API (CLI runs as User A's org user);
+        // CardTriggerHandler publishes a CARD_UPDATE platform event.
+        const newSubject = `E2E-Sync-Edit-${Date.now()}`;
+        sfUpdate('OpenSF__Card__c', cardId, `OpenSF__Subject__c=${newSubject}`);
+
+        // User B receives the update via platform event — no refresh fallback;
+        // this test intentionally fails if platform events are down.
+        await expect(userB.board.card(cardId)).toContainText(newSubject, {
             timeout: SYNC_TIMEOUT
         });
 
-        // Navigate User A back to the board
-        await userA.board.open(boardData.baseUrl, boardData.boardId);
-        await userA.board.waitForCards();
-
-        // Both users should still see the card
-        await expect(userA.board.card(cardId)).toBeVisible({
-            timeout: SYNC_TIMEOUT
-        });
-        await expect(userB.board.card(cardId)).toBeVisible({
+        // User A's board rides the same event pipeline (the edit came from
+        // the API, not this browser window, so it is not an optimistic update)
+        await expect(userA.board.card(cardId)).toContainText(newSubject, {
             timeout: SYNC_TIMEOUT
         });
     });

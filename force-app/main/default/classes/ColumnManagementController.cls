@@ -71,7 +71,7 @@ public with sharing class ColumnManagementController {
             for (OpenSF__Column__c c : colsToInsert) {
                 c.OpenSF__Board__c = boardId;
             }
-            insert colsToInsert;
+            Database.insert(colsToInsert, AccessLevel.USER_MODE);
 
             OpenSF__Column__c created = KanbanBoardSelector.getColumnById(
                 colsToInsert[0].Id
@@ -122,7 +122,7 @@ public with sharing class ColumnManagementController {
             for (OpenSF__Column__c c : colsToUpdate) {
                 c.Id = columnId;
             }
-            update colsToUpdate;
+            Database.update(colsToUpdate, AccessLevel.USER_MODE);
 
             OpenSF__Column__c updated = KanbanBoardSelector.getColumnById(
                 columnId
@@ -214,7 +214,7 @@ public with sharing class ColumnManagementController {
             for (Integer i = 0; i < secureColumns.size(); i++) {
                 secureColumns[i].OpenSF__Board__c = boardId;
             }
-            insert secureColumns;
+            Database.insert(secureColumns, AccessLevel.USER_MODE);
 
             return KanbanBoardDTO.convertColumns(
                 KanbanBoardSelector.getColumnsByBoardId(boardId)
@@ -241,12 +241,7 @@ public with sharing class ColumnManagementController {
             };
         } else if (templateName == 'scrum') {
             return new List<String[]>{
-                new List<String>{
-                    'Backlog',
-                    'Backlog',
-                    'Backlog',
-                    '#3A49DA'
-                },
+                new List<String>{ 'Backlog', 'Backlog', 'Backlog', '#3A49DA' },
                 new List<String>{ 'To Do', 'To Do', 'To Do', '#1B96FF' },
                 new List<String>{
                     'In Progress',
@@ -254,23 +249,13 @@ public with sharing class ColumnManagementController {
                     'In Progress',
                     '#06A59A'
                 },
-                new List<String>{
-                    'Testing',
-                    'Testing',
-                    'Testing',
-                    '#FCC003'
-                },
+                new List<String>{ 'Testing', 'Testing', 'Testing', '#FCC003' },
                 new List<String>{ 'Review', 'Review', 'Review', '#9050E9' },
                 new List<String>{ 'Done', 'Done', 'Done', '#2E844A' }
             };
         } else if (templateName == 'release') {
             return new List<String[]>{
-                new List<String>{
-                    'Backlog',
-                    'Backlog',
-                    'Backlog',
-                    '#3A49DA'
-                },
+                new List<String>{ 'Backlog', 'Backlog', 'Backlog', '#3A49DA' },
                 new List<String>{
                     'Development',
                     'In Progress',
@@ -284,18 +269,8 @@ public with sharing class ColumnManagementController {
                     '#9050E9'
                 },
                 new List<String>{ 'QA', 'Testing', 'Testing', '#FCC003' },
-                new List<String>{
-                    'Staging',
-                    'Released',
-                    'Release',
-                    '#F38303'
-                },
-                new List<String>{
-                    'Released',
-                    'Released',
-                    'Done',
-                    '#2E844A'
-                }
+                new List<String>{ 'Staging', 'Released', 'Release', '#F38303' },
+                new List<String>{ 'Released', 'Released', 'Done', '#2E844A' }
             };
         }
         // Default fallback = kanban

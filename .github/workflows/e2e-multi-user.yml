@@ -57,7 +57,9 @@ jobs:
               with:
                   org-alias: e2e-${{ inputs.suite-name }}
                   sfdx-auth-url: ${{ secrets.SFDX_AUTH_URL }}
-                  create-retro-data: 'true'
+                  # Retrospectives are a paid-only object not present in this
+                  # repo — creating retro data always fails on OSS orgs
+                  create-retro-data: 'false'
                   persistent: ${{ inputs.persistent }}
                   cache-key: ${{ inputs.cache-key }}
                   duration-days: ${{ inputs.persistent && '7' || '1' }}

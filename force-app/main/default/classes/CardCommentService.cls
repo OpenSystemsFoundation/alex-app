@@ -29,7 +29,7 @@ public with sharing class CardCommentService {
                 COMMENT_FIELDS +
                 ' FROM OpenSF__CardComment__c' +
                 ' WHERE Id = :commentId' +
-                ' WITH SECURITY_ENFORCED'
+                ' WITH USER_MODE'
         );
     }
 
@@ -42,7 +42,7 @@ public with sharing class CardCommentService {
                 COMMENT_FIELDS +
                 ' FROM OpenSF__CardComment__c' +
                 ' WHERE OpenSF__Card__c = :cardId' +
-                ' WITH SECURITY_ENFORCED' +
+                ' WITH USER_MODE' +
                 ' ORDER BY CreatedDate DESC' +
                 ' LIMIT 200'
         );
@@ -76,7 +76,7 @@ public with sharing class CardCommentService {
                 new List<OpenSF__CardComment__c>{ comment }
             )
             .getRecords();
-        insert toInsert;
+        Database.insert(toInsert, AccessLevel.USER_MODE);
 
         // Re-query to get CreatedBy fields
         comment = queryCommentById(toInsert[0].Id);
@@ -101,7 +101,7 @@ public with sharing class CardCommentService {
             SELECT Id, CreatedById
             FROM OpenSF__CardComment__c
             WHERE Id = :commentId
-            WITH SECURITY_ENFORCED
+            WITH USER_MODE
         ];
         if (comment.CreatedById != UserInfo.getUserId()) {
             AuraHandledException ex = new AuraHandledException(
@@ -111,11 +111,14 @@ public with sharing class CardCommentService {
             throw ex;
         }
         comment.OpenSF__Body__c = body.trim();
-        update Security.stripInaccessible(
-                AccessType.UPDATABLE,
-                new List<OpenSF__CardComment__c>{ comment }
-            )
-            .getRecords();
+        Database.update(
+            Security.stripInaccessible(
+                    AccessType.UPDATABLE,
+                    new List<OpenSF__CardComment__c>{ comment }
+                )
+                .getRecords(),
+            AccessLevel.USER_MODE
+        );
 
         comment = queryCommentById(comment.Id);
         return new KanbanBoardDTO.CardCommentDTO(comment);
@@ -129,7 +132,7 @@ public with sharing class CardCommentService {
             SELECT Id, CreatedById
             FROM OpenSF__CardComment__c
             WHERE Id = :commentId
-            WITH SECURITY_ENFORCED
+            WITH USER_MODE
         ];
         if (comment.CreatedById != UserInfo.getUserId()) {
             AuraHandledException ex = new AuraHandledException(
@@ -138,6 +141,6 @@ public with sharing class CardCommentService {
             ex.setMessage('You can only delete your own comments');
             throw ex;
         }
-        delete comment;
+        Database.delete(comment, AccessLevel.USER_MODE);
     }
 }

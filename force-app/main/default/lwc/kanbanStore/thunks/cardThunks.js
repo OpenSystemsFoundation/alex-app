@@ -397,6 +397,7 @@ export const bulkMoveBacklogCardsAsync = (cardIds, position) => {
                         ? currentCards[idx + 1].position
                         : null;
 
+                // eslint-disable-next-line no-await-in-loop -- each card's LexoRank position depends on the previous iteration's persisted state
                 const newPosition = await reorderBacklogCardApex({
                     cardId,
                     previousCardPosition,
@@ -452,6 +453,7 @@ export const bulkReorderBacklogCardsAtIndexAsync = (cardIds, targetIndex) => {
                         ? currentCards[idx + 1].position
                         : null;
 
+                // eslint-disable-next-line no-await-in-loop -- each card's LexoRank position depends on the previous iteration's persisted state
                 const newPosition = await reorderBacklogCardApex({
                     cardId,
                     previousCardPosition,

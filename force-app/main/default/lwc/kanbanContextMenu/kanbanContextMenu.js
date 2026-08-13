@@ -51,8 +51,7 @@ export default class KanbanContextMenu extends LightningElement {
                         this.posX -= finalRect.right - window.innerWidth + 8;
                     }
                     if (finalRect.bottom > window.innerHeight) {
-                        this.posY -=
-                            finalRect.bottom - window.innerHeight + 8;
+                        this.posY -= finalRect.bottom - window.innerHeight + 8;
                     }
                 });
             }

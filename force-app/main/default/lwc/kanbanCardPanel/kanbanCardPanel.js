@@ -1,6 +1,7 @@
 import { LightningElement, api, track, wire } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import LightningConfirm from 'lightning/confirm';
 
 const CARD_TITLE_CLASS =
     'card-panel__title card-panel__title--two-line slds-text-heading_small';
@@ -819,7 +820,9 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
                 contentDocumentId: fileId,
                 cardId: this.card && this.card.Id
             });
-            this.files = this.files.filter((f) => f.contentDocumentId !== fileId);
+            this.files = this.files.filter(
+                (f) => f.contentDocumentId !== fileId
+            );
             this.dispatchEvent(
                 new ShowToastEvent({
                     title: 'Success',
@@ -895,12 +898,13 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
         return size.toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
     }
 
-    handleClose() {
+    async handleClose() {
         if (this.hasPendingChanges()) {
-            // eslint-disable-next-line no-alert
-            const discard = confirm(
-                'You have unsaved changes. Discard and close?'
-            );
+            const discard = await LightningConfirm.open({
+                message: 'You have unsaved changes. Discard and close?',
+                label: 'Unsaved changes',
+                variant: 'header'
+            });
             if (!discard) {
                 return;
             }

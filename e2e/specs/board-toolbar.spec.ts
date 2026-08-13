@@ -29,7 +29,7 @@ test.describe('Board Toolbar', () => {
         await expect(badge).toBeVisible({ timeout: SF_TIMEOUT });
     });
 
-    test.skip('undo button exists and is disabled initially', async ({
+    test('undo button exists and is disabled initially', async ({
         boardPage,
         boardData
     }) => {
@@ -43,7 +43,7 @@ test.describe('Board Toolbar', () => {
         await expect(undoBtn).toBeDisabled();
     });
 
-    test.skip('redo button exists and is disabled initially', async ({
+    test('redo button exists and is disabled initially', async ({
         boardPage,
         boardData
     }) => {
@@ -94,9 +94,9 @@ test.describe('Board Toolbar', () => {
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.waitForCards();
 
-        const statusIndicator = boardPage.page.locator(
-            'opensf-connection-status-indicator, c-connection-status-indicator'
-        );
+        // Root class rendered by connectionStatusIndicator's statusClass
+        // getter ("status-indicator status-<state>") — always present
+        const statusIndicator = boardPage.page.locator('.status-indicator');
         await expect(statusIndicator).toBeAttached({ timeout: SF_TIMEOUT });
     });
 

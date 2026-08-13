@@ -30,18 +30,25 @@ test.describe('Unhappy Paths — Breaking the Board', () => {
         await boardPage.waitForCards();
 
         const colId = boardData.columns[0].Id;
-        const beforeCount = await boardPage.cardCountInColumn(colId);
+        const columnCards = boardPage
+            .columnWrapper(colId)
+            .locator('article.kanban-card');
+        const beforeCount = await columnCards.count();
 
-        // Double-click the add card button rapidly
-        const addBtn = boardPage.addCardButtons.first();
+        // Double-click the add card button of the counted column rapidly
+        const addBtn = boardPage.page.locator(
+            `.add-card-button[data-column-id="${colId}"]`
+        );
         await addBtn.dblclick();
 
-        // Wait for any async operations
-        await boardPage.page.waitForTimeout(3000);
-
-        const afterCount = await boardPage.cardCountInColumn(colId);
-        // Should only create 1 card, not 2
-        expect(afterCount).toBeLessThanOrEqual(beforeCount + 2);
+        // The button disables synchronously during creation
+        // (cardOperations.createCard), so exactly one card is created
+        await expect(columnCards).toHaveCount(beforeCount + 1, {
+            timeout: SF_TIMEOUT
+        });
+        // Settle window: a duplicate from the second click would render shortly after
+        await boardPage.page.waitForTimeout(2000);
+        await expect(columnCards).toHaveCount(beforeCount + 1);
     });
 
     test('navigating to a non-existent board ID does not crash', async ({
@@ -284,20 +291,26 @@ test.describe('Unhappy Paths — Breaking the Board', () => {
         // Right-click to open context menu
         await firstCard.click({ button: 'right' });
 
-        const contextMenu = boardPage.page.locator(
-            '.context-menu, opensf-kanban-context-menu, c-kanban-context-menu'
+        const contextMenu = boardPage.page.locator('.context-menu');
+        await expect(contextMenu).toBeVisible({ timeout: 5_000 });
+
+        // Delete and Move to Backlog are always built by
+        // contextMenuManager.buildMenuItems
+        const deleteItem = contextMenu.locator(
+            'a[role="menuitem"][data-value="delete"]'
         );
-        const hasMenu = await contextMenu
-            .isVisible({ timeout: 5_000 })
-            .catch(() => false);
+        await expect(deleteItem).toBeVisible();
+        await expect(deleteItem).toContainText('Delete');
+        await expect(
+            contextMenu.locator(
+                'a[role="menuitem"][data-value="moveToBacklog"]'
+            )
+        ).toBeVisible();
 
-        if (hasMenu) {
-            await expect(contextMenu).toBeVisible();
-
-            // Click elsewhere to dismiss
-            await boardPage.boardWrapper.click();
-            await expect(contextMenu).not.toBeVisible({ timeout: 5_000 });
-        }
+        // Click outside the menu to dismiss it — the menu opened at the card,
+        // so the wrapper's top-left corner is safely outside the menu rect
+        await boardPage.boardWrapper.click({ position: { x: 5, y: 5 } });
+        await expect(contextMenu).not.toBeVisible({ timeout: 5_000 });
     });
 
     test('keyboard Escape closes any open modal/panel', async ({
@@ -308,22 +321,22 @@ test.describe('Unhappy Paths — Breaking the Board', () => {
         await boardPage.waitForCards();
 
         // Use live card from DOM instead of stale fixture data
-        await boardPage.allCards().first().locator('.kanban-card__body').click();
+        await boardPage
+            .allCards()
+            .first()
+            .locator('.kanban-card__body')
+            .click();
 
         const panel = boardPage.page.locator('.card-panel');
-        const isPanelVisible = await panel
-            .isVisible({ timeout: SF_TIMEOUT })
-            .catch(() => false);
+        await expect(panel).toBeVisible({ timeout: SF_TIMEOUT });
 
-        if (isPanelVisible) {
-            // Press Escape
-            await boardPage.page.keyboard.press('Escape');
-            await boardPage.page.waitForTimeout(500);
+        // Escape is handled by the panel's own keydown listener
+        // (kanbanCardPanel.html), so focus the panel (tabindex="-1") first
+        await panel.focus();
+        await boardPage.page.keyboard.press('Escape');
 
-            // Panel should close (or not — depends on implementation)
-            // At minimum, the board should remain functional
-            await expect(boardPage.boardWrapper).toBeVisible();
-        }
+        await expect(panel).not.toBeVisible({ timeout: 5_000 });
+        await expect(boardPage.boardWrapper).toBeVisible();
     });
 
     test('hide done + filter + search combo does not lose cards', async ({

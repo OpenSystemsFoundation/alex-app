@@ -219,7 +219,7 @@ private class CardTriggerHandlerTest {
     }
 
     @isTest
-    static void testAfterDeleteClosesOpenHistory() {
+    static void testAfterDeleteCascadesHistory() {
         OpenSF__Column__c column = [
             SELECT Id, OpenSF__Board__c
             FROM OpenSF__Column__c
@@ -242,21 +242,17 @@ private class CardTriggerHandlerTest {
         delete card;
         Test.stopTest();
 
+        // CardColumnHistory__c is a master-detail child of Card__c, so
+        // history rows cascade-delete with the card.
         List<OpenSF__CardColumnHistory__c> histories = [
             SELECT OpenSF__ExitedAt__c, OpenSF__DurationMinutes__c
             FROM OpenSF__CardColumnHistory__c
             WHERE OpenSF__Card__c = :card.Id
         ];
-        System.assertEquals(1, histories.size(), 'Should retain history row');
-        System.assertNotEquals(
-            null,
-            histories[0].OpenSF__ExitedAt__c,
-            'Delete should close the open history row'
-        );
-        System.assertNotEquals(
-            null,
-            histories[0].OpenSF__DurationMinutes__c,
-            'Delete should record elapsed time'
+        System.assertEquals(
+            0,
+            histories.size(),
+            'History rows should cascade-delete with the card'
         );
     }
 

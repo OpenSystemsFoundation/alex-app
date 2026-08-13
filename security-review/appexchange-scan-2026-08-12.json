@@ -1,0 +1,41 @@
+{
+  "runDir": "/home/user/alex-app/",
+  "violationCounts": {
+    "total": 1,
+    "sev1": 0,
+    "sev2": 0,
+    "sev3": 1,
+    "sev4": 0,
+    "sev5": 0
+  },
+  "versions": {
+    "code-analyzer": "0.52.0",
+    "pmd": "0.45.0"
+  },
+  "violations": [
+    {
+      "rule": "ProtectSensitiveData",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": [
+        "AppExchange",
+        "Security",
+        "XML"
+      ],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app/main/default/objects/Card__c/fields/Assignee__c.field-meta.xml",
+          "startLine": 1,
+          "startColumn": 1,
+          "endLine": 14,
+          "endColumn": 14
+        }
+      ],
+      "message": "Assignee__c is a potential auth token in a custom object: Card__c",
+      "resources": [
+        "https://developer.salesforce.com/docs/platform/salesforce-code-analyzer/guide/rules-pmd-appexchange.html#protectsensitivedata"
+      ]
+    }
+  ]
+}

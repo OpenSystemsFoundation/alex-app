@@ -115,9 +115,13 @@ private class SprintServiceTest {
             sprint.Id,
             cards[0].Id
         );
-        sc1.OpenSF__CompletedInSprint__c = true;
-        sc1.OpenSF__CompletedDate__c = DateTime.now();
-        update sc1;
+        // Minimal sObject: re-sending the master-detail Sprint__c/Card__c
+        // fields fails FLS checks in the namespaced-scratch-org test context.
+        update new OpenSF__SprintCard__c(
+            Id = sc1.Id,
+            OpenSF__CompletedInSprint__c = true,
+            OpenSF__CompletedDate__c = DateTime.now()
+        );
         TestFactory.createSprintCard(sprint.Id, cards[1].Id);
 
         Map<Id, String> dispositions = new Map<Id, String>();

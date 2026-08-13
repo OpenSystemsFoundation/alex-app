@@ -5,20 +5,21 @@
 jest.mock(
     'c/kanbanStore',
     () => ({
-        createCardAsync: jest.fn(
-            (columnId, subject, requestId, clientId) => ({
-                type: 'THUNK',
-                columnId,
-                subject,
-                requestId,
-                clientId
-            })
-        )
+        createCardAsync: jest.fn((columnId, subject, requestId, clientId) => ({
+            type: 'THUNK',
+            columnId,
+            subject,
+            requestId,
+            clientId
+        }))
     }),
     { virtual: true }
 );
 
+import LightningConfirm from 'lightning/confirm';
 import CardOperations from '../../../kanbanBoard/handlers/cardOperations';
+
+jest.mock('lightning/confirm');
 
 function createMockComponent(overrides = {}) {
     return {
@@ -108,7 +109,7 @@ describe('CardOperations', () => {
             expect(component.selectedCard).toBeNull();
         });
 
-        it('prompts for unsaved changes when switching cards', () => {
+        it('prompts for unsaved changes when switching cards', async () => {
             component.showCardDetail = true;
             component.selectedCard = { Id: 'old-card' };
 
@@ -119,27 +120,26 @@ describe('CardOperations', () => {
                 subject: 'New'
             });
 
-            ops.handleCardClick('new-card');
+            await ops.handleCardClick('new-card');
 
             expect(mockPanel.hasPendingChanges).toHaveBeenCalled();
             expect(component.selectedCard.Id).toBe('new-card');
         });
 
-        it('cancels switch when user declines discard', () => {
+        it('cancels switch when user declines discard', async () => {
             component.showCardDetail = true;
             component.selectedCard = { Id: 'old-card' };
 
             const mockPanel = { hasPendingChanges: jest.fn(() => true) };
             component.template.querySelector.mockReturnValue(mockPanel);
 
-            // Mock confirm to return false
-            global.confirm = jest.fn(() => false);
+            // User declines the discard confirmation
+            LightningConfirm.open.mockResolvedValue(false);
 
-            ops.handleCardClick('new-card');
+            await ops.handleCardClick('new-card');
 
+            expect(LightningConfirm.open).toHaveBeenCalled();
             expect(component.selectedCard.Id).toBe('old-card');
-
-            delete global.confirm;
         });
     });
 

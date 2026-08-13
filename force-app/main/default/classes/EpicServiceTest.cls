@@ -9,8 +9,13 @@ public class EpicServiceTest {
             LexoRank.initial(),
             '#1B96FF'
         );
-        todoCol.OpenSF__Category__c = 'To Do';
-        update todoCol;
+        // Update via a minimal sObject: re-sending the non-reparentable
+        // master-detail Board__c field fails FLS checks in the restricted
+        // namespaced-scratch-org test context.
+        update new OpenSF__Column__c(
+            Id = todoCol.Id,
+            OpenSF__Category__c = 'To Do'
+        );
 
         OpenSF__Column__c doneCol = TestFactory.createColumn(
             board.Id,
@@ -18,8 +23,10 @@ public class EpicServiceTest {
             LexoRank.between(LexoRank.initial(), null),
             '#2E844A'
         );
-        doneCol.OpenSF__Category__c = 'Done';
-        update doneCol;
+        update new OpenSF__Column__c(
+            Id = doneCol.Id,
+            OpenSF__Category__c = 'Done'
+        );
 
         // Create an Epic card
         OpenSF__Card__c epic = TestFactory.createCard(
