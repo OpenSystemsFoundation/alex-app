@@ -248,23 +248,22 @@ test.describe('LWC Performance Benchmarks', () => {
             await page.waitForTimeout(500);
         }
 
-        // Measure: search/filter input
-        const searchInput = page.locator('.board-filter-search');
-        if (await searchInput.isVisible()) {
-            const filterTiming = await measureAction(
-                page,
-                'search_filter',
-                async () => {
-                    await searchInput.fill('Card');
-                    await page.waitForTimeout(500); // debounce
-                }
-            );
-            timings.push(filterTiming);
+        // Measure: search/filter input (kanbanFilterBar renders it unconditionally)
+        const searchInput = page.locator('.kanban-filter-bar__search-input');
+        await expect(searchInput).toBeVisible({ timeout: SF_TIMEOUT });
+        const filterTiming = await measureAction(
+            page,
+            'search_filter',
+            async () => {
+                await searchInput.fill('Card');
+                await page.waitForTimeout(500); // debounce
+            }
+        );
+        timings.push(filterTiming);
 
-            // Clear search
-            await searchInput.fill('');
-            await page.waitForTimeout(300);
-        }
+        // Clear search
+        await searchInput.fill('');
+        await page.waitForTimeout(300);
 
         // Measure: refresh button
         const refreshBtn = page.locator(

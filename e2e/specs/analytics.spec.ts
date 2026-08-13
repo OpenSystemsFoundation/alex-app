@@ -1,11 +1,91 @@
 import { test, expect } from '../fixtures';
+import type { BoardDataFixture } from '../fixtures';
+import { sfApexRun } from '../helpers/sf-data';
+import type { BoardPage } from '../pages';
+
+const SF_TIMEOUT = 60_000;
 
 /**
  * Analytics & Cumulative Flow Diagram — E2E tests.
  *
- * Tests the analytics modal (cycle time, CFD), swimlane views,
- * and data visualization features.
+ * The Analytics control is a topbar tab button (kanbanBoard.html) that opens
+ * the "Board Analytics" modal (kanbanAnalytics.html). The CFD tab hosts
+ * kanbanCumulativeFlowDiagram (.cfd-container). Swimlane mode is driven by
+ * the last select.kanban-filter-bar__select in the board filter bar.
  */
+
+/** Open the board and the Board Analytics modal via the topbar tab. */
+async function openAnalyticsModal(
+    boardPage: BoardPage,
+    boardData: BoardDataFixture
+) {
+    await boardPage.open(boardData.baseUrl, boardData.boardId);
+    await boardPage.waitForCards();
+
+    const analyticsTab = boardPage.page.locator(
+        '.kanban-topbar__tabs button.topbar-tab',
+        { hasText: 'Analytics' }
+    );
+    await expect(analyticsTab).toBeVisible({ timeout: SF_TIMEOUT });
+    await analyticsTab.click();
+
+    const dialog = boardPage.page
+        .locator('section[role="dialog"]')
+        .filter({ hasText: 'Board Analytics' });
+    await expect(dialog).toBeVisible({ timeout: SF_TIMEOUT });
+    return dialog;
+}
+
+/**
+ * Seed deterministic cycle-time data on this worker's board: insert a card,
+ * then move it to another column in a SEPARATE transaction so
+ * CardTriggerHandler closes the first CardColumnHistory entry with a non-null
+ * DurationMinutes — the rows AnalyticsService.getCycleTimeAnalytics reads.
+ * Creates its own card instead of moving shared fixture cards.
+ */
+function seedCycleTimeCard(boardData: BoardDataFixture): {
+    cardId: string;
+    cardName: string;
+} {
+    const fromColumn = boardData.columns[1];
+    const toColumn = boardData.columns[2];
+    const subject = `Analytics-Seed-${Date.now()}`;
+
+    const output = sfApexRun(`
+OpenSF__Card__c card = new OpenSF__Card__c(
+    OpenSF__Column__c = '${fromColumn.Id}',
+    OpenSF__Board__c = '${boardData.boardId}',
+    OpenSF__Subject__c = '${subject}',
+    OpenSF__Status__c = '${fromColumn.header}',
+    OpenSF__CardType__c = 'Task',
+    OpenSF__Priority__c = 'High',
+    OpenSF__SequenceNumber__c = 1
+);
+insert card;
+card = [SELECT Id, Name FROM OpenSF__Card__c WHERE Id = :card.Id];
+System.debug('E2E_ANALYTICS_CARD:' + card.Id + ':' + card.Name);
+`);
+
+    const match = output.match(
+        /E2E_ANALYTICS_CARD:([a-zA-Z0-9]{15,18}):([A-Za-z0-9-]+)/
+    );
+    if (!match) {
+        throw new Error(
+            `Failed to parse seeded card from Apex output: ${output.substring(0, 500)}`
+        );
+    }
+
+    sfApexRun(`
+update new OpenSF__Card__c(
+    Id = '${match[1]}',
+    OpenSF__Column__c = '${toColumn.Id}',
+    OpenSF__Status__c = '${toColumn.header}'
+);
+`);
+
+    return { cardId: match[1], cardName: match[2] };
+}
+
 test.describe('Analytics & Visualization', () => {
     test.beforeEach(async () => {
         if (!process.env.SCRATCH_ORG_URL) {
@@ -13,219 +93,179 @@ test.describe('Analytics & Visualization', () => {
         }
     });
 
-    test('analytics button is visible in the filter bar', async ({
+    test('analytics topbar tab opens the Board Analytics modal', async ({
         boardPage,
         boardData
     }) => {
-        await boardPage.open(boardData.baseUrl, boardData.boardId);
-        await boardPage.waitForCards();
+        const dialog = await openAnalyticsModal(boardPage, boardData);
 
-        const analyticsBtn = boardPage.page.locator(
-            'button[title="Analytics"], button:has-text("Analytics")'
+        await expect(dialog.locator('h2.slds-modal__title')).toHaveText(
+            'Board Analytics'
         );
-        const hasBtn = await analyticsBtn
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
 
-        // Analytics button may be an icon button
-        if (!hasBtn) {
-            const iconBtn = boardPage.page.locator(
-                '.board-filter-bar lightning-icon[icon-name="utility:chart"]'
-            );
-            const hasIcon = await iconBtn
-                .isVisible({ timeout: 5_000 })
-                .catch(() => false);
-            if (hasIcon) {
-                await expect(iconBtn).toBeVisible();
-                return;
-            }
-            test.skip(true, 'Analytics button not found');
-        }
-
-        await expect(analyticsBtn).toBeVisible();
+        // Both analytics tabs render; Cycle Time is active by default
+        await expect(dialog.locator('a[data-tab="cycletime"]')).toHaveText(
+            'Cycle Time'
+        );
+        await expect(dialog.locator('a[data-tab="cfd"]')).toHaveText(
+            'Cumulative Flow'
+        );
+        await expect(
+            dialog.locator('li.slds-is-active a[data-tab="cycletime"]')
+        ).toBeVisible({ timeout: SF_TIMEOUT });
     });
 
-    test('analytics modal opens with cycle time tab', async ({
+    test('cycle time tab shows metrics for a card that changed columns', async ({
         boardPage,
         boardData
     }) => {
-        await boardPage.open(boardData.baseUrl, boardData.boardId);
-        await boardPage.waitForCards();
+        expect(boardData.columns.length).toBeGreaterThanOrEqual(3);
+        const { cardName } = seedCycleTimeCard(boardData);
 
-        // Find and click analytics button
-        const analyticsBtn = boardPage.page.locator(
-            'button[title="Analytics"], button.analytics-btn'
-        );
-        const hasBtn = await analyticsBtn
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-        if (!hasBtn) {
-            test.skip(true, 'Analytics button not found');
-        }
+        const dialog = await openAnalyticsModal(boardPage, boardData);
 
-        await analyticsBtn.click();
+        // Summary stats: Avg Cycle Time + Avg Lead Time
+        await expect(
+            dialog.locator('.analytics-summary .analytics-stat')
+        ).toHaveCount(2, { timeout: SF_TIMEOUT });
 
-        const analyticsModal = boardPage.page.locator(
-            '.analytics-modal, c-kanban-analytics'
-        );
-        const hasModal = await analyticsModal
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
+        // Time-per-column bar chart canvas
+        await expect(dialog.locator('canvas.column-time-canvas')).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
 
-        if (hasModal) {
-            await expect(analyticsModal).toBeVisible();
-
-            // Cycle Time tab should be active by default
-            const cycleTimeTab = analyticsModal.locator(
-                '[data-tab="cycletime"], .analytics-tab--active'
-            );
-            const hasCycleTab = await cycleTimeTab
-                .isVisible({ timeout: 5_000 })
-                .catch(() => false);
-            if (hasCycleTab) {
-                await expect(cycleTimeTab).toBeVisible();
-            }
-        }
+        // Card Details table lists exactly one row for the seeded card
+        const seededRow = dialog
+            .locator('.analytics-table-wrapper tbody tr')
+            .filter({
+                has: boardPage.page.getByText(cardName, { exact: true })
+            });
+        await expect(seededRow).toHaveCount(1, { timeout: SF_TIMEOUT });
     });
 
-    test('analytics modal can switch to CFD tab', async ({
+    test('analytics modal switches to the CFD tab', async ({
         boardPage,
         boardData
     }) => {
-        await boardPage.open(boardData.baseUrl, boardData.boardId);
-        await boardPage.waitForCards();
+        const dialog = await openAnalyticsModal(boardPage, boardData);
 
-        const analyticsBtn = boardPage.page.locator(
-            'button[title="Analytics"], button.analytics-btn'
-        );
-        const hasBtn = await analyticsBtn
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-        if (!hasBtn) {
-            test.skip(true, 'Analytics button not found');
-        }
+        await dialog.locator('a[data-tab="cfd"]').click();
 
-        await analyticsBtn.click();
+        await expect(
+            dialog.locator('li.slds-is-active a[data-tab="cfd"]')
+        ).toBeVisible({ timeout: SF_TIMEOUT });
 
-        const analyticsModal = boardPage.page.locator(
-            '.analytics-modal, c-kanban-analytics'
-        );
-        const hasModal = await analyticsModal
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-        if (!hasModal) {
-            test.skip(true, 'Analytics modal not rendered');
-        }
-
-        // Click CFD tab
-        const cfdTab = analyticsModal.locator('[data-tab="cfd"]');
-        const hasCfd = await cfdTab
-            .isVisible({ timeout: 5_000 })
-            .catch(() => false);
-        if (!hasCfd) {
-            test.skip(true, 'CFD tab not found');
-        }
-
-        await cfdTab.click();
-
-        // CFD component should be visible
-        const cfdComponent = analyticsModal.locator(
-            '.cfd-wrapper, c-kanban-cumulative-flow-diagram'
-        );
-        const hasCfdComponent = await cfdComponent
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-        if (hasCfdComponent) {
-            await expect(cfdComponent).toBeVisible();
-        }
+        const cfd = dialog.locator('.cfd-container');
+        await expect(cfd).toBeVisible({ timeout: SF_TIMEOUT });
+        await expect(cfd.locator('canvas.cfd-canvas')).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
+        await expect(cfd.locator('select.cfd-select')).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
     });
 
-    test('analytics modal close button works', async ({
+    test('CFD time range select keeps the chart rendered', async ({
         boardPage,
         boardData
     }) => {
-        await boardPage.open(boardData.baseUrl, boardData.boardId);
-        await boardPage.waitForCards();
+        const dialog = await openAnalyticsModal(boardPage, boardData);
+        await dialog.locator('a[data-tab="cfd"]').click();
 
-        const analyticsBtn = boardPage.page.locator(
-            'button[title="Analytics"], button.analytics-btn'
-        );
-        const hasBtn = await analyticsBtn
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-        if (!hasBtn) {
-            test.skip(true, 'Analytics button not found');
-        }
+        const cfd = dialog.locator('.cfd-container');
+        const rangeSelect = cfd.locator('select.cfd-select');
+        await expect(rangeSelect).toBeVisible({ timeout: SF_TIMEOUT });
 
-        await analyticsBtn.click();
+        await rangeSelect.selectOption('7');
+        await expect(rangeSelect).toHaveValue('7');
+        await expect(cfd.locator('canvas.cfd-canvas')).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
 
-        const analyticsModal = boardPage.page.locator(
-            '.analytics-modal, c-kanban-analytics'
-        );
-        const hasModal = await analyticsModal
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-        if (!hasModal) {
-            test.skip(true, 'Analytics modal not rendered');
-        }
-
-        // Close the modal
-        const closeBtn = analyticsModal.locator(
-            'button:has-text("Close"), button.slds-modal__close'
-        );
-        await closeBtn.click();
-
-        await expect(analyticsModal).not.toBeVisible({ timeout: 10_000 });
+        await rangeSelect.selectOption('90');
+        await expect(rangeSelect).toHaveValue('90');
+        await expect(cfd.locator('canvas.cfd-canvas')).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
     });
 
-    test('swimlane selector is visible in filter bar', async ({
+    test('close button dismisses the analytics modal', async ({
+        boardPage,
+        boardData
+    }) => {
+        const dialog = await openAnalyticsModal(boardPage, boardData);
+
+        await dialog
+            .locator('.slds-modal__footer button', { hasText: 'Close' })
+            .click();
+
+        // Modal is lwc:if-gated — closing removes it (and its backdrop) from the DOM
+        await expect(dialog).toHaveCount(0, { timeout: SF_TIMEOUT });
+        await expect(boardPage.page.locator('.slds-backdrop')).toHaveCount(0, {
+            timeout: SF_TIMEOUT
+        });
+    });
+
+    test('swimlane selector is available in the filter bar', async ({
         boardPage,
         boardData
     }) => {
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.waitForCards();
 
-        // Swimlane is a select in the filter bar
+        // Swimlane mode is the last select in the board filter bar
         const swimlaneSelect = boardPage.page.locator(
-            'select.swimlane-select, .board-filter-bar select >> nth=2'
+            'select.kanban-filter-bar__select >> nth=-1'
         );
-        const hasSwimlane = await swimlaneSelect
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
+        await expect(swimlaneSelect).toBeVisible({ timeout: SF_TIMEOUT });
 
-        if (hasSwimlane) {
-            await expect(swimlaneSelect).toBeVisible();
-        }
+        // SwimlaneManager.modeOptions: none, assignee, priority, cardType, epic
+        await expect(swimlaneSelect.locator('option')).toHaveCount(5, {
+            timeout: SF_TIMEOUT
+        });
+        await expect(
+            swimlaneSelect.locator('option[value="priority"]')
+        ).toHaveText('By Priority');
     });
 
     test('swimlane by priority groups cards into rows', async ({
         boardPage,
         boardData
     }) => {
+        expect(boardData.cards.length).toBeGreaterThan(0);
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.waitForCards();
 
-        // Find swimlane select and change to "Priority"
-        const swimlaneSelect = boardPage.page.locator('select.swimlane-select');
-        const hasSwimlane = await swimlaneSelect
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-        if (!hasSwimlane) {
-            test.skip(true, 'Swimlane selector not found');
-        }
-
+        const swimlaneSelect = boardPage.page.locator(
+            'select.kanban-filter-bar__select >> nth=-1'
+        );
         await swimlaneSelect.selectOption('priority');
-        await boardPage.page.waitForTimeout(1000);
 
-        // Swimlane rows should appear
-        const swimlaneRows = boardPage.page.locator('.swimlane-row');
-        const hasRows = await swimlaneRows
-            .first()
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
+        const swimlaneBoard = boardPage.page.locator(
+            '.kanban-board--swimlanes'
+        );
+        await expect(swimlaneBoard).toBeVisible({ timeout: SF_TIMEOUT });
 
-        if (hasRows) {
-            expect(await swimlaneRows.count()).toBeGreaterThanOrEqual(1);
+        // Seeded cards cover High/Medium/Low — each priority gets exactly one lane
+        for (const priority of ['High', 'Medium', 'Low']) {
+            const lane = swimlaneBoard.locator('.swimlane-row').filter({
+                has: boardPage.page.locator('.swimlane-label', {
+                    hasText: new RegExp(`^${priority}$`)
+                })
+            });
+            await expect(lane).toHaveCount(1, { timeout: SF_TIMEOUT });
         }
+
+        // Cards render inside swimlane cells
+        await expect(
+            swimlaneBoard.locator('.swimlane-cell article.kanban-card').first()
+        ).toBeVisible({ timeout: SF_TIMEOUT });
+
+        // Switching back to "none" restores the normal board layout
+        await swimlaneSelect.selectOption('none');
+        await expect(
+            boardPage.page.locator('.kanban-board--swimlanes')
+        ).toHaveCount(0, { timeout: SF_TIMEOUT });
+        await boardPage.waitForCards();
     });
 });

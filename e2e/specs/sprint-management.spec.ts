@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures';
+import type { BoardPage } from '../pages';
 import {
     createIsolatedBoard,
     sfApexRun,
@@ -14,261 +15,277 @@ const SF_TIMEOUT = 60_000;
  * Tests the sprint lifecycle: creation, sprint header display,
  * progress tracking, sprint completion wizard, and sprint reports.
  *
- * Creates a Sprint-type board (not Project) so the sprint header renders.
+ * Uses Sprint-type boards (not Project) so the sprint header renders.
+ * Each test provisions the sprint state it needs (active sprint present
+ * or absent) instead of relying on execution order of sibling tests.
  */
-test.describe('Sprint Management', () => {
-    let sprintBoard: BoardData & { baseUrl: string };
 
+type SprintBoard = BoardData & { baseUrl: string };
+
+let workerSprintBoard: SprintBoard | null = null;
+
+function scratchOrgOrigin(): string {
+    const loginUrl = process.env.SCRATCH_ORG_URL || '';
+    return loginUrl ? new URL(loginUrl).origin : '';
+}
+
+/**
+ * Shared per-worker Sprint-type board. Tests using it only ADD data
+ * (sprints); tests that need a guaranteed-empty sprint state create
+ * their own board instead.
+ */
+function getSprintBoard(): SprintBoard {
+    if (!workerSprintBoard) {
+        workerSprintBoard = {
+            ...createIsolatedBoard('sprint-e2e', 'Sprint'),
+            baseUrl: scratchOrgOrigin()
+        };
+    }
+    return workerSprintBoard;
+}
+
+/**
+ * Ensure the board has an Active sprint, creating one via Apex if
+ * missing. Idempotent, so tests stay order-independent.
+ */
+function ensureActiveSprint(boardId: string): string {
+    const existing = sfQuery(
+        `SELECT Id FROM OpenSF__Sprint__c WHERE OpenSF__Board__c = '${boardId}' AND OpenSF__Status__c = 'Active' LIMIT 1`
+    );
+    if (existing.length > 0) {
+        return existing[0].Id as string;
+    }
+    const output = sfApexRun(`
+OpenSF__Sprint__c sprint = new OpenSF__Sprint__c(
+    OpenSF__Board__c = '${boardId}',
+    OpenSF__Goal__c = 'E2E Active Sprint',
+    OpenSF__StartDate__c = Date.today(),
+    OpenSF__EndDate__c = Date.today().addDays(14),
+    OpenSF__Status__c = 'Active'
+);
+insert sprint;
+System.debug('E2E_SPRINT_ID:' + sprint.Id);
+`);
+    const match = output.match(/E2E_SPRINT_ID:([a-zA-Z0-9]{15,18})/);
+    if (!match) {
+        throw new Error(
+            `Failed to parse sprint ID from Apex output: ${output.substring(0, 500)}`
+        );
+    }
+    return match[1];
+}
+
+/**
+ * Open a sprint board and wait for the topbar. Sprint-type boards may
+ * have no cards on the board tab, so waiting for cards would hang.
+ */
+async function openSprintBoard(
+    boardPage: BoardPage,
+    board: SprintBoard
+): Promise<void> {
+    await boardPage.open(board.baseUrl, board.boardId);
+    await boardPage.page
+        .locator('.kanban-topbar')
+        .waitFor({ state: 'visible', timeout: SF_TIMEOUT });
+}
+
+test.describe('Sprint Management', () => {
     test.beforeEach(async () => {
         if (!process.env.SCRATCH_ORG_URL) {
             test.skip(true, 'SCRATCH_ORG_URL not set -- skipping');
-        }
-        if (!sprintBoard) {
-            const data = createIsolatedBoard('sprint-e2e', 'Sprint');
-            const loginUrl = process.env.SCRATCH_ORG_URL || '';
-            const baseUrl = loginUrl ? new URL(loginUrl).origin : '';
-            sprintBoard = { ...data, baseUrl };
         }
     });
 
     test('sprint header renders on sprint-type board', async ({
         boardPage
     }) => {
-        await boardPage.open(sprintBoard.baseUrl, sprintBoard.boardId);
-        // Sprint-type boards with no active sprint may show no cards,
-        // so wait for topbar instead of cards
-        await boardPage.page.locator('.kanban-topbar').waitFor({ state: 'visible', timeout: SF_TIMEOUT });
+        const board = getSprintBoard();
+        await openSprintBoard(boardPage, board);
 
-        // The sprint header is inside the topbar, rendered via lwc:if={isSprintBoard}.
-        // The store needs to have loaded board.type === 'Sprint' for this to appear.
-        // Give extra time for the store to propagate.
-        const sprintHeader = boardPage.page.locator('.sprint-inline');
-        const isVisible = await sprintHeader
-            .isVisible({ timeout: SF_TIMEOUT })
-            .catch(() => false);
-
-        if (!isVisible) {
-            // If still not visible, check the topbar itself renders
-            const topbar = boardPage.page.locator('.kanban-topbar');
-            const topbarVisible = await topbar
-                .isVisible({ timeout: 5_000 })
-                .catch(() => false);
-            if (!topbarVisible) {
-                test.skip(true, 'Topbar not rendered (experienceCloud mode?)');
-            }
-            // Topbar exists but no sprint header -- board type may not be Sprint
-            test.skip(
-                true,
-                'Sprint header not rendered -- store may not have loaded board type'
-            );
-        }
-
-        await expect(sprintHeader).toBeVisible();
+        // kanbanSprintHeader renders .sprint-inline in both its
+        // has-sprint and empty branches, so this holds for any state
+        await expect(boardPage.page.locator('.sprint-inline')).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
     });
 
     test('sprint header shows "No active sprint" when no sprint exists', async ({
         boardPage
     }) => {
-        await boardPage.open(sprintBoard.baseUrl, sprintBoard.boardId);
-        // Sprint-type boards with no active sprint may show no cards,
-        // so wait for topbar instead of cards
-        await boardPage.page.locator('.kanban-topbar').waitFor({ state: 'visible', timeout: SF_TIMEOUT });
+        // Fresh board: guarantees no active sprint regardless of what
+        // sibling tests created on the shared worker board
+        const board: SprintBoard = {
+            ...createIsolatedBoard('sprint-empty', 'Sprint'),
+            baseUrl: scratchOrgOrigin()
+        };
+        await openSprintBoard(boardPage, board);
 
-        const sprintHeader = boardPage.page.locator(
-            '.sprint-inline, c-kanban-sprint-header, opensf-kanban-sprint-header'
+        const emptyState = boardPage.page.locator(
+            '.sprint-inline .sprint-inline__empty'
         );
-        const isAttached = await sprintHeader
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-        if (!isAttached) {
-            test.skip(true, 'Sprint header not visible');
-        }
-
-        const emptyState = sprintHeader.locator('.sprint-inline__empty');
-        const hasEmptyState = await emptyState
-            .isVisible({ timeout: 5_000 })
-            .catch(() => false);
-
-        if (hasEmptyState) {
-            await expect(emptyState).toContainText('No active sprint');
-        }
+        await expect(emptyState).toBeVisible({ timeout: SF_TIMEOUT });
+        await expect(emptyState).toHaveText('No active sprint');
     });
 
     test('can create a sprint from backlog view', async ({ boardPage }) => {
-        await boardPage.open(sprintBoard.baseUrl, sprintBoard.boardId);
+        const board = getSprintBoard();
+        await openSprintBoard(boardPage, board);
         await boardPage.switchToBacklogTab();
 
         const newSprintBtn = boardPage.page.locator(
             'button:has-text("New Sprint")'
         );
-        const hasBtn = await newSprintBtn
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-        if (!hasBtn) {
-            test.skip(true, 'New Sprint button not found in backlog');
-        }
-
+        await expect(newSprintBtn).toBeVisible({ timeout: SF_TIMEOUT });
         await newSprintBtn.click();
 
+        // Inline form from kanbanBacklogView: .backlog-view__create-form
+        // wrapping the .create-sprint-input lightning-input
         const sprintForm = boardPage.page.locator(
-            '.sprint-create-form, .create-sprint-form'
+            '.backlog-view__create-form:has(.create-sprint-input)'
         );
-        const hasForm = await sprintForm
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
+        await expect(sprintForm).toBeVisible({ timeout: 10_000 });
 
-        if (hasForm) {
-            await expect(sprintForm).toBeVisible();
-        }
+        const goal = `E2E goal ${Date.now()}`;
+        await sprintForm.locator('.create-sprint-input input').fill(goal);
+        await sprintForm.locator('button:has-text("Create Sprint")').click();
+
+        // Form closes on success and the new Planning sprint section
+        // appears in the backlog with our goal in its header
+        await expect(sprintForm).toHaveCount(0, { timeout: SF_TIMEOUT });
+        const newSection = boardPage.page.locator(
+            `.sprint-header-row:has(.sprint-header__goal:has-text("${goal}"))`
+        );
+        await expect(newSection).toBeVisible({ timeout: SF_TIMEOUT });
+        await expect(
+            newSection.locator('.sprint-status-badge--planning')
+        ).toHaveText('Planning');
+        await expect(newSection.locator('.sprint-header__stats')).toContainText(
+            /\d+ cards/
+        );
     });
 
-    test('sprint progress bar renders with correct styling', async ({
+    test('sprint header shows progress for an active sprint', async ({
         boardPage
     }) => {
-        // Create an active sprint on this board
-        const apex = `
-        OpenSF__Sprint__c sprint = new OpenSF__Sprint__c(
-            OpenSF__Board__c = '${sprintBoard.boardId}',
-            OpenSF__Goal__c = 'E2E Sprint Test',
-            OpenSF__StartDate__c = Date.today(),
-            OpenSF__EndDate__c = Date.today().addDays(14),
-            OpenSF__Status__c = 'Active'
-        );
-        insert sprint;
-        System.debug('E2E_SPRINT_ID:' + sprint.Id);
-        `;
+        const board = getSprintBoard();
+        ensureActiveSprint(board.boardId);
+        await openSprintBoard(boardPage, board);
 
-        try {
-            sfApexRun(apex);
-        } catch {
-            test.skip(true, 'Could not create sprint via Apex');
-        }
-
-        await boardPage.open(sprintBoard.baseUrl, sprintBoard.boardId);
-        // Sprint-type boards may show no cards without SprintCard records,
-        // so wait for topbar instead of cards
-        await boardPage.page.locator('.kanban-topbar').waitFor({ state: 'visible', timeout: SF_TIMEOUT });
-
-        const sprintHeader = boardPage.page.locator(
-            '.sprint-inline, c-kanban-sprint-header, opensf-kanban-sprint-header'
-        );
-        const isVisible = await sprintHeader
-            .isVisible({ timeout: SF_TIMEOUT })
-            .catch(() => false);
-        if (!isVisible) {
-            test.skip(true, 'Sprint header not visible after sprint creation');
-        }
-
-        const progressBar = sprintHeader.locator(
-            '.sprint-inline__progress-bar'
-        );
-        const hasProgress = await progressBar
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-
-        if (hasProgress) {
-            await expect(progressBar).toBeVisible();
-            const daysLabel = sprintHeader.locator(
-                '.sprint-inline__days-remaining'
-            );
-            const hasDays = await daysLabel
-                .isVisible({ timeout: 5_000 })
-                .catch(() => false);
-            if (hasDays) {
-                await expect(daysLabel).toContainText(/\d+ days/);
-            }
-        }
+        const sprintHeader = boardPage.page.locator('.sprint-inline');
+        await expect(sprintHeader.locator('.sprint-inline__name')).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
+        await expect(
+            sprintHeader.locator('.sprint-inline__progress-bar')
+        ).toBeVisible();
+        // The fill div is 0% wide with no completed points, so assert
+        // presence rather than visibility
+        await expect(
+            sprintHeader.locator('.sprint-inline__progress-fill')
+        ).toHaveCount(1);
+        await expect(
+            sprintHeader.locator('.sprint-inline__progress-label')
+        ).toHaveText(/\d+ \/ \d+ pts \(\d+%\)/);
+        // daysRemainingClass is '' unless the sprint is nearly over
+        // (kanbanSprintHeader.js), so locate the label by its text
+        await expect(sprintHeader.getByText(/\d+d remaining/)).toBeVisible();
     });
 
     test('sprint complete button opens wizard', async ({ boardPage }) => {
-        let sprints: Record<string, unknown>[] = [];
-        try {
-            sprints = sfQuery(
-                `SELECT Id FROM OpenSF__Sprint__c WHERE OpenSF__Board__c = '${sprintBoard.boardId}' AND OpenSF__Status__c = 'Active' LIMIT 1`
-            );
-        } catch {
-            // Sprint object may not exist yet
-        }
+        const board = getSprintBoard();
+        ensureActiveSprint(board.boardId);
+        await openSprintBoard(boardPage, board);
 
-        if (sprints.length === 0) {
-            test.skip(true, 'No active sprint -- cannot test completion');
-        }
-
-        await boardPage.open(sprintBoard.baseUrl, sprintBoard.boardId);
-        // Sprint-type boards may show no cards without SprintCard records,
-        // so wait for topbar instead of cards
-        await boardPage.page.locator('.kanban-topbar').waitFor({ state: 'visible', timeout: SF_TIMEOUT });
-
-        const sprintHeader = boardPage.page.locator(
-            '.sprint-inline, c-kanban-sprint-header, opensf-kanban-sprint-header'
-        );
-        const completeBtn = sprintHeader.locator(
-            'button:has-text("Complete Sprint")'
-        );
-        const hasBtn = await completeBtn
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-        if (!hasBtn) {
-            test.skip(true, 'Complete Sprint button not found');
-        }
-
+        const sprintHeader = boardPage.page.locator('.sprint-inline');
+        // lightning-button label is "Complete" (kanbanSprintHeader.html)
+        const completeBtn = sprintHeader.locator('button:has-text("Complete")');
+        await expect(completeBtn).toBeVisible({ timeout: SF_TIMEOUT });
         await completeBtn.click();
 
+        // kanbanSprintComplete renders an SLDS modal
         const wizard = boardPage.page.locator(
-            '.sprint-complete, c-kanban-sprint-complete, opensf-kanban-sprint-complete'
+            'section[role="dialog"]:has(h2.slds-modal__title:has-text("Complete Sprint"))'
         );
-        const hasWizard = await wizard
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
+        await expect(wizard).toBeVisible({ timeout: 10_000 });
 
-        if (hasWizard) {
-            await expect(wizard).toBeVisible();
-            const summary = wizard.locator('.sprint-complete__summary');
-            const hasSummary = await summary
-                .isVisible({ timeout: 5_000 })
-                .catch(() => false);
-            if (hasSummary) {
-                await expect(summary).toBeVisible();
-            }
-        }
+        // Step 1 shows the sprint summary with its stat tiles
+        await expect(
+            wizard.locator('h3:has-text("Sprint Summary")')
+        ).toBeVisible();
+        await expect(wizard.getByText('Points Done')).toBeVisible();
+        await expect(wizard.getByText('Total Points')).toBeVisible();
+        await expect(wizard.locator('.slds-progress__list li')).toHaveCount(3);
+
+        // Cancel so the shared board's active sprint is not completed
+        await wizard
+            .locator('.slds-modal__footer button:has-text("Cancel")')
+            .click();
+        await expect(wizard).not.toBeVisible({ timeout: 10_000 });
     });
 
     test('sprint reports button opens reports modal', async ({ boardPage }) => {
-        await boardPage.open(sprintBoard.baseUrl, sprintBoard.boardId);
-        // Sprint-type boards may show no cards without SprintCard records,
-        // so wait for topbar instead of cards
-        await boardPage.page.locator('.kanban-topbar').waitFor({ state: 'visible', timeout: SF_TIMEOUT });
+        const board = getSprintBoard();
+        // Header action buttons only render when a sprint is active
+        ensureActiveSprint(board.boardId);
+        await openSprintBoard(boardPage, board);
 
-        const sprintHeader = boardPage.page.locator(
-            '.sprint-inline, c-kanban-sprint-header, opensf-kanban-sprint-header'
-        );
-        const reportsBtn = sprintHeader.locator('button:has-text("Reports")');
-        const hasBtn = await reportsBtn
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
-        if (!hasBtn) {
-            test.skip(true, 'Reports button not found');
-        }
-
+        const sprintHeader = boardPage.page.locator('.sprint-inline');
+        // lightning-button-icon renders a button with title="Reports"
+        const reportsBtn = sprintHeader.locator('button[title="Reports"]');
+        await expect(reportsBtn).toBeVisible({ timeout: SF_TIMEOUT });
         await reportsBtn.click();
 
-        const reportsModal = boardPage.page.locator(
-            '.sprint-reports, c-kanban-sprint-reports, opensf-kanban-sprint-reports'
+        const reports = boardPage.page.locator(
+            'section[role="dialog"]:has(h2.slds-modal__title:has-text("Sprint Reports"))'
         );
-        const hasModal = await reportsModal
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
+        await expect(reports).toBeVisible({ timeout: 10_000 });
 
-        if (hasModal) {
-            await expect(reportsModal).toBeVisible();
-            const tabs = reportsModal.locator('.report-tab, .slds-tabs__item');
-            const hasTabs = await tabs
-                .first()
-                .isVisible({ timeout: 5_000 })
-                .catch(() => false);
-            if (hasTabs) {
-                expect(await tabs.count()).toBeGreaterThanOrEqual(2);
-            }
-        }
+        const tabItems = reports.locator('li.slds-tabs_default__item');
+        await expect(tabItems).toHaveCount(3);
+        await expect(reports.locator('a[data-tab="burndown"]')).toHaveText(
+            'Burndown'
+        );
+        await expect(reports.locator('a[data-tab="velocity"]')).toHaveText(
+            'Velocity'
+        );
+        await expect(reports.locator('a[data-tab="summary"]')).toHaveText(
+            'Summary'
+        );
+
+        const burndownItem = reports.locator(
+            'li.slds-tabs_default__item:has(a[data-tab="burndown"])'
+        );
+        const velocityItem = reports.locator(
+            'li.slds-tabs_default__item:has(a[data-tab="velocity"])'
+        );
+        const summaryItem = reports.locator(
+            'li.slds-tabs_default__item:has(a[data-tab="summary"])'
+        );
+        await expect(burndownItem).toHaveClass(/slds-is-active/);
+
+        // Switching tabs moves the active class and swaps the single
+        // rendered panel (only one lwc:if branch renders at a time)
+        await reports.locator('a[data-tab="velocity"]').click();
+        await expect(velocityItem).toHaveClass(/slds-is-active/);
+        await expect(burndownItem).not.toHaveClass(/slds-is-active/);
+        const panel = reports.locator('.slds-tabs_default__content');
+        await expect(panel).toHaveCount(1);
+        // Velocity panel shows chart summary or its empty state once the
+        // loading spinner resolves
+        await expect(panel).toContainText(
+            /Average Velocity|No completed sprints/,
+            { timeout: SF_TIMEOUT }
+        );
+
+        await reports.locator('a[data-tab="summary"]').click();
+        await expect(summaryItem).toHaveClass(/slds-is-active/);
+        await expect(panel).toContainText(/Sprint History|No sprint history/, {
+            timeout: SF_TIMEOUT
+        });
+
+        await reports
+            .locator('.slds-modal__footer button:has-text("Close")')
+            .click();
+        await expect(reports).not.toBeVisible({ timeout: 10_000 });
     });
 });

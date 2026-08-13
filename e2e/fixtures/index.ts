@@ -32,6 +32,16 @@ export const test = base.extend<AlexFixtures>({
      * Does NOT navigate automatically; call boardPage.open() in your test.
      */
     boardPage: async ({ page }, use) => {
+        // The undo/redo toolbar controls are dev-gated: kanbanBoard reads
+        // localStorage['alex.debug.undoRedo'] in connectedCallback, so the
+        // flag must exist before any app code runs on each navigation.
+        await page.addInitScript(() => {
+            try {
+                window.localStorage.setItem('alex.debug.undoRedo', 'true');
+            } catch {
+                // localStorage unavailable -- undo/redo specs will fail visibly
+            }
+        });
         await use(new BoardPage(page));
     },
 

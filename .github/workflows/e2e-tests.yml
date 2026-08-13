@@ -97,6 +97,28 @@ jobs:
             persistent: true
             cache-key: ${{ github.head_ref || github.ref_name }}
 
+    admin:
+        name: Admin
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: admin
+            specs: 'admin-management.spec.ts'
+            create-retro-data: false
+            persistent: true
+            cache-key: ${{ github.head_ref || github.ref_name }}
+
+    column-mgmt:
+        name: Column Management
+        uses: ./.github/workflows/e2e-suite.yml
+        secrets: inherit
+        with:
+            suite-name: column-mgmt
+            specs: 'column-management.spec.ts'
+            create-retro-data: false
+            persistent: true
+            cache-key: ${{ github.head_ref || github.ref_name }}
+
     multi-user:
         name: Multi-User Sync
         uses: ./.github/workflows/e2e-multi-user.yml
@@ -118,6 +140,8 @@ jobs:
             - card-features
             - epics
             - undo-redo
+            - admin
+            - column-mgmt
             - multi-user
         if: always()
         timeout-minutes: 5
@@ -140,8 +164,12 @@ jobs:
                       const suites = [
                         'board-core', 'backlog-sprint', 'analytics',
                         'unhappy-paths', 'card-features', 'epics',
-                        'undo-redo', 'multi-user'
+                        'undo-redo', 'admin', 'column-mgmt', 'multi-user'
                       ];
+
+                      // Single source for the comment title, also used as the
+                      // update-in-place marker below — keep them identical.
+                      const marker = 'E2E Tests (10 feature suites)';
 
                       let totalPassed = 0, totalFailed = 0, totalSkipped = 0, totalFlaky = 0;
                       let allPassed = true;
@@ -178,7 +206,7 @@ jobs:
 
                       const status = allPassed ? 'PASS' : 'FAIL';
                       const summary = `**${totalPassed} passed** | **${totalFailed} failed** | **${totalSkipped} skipped** | **${totalFlaky} flaky**`;
-                      const comment = `### [${status}] E2E Tests (8 feature suites)\n\n${summary}\n\n${body}`;
+                      const comment = `### [${status}] ${marker}\n\n${summary}\n\n${body}`;
 
                       const maxLen = 65000;
                       const truncated = comment.length > maxLen
@@ -186,7 +214,6 @@ jobs:
                         : comment;
 
                       // Update existing comment or create new one
-                      const marker = 'E2E Tests (10 feature suites)';
                       const { data: comments } = await github.rest.issues.listComments({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
@@ -214,7 +241,7 @@ jobs:
               run: |
                   echo "## E2E Test Results -- 10 Feature Suites" >> "$GITHUB_STEP_SUMMARY"
                   echo "" >> "$GITHUB_STEP_SUMMARY"
-                  for suite in board-core backlog-sprint admin retro-analytics planning-poker unhappy-paths card-features team-epics undo-redo multi-user; do
+                  for suite in board-core backlog-sprint analytics unhappy-paths card-features epics undo-redo admin column-mgmt multi-user; do
                     FILE="suite-outputs/e2e-output-${suite}/playwright-output.txt"
                     if [ -f "$FILE" ]; then
                       SUMMARY=$(tail -3 "$FILE" | head -1)
@@ -228,12 +255,12 @@ jobs:
               if: |
                   needs.board-core.result == 'failure' ||
                   needs.backlog-sprint.result == 'failure' ||
-                  needs.admin.result == 'failure' ||
-                  needs.retro-analytics.result == 'failure' ||
-                  needs.planning-poker.result == 'failure' ||
+                  needs.analytics.result == 'failure' ||
                   needs.unhappy-paths.result == 'failure' ||
                   needs.card-features.result == 'failure' ||
-                  needs.team-epics.result == 'failure' ||
+                  needs.epics.result == 'failure' ||
                   needs.undo-redo.result == 'failure' ||
+                  needs.admin.result == 'failure' ||
+                  needs.column-mgmt.result == 'failure' ||
                   needs.multi-user.result == 'failure'
               run: exit 1

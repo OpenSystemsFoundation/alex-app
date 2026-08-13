@@ -133,6 +133,80 @@ behavior is fully covered by the green Apex (218/218) and Jest (249/249)
 suites; the LWC changes on this branch are limited to the
 `lightning/confirm` swap and lint fixes, both covered by Jest.
 
+## 6b. E2E suite audit and repair
+
+A full audit of the 16 Playwright specs against the app's actual markup found
+that the suite was **much thinner than its test count suggested**. The root
+cause was a pattern: nearly every conditional block was written as
+`isVisible().catch(() => false)` followed by `test.skip(...)` or
+`if (visible) { assert }`, so when the filter bar and modals were refactored,
+**14 selectors that no longer exist anywhere in the app** stopped matching and
+their tests silently became green no-ops instead of failing.
+
+Confirmed dead selectors (several survived only as orphaned CSS in
+`kanbanBoard.css` after `kanbanFilterBar` was extracted): `.analytics-modal`,
+`.analytics-tab--active`, `.cfd-wrapper`, `button[title="Analytics"]`,
+`select.swimlane-select`, `.board-filter-bar`, `.board-filter-search`,
+`.board-filter-clear`, `.epic-progress`, `button:has-text("Complete Sprint")`
+(the real label is `Complete`), `.sprint-complete__summary`,
+`.sprint-create-form`, `.sprint-inline__days-remaining`, `.report-tab`, plus
+`c-kanban-analytics` (component-tag selectors never match in a namespaced org —
+the tag is `opensf-…`).
+
+Other findings:
+
+- **`undo-redo.spec.ts` was entirely `describe.skip`** — its CI job provisioned
+  a scratch org and reported success for 0 executed tests. Cause was a
+  testability gap, not a test bug: the undo/redo UI is gated on
+  `localStorage['alex.debug.undoRedo']`, which no fixture set.
+- **Multi-user sync tests masked platform-event failure** — on sync timeout they
+  called `userB.board.refresh()` and *then* asserted, so a completely dead event
+  pipeline still passed. One test named "card subject edited…" never edited a
+  subject.
+- **Vacuous assertions**: `expect(count).toBeGreaterThanOrEqual(0)` (×2), and a
+  double-click test asserting `<= before + 2` — permitting the exact duplicate
+  it claimed to prevent.
+- **`admin-management.spec.ts` was wired into no workflow at all**;
+  `performance.spec.ts` only ran on manual dispatch.
+- **CI plumbing**: the `e2e-tests.yml` results gate referenced four job ids that
+  do not exist (`admin`, `retro-analytics`, `planning-poker`, `team-epics`) while
+  omitting the real `analytics` and `epics` jobs; the "update existing comment"
+  marker never matched its own title, so every run posted a duplicate PR
+  comment; `e2e-suite.yml` posted three near-identical commit comments per suite.
+
+### Repair applied
+
+| Metric | Before | After |
+| :--- | ---: | ---: |
+| Live test blocks | 109 | 127 |
+| Static `.skip` sites | 48 | 26 |
+| `isVisible().catch` guards | 1 | 0 |
+| Hardcoded `waitForTimeout` | 47 | 36 |
+
+Every dead selector was replaced with one verified against the real LWC
+templates; conditional assertions were made unconditional; and newly covered
+behavior includes: card-panel **save round-trip** (edit → save → toast → board
+updates → DB confirms), the **two-step delete confirm** (including timeout
+revert), both **unsaved-changes `LightningConfirm` dialogs** (close and
+card-switch, plus the no-dialog-when-clean case), a new
+**`column-management.spec.ts`** (WIP limit round-trip and over-limit badge,
+rename, add/delete column, template grid), **backlog bulk operations**
+(multi-select, set-priority, bulk delete, select-all/clear), inline backlog
+card creation, real analytics modal + CFD tab assertions, and the sprint
+**Complete wizard** and Reports tabs. The multi-user refresh fallbacks were
+removed so those tests now genuinely verify platform-event delivery.
+`admin-management` and `column-management` were wired into `e2e-tests.yml`, the
+gate job now references the real suite ids, and the duplicate comment steps
+were consolidated.
+
+Verification status: `npm run type-check:e2e` clean, Prettier clean, all three
+workflow YAMLs parse, and an automated sweep confirmed **every** CSS class and
+`data-*` attribute used by the changed specs exists in `force-app` (zero
+component-tag selectors). Runtime behavior is judged by the PR's own E2E run —
+browsers cannot execute in the review sandbox (see §6). Any failure there is
+expected to be selector-level in a newly written test, not an app regression,
+since no application code changed in this commit.
+
 ## 7. Remaining false positives (for the review submission)
 
 Unchanged from `security-review/README.md`, still valid after this pass:

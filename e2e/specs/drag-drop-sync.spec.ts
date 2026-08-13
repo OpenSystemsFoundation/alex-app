@@ -65,21 +65,13 @@ test.describe('Drag & Drop Sync — real-time collaboration', () => {
                 .locator(`article[data-card-id="${dragCardId}"]`)
         ).toBeVisible({ timeout: SYNC_TIMEOUT });
 
-        // User B sees the card in the new column via platform event
-        const movedOnB = userB.board
-            .columnWrapper(targetColId)
-            .locator(`article[data-card-id="${dragCardId}"]`);
-
-        const visibleViaEvent = await movedOnB
-            .isVisible({ timeout: SYNC_TIMEOUT })
-            .catch(() => false);
-
-        if (!visibleViaEvent) {
-            await userB.board.refresh();
-            await userB.board.waitForCards();
-        }
-
-        await expect(movedOnB).toBeVisible({ timeout: SYNC_TIMEOUT });
+        // User B sees the move via platform event — no refresh fallback;
+        // this test intentionally fails if platform events are down.
+        await expect(
+            userB.board
+                .columnWrapper(targetColId)
+                .locator(`article[data-card-id="${dragCardId}"]`)
+        ).toBeVisible({ timeout: SYNC_TIMEOUT });
     });
 
     test('simultaneous moves by both users do not conflict', async ({
@@ -135,21 +127,13 @@ test.describe('Drag & Drop Sync — real-time collaboration', () => {
                 .locator(`article[data-card-id="${cardB.id}"]`)
         ).toBeVisible({ timeout: SYNC_TIMEOUT });
 
-        // User B sees both moves via platform events (with refresh fallback)
-        const cardAOnB = userB.board
-            .columnWrapper(targetA)
-            .locator(`article[data-card-id="${cardA.id}"]`);
-
-        const cardAVisible = await cardAOnB
-            .isVisible({ timeout: SYNC_TIMEOUT })
-            .catch(() => false);
-
-        if (!cardAVisible) {
-            await userB.board.refresh();
-            await userB.board.waitForCards();
-        }
-
-        await expect(cardAOnB).toBeVisible({ timeout: SYNC_TIMEOUT });
+        // User B sees User A's move via platform event — no refresh fallback;
+        // this test intentionally fails if platform events are down.
+        await expect(
+            userB.board
+                .columnWrapper(targetA)
+                .locator(`article[data-card-id="${cardA.id}"]`)
+        ).toBeVisible({ timeout: SYNC_TIMEOUT });
 
         await expect(
             userB.board
