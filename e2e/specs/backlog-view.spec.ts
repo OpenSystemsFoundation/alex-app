@@ -479,11 +479,6 @@ insert sprint;
             status: 'Planning',
             goal: 'Drag target'
         });
-        const cardId = createBacklogCardViaApex(
-            board.boardId,
-            `E2E drag ${Date.now()}`,
-            'Medium'
-        );
         await boardPage.open(scratchOrgOrigin(), board.boardId);
         await boardPage.switchToBacklogTab();
 
@@ -494,11 +489,21 @@ insert sprint;
         const sprintSection = page.locator('.backlog-section', {
             has: sprintHeader
         });
-        const row = page.locator(`.backlog-row[data-card-id="${cardId}"]`);
         await expect(
             sprintHeader.locator('.sprint-header__stats')
         ).toContainText('0 cards', { timeout: SF_TIMEOUT });
-        await expect(row).toBeVisible();
+        // Drag the first Backlog row: it sits right under the sprint header,
+        // so neither end of the drag needs scrolling
+        const row = page
+            .locator('.backlog-section', {
+                has: page.locator(
+                    '.sprint-header-row[data-sprint-id="ungrouped"]'
+                )
+            })
+            .locator('.backlog-row[data-card-id]')
+            .first();
+        const cardId = (await row.getAttribute('data-card-id')) as string;
+        expect(cardId).toBeTruthy();
 
         await row.dragTo(sprintHeader);
 
@@ -517,5 +522,136 @@ insert sprint;
                 { timeout: 45_000, intervals: [2_000, 3_000, 5_000] }
             )
             .toBe(1);
+    });
+
+    test('refinement toggle flags a card and the view filter shows only flagged cards', async ({
+        boardPage
+    }) => {
+        const board = createIsolatedBoard('backlog-refine');
+        const stamp = Date.now();
+        const flagged = createBacklogCardViaApex(
+            board.boardId,
+            `Refine A ${stamp}`,
+            'Low'
+        );
+        const other = createBacklogCardViaApex(
+            board.boardId,
+            `Refine B ${stamp}`,
+            'Low'
+        );
+        await boardPage.open(scratchOrgOrigin(), board.boardId);
+        await boardPage.switchToBacklogTab();
+
+        const page = boardPage.page;
+        const flaggedRow = page.locator(
+            `.backlog-row[data-card-id="${flagged}"]`
+        );
+        const otherRow = page.locator(`.backlog-row[data-card-id="${other}"]`);
+        await expect(flaggedRow).toBeVisible({ timeout: SF_TIMEOUT });
+        await expect(
+            flaggedRow.locator('.backlog-cell--refinement lightning-icon')
+        ).toHaveClass(/refinement-inactive/);
+
+        await flaggedRow.getByTitle('Toggle Refinement').click();
+        await expect(
+            flaggedRow.locator('.backlog-cell--refinement lightning-icon')
+        ).toHaveClass(/refinement-active/, { timeout: SF_TIMEOUT });
+        await expect
+            .poll(
+                () =>
+                    sfQuery(
+                        `SELECT OpenSF__NeedsRefinement__c FROM OpenSF__Card__c WHERE Id = '${flagged}'`
+                    )[0].OpenSF__NeedsRefinement__c,
+                { timeout: 45_000, intervals: [2_000, 3_000, 5_000] }
+            )
+            .toBe(true);
+
+        const viewSelect = page.locator('select.kanban-filter-bar__select', {
+            has: page.locator('option[value="refinement"]')
+        });
+        await viewSelect.selectOption('refinement');
+        await expect(flaggedRow).toBeVisible();
+        await expect(otherRow).toHaveCount(0);
+
+        await viewSelect.selectOption('all');
+        await expect(otherRow).toBeVisible();
+    });
+
+    test('context menu moves a card to the top and bottom of the backlog', async ({
+        boardPage
+    }) => {
+        const board = createIsolatedBoard('backlog-order');
+        const stamp = Date.now();
+        const ids = ['One', 'Two', 'Three'].map((n) =>
+            createBacklogCardViaApex(
+                board.boardId,
+                `Order ${n} ${stamp}`,
+                'Low'
+            )
+        );
+        await boardPage.open(scratchOrgOrigin(), board.boardId);
+        await boardPage.switchToBacklogTab();
+
+        const page = boardPage.page;
+        const rows = page.locator('.backlog-row[data-card-id]');
+        await expect(rows).toHaveCount(3, { timeout: SF_TIMEOUT });
+        const order = () =>
+            rows.evaluateAll((els) =>
+                els.map((el) => el.getAttribute('data-card-id'))
+            );
+        const initial = await order();
+        expect([...initial].sort()).toEqual([...ids].sort());
+
+        const menu = page.locator('.context-menu[role="menu"]');
+        const last = initial[2] as string;
+        await page
+            .locator(`.backlog-row[data-card-id="${last}"]`)
+            .click({ button: 'right' });
+        await menu.getByRole('menuitem', { name: 'Move to Top' }).click();
+        await expect.poll(order).toEqual([last, initial[0], initial[1]]);
+
+        await page
+            .locator(`.backlog-row[data-card-id="${last}"]`)
+            .click({ button: 'right' });
+        await menu.getByRole('menuitem', { name: 'Move to Bottom' }).click();
+        await expect.poll(order).toEqual([initial[0], initial[1], last]);
+    });
+
+    test('new card form: Enter creates and stays open, Escape closes', async ({
+        boardPage
+    }) => {
+        const board = createIsolatedBoard('backlog-keys');
+        await boardPage.open(scratchOrgOrigin(), board.boardId);
+        await boardPage.switchToBacklogTab();
+
+        const page = boardPage.page;
+        await page.getByRole('button', { name: 'New Card' }).click();
+        const input = page.getByPlaceholder('What needs to be done?');
+        await expect(input).toBeVisible();
+
+        const stamp = Date.now();
+        for (const n of [1, 2]) {
+            await input.fill(`Keyboard card ${n} ${stamp}`);
+            await input.press('Enter');
+            await expect(
+                page.locator('.backlog-row', {
+                    hasText: `Keyboard card ${n} ${stamp}`
+                })
+            ).toBeVisible({ timeout: SF_TIMEOUT });
+            // Form stays open with an empty input for the next card
+            await expect(input).toHaveValue('');
+        }
+
+        await input.press('Escape');
+        await expect(input).toHaveCount(0);
+        await expect
+            .poll(
+                () =>
+                    sfQuery(
+                        `SELECT Id FROM OpenSF__Card__c WHERE OpenSF__Board__c = '${board.boardId}' AND OpenSF__Column__c = NULL AND OpenSF__Subject__c LIKE 'Keyboard card %${stamp}'`
+                    ).length,
+                { timeout: 45_000, intervals: [2_000, 3_000, 5_000] }
+            )
+            .toBe(2);
     });
 });

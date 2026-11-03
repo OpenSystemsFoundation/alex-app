@@ -181,4 +181,23 @@ test.describe('Alex Kanban Board', () => {
             timeout: SF_TIMEOUT
         });
     });
+
+    test('board loads in the Alex Console app', async ({
+        boardPage,
+        boardData
+    }) => {
+        await boardPage.goto(
+            `${boardData.baseUrl}/lightning/app/OpenSF__AlexConsole/r/OpenSF__Board__c/${boardData.boardId}/view`
+        );
+        await boardPage.waitForComponent('.kanban-board-wrapper');
+
+        await expect(boardPage.columns).toHaveCount(boardData.columns.length, {
+            timeout: SF_TIMEOUT
+        });
+        await expect(boardPage.card(boardData.cards[0].Id)).toBeVisible();
+        // Console navigation opens the board in a workspace tab
+        await expect(
+            boardPage.page.getByRole('tab', { name: /e2e-/ }).first()
+        ).toBeVisible();
+    });
 });

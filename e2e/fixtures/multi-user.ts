@@ -56,16 +56,9 @@ async function sfLogin(page: Page, loginUrl: string): Promise<void> {
         waitUntil: 'domcontentloaded',
         timeout: 60_000
     });
-
-    // Wait for SF redirect chain to settle (frontdoor -> setup -> lightning)
-    // Poll until URL stops changing
-    let lastUrl = '';
-    for (let i = 0; i < 10; i++) {
-        await page.waitForTimeout(2000);
-        const currentUrl = page.url();
-        if (currentUrl === lastUrl) break;
-        lastUrl = currentUrl;
-    }
+    // frontdoor -> (setup) -> Lightning; landing anywhere else (the login
+    // form) means the one-time URL was rejected
+    await page.waitForURL(/\/lightning\//, { timeout: 60_000 });
 }
 
 export const test = base.extend<MultiUserFixtures>({

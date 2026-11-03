@@ -1,10 +1,16 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { test, expect } from '../fixtures';
-import { sfQuery } from '../helpers/sf-data';
+import {
+    createIsolatedBoard,
+    scratchOrgOrigin,
+    sfQuery
+} from '../helpers/sf-data';
 
 const SF_TIMEOUT = 45_000;
 
 const ADMIN_TAB_PATH = 'n/OpenSF__Admin_Management';
+// Each poll attempt shells out to the sf CLI -- keep intervals coarse
+const SF_POLL = { timeout: 45_000, intervals: [2_000, 3_000, 5_000] };
 
 /**
  * Open the Admin Management tab. `app` pins the Lightning app context so
@@ -22,6 +28,15 @@ async function openAdmin(
     const admin = page.locator('.admin-container');
     await expect(admin).toBeVisible({ timeout: SF_TIMEOUT });
     return admin;
+}
+
+/** The board card on the Boards sub-tab with exactly this name. */
+function boardCard(admin: Locator, name: string): Locator {
+    return admin.locator('.board-card', {
+        has: admin.page().locator('.board-name', {
+            hasText: new RegExp(`^${escapeRegExp(name)}$`)
+        })
+    });
 }
 
 /** Escape a string for safe use inside a RegExp. */
@@ -273,5 +288,87 @@ test.describe('Admin Management', () => {
         const columnsTab = boardPage.page.locator('[data-tab-id="columns"]');
         await expect(columnsTab).toBeVisible({ timeout: SF_TIMEOUT });
         await expect(columnsTab).toHaveText('Columns');
+    });
+
+    test('edit board saves a new name and description', async ({
+        boardPage
+    }) => {
+        const board = createIsolatedBoard('admin-edit');
+        const rows = sfQuery(
+            `SELECT Name FROM OpenSF__Board__c WHERE Id = '${board.boardId}'`
+        );
+        const oldName = rows[0].Name as string;
+        const admin = await openAdmin(boardPage.page, scratchOrgOrigin());
+
+        const card = boardCard(admin, oldName);
+        await expect(card).toBeVisible({ timeout: SF_TIMEOUT });
+        await card.getByRole('button', { name: 'Board Actions' }).click();
+        await card.getByRole('menuitem', { name: 'Edit' }).click();
+
+        const modal = admin.getByRole('dialog', { name: 'Edit Board' });
+        await expect(modal).toBeVisible({ timeout: 10_000 });
+        await expect(modal.locator('[data-field="name"] input')).toHaveValue(
+            oldName
+        );
+        const newName = `${oldName}-renamed`;
+        await modal.locator('[data-field="name"] input').fill(newName);
+        await modal.getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(modal).toHaveCount(0, { timeout: SF_TIMEOUT });
+        await expect(boardCard(admin, newName)).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
+        await expect
+            .poll(
+                () =>
+                    sfQuery(
+                        `SELECT Name FROM OpenSF__Board__c WHERE Id = '${board.boardId}'`
+                    )[0].Name,
+                SF_POLL
+            )
+            .toBe(newName);
+    });
+
+    test('delete board asks for confirmation and removes it', async ({
+        boardPage
+    }) => {
+        const board = createIsolatedBoard('admin-delete');
+        const name = sfQuery(
+            `SELECT Name FROM OpenSF__Board__c WHERE Id = '${board.boardId}'`
+        )[0].Name as string;
+        const admin = await openAdmin(boardPage.page, scratchOrgOrigin());
+
+        const card = boardCard(admin, name);
+        await expect(card).toBeVisible({ timeout: SF_TIMEOUT });
+
+        const openDelete = async () => {
+            await card.getByRole('button', { name: 'Board Actions' }).click();
+            await card.getByRole('menuitem', { name: 'Delete' }).click();
+            const modal = admin.getByRole('dialog', { name: 'Confirm Delete' });
+            await expect(modal).toBeVisible({ timeout: 10_000 });
+            await expect(modal).toContainText(name);
+            return modal;
+        };
+
+        // Cancel keeps the board
+        let modal = await openDelete();
+        await modal.getByRole('button', { name: 'Cancel' }).click();
+        await expect(modal).toHaveCount(0);
+        await expect(card).toBeVisible();
+
+        modal = await openDelete();
+        await modal
+            .getByRole('button', { name: 'Delete', exact: true })
+            .click();
+        await expect(card).toHaveCount(0, { timeout: SF_TIMEOUT });
+        await expect
+            .poll(
+                () =>
+                    sfQuery(
+                        `SELECT Id FROM OpenSF__Board__c WHERE Id = '${board.boardId}'`
+                    ).length,
+                SF_POLL
+            )
+            .toBe(0);
     });
 });

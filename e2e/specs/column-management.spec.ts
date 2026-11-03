@@ -2,7 +2,12 @@ import type { Locator, Page } from '@playwright/test';
 import { test, expect } from '../fixtures';
 import type { BoardDataFixture } from '../fixtures';
 import type { BoardPage } from '../pages';
-import { sfApexRun, sfQuery, sfUpdate } from '../helpers/sf-data';
+import {
+    scratchOrgOrigin,
+    sfApexRun,
+    sfQuery,
+    sfUpdate
+} from '../helpers/sf-data';
 
 const SF_TIMEOUT = 60_000;
 // Each poll attempt shells out to the sf CLI -- keep intervals coarse
@@ -32,6 +37,16 @@ async function openColumnsTab(page: Page): Promise<void> {
         timeout: SF_TIMEOUT
     });
     await expect(columnRows(page).first()).toBeVisible({
+        timeout: SF_TIMEOUT
+    });
+}
+
+/** Switch to the Columns tab of a board that has no columns yet. */
+async function openColumnsTabWithoutRows(page: Page): Promise<void> {
+    const columnsTab = page.locator('[data-tab-id="columns"]');
+    await expect(columnsTab).toBeVisible({ timeout: SF_TIMEOUT });
+    await columnsTab.click();
+    await expect(page.locator('.column-mgmt-container')).toBeVisible({
         timeout: SF_TIMEOUT
     });
 }
@@ -310,5 +325,54 @@ if (!leftovers.isEmpty()) {
 }
 `);
         }
+    });
+
+    test('a board without columns can start from a template', async ({
+        boardPage
+    }) => {
+        const output = sfApexRun(`
+OpenSF__Board__c board = new OpenSF__Board__c(
+    Name = 'e2e-empty-${Date.now()}',
+    OpenSF__Status__c = 'Published',
+    OpenSF__Type__c = 'Project',
+    OpenSF__Active__c = true
+);
+insert board;
+System.debug('E2E_EMPTY_BOARD:' + board.Id);
+`);
+        const boardId = output.match(
+            /E2E_EMPTY_BOARD:([a-zA-Z0-9]{15,18})/
+        )?.[1];
+        expect(boardId).toBeTruthy();
+        await boardPage.open(scratchOrgOrigin(), boardId as string);
+        const page = boardPage.page;
+        await openColumnsTabWithoutRows(page);
+
+        const templates = page.locator('.template-card');
+        await expect(templates).toHaveCount(3);
+        await expect(templates.locator('.template-name')).toHaveText([
+            'Simple Kanban',
+            'Scrum Board',
+            'Release Pipeline'
+        ]);
+        await expect(
+            page.getByRole('button', { name: 'Add Column Manually' })
+        ).toBeVisible();
+
+        await templates.filter({ hasText: 'Simple Kanban' }).click();
+
+        await expect(columnRows(page)).toHaveCount(4, { timeout: SF_TIMEOUT });
+        await expect
+            .poll(
+                () =>
+                    sfQuery(
+                        `SELECT OpenSF__ColumnHeader__c FROM OpenSF__Column__c WHERE OpenSF__Board__c = '${boardId}' ORDER BY OpenSF__LexoRankPosition__c`
+                    ).map((r) => r.OpenSF__ColumnHeader__c),
+                SF_POLL
+            )
+            .toEqual(['To Do', 'In Progress', 'Review', 'Done']);
+
+        await openBoardTab(page);
+        await expect(boardPage.columns).toHaveCount(4);
     });
 });

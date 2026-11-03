@@ -466,6 +466,90 @@ test.describe('Card Detail Panel', () => {
         ).toHaveCount(0);
     });
 
+    test('Escape closes a panel without changes', async ({
+        boardPage,
+        boardData
+    }) => {
+        const panel = await openPanelForCard(
+            boardPage,
+            boardData,
+            boardData.cards[0].Id
+        );
+        await expect(subjectInput(panel)).toBeVisible({ timeout: SF_TIMEOUT });
+
+        await subjectInput(panel).focus();
+        await boardPage.page.keyboard.press('Escape');
+        await expect(panel).toHaveCount(0, { timeout: SF_TIMEOUT });
+    });
+
+    test('changing priority and saving updates the card and the database', async ({
+        boardPage,
+        boardData
+    }) => {
+        const seeded = seedPanelCard(boardData, 'Panel-Priority');
+        const panel = await openPanelForCard(
+            boardPage,
+            boardData,
+            seeded.cardId
+        );
+        await expect(subjectInput(panel)).toHaveValue(seeded.subject, {
+            timeout: SF_TIMEOUT
+        });
+        await expect(
+            boardPage.card(seeded.cardId).locator('.priority-pill')
+        ).toHaveText(/medium/i);
+
+        const priority = panel.getByRole('combobox', { name: 'Priority' });
+        await priority.click();
+        await panel.getByRole('option', { name: 'High', exact: true }).click();
+        await expect(priority).toHaveText(/High/);
+        await panel
+            .locator('.card-panel__footer')
+            .getByRole('button', { name: 'Save' })
+            .click();
+
+        await expect(panel).toHaveCount(0, { timeout: SF_TIMEOUT });
+        await expect(
+            boardPage.card(seeded.cardId).locator('.priority-pill')
+        ).toHaveText(/high/i, { timeout: SF_TIMEOUT });
+        const rows = sfQuery(
+            `SELECT OpenSF__Priority__c FROM OpenSF__Card__c WHERE Id = '${seeded.cardId}'`
+        );
+        expect(rows[0].OpenSF__Priority__c).toBe('High');
+    });
+
+    test('Apply Template fills the description for the card type', async ({
+        boardPage,
+        boardData
+    }) => {
+        // Seeded panel cards are Tasks
+        const seeded = seedPanelCard(boardData, 'Panel-Template');
+        const panel = await openPanelForCard(
+            boardPage,
+            boardData,
+            seeded.cardId
+        );
+        await expect(subjectInput(panel)).toHaveValue(seeded.subject, {
+            timeout: SF_TIMEOUT
+        });
+
+        await panel.getByRole('button', { name: 'Apply Template' }).click();
+        const description = panel.getByRole('group', { name: 'Description' });
+        await expect(description).toContainText('Done When');
+
+        await panel
+            .locator('.card-panel__footer')
+            .getByRole('button', { name: 'Save' })
+            .click();
+        await expect(panel).toHaveCount(0, { timeout: SF_TIMEOUT });
+
+        const rows = sfQuery(
+            `SELECT OpenSF__Description__c FROM OpenSF__Card__c WHERE Id = '${seeded.cardId}'`
+        );
+        expect(rows[0].OpenSF__Description__c).toContain('<h2>Task</h2>');
+        expect(rows[0].OpenSF__Description__c).toContain('Done When');
+    });
+
     // Known bug: an edit made as soon as the form shows its values is not
     // detected, so closing discards it without asking. Remove fixme once
     // kanbanCardPanel's dirty snapshot is reliable.
