@@ -36,7 +36,8 @@ export default class EventHandler {
             const eventType = event.OpenSF__EventType__c;
             const clientRequestId = event.OpenSF__ClientRequestId__c;
             const sequenceNumber = event.OpenSF__SequenceNumber__c;
-            const eventClientId = event.ClientId__c; // Get clientId from event
+            // Platform event payload keys carry the namespace prefix
+            const eventClientId = event.OpenSF__ClientId__c;
 
             if (!this._isEventForThisBoard(payload, store)) {
                 return false;

@@ -266,11 +266,14 @@ public with sharing class KanbanBoardController {
                 Id = cardId,
                 OpenSF__LexoRankPosition__c = newPosition
             );
-            update Security.stripInaccessible(
-                    AccessType.UPDATABLE,
-                    new List<OpenSF__Card__c>{ card }
-                )
-                .getRecords();
+            Database.update(
+                Security.stripInaccessible(
+                        AccessType.UPDATABLE,
+                        new List<OpenSF__Card__c>{ card }
+                    )
+                    .getRecords(),
+                AccessLevel.USER_MODE
+            );
             return newPosition;
         } catch (Exception e) {
             throw new AuraHandledException(

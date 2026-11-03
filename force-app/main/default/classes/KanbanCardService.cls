@@ -80,11 +80,14 @@ public with sharing class KanbanCardService {
         // Track when card enters/leaves Done-category columns
         updateDoneDate(card, targetColumn);
 
-        update Security.stripInaccessible(
-                AccessType.UPDATABLE,
-                new List<OpenSF__Card__c>{ card }
-            )
-            .getRecords();
+        Database.update(
+            Security.stripInaccessible(
+                    AccessType.UPDATABLE,
+                    new List<OpenSF__Card__c>{ card }
+                )
+                .getRecords(),
+            AccessLevel.USER_MODE
+        );
 
         // Auto-complete/un-complete sprint card based on column category
         SprintService.autoUpdateSprintCompletion(cardId, targetColumn);
@@ -232,11 +235,14 @@ public with sharing class KanbanCardService {
             OpenSF__Card__c card = new OpenSF__Card__c(Id = cardId);
             req.applyTo(card);
 
-            update Security.stripInaccessible(
-                    AccessType.UPDATABLE,
-                    new List<OpenSF__Card__c>{ card }
-                )
-                .getRecords();
+            Database.update(
+                Security.stripInaccessible(
+                        AccessType.UPDATABLE,
+                        new List<OpenSF__Card__c>{ card }
+                    )
+                    .getRecords(),
+                AccessLevel.USER_MODE
+            );
 
             // Query updated card
             OpenSF__Card__c updatedCard = KanbanBoardSelector.getCardById(
@@ -357,8 +363,13 @@ public with sharing class KanbanCardService {
         }
 
         if (!toUpdate.isEmpty()) {
-            update Security.stripInaccessible(AccessType.UPDATABLE, toUpdate)
-                .getRecords();
+            // SYSTEM_MODE rationale (AppExchange security review):
+            //   LexoRankPosition__c is an app-managed ordering key. Cards
+            //   without a position are repaired while a board loads so that
+            //   ordering works for every viewer, including users without
+            //   edit access to the field. This is app bookkeeping, not user
+            //   intent. Sharing is still enforced (class is WITH SHARING).
+            Database.update(toUpdate, AccessLevel.SYSTEM_MODE);
         }
     }
 
