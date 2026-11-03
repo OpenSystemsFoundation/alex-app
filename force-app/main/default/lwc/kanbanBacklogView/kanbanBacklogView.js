@@ -90,6 +90,7 @@ export default class KanbanBacklogView extends LightningElement {
     _contextMenuSprintId = null;
 
     _contextMenuHandler;
+    _contextMenuItems = null;
     _dragDropHandler;
 
     connectedCallback() {
@@ -1054,7 +1055,12 @@ export default class KanbanBacklogView extends LightningElement {
     }
 
     get contextMenuItems() {
-        return this._contextMenuHandler.buildMenuItems(null, null);
+        // Items of the menu that was opened last (card row or sprint
+        // header); the menu-items binding must not overwrite them on render
+        return (
+            this._contextMenuItems ||
+            this._contextMenuHandler.buildMenuItems(null, null)
+        );
     }
 
     handleContextMenuSelect(event) {
@@ -1109,6 +1115,7 @@ export default class KanbanBacklogView extends LightningElement {
 
         if (items.length === 0) return;
 
+        this._contextMenuItems = items;
         const contextMenu = this.template.querySelector(
             'c-kanban-context-menu'
         );

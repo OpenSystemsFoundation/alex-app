@@ -40,8 +40,12 @@ export default class BacklogContextMenuHandler {
         const contextMenu = this._host.template.querySelector(
             'c-kanban-context-menu'
         );
+        const items = this.buildMenuItems(cardId, sprintId);
+        // Keep the template binding in sync so a re-render doesn't replace
+        // this card's items with the generic menu
+        this._host._contextMenuItems = items;
         if (contextMenu) {
-            contextMenu.menuItems = this.buildMenuItems(cardId, sprintId);
+            contextMenu.menuItems = items;
             contextMenu.show(event.clientX, event.clientY);
         }
     }
