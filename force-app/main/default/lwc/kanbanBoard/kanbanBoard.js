@@ -89,6 +89,12 @@ export default class KanbanBoard extends LightningElement {
 
     /** @type {string|undefined} Optional fixed height; if not set, uses dynamic calculation */
     @api height;
+    /**
+     * DEPRECATED: kept only because it was released in version 1.1.1.
+     * Has no effect; use height instead.
+     * @type {string}
+     */
+    @api maxHeight;
     /** @type {boolean} Experience Cloud mode for community portal */
     @api experienceCloud = false;
 
