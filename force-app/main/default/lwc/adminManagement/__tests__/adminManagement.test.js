@@ -10,6 +10,7 @@ import getCardCustomFields from '@salesforce/apex/AdminController.getCardCustomF
 import saveCardCustomField from '@salesforce/apex/AdminController.saveCardCustomField';
 import deactivateCardCustomField from '@salesforce/apex/AdminController.deactivateCardCustomField';
 import getAvailableCardFields from '@salesforce/apex/AdminController.getAvailableCardFields';
+import getUpgradeIssues from '@salesforce/apex/AdminController.getUpgradeIssues';
 
 const mockNavigate = jest.fn();
 
@@ -72,6 +73,11 @@ jest.mock(
 );
 jest.mock(
     '@salesforce/apex/AdminController.getAvailableCardFields',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/AdminController.getUpgradeIssues',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -1018,5 +1024,96 @@ describe('c-admin-management card fields', () => {
 
         expect($(element, 'section[role="dialog"]')).toBeNull();
         expect(deactivateCardCustomField).not.toHaveBeenCalled();
+    });
+});
+
+describe('c-admin-management upgrade check', () => {
+    const ISSUES = [
+        {
+            key: 'picklist:Board__c.Type__c:Sprint',
+            title: 'Add "Sprint" to Board > Type',
+            detail: 'Sprint boards turn on sprints.',
+            sinceVersion: '2.0.0',
+            setupUrl:
+                '/lightning/setup/ObjectManager/OpenSF__Board__c/FieldsAndRelationships/view',
+            actionLabel: 'Open Board fields'
+        },
+        {
+            key: 'flow:Card_Notifications',
+            title: 'Deactivate the flow "Card Notifications"',
+            detail: 'Sends 1.x card notifications.',
+            sinceVersion: '2.0.0',
+            setupUrl: '/lightning/setup/Flows/home',
+            actionLabel: 'Open Flows'
+        }
+    ];
+
+    beforeEach(() => {
+        getBoards.mockResolvedValue([]);
+        getOnboardingStatus.mockResolvedValue({ isComplete: true });
+    });
+
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+        jest.clearAllMocks();
+        getUpgradeIssues.mockReset();
+    });
+
+    it('lists each outstanding upgrade step with a Setup link', async () => {
+        getUpgradeIssues.mockResolvedValue(ISSUES);
+
+        const { element } = await renderAdmin();
+
+        const banner = $(element, '[data-id="upgrade-check"]');
+        expect(banner).not.toBeNull();
+        const items = $$(element, '[data-id="upgrade-check"] li');
+        expect(items.map((li) => li.dataset.key)).toEqual([
+            'picklist:Board__c.Type__c:Sprint',
+            'flow:Card_Notifications'
+        ]);
+        expect(items[0].textContent).toContain('Add "Sprint" to Board > Type');
+        expect(items[0].textContent).toContain('(since 2.0.0)');
+        const link = items[0].querySelector('a');
+        expect(link.getAttribute('href')).toBe(ISSUES[0].setupUrl);
+        expect(link.textContent).toBe('Open Board fields');
+        const guide = banner.querySelector('p a');
+        expect(guide.getAttribute('href')).toBe(
+            'https://github.com/OpenSystemsFoundation/alex-app/blob/main/docs/UPGRADING.md'
+        );
+    });
+
+    it('shows nothing when the org is up to date', async () => {
+        getUpgradeIssues.mockResolvedValue([]);
+
+        const { element } = await renderAdmin();
+
+        expect($(element, '[data-id="upgrade-check"]')).toBeNull();
+    });
+
+    it('hides the check when it fails, without breaking the page', async () => {
+        getUpgradeIssues.mockRejectedValue(new Error('no access'));
+        getBoards.mockResolvedValue(BOARDS);
+
+        const { element } = await renderAdmin();
+
+        expect($(element, '[data-id="upgrade-check"]')).toBeNull();
+        expect($$(element, '.board-name')).toHaveLength(2);
+    });
+
+    it('re-runs the check from "Check again"', async () => {
+        getUpgradeIssues
+            .mockResolvedValueOnce(ISSUES)
+            .mockResolvedValueOnce([]);
+
+        const { element } = await renderAdmin();
+        expect($(element, '[data-id="upgrade-check"]')).not.toBeNull();
+
+        buttonByLabel(element, 'Check again').click();
+        await flushPromises();
+
+        expect(getUpgradeIssues).toHaveBeenCalledTimes(2);
+        expect($(element, '[data-id="upgrade-check"]')).toBeNull();
     });
 });

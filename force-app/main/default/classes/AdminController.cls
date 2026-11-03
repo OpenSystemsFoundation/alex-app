@@ -143,6 +143,21 @@ public with sharing class AdminController {
     }
 
     /**
+     * Post-upgrade steps the package upgrade could not apply (missing picklist
+     * values, retired flows still active). Empty when the org is up to date.
+     */
+    @AuraEnabled
+    public static List<UpgradeCheckService.UpgradeIssue> getUpgradeIssues() {
+        try {
+            return UpgradeCheckService.getIssues();
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error checking upgrade status: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
      * Create a board with default columns for quick setup
      */
     @AuraEnabled

@@ -50,6 +50,8 @@ Alex is distributed as a managed package (namespace `OpenSF`).
 
 See the [Quick Start Guide](docs/QUICKSTART.md) and the [User Guide](docs/USER-GUIDE.md).
 
+**Upgrading from an earlier version?** Some steps need an admin after the upgrade. Follow the [upgrade guide](docs/UPGRADING.md); the Admin page also lists anything left to do.
+
 ## Development
 
 ### Prerequisites
