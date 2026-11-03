@@ -171,3 +171,29 @@ describe('loadBoardData', () => {
         expect(setCardTypeIconMap).toHaveBeenCalledWith(null);
     });
 });
+
+describe('loadBoardData — edge branches', () => {
+    it('treats a response without a board as a non-sprint board', async () => {
+        getBoardData.mockResolvedValue({ columns: [], cards: [] });
+        getBacklogCardsApex.mockResolvedValue([{ Id: 'bg1' }]);
+
+        const { dispatch, dispatched } = createDispatch();
+        const result = await loadBoardData('b7')(dispatch);
+
+        expect(result).toEqual({
+            success: true,
+            board: undefined,
+            columns: []
+        });
+        expect(loadSprintDataAsync).not.toHaveBeenCalled();
+        expect(getBacklogCardsApex).toHaveBeenCalledWith({ boardId: 'b7' });
+        expect(dispatched).toEqual([
+            {
+                type: 'SET_BOARD',
+                payload: expect.objectContaining({ customFieldConfigs: [] })
+            },
+            { type: 'SET_COLUMNS', payload: [] },
+            { type: 'SET_BACKLOG_CARDS', payload: [{ Id: 'bg1' }] }
+        ]);
+    });
+});
