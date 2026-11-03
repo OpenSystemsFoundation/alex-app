@@ -1,4 +1,4 @@
-import FilterManager from '../../../kanbanBoard/managers/filterManager';
+import FilterManager from '../../managers/filterManager';
 
 function createComponent(overrides = {}) {
     return {

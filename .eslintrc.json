@@ -15,7 +15,11 @@
     },
     "overrides": [
         {
-            "files": ["**/__tests__/**/*.js", "**/*.test.js"],
+            "files": [
+                "**/__tests__/**/*.js",
+                "**/*.test.js",
+                "force-app/test/**/*.js"
+            ],
             "env": {
                 "jest": true
             },

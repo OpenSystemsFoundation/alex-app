@@ -29,8 +29,8 @@ security.
 - **Epics and card types** with child-card rollups
 - **Board filters** by priority, status, assignee and card type
 - **WIP limits** and column categories (To Do / In Progress / Done)
-- **Analytics** — burndown, velocity, cumulative flow and sprint reports
-- **Undo/redo** and right-click context menus
+- **Analytics** — burndown, velocity, cumulative flow, cycle time, lead time and sprint reports
+- **Right-click context menus** on cards for quick moves and actions
 - **Admin page** — manage boards, columns, card custom fields and onboarding
 - **Reports & dashboards** — custom report types and a Kanban report folder
 - **Two apps** — `Alex` (standard navigation) and `Alex Console` (console navigation)
@@ -48,7 +48,7 @@ Alex is distributed as a managed package (namespace `OpenSF`).
     - `Alex_User` — everyone who works on boards
 4. Open **Alex** or **Alex Console** from the App Launcher and create your first board.
 
-See the [Quick Start Guide](docs/QUICKSTART.md) and the [User Guide](docs/manuals/user-guide.md).
+See the [Quick Start Guide](docs/QUICKSTART.md) and the [User Guide](docs/USER-GUIDE.md).
 
 ## Development
 
@@ -145,15 +145,6 @@ agents: [AGENTS.md](AGENTS.md).
 Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the code
 of conduct, development workflow, coding standards and pull request process.
 Use [Conventional Commits](https://www.conventionalcommits.org/) for PR titles.
-
-## Roadmap
-
-- [x] Custom fields on cards (admin-configurable via `CardCustomField__mdt`)
-- [ ] Cycle time & lead time analytics (column history tracking is in place; UI pending)
-- [ ] Auto-create cards from Cases (Flow-driven)
-- [ ] Customer-facing boards via Experience Cloud
-- [ ] Approval gates on column transitions (Salesforce Approvals integration)
-- [ ] Mobile companion
 
 ## Support
 

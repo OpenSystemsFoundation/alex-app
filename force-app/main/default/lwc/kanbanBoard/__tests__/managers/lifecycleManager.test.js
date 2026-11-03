@@ -2,7 +2,7 @@
  * Unit tests for LifecycleManager
  */
 
-import LifecycleManager from '../../../kanbanBoard/managers/lifecycleManager';
+import LifecycleManager from '../../managers/lifecycleManager';
 
 function createMockComponent(overrides = {}) {
     return {

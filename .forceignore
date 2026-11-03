@@ -12,6 +12,7 @@
 
 # Test Files and Directories (not part of package)
 **/__tests__/**
+force-app/test/
 **/__tests__
 **/*.test.js
 **/*.spec.js

@@ -15,7 +15,8 @@ import getAvailableCardFields from '@salesforce/apex/AdminController.getAvailabl
 const BOARD_TYPE_OPTIONS = [
     { label: 'Project', value: 'Project' },
     { label: 'Personal', value: 'Personal' },
-    { label: 'Team', value: 'Team' }
+    { label: 'Team', value: 'Team' },
+    { label: 'Sprint', value: 'Sprint' }
 ];
 
 const FIELD_TYPE_OPTIONS = [

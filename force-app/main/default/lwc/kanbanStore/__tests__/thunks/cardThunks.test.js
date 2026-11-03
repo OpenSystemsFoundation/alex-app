@@ -52,13 +52,13 @@ import {
     reorderBacklogCardAsync,
     bulkMoveBacklogCardsAsync,
     bulkReorderBacklogCardsAtIndexAsync
-} from '../../../kanbanStore/thunks/cardThunks';
+} from '../../thunks/cardThunks';
 import {
     buildCard,
     buildColumn,
     buildInitialState,
     resetIds
-} from '../../helpers/testDataFactory';
+} from 'jest-helpers/testDataFactory';
 
 // Helper: create a minimal dispatch/getState pair
 function createThunkEnv(stateOverrides = {}) {

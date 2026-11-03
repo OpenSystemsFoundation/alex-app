@@ -4,7 +4,7 @@
  * Covers: drag start/end, drag over, drop same/cross column,
  * backlog-to-board drop, drag image cleanup, position calculation.
  */
-import DragDropHandler from '../../../kanbanBoard/handlers/dragDropHandler';
+import DragDropHandler from '../../handlers/dragDropHandler';
 
 jest.mock('c/kanbanStore', () => ({
     moveCardAsync: jest.fn(() => () => Promise.resolve({ success: true })),

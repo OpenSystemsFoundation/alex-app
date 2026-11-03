@@ -2,7 +2,7 @@
  * Unit tests for EventHandler — platform event processing, echo prevention, sequence numbers
  */
 
-import EventHandler from '../../../kanbanBoard/handlers/eventHandler';
+import EventHandler from '../../handlers/eventHandler';
 
 function createMockStore(stateOverrides = {}) {
     const state = {

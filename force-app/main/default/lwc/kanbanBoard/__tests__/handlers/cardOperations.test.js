@@ -17,7 +17,7 @@ jest.mock(
 );
 
 import LightningConfirm from 'lightning/confirm';
-import CardOperations from '../../../kanbanBoard/handlers/cardOperations';
+import CardOperations from '../../handlers/cardOperations';
 
 jest.mock('lightning/confirm');
 

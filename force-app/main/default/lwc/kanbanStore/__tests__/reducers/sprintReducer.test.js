@@ -5,14 +5,14 @@
  * SET_SPRINT_CARDS, SET_PLANNING_SPRINT_CARDS, ADD/REMOVE_PLANNING_SPRINT_CARD,
  * REORDER_SPRINTS
  */
-import { sprintReducer } from '../../../kanbanStore/state/reducers/sprintReducer';
-import * as types from '../../../kanbanStore/core/actionTypes';
+import { sprintReducer } from '../../state/reducers/sprintReducer';
+import * as types from '../../core/actionTypes';
 import {
     buildSprint,
     buildCard,
     buildInitialState,
     resetIds
-} from '../../helpers/testDataFactory';
+} from 'jest-helpers/testDataFactory';
 
 beforeEach(() => resetIds());
 

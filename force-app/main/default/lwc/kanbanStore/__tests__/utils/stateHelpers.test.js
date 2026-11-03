@@ -10,13 +10,13 @@ import {
     addCardToState,
     updateCardInState,
     deleteCardFromState
-} from '../../../kanbanStore/utils/stateHelpers';
+} from '../../utils/stateHelpers';
 import {
     buildCard,
     buildColumn,
     buildInitialState,
     resetIds
-} from '../../helpers/testDataFactory';
+} from 'jest-helpers/testDataFactory';
 
 beforeEach(() => resetIds());
 

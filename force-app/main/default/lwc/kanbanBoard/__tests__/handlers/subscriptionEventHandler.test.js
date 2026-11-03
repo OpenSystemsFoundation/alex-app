@@ -13,7 +13,7 @@ jest.mock(
     { virtual: true }
 );
 
-import SubscriptionEventHandler from '../../../kanbanBoard/handlers/subscriptionEventHandler';
+import SubscriptionEventHandler from '../../handlers/subscriptionEventHandler';
 import { setSubscriptionStatus } from 'c/kanbanStore';
 
 function createMockComponent(overrides = {}) {

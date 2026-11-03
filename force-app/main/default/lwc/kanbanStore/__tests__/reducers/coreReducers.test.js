@@ -2,19 +2,19 @@
  * Unit tests for cardsReducer, columnsReducer, boardReducer,
  * appStateReducer, syncReducer, dragReducer
  */
-import { cardsReducer } from '../../../kanbanStore/state/reducers/cardsReducer';
-import { columnsReducer } from '../../../kanbanStore/state/reducers/columnsReducer';
-import { boardReducer } from '../../../kanbanStore/state/reducers/boardReducer';
-import { appStateReducer } from '../../../kanbanStore/state/reducers/appStateReducer';
-import { syncReducer } from '../../../kanbanStore/state/reducers/syncReducer';
-import { dragReducer } from '../../../kanbanStore/state/reducers/dragReducer';
-import * as types from '../../../kanbanStore/core/actionTypes';
+import { cardsReducer } from '../../state/reducers/cardsReducer';
+import { columnsReducer } from '../../state/reducers/columnsReducer';
+import { boardReducer } from '../../state/reducers/boardReducer';
+import { appStateReducer } from '../../state/reducers/appStateReducer';
+import { syncReducer } from '../../state/reducers/syncReducer';
+import { dragReducer } from '../../state/reducers/dragReducer';
+import * as types from '../../core/actionTypes';
 import {
     buildCard,
     buildColumn,
     buildInitialState,
     resetIds
-} from '../../helpers/testDataFactory';
+} from 'jest-helpers/testDataFactory';
 
 beforeEach(() => resetIds());
 

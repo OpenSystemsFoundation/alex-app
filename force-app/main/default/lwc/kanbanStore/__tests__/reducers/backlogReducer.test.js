@@ -6,14 +6,14 @@
  * BULK_REORDER_AT_INDEX, MOVE_CARD_TO_SPRINT, MOVE_CARD_TO_BACKLOG,
  * SET_BACKLOG_VISIBLE, SET_SELECTED_BACKLOG_CARDS, TOGGLE_BACKLOG_CARD_SELECTION
  */
-import { backlogReducer } from '../../../kanbanStore/state/reducers/backlogReducer';
-import * as types from '../../../kanbanStore/core/actionTypes';
+import { backlogReducer } from '../../state/reducers/backlogReducer';
+import * as types from '../../core/actionTypes';
 import {
     buildCard,
     buildColumn,
     buildInitialState,
     resetIds
-} from '../../helpers/testDataFactory';
+} from 'jest-helpers/testDataFactory';
 
 beforeEach(() => resetIds());
 

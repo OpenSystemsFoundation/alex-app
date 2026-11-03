@@ -1,14 +1,14 @@
 /**
  * Unit tests for Redux selectors
  */
-import * as selectors from '../../kanbanStore/state/selectors';
+import * as selectors from '../state/selectors';
 import {
     buildCard,
     buildColumn,
     buildSprint,
     buildInitialState,
     resetIds
-} from '../helpers/testDataFactory';
+} from 'jest-helpers/testDataFactory';
 
 beforeEach(() => resetIds());
 

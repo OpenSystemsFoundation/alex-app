@@ -4,7 +4,7 @@
 import {
     calculateCardPosition,
     generatePosition
-} from '../../../kanbanStore/utils/positionCalculator';
+} from '../../utils/positionCalculator';
 
 describe('calculateCardPosition', () => {
     const card = (id, pos) => ({ Id: id, position: pos });

@@ -13,11 +13,11 @@ jest.mock(
     { virtual: true }
 );
 // Mock sprintThunks — loadSprintDataAsync returns a thunk
-jest.mock('../../../kanbanStore/thunks/sprintThunks', () => ({
+jest.mock('../../thunks/sprintThunks', () => ({
     loadSprintDataAsync: jest.fn(() => jest.fn(() => Promise.resolve()))
 }));
 // Mock dataProcessors
-jest.mock('../../../kanbanStore/utils/dataProcessors', () => ({
+jest.mock('../../utils/dataProcessors', () => ({
     processColumnsData: jest.fn((cols) => cols),
     processCardsData: jest.fn((_cards, cols) => cols),
     setCardTypeIconMap: jest.fn()
@@ -25,13 +25,13 @@ jest.mock('../../../kanbanStore/utils/dataProcessors', () => ({
 
 import getBoardData from '@salesforce/apex/KanbanBoardController.getBoardData';
 import getBacklogCardsApex from '@salesforce/apex/KanbanBoardController.getBacklogCards';
-import { loadBoardData } from '../../../kanbanStore/thunks/boardThunks';
-import { loadSprintDataAsync } from '../../../kanbanStore/thunks/sprintThunks';
+import { loadBoardData } from '../../thunks/boardThunks';
+import { loadSprintDataAsync } from '../../thunks/sprintThunks';
 import {
     processColumnsData,
     processCardsData,
     setCardTypeIconMap
-} from '../../../kanbanStore/utils/dataProcessors';
+} from '../../utils/dataProcessors';
 
 beforeEach(() => {
     jest.clearAllMocks();

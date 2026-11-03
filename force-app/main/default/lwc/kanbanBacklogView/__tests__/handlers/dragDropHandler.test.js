@@ -5,7 +5,7 @@
  * cross-section drop (returns early), section header drop,
  * and drag-end cleanup.
  */
-import BacklogDragDropHandler from '../../../kanbanBacklogView/handlers/dragDropHandler';
+import BacklogDragDropHandler from '../../handlers/dragDropHandler';
 
 // ─── Mock Store + Thunks ──────────────────────────────────
 

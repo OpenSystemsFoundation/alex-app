@@ -24,7 +24,7 @@ jest.mock(
     { virtual: true }
 );
 
-import BoardDataLoader from '../../../kanbanBoard/managers/boardDataLoader';
+import BoardDataLoader from '../../managers/boardDataLoader';
 import { setLoading, setError, clearError } from 'c/kanbanStore';
 import getIncrementalUpdates from '@salesforce/apex/KanbanBoardController.getIncrementalUpdates';
 
