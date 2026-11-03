@@ -42,6 +42,8 @@ export default class KanbanContextMenu extends LightningElement {
 
                 this.posX = this._targetX - offsetX;
                 this.posY = this._targetY - offsetY;
+                // Take focus so Escape (handled on the menu) closes it
+                menu.focus();
 
                 // Ensure menu doesn't go off screen (second frame)
                 // eslint-disable-next-line @lwc/lwc/no-async-operation
