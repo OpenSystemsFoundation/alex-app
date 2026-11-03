@@ -51,18 +51,43 @@ jobs:
               if: always()
               run: npm audit --omit=dev || true
 
+    # Pull requests: scan only the force-app files the PR changes.
+    # Manual runs (workflow_dispatch): scan all of force-app.
     code-analyzer:
         name: Salesforce Code Analyzer
+        if: github.event_name != 'push'
         runs-on: ubuntu-latest
         timeout-minutes: 20
         steps:
             - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Select files to scan
+              id: targets
+              env:
+                  BASE_REF: ${{ github.base_ref }}
+              run: |
+                  if [ "${{ github.event_name }}" = "pull_request" ]; then
+                    git diff --name-only --diff-filter=ACMR "origin/$BASE_REF...HEAD" -- force-app > targets.txt
+                  else
+                    echo force-app > targets.txt
+                  fi
+                  echo "Files to scan: $(wc -l < targets.txt)"
+                  if [ -s targets.txt ]; then
+                    echo "scan=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "No force-app changes in this PR; skipping Code Analyzer."
+                    echo "scan=false" >> "$GITHUB_OUTPUT"
+                  fi
 
             - uses: actions/setup-node@v4
+              if: steps.targets.outputs.scan == 'true'
               with:
                   node-version: 22
 
             - name: Install Salesforce CLI + Code Analyzer
+              if: steps.targets.outputs.scan == 'true'
               run: |
                   npm install -g @salesforce/cli
                   sf plugins install code-analyzer
@@ -70,26 +95,22 @@ jobs:
             # Gate: AppExchange rules must have no severity 1-2 findings.
             # Lower-severity findings are listed in the uploaded report.
             - name: AppExchange rules (gate)
+              if: steps.targets.outputs.scan == 'true'
               run: |
                   mkdir -p scan-results
-                  sf code-analyzer run \
-                    --rule-selector AppExchange \
-                    --workspace force-app \
-                    --output-file scan-results/appexchange.json \
-                    --output-file scan-results/appexchange.html \
-                    --severity-threshold 2
+                  mapfile -t FILES < targets.txt
+                  TARGETS=(); for f in "${FILES[@]}"; do TARGETS+=(--target "$f"); done
+                  sf code-analyzer run                     --rule-selector AppExchange                     --workspace force-app                     "${TARGETS[@]}"                     --output-file scan-results/appexchange.json                     --output-file scan-results/appexchange.html                     --severity-threshold 2
 
             - name: Recommended security rules (report only)
-              if: always()
+              if: always() && steps.targets.outputs.scan == 'true'
               run: |
-                  sf code-analyzer run \
-                    --rule-selector Recommended:Security \
-                    --workspace force-app \
-                    --output-file scan-results/recommended-security.json \
-                    --output-file scan-results/recommended-security.html || true
+                  mapfile -t FILES < targets.txt
+                  TARGETS=(); for f in "${FILES[@]}"; do TARGETS+=(--target "$f"); done
+                  sf code-analyzer run                     --rule-selector Recommended:Security                     --workspace force-app                     "${TARGETS[@]}"                     --output-file scan-results/recommended-security.json                     --output-file scan-results/recommended-security.html || true
 
             - uses: actions/upload-artifact@v4
-              if: always()
+              if: always() && steps.targets.outputs.scan == 'true'
               with:
                   name: code-analyzer
                   path: scan-results/
