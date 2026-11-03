@@ -1078,6 +1078,9 @@ describe('c-admin-management upgrade check', () => {
         const link = items[0].querySelector('a');
         expect(link.getAttribute('href')).toBe(ISSUES[0].setupUrl);
         expect(link.textContent).toBe('Open Board fields');
+        expect(
+            banner.querySelector('p').textContent.replace(/\s+/g, ' ')
+        ).toContain('need an admin. See the upgrade guide for details.');
         const guide = banner.querySelector('p a');
         expect(guide.getAttribute('href')).toBe(
             'https://github.com/OpenSystemsFoundation/alex-app/blob/main/docs/UPGRADING.md'
