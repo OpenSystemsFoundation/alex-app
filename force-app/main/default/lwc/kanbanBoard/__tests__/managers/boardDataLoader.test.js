@@ -25,7 +25,12 @@ jest.mock(
 );
 
 import BoardDataLoader from '../../managers/boardDataLoader';
-import { setLoading, setError, clearError } from 'c/kanbanStore';
+import {
+    setLoading,
+    setError,
+    clearError,
+    loadEpicSummariesAsync
+} from 'c/kanbanStore';
 import getIncrementalUpdates from '@salesforce/apex/KanbanBoardController.getIncrementalUpdates';
 
 function createMockComponent(overrides = {}) {
@@ -89,6 +94,24 @@ describe('BoardDataLoader', () => {
             expect(component.eventHandler.setBoardId).toHaveBeenCalledWith(
                 'board-1'
             );
+        });
+
+        it('treats epic summary failures as non-critical', async () => {
+            const epicError = new Error('epics unavailable');
+            const rejected = Promise.reject(epicError);
+            const catchSpy = jest.spyOn(rejected, 'catch');
+            loadEpicSummariesAsync.mockReturnValueOnce(jest.fn(() => rejected));
+
+            await loader.loadBoardData();
+            await Promise.resolve();
+
+            expect(loadEpicSummariesAsync).toHaveBeenCalledWith('board-1');
+            expect(catchSpy).toHaveBeenCalled();
+            await expect(
+                catchSpy.mock.results[0].value
+            ).resolves.toBeUndefined();
+            expect(setError).not.toHaveBeenCalled();
+            expect(component.toastManager.showError).not.toHaveBeenCalled();
         });
 
         it('sets _lastSyncTime after successful load', async () => {
@@ -223,6 +246,80 @@ describe('BoardDataLoader', () => {
             loader.stopPolling();
 
             expect(loader.consecutiveFailedPolls).toBe(0);
+        });
+    });
+
+    describe('polling interval', () => {
+        it('polls immediately and on each interval, recording success', async () => {
+            const spy = jest
+                .spyOn(loader, 'loadIncrementalUpdates')
+                .mockResolvedValue({ hasChanges: false });
+            loader.consecutiveFailedPolls = 2;
+
+            loader.startPolling();
+            expect(spy).toHaveBeenCalledTimes(1);
+
+            await jest.advanceTimersByTimeAsync(15000);
+
+            expect(spy).toHaveBeenCalledTimes(2);
+            expect(loader.lastSuccessfulPoll).toBe(Date.now());
+            expect(loader.consecutiveFailedPolls).toBe(0);
+            expect(
+                component.subscriptionManager.subscribe
+            ).not.toHaveBeenCalled();
+            expect(loader.isPolling()).toBe(true);
+        });
+
+        it('attempts to reconnect when reconnect is due', async () => {
+            jest.spyOn(loader, 'loadIncrementalUpdates').mockResolvedValue(
+                null
+            );
+            jest.spyOn(loader, 'shouldAttemptReconnect').mockReturnValue(true);
+
+            loader.startPolling();
+            await jest.advanceTimersByTimeAsync(15000);
+
+            expect(component.subscriptionManager.subscribe).toHaveBeenCalled();
+            expect(loader.isPolling()).toBe(false);
+        });
+
+        it('keeps polling when reconnect is due but no subscription manager', async () => {
+            component.subscriptionManager = null;
+            jest.spyOn(loader, 'loadIncrementalUpdates').mockResolvedValue(
+                null
+            );
+            jest.spyOn(loader, 'shouldAttemptReconnect').mockReturnValue(true);
+
+            loader.startPolling();
+            await jest.advanceTimersByTimeAsync(15000);
+
+            expect(loader.isPolling()).toBe(true);
+        });
+
+        it('stops polling after MAX_FAILED_POLLS consecutive failures', async () => {
+            const spy = jest.spyOn(loader, 'loadIncrementalUpdates');
+            spy.mockResolvedValueOnce(null); // immediate call
+            spy.mockRejectedValue(new Error('offline'));
+
+            loader.startPolling();
+
+            await jest.advanceTimersByTimeAsync(15000);
+            expect(loader.consecutiveFailedPolls).toBe(1);
+            await jest.advanceTimersByTimeAsync(15000);
+            expect(loader.consecutiveFailedPolls).toBe(2);
+            expect(loader.isPolling()).toBe(true);
+
+            await jest.advanceTimersByTimeAsync(15000);
+            expect(loader.isPolling()).toBe(false);
+            expect(loader.consecutiveFailedPolls).toBe(0);
+            expect(loader.lastSuccessfulPoll).toBeNull();
+        });
+
+        it('stopPolling is a no-op when not polling', () => {
+            loader.consecutiveFailedPolls = 2;
+            loader.stopPolling();
+            expect(loader.consecutiveFailedPolls).toBe(2);
+            expect(loader.isPolling()).toBe(false);
         });
     });
 
