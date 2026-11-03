@@ -99,6 +99,16 @@ describe('CardOperations', () => {
             expect(component.showCardDetail).toBe(true);
         });
 
+        it('handles state without a backlog', () => {
+            component.store.findCard.mockReturnValue(null);
+            component.store.getState.mockReturnValue({});
+
+            ops.handleCardClick('missing');
+
+            expect(component.store.getState).toHaveBeenCalled();
+            expect(component.showCardDetail).toBe(false);
+        });
+
         it('does nothing when card not found anywhere', () => {
             component.store.findCard.mockReturnValue(null);
             component.store.getState.mockReturnValue({ backlogCards: [] });
@@ -216,6 +226,78 @@ describe('CardOperations', () => {
                 'Invalid column',
                 'Column ID not found'
             );
+        });
+
+        it('records the server card id on the tracked request', async () => {
+            const request = { cardId: null };
+            component.requestTracker.getRequest.mockReturnValue(request);
+
+            await ops.createCard('col1', { disabled: false });
+
+            expect(request.cardId).toBe('new1');
+            expect(
+                component.requestTracker.completeRequest
+            ).toHaveBeenCalledWith('req-123', { Id: 'new1' });
+        });
+
+        it('completes even when the tracked request is gone', async () => {
+            component.requestTracker.getRequest.mockReturnValue(undefined);
+
+            await ops.createCard('col1', { disabled: false });
+
+            expect(
+                component.requestTracker.completeRequest
+            ).toHaveBeenCalledWith('req-123', { Id: 'new1' });
+        });
+
+        it('fails the request and reloads when disconnected', async () => {
+            const err = new Error('insert failed');
+            component.store.dispatch.mockRejectedValue(err);
+            component.subscriptionManager.isConnected.mockReturnValue(false);
+            const button = { disabled: false };
+
+            await ops.createCard('col1', button);
+
+            expect(component.requestTracker.failRequest).toHaveBeenCalledWith(
+                'req-123',
+                err
+            );
+            expect(component.loadBoardData).toHaveBeenCalled();
+            expect(component.toastManager.showError).toHaveBeenCalledWith(
+                'Error creating card',
+                err
+            );
+            expect(component.toastManager.showSuccess).not.toHaveBeenCalled();
+            expect(button.disabled).toBe(false);
+        });
+
+        it('reloads when there is no subscription manager', async () => {
+            component.store.dispatch.mockRejectedValue(new Error('x'));
+            component.subscriptionManager = null;
+
+            await ops.createCard('col1', { disabled: false });
+
+            expect(component.loadBoardData).toHaveBeenCalled();
+        });
+
+        it('skips reload when the subscription is connected', async () => {
+            component.store.dispatch.mockRejectedValue(new Error('x'));
+
+            await ops.createCard('col1', { disabled: false });
+
+            expect(component.requestTracker.failRequest).toHaveBeenCalled();
+            expect(component.loadBoardData).not.toHaveBeenCalled();
+        });
+
+        it('works without a toast manager', async () => {
+            component.toastManager = null;
+            const button = { disabled: false };
+            await ops.createCard('col1', button);
+            await ops.createCard(null, button);
+            component.operationQueue.enqueue.mockRejectedValue(new Error('q'));
+            await ops.createCard('col1', button);
+            expect(button.disabled).toBe(false);
+            expect(component.operationQueue.enqueue).toHaveBeenCalledTimes(2);
         });
 
         it('re-enables button on error', async () => {
