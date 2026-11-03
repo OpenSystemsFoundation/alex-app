@@ -338,6 +338,22 @@ describe('c-kanban-context-menu', () => {
             'contextmenu',
             expect.any(Function)
         );
+        expect(removeSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
+    });
+
+    it('closes on Escape pressed anywhere while open', async () => {
+        const element = createMenu();
+        element.show(0, 0);
+        await flushPromises();
+        jest.runAllTimers();
+
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+        await flushPromises();
+        expect(getMenu(element)).not.toBeNull();
+
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        await flushPromises();
+        expect(getMenu(element)).toBeNull();
     });
 
     it.each([
