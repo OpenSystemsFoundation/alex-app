@@ -1,402 +1,139 @@
-# Agent Instructions — Type Universe
+# AGENTS.md
 
-> See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for technical architecture.
-> See [docs/2026-08-12-security-review-prep-v67.md](docs/2026-08-12-security-review-prep-v67.md) for the security posture and API v67 notes.
+Instructions for AI coding agents (and humans) working in this repository.
+Architecture details live in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
----
+## Project
 
-## Global Rules [ALWAYS APPLY]
+**Alex** is a real-time, collaborative Kanban and sprint board built natively
+on Salesforce: LWC front end with a Redux-style store, Apex back end, Platform
+Events for live sync, LexoRank ordering. Distributed as a managed 2GP package
+with namespace `OpenSF`.
 
-These are h-level -2 constraints — exactly one valid behavior. They apply in every fiber.
-
-### CRITICAL: Namespace — OpenSF__ Prefix
-
-The scratch org has namespace `OpenSF`. The prefix is added AUTOMATICALLY during deployment.
-
-**Metadata (XML, flows, flexipages, permission sets, custom metadata):**
 ```
-DO:  objects/Sprint__c/fields/Board__c.field-meta.xml
-     <fullName>Board__c</fullName>
-     <referenceTo>Board__c</referenceTo>
-NOT: objects/OpenSF__Sprint__c/fields/OpenSF__Board__c.field-meta.xml
-     <fullName>OpenSF__Board__c</fullName>
+force-app/main/default/   Salesforce source (Apex, LWC, objects, permission sets, ...)
+e2e/                      Playwright E2E tests (TypeScript, strict)
+scripts/apex/             Anonymous Apex for sample/test data
+config/                   Scratch org definitions
+docs/                     Architecture, quick start, user guide
 ```
-NEVER prefix `OpenSF__` in directory names, file names, `<fullName>`, `<referenceTo>`, `<relationshipName>`.
 
-**Runtime code (Apex, LWC, SOQL):**
+## Commands
+
+| Task | Command |
+| :--- | :--- |
+| Install | `npm ci` |
+| Format / check | `npm run prettier` / `npm run prettier:verify` |
+| Lint | `npm run lint` |
+| LWC unit tests | `npm run test:unit` |
+| E2E type-check | `npm run type-check:e2e` |
+| Deploy to default org | `npm run deploy` |
+| Apex tests (default org) | `npm run test:apex` |
+| E2E (scratch org) | `npm run test:e2e` — see [E2E tests](#e2e-tests) |
+
+## Rules
+
+### 1. Namespace `OpenSF__`
+
+The prefix is added automatically on deploy.
+
+- **Metadata source** (XML, directory and file names, `<fullName>`,
+  `<referenceTo>`, flows, flexipages, permission sets): **never** prefix.
+- **Runtime code** (Apex, SOQL, LWC JavaScript, `@salesforce/schema` imports):
+  **always** prefix.
+
 ```
-DO:  OpenSF__Sprint__c sprint = [SELECT OpenSF__Status__c FROM OpenSF__Sprint__c];
+DO:  objects/Sprint__c/fields/Status__c.field-meta.xml  →  <fullName>Status__c</fullName>
+DO:  [SELECT OpenSF__Status__c FROM OpenSF__Sprint__c]
 DO:  import STATUS from '@salesforce/schema/OpenSF__Sprint__c.OpenSF__Status__c';
-NOT: Sprint__c sprint = [SELECT Status__c FROM Sprint__c];  // fails at runtime
-```
-ALWAYS prefix `OpenSF__` in Apex classes, triggers, LWC JavaScript, SOQL queries.
-
-**Why:** Unprefixed metadata deploys silently as "Unchanged/success" but fields never get created.
-
-### Type Safety [ALWAYS]
-
-**When:** Writing any code that references status values, event types, or column categories
-**Do:** Use `KanbanEnums` enum types with helper methods
-**Not:** Raw string literals
-```
-DO:  KanbanEnums.sprintStatusValue(KanbanEnums.SprintStatus.ACTIVE)
-NOT: 'Active'
 ```
 
-**When:** Receiving `Map<String, Object>` from LWC in `@AuraEnabled` methods
-**Do:** Convert to typed request internally via `CardUpdateRequest.fromMap(updates)`
-**Not:** Pass raw maps through service layer
+Prefixed metadata deploys as "Unchanged" and the component is never created.
 
-### API Version & Security [ALWAYS]
+### 2. Security (API 67.0)
 
-- `sourceApiVersion` and every `<apiVersion>` tag are **67.0** — keep new
-  metadata at 67.0.
-- `WITH SECURITY_ENFORCED` is **removed at v67** — use `WITH USER_MODE` in
-  all SOQL. Exceptions: `__mdt` queries (CRUD/FLS doesn't apply) and
-  `ContentDocumentLink` (platform rejects USER_MODE; enforce access via the
-  parent record instead).
-- User-initiated DML: `Security.stripInaccessible(...)` **plus**
-  `Database.insert/update/delete(..., AccessLevel.USER_MODE)` — strip handles
-  FLS, USER_MODE handles object-level CRUD.
-- Trigger-internal bookkeeping on app-managed fields/objects (rollup counts,
-  column history): explicit `WITH SYSTEM_MODE` / `AccessLevel.SYSTEM_MODE`
-  with an inline "SYSTEM_MODE rationale" comment.
-- Every class declares sharing (`with sharing`, or `inherited sharing` for
-  utility/DTO classes).
-- `Metadata.Operations` calls must be gated by a custom permission check
-  (`FeatureManagement.checkPermission('ManageCardFields')` pattern).
-- Never re-send a non-reparentable master-detail field on `update` — build a
-  minimal sObject with `Id` + changed fields (in namespaced-org test context
-  this throws `fields being inaccessible`).
-- LWC: use `lightning/confirm` (`LightningConfirm.open`), never
-  `window.confirm`.
+- All metadata stays on API **67.0**.
+- SOQL: `WITH USER_MODE` (`WITH SECURITY_ENFORCED` doesn't compile at v67).
+  Exceptions: `__mdt` queries and `ContentDocumentLink` (enforce access via the parent record).
+- User-initiated DML: `Security.stripInaccessible(...)` **and**
+  `Database.<op>(..., AccessLevel.USER_MODE)`.
+- System-mode bookkeeping (rollups, column history) only with an inline
+  `SYSTEM_MODE rationale` comment.
+- Every class declares sharing (`with sharing`; `inherited sharing` for utilities/DTOs).
+- `Metadata.Operations` calls require the `ManageCardFields` custom permission.
+- On `update`, never re-send a non-reparentable master-detail field — send `Id` plus changed fields only.
+- LWC confirmations use `lightning/confirm`, never `window.confirm`. No `innerHTML`.
 
-**When:** Defining `@api` properties or event payloads in LWC
-**Do:** Add JSDoc `@type` annotations to `@api` properties, `@typedef` for event payloads
+### 3. Types
 
-### Code Style [ALWAYS]
+- Status values, event types, column categories: `KanbanEnums`, never string literals.
+- `Map<String, Object>` from LWC → `CardUpdateRequest.fromMap()` before the service layer.
+- LWC: JSDoc `@type` on `@api` properties, `@typedef` for event payloads.
 
-- prettier-plugin-apex pinned to v2.1.5 (v2.2.6 breaks SOQL formatting)
-- All code must pass `npm run lint` (enforced by lint-staged)
-- ESLint strict: no implicit globals, consistent returns, no var, prefer const, strict equality
+### 4. Public repository
 
----
+This repo is public. Never commit org usernames or emails, auth/frontdoor
+URLs, access tokens, scan reports, or maintainer/business notes. Keep local
+material in the gitignored `.claude/` folder.
 
-## Agent Behavior — Dependent Types
+## Architecture
 
-Behavior varies by context. Match the mode, apply its rules.
+**Apex:** `Controller (@AuraEnabled) → Service → Selector (SOQL) → DTO`.
+No SOQL in controllers, no business logic in selectors. Trigger handlers
+extend `TriggerHandler` and publish `CardUpdateEvent__e`,
+`ColumnUpdateEvent__e`, `SprintUpdateEvent__e`.
 
-### Mode: Executing (writing code, making changes)
+**LWC:** all state changes go through the `kanbanStore`
+(actions → pure reducers → selectors; side effects in thunks; state frozen).
 
-- Be concise — brief explanations only
-- Execute immediately without lengthy justification
-- Keep tool calls focused on the task
-- No humor during active problem-solving
-
-### Mode: Summarizing (after completing work)
-
-Short, scannable bullet points:
-```
-✅ Completed:
-- Added sync state tracking to Redux store (idle/syncing/failed)
-- Updated connectionStatusIndicator with sync UI
-- Fixed 3 test failures in kanbanStore.test.js
-- All 203 tests passing
-
-Want details on any of these?
-```
-
-**Not** multi-paragraph prose restating everything that was done.
-
-### Mode: Debugging
-
-- Run tests immediately when investigating failures
-- No need to ask permission during active debugging
-- Concise output, no humor — focus on root cause
-
----
-
-## Fiber: Apex Backend
-
-**When:** Working in `force-app/main/default/classes/`
-
-### Architecture Pattern
+**Real-time flow:**
 
 ```
-Controller (@AuraEnabled) → Service (business logic) → Selector (SOQL) → DTO (data transfer)
+user action → thunk → Apex → DML → trigger → Platform Event
+→ every client's subscriptionManager → echo check (clientRequestId) → store → re-render
 ```
 
-Every new backend feature follows this layering. No SOQL in controllers. No business logic in selectors.
+Key components: `kanbanBoard` (container), `kanbanStore`, `subscriptionManager`,
+`kanbanCardPanel`, `kanbanBacklogView`, `kanbanFilterBar`, sprint components
+(`kanbanSprint*`), `kanbanAnalytics`, `adminManagement`, `columnManagement`.
 
-### Existing Services
+## Testing
 
-| Service | Responsibility |
-|---------|---------------|
-| `KanbanBoardController.cls` | @AuraEnabled API endpoints (board/card/comment/file) |
-| `AdminController.cls` | Admin page: board CRUD, onboarding status, card custom fields (Metadata API, gated by `ManageCardFields`) |
-| `ColumnManagementController.cls` | Column CRUD, reordering, templates |
-| `KanbanBoardService.cls` | Board operations |
-| `KanbanCardService.cls` | Card CRUD and positioning |
-| `SprintService.cls` | Sprint lifecycle, velocity, snapshots |
-| `EpicService.cls` | Epic summaries and detail |
-| `CardCommentService.cls` | Card comments (author-only edit/delete) |
-| `AnalyticsService.cls` | Burndown/velocity data |
-| `KanbanBoardSelector.cls` | Board/column/card SOQL |
-| `BoardSelector.cls` | Board list SOQL + onboarding status |
-| `SprintSelector.cls` | Sprint/backlog SOQL |
-| `KanbanBoardDTO.cls` | BoardDTO, ColumnDTO, CardDTO, UserDTO, EpicDTO, SprintDTO, SprintCardDTO, SprintSnapshotDTO |
+- **Apex:** test class next to the class (`SprintServiceTest.cls`); assert
+  exact values, cover bulk (200+ records) and permission scenarios. Coverage ≥ 75%.
+- **Jest:** specs in `lwc/**/__tests__/`; every test asserts something.
+- **E2E:** see below. Both app shells matter: `Alex` (standard) and `Alex Console`.
+- Run the relevant tests yourself while working; don't ask first.
 
-### Triggers and Events
+### E2E tests
 
-| Trigger Handler | Publishes |
-|----------------|-----------|
-| `CardTriggerHandler.cls` | `CardUpdateEvent__e` |
-| `ColumnTriggerHandler.cls` | `ColumnUpdateEvent__e` |
-| `SprintCardTriggerHandler.cls` | `SprintUpdateEvent__e` |
-
-All trigger handlers extend `TriggerHandler.cls` (recursion control).
-
-### Test Organization
-
-Place test classes in `force-app/main/default/classes/` alongside the class they test:
-```
-DO:  classes/SprintServiceTest.cls
-NOT: test/classes/SprintServiceTest.cls
-```
-
-### Adversarial Testing Checklist
-
-When writing or modifying Apex, consider:
-- What inputs would break this?
-- What governor limit scenarios haven't been tested?
-- What happens with 10,000+ records?
-- What race conditions exist in multi-user scenarios?
-
----
-
-## Fiber: LWC Frontend
-
-**When:** Working in `force-app/main/default/lwc/`
-
-### State Management Pattern — Redux
-
-```
-User action → dispatch thunk → Apex controller → DB update → Trigger fires
-→ Platform Event published → all clients receive → eventHandler processes
-→ echo prevention check (clientRequestId) → store dispatch → UI re-renders
-```
-
-All state mutations go through: **Actions → Reducers → Selectors**
-- Reducers are pure — no side effects
-- Side effects belong in thunks
-- State is frozen with `Object.freeze()` — immutable
-
-### Component Architecture
-
-```
-kanbanBoard (container)
-├── handlers/    → eventHandler, dragDropHandler, cardOperations, subscriptionEventHandler
-├── helpers/     → clientIdGenerator, reducerQueue, requestTracker
-├── managers/    → lifecycleManager, boardDataLoader
-kanbanStore (state)
-├── core/        → store, actionTypes
-├── state/       → actions, reducers, selectors
-├── middleware/   → thunkMiddleware, loggingMiddleware
-├── thunks/      → boardThunks, cardThunks
-├── utils/       → dataProcessors, stateHelpers, positionCalculator
-subscriptionManager   → EMP API, retryManager, eventHealthMonitor
-connectionStatusIndicator → connection status UI
-kanbanCardDetail      → card detail modal
-```
-
-### Key Design Decisions
-
-| Decision | Why |
-|----------|-----|
-| LexoRank ordering | O(1) insert without renumbering (same as Jira) |
-| Separate dragState | Visual preview during drag without polluting main state |
-| clientRequestId UUIDs | Prevents echo loops in multi-user realtime |
-| Polling fallback | Graceful degradation when platform events blocked by firewalls |
-| Trigger-based events | Captures all DML sources (API, UI, batch) |
-
----
-
-## Fiber: Tests
-
-**When:** Working in `force-app/**/` (Jest) or `e2e/` (Playwright)
-
-### Stack
-- Jest for LWC unit tests
-- Playwright for E2E tests
-- TypeScript strict mode for E2E (`e2e/tsconfig.json`)
-- Run `npm run type-check:e2e` to validate E2E types
-
-### Test Categories
-- **Happy paths** — core feature flows (board, backlog, filters, drag-drop, card panel)
-- **Unhappy paths** — rapid actions, stale data, special characters, concurrent edits
-- **Feature tests** — admin management, sprint lifecycle, analytics, retro, planning poker
-- **Multi-user tests** — real-time sync between two browser contexts
-
-### H-Level Guidance for Assertions
-
-More specific assertions = lower h-level = more deterministic implementations:
-```
-h-level 1+ (too vague):  expect(result).toBeTruthy()
-h-level 0  (good):       expect(result.status).toBe('Active')
-h-level -2 (best):       expect(result).toEqual({ status: 'Active', velocity: 21, cardCount: 7 })
-```
-
----
-
-## Fiber: CI/CD Pipeline
-
-**When:** Working in `.github/workflows/` or modifying release process
-
-### Active Workflows
-
-| Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| `test.yml` | Push / PR | Lint, Prettier, LWC Jest tests |
-| `apex-tests.yml` | Push to main / PR | Scratch org Apex tests with coverage |
-| `security-scan.yml` | PR to main | Salesforce Code Analyzer + npm audit |
-| `e2e-tests.yml` | PR to main / manual | Full E2E (chromium + firefox + webkit) |
-| `chromium-e2e-debug.yml` | Push to `claude/*` | Fast Chromium-only E2E debug loop |
-| `scratch-org.yml` | Manual / PR comment | Create scratch org with sample data |
-
-### C→K Conjunction Loop (E2E Debug)
-
-The `chromium-e2e-debug.yml` workflow is the formalized concept-to-knowledge operator:
-
-```
-Push to claude/* branch       ← Concept (untested code)
-→ GitHub Action runs          ← Conjunction operator
-→ E2E tests execute           ← K validates C
-→ Results as commit comments  ← Feedback
-→ Fix and push again          ← Refined concept
-→ Tests pass                  ← C collapses into K (merge-ready)
-```
+Run locally against a scratch org — never in CI.
 
 ```bash
-# Read test results after push
-gh api repos/OpenSystemsFoundation/alex-app/commits/$(git rev-parse HEAD)/comments --jq '.[].body'
-# Check workflow status
-gh run list --workflow=chromium-e2e-debug.yml --limit=3
+sf org create scratch -f config/project-scratch-def.json -a e2e-test -y 7
+sf project deploy start -o e2e-test
+sf org assign permset -n Alex_Admin -o e2e-test
+export SF_TARGET_ORG=e2e-test
+export SCRATCH_ORG_URL="$(sf org open -o e2e-test --url-only)"
+npx playwright test e2e/specs/<suite>.spec.ts --project=chromium
 ```
 
-### Conventional Commits (PR Titles)
+- Never land a Playwright change you haven't run against a real org.
+- No `isVisible().catch(() => false)` / `if (visible)` guards around assertions — they hide failures.
+- In a namespaced org, component tags render as `opensf-…`, not `c-…`; prefer role and `data-*` locators.
+- Don't refresh the page to make a real-time sync test pass.
 
-| Prefix | Bump | Example |
-|--------|------|---------|
-| `feat:` | Minor | `feat: add burndown chart` |
-| `feat!:` / `BREAKING CHANGE` | Major | `feat!: redesign data model` |
-| `fix:` / `perf:` / `refactor:` | Patch | `fix: card drag on mobile` |
-| `docs:` / `chore:` / `ci:` / `test:` | None | `docs: update README` |
+## CI
 
-### Release Flow
+`.github/workflows/ci.yml` runs static checks only: Prettier, ESLint, E2E
+type-check, Jest, Salesforce Code Analyzer v5 (AppExchange rules gate), and
+`npm audit`. Do not add workflows that create orgs or need secrets.
 
-```
-Feature branch → PR (tests run) → Merge to main (version auto-bumps)
-→ Ready for beta?  → Manual: "Release Beta Package"
-→ Ready for GA?    → Manual: "Promote to GA Release" (requires approval)
-```
+## Conventions
 
-All releases are manual — main can have bugs, and managed package creation is irreversible. Beta before GA always.
-
-### Secrets
-
-| Secret | Purpose | Status |
-|--------|---------|--------|
-| `SFDX_AUTH_URL` | DevHub authentication | Configured |
-| `STAGING_AUTH_URL` | Staging org auth | Optional |
-| `UAT_AUTH_URL` | UAT org auth | Optional |
-
----
-
-
-**When:** Implementing a new feature or user story
-
-### Step 1: Identify Fibers (K→K)
-
-Which fibers does this feature touch? Read the relevant modules:
-
-| Feature touches... | Read first |
-|-------------------|------------|
-| Sprint lifecycle | `SprintService`, `SprintSelector`, sprint reducers/thunks |
-| Card operations | `KanbanCardService`, `CardTriggerHandler`, card thunks |
-| Board structure | `KanbanBoardService`, `KanbanBoardSelector`, board reducers |
-| Real-time sync | `subscriptionManager`, Platform Event triggers, echo prevention |
-| UI components | `kanbanStore` shape, existing LWC components, Redux patterns |
-| Ordering/position | `LexoRank.cls`, `positionCalculator` |
-
-### Step 2: Expand Concept (C→C)
-
-Break the user story into sub-tasks that map to specific fibers. Each sub-task should have a clear type signature — what inputs, what outputs, what constraints.
-
-### Step 3: Spec-Driven Implementation
-
-Before implementing, gather:
-- Relevant object schema (fields, types, relationships)
-- Governor limits the code must respect
-- Namespace (`OpenSF`)
-- Existing method signatures it must integrate with
-- Redux store shape (for LWC work)
-
-### Step 4: Conjunction (C→K)
-
-Implement, test, deploy. Use the E2E debug loop for validation.
-
-### Cross-Fiber Concept Discovery
-
-Novel features live in the **tensor product** of fibers — combinations that neither fiber alone suggests. When exploring what to build next, consider cross-fiber intersections:
-
-| Fiber A | ⊗ Fiber B | → Novel Concept |
-|---------|-----------|-----------------|
-| Redux store | Platform Events | Collaborative undo, conflict resolution |
-| LexoRank | MPS Tensor | MI-based card ordering, entanglement-aware swimlanes |
-| Echo prevention | Planning Poker | Vote deduplication via clientRequestId |
-| Sprint snapshots | QAOA | Quantum-optimized sprint planning |
-
----
-
-## Policies
-
-### Documentation
-NEVER create documentation files unless explicitly requested. After code changes, ask: "Would you like me to create documentation for these changes?"
-
-### Testing
-- During development/debugging: run tests automatically, no need to ask
-- After completing work: ask "Would you like to run the tests now?"
-
-### Deployment
-Run `npm run deploy` after completing development work.
-
-### CLI
-Use `sf` directly (`/opt/node22/bin/sf`). Set `SFDX_DISABLE_DNS_CHECK=true` if DNS resolution fails.
-
----
-
-## Project Context
-
-**Alex** — a real-time collaborative Kanban board built on Salesforce.
-
-**Stack:** Salesforce DX, LWC, Apex (Controller → Service → Selector → DTO), Platform Events, Redux-style state management, LexoRank, TypeScript tests, Jest + Playwright, Node.js v22.x LTS.
-
-### What's Built (March 2026)
-
-- **Core Kanban:** Redux store, platform events, echo prevention, connection status, LexoRank, DTOs, health monitoring, multi-window tracking, sequence numbers
-- **Sprint Management:** Lifecycle (Planning → Active → Completed), auto-numbering, completion wizard, SprintCard junction with soft-delete, story points, sprint header with progress bar
-- **Backlog:** Search + filtering, bulk actions, inline creation, drag-and-drop, context menu, refinement flags
-- **Analytics:** Burndown chart (Canvas), velocity chart, sprint summary table, daily snapshots via scheduler
-- **Service Layer:** SprintService, SprintSelector, SprintCardTriggerHandler, KanbanCardService, KanbanBoardService
-- **Experiments:** Quantum concept discovery (QAOA cross-fiber exploration). See [experiments/](experiments/)
-
-### What's Since Then (August 2026)
-
-- **API v67:** all metadata on 67.0; `WITH SECURITY_ENFORCED` fully migrated to `WITH USER_MODE`
-- **Admin Management:** board CRUD, onboarding checklist, admin-configurable card custom fields (`CardCustomField__mdt` via Metadata API, gated by the `ManageCardFields` custom permission)
-- **Reports & Dashboards:** custom report types + Kanban report folder
-- **Security review prep:** see [docs/2026-08-12-security-review-prep-v67.md](docs/2026-08-12-security-review-prep-v67.md) and [security-review/](security-review/README.md)
-
-### What's Next
-
-See the [README Roadmap](README.md#roadmap).
+- **Commits / PR titles:** Conventional Commits — `feat:`, `fix:`, `perf:`,
+  `refactor:`, `test:`, `docs:`, `chore:`, `ci:`; `!` for breaking changes.
+- **Formatting:** Prettier. `prettier-plugin-apex` is pinned to **2.1.5** —
+  newer versions rewrite SOQL and test-class visibility.
+- **Docs:** don't add documentation files unless asked.
+- **Releases:** maintainers only, done locally (beta → test install → promote).

@@ -12,6 +12,3 @@ coverage/
 
 # Markdown files — doc formatting shouldn't block CI
 *.md
-# Code Analyzer scan artifacts — machine-generated, not formatted
-security-review/*.json
-security-review/*.html

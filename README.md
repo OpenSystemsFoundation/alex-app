@@ -1,264 +1,153 @@
-# Alex - Kanban Board for Salesforce
+# Alex — Kanban & Sprint Boards for Salesforce
 
 <div align="center">
-  <img src="assets/images/logo_large.png" alt="Alex Logo" width="200"/>
-  
-  **A modern, real-time collaborative Kanban board built with Lightning Web Components**
+  <img src="assets/images/alex-app-logo-large.png" alt="Alex logo" width="200"/>
 
-  [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE-MIT)
-  [![Salesforce API](https://img.shields.io/badge/Salesforce%20API-v67.0-blue.svg)](https://developer.salesforce.com)
+**Real-time, collaborative Kanban and sprint boards — native to Salesforce.**
+
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE-MIT)
+[![Salesforce API](https://img.shields.io/badge/Salesforce%20API-v67.0-blue.svg)](https://developer.salesforce.com)
+
 </div>
 
 ## Overview
 
-Alex is a free, open-source Kanban board for Salesforce that enables teams to visualize and manage their work with drag-and-drop simplicity. Built with Lightning Web Components (LWC), Alex provides real-time collaboration through platform events, allowing multiple users to work together seamlessly.
+Alex is a free, open-source Kanban board for Salesforce. Teams plan and track
+work with drag-and-drop boards, sprints and a backlog, and see each other's
+changes live — no external tools or integrations required. It runs entirely
+on the Salesforce platform and respects your org's sharing and field-level
+security.
 
-> Looking for more? **Alexandra** is the paid edition with advanced features like Planning Poker, Retrospectives, Roadmaps, Analytics, Swimlanes, Agentforce integration, and more -- available on AppExchange.
+## Features
 
-### Key Features
-
-- **Drag-and-Drop Kanban** - Move cards between columns with LexoRank ordering for smooth, conflict-free reordering
-- **Sprint Management** - Create, start, and complete sprints with goals, story points, progress tracking, and a completion wizard
-- **Backlog Management** - Dedicated backlog view with drag-to-sprint card assignment
-- **WIP Limits** - Enforce work-in-progress limits per column to keep flow healthy
-- **Real-time Collaboration** - See changes instantly as team members update cards, with connection status and conflict detection
-- **Card Types & Epics** - Categorize work with card types; track epic progress with child card rollups
-- **Comments** - Threaded comments on cards for team discussion
-- **Board Filters** - Filter cards by priority, status, assignee, or card type
-- **Column Categories** - Map columns to categories (e.g., To Do, In Progress, Done) for status tracking
-- **Context Menu & Undo/Redo** - Right-click actions and full undo/redo support
-- **Column Auto-Setup Flow** - Quickly scaffold standard columns on new boards
-- **Permission Sets** - User and Admin permission sets out of the box
-- **Salesforce Native** - Built on the Salesforce platform with enterprise security
-
-## Architecture
-
-Alex is built using modern Salesforce development practices:
-
-- **Lightning Web Components (LWC)** - Modern web standards-based UI framework
-- **Platform Events** - Real-time event-driven architecture for collaboration
-- **Redux-style State Management** - Predictable state updates with centralized store
-- **Apex Backend** - Secure server-side logic and data access
-- **Custom Objects** - Board, Column, and Card data models
-
-## Technology Stack
-
-- **Frontend**: Lightning Web Components (LWC)
-- **Backend**: Apex
-- **Testing**:
-    - Jest (Unit Tests)
-    - Playwright (E2E Tests)
-    - TypeScript for test development
-- **Build Tools**: Salesforce CLI, npm
-- **Version Control**: Git
+- **Drag-and-drop boards** with LexoRank ordering for smooth, conflict-free reordering
+- **Real-time collaboration** via Platform Events, with connection status and conflict detection
+- **Sprints** — plan, start and complete sprints with goals, story points, progress and a completion wizard
+- **Backlog** — search, filters, bulk actions, inline creation, drag-to-sprint and refinement flags
+- **Card panel** — resizable side panel with comments, files and admin-defined custom fields
+- **Epics and card types** with child-card rollups
+- **Board filters** by priority, status, assignee and card type
+- **WIP limits** and column categories (To Do / In Progress / Done)
+- **Analytics** — burndown, velocity, cumulative flow and sprint reports
+- **Undo/redo** and right-click context menus
+- **Admin page** — manage boards, columns, card custom fields and onboarding
+- **Reports & dashboards** — custom report types and a Kanban report folder
+- **Two apps** — `Alex` (standard navigation) and `Alex Console` (console navigation)
+- **Permission sets** — `Alex_Admin` and `Alex_User`
 
 ## Installation
 
-### Prerequisites
+Alex is distributed as a managed package (namespace `OpenSF`).
 
-- Salesforce CLI (`sf` CLI) installed
-- Node.js (v18 or higher) - Install from [nodejs.org](https://nodejs.org/) or use your preferred version manager
-- npm (v9 or higher)
-- Git
-- A Salesforce org (Developer Edition, Sandbox, or Production)
+1. Open the [latest release](https://github.com/OpenSystemsFoundation/alex-app/releases/latest)
+   and use its install link (use a sandbox or Developer Edition org for beta versions).
+2. Choose **Install for Admins Only**.
+3. Assign the permission sets:
+    - `Alex_Admin` — admins who manage boards, columns and custom fields
+    - `Alex_User` — everyone who works on boards
+4. Open **Alex** or **Alex Console** from the App Launcher and create your first board.
 
-### Quick Install
-
-1. **Clone the repository**
-
-    ```bash
-    git clone https://github.com/OpenSystemsFoundation/alex-app.git
-    cd alex-app
-    ```
-
-2. **Install dependencies**
-
-    ```bash
-    npm install
-    ```
-
-3. **Authorize your Salesforce org**
-
-    ```bash
-    sf org login web --alias my-org
-    ```
-
-4. **Deploy to your org**
-
-    ```bash
-    npm run deploy
-    ```
-
-5. **Assign permission sets**
-
-    ```bash
-    sf org assign permset --name Alex_Admin
-    ```
-
-6. **Open your org and navigate to Alex**
-    ```bash
-    sf org open
-    ```
-    Then find "Alex Kanban Board" in the App Launcher.
-
-## Quick Start
-
-### Creating Your First Board
-
-1. Open the Alex application from the App Launcher
-2. Click "New Board" to create your first board
-3. Add columns (e.g., "To Do", "In Progress", "Done")
-4. Start creating cards and drag them between columns
-5. Invite team members and collaborate in real-time!
-
-### Creating Sample Data
-
-To quickly populate your board with sample data:
-
-```bash
-npm run create:sample
-```
-
-## Testing
-
-Alex includes comprehensive test coverage:
-
-### Unit Tests (Jest)
-
-```bash
-# Run all unit tests
-npm run test:unit
-
-# Watch mode for development
-npm run test:unit:watch
-
-# Generate coverage report
-npm run test:unit:coverage
-```
-
-### End-to-End Tests (Playwright)
-
-E2E tests run against a scratch org. Set `SCRATCH_ORG_URL` to a frontdoor
-URL (`sf org open --url-only`) and `SF_TARGET_ORG` to your org alias first —
-specs skip automatically when `SCRATCH_ORG_URL` is not set.
-
-```bash
-# Run all E2E tests
-npm run test:e2e
-
-# Run in headed mode (see browser)
-npm run test:e2e:headed
-
-# Open the HTML report of the last run
-npm run test:e2e:report
-
-# Validate E2E TypeScript
-npm run type-check:e2e
-```
-
-### Apex Tests
-
-```bash
-npm run test:apex
-```
-
-### Run All Tests
-
-```bash
-npm run test:all
-```
-
-## Documentation
-
-- [Architecture Documentation](docs/ARCHITECTURE.md)
-- [Quick Start Guide](docs/QUICKSTART.md)
-- [Security Review Prep & API v67 Upgrade](docs/2026-08-12-security-review-prep-v67.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
-- [Agent Instructions](AGENTS.md)
+See the [Quick Start Guide](docs/QUICKSTART.md) and the [User Guide](docs/manuals/user-guide.md).
 
 ## Development
 
-### Project Structure
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 22 LTS
+- [Salesforce CLI](https://developer.salesforce.com/tools/salesforcecli) (`sf`)
+- Git
+
+### Setup
+
+```bash
+git clone https://github.com/OpenSystemsFoundation/alex-app.git
+cd alex-app
+npm ci
+```
+
+### Static checks (no org needed)
+
+These are the same checks CI runs on every pull request:
+
+```bash
+npm run prettier:verify   # formatting
+npm run lint              # ESLint
+npm run type-check:e2e    # E2E TypeScript
+npm run test:unit         # LWC Jest tests (test:unit:watch, test:unit:coverage)
+```
+
+### Working with an org
+
+The Apex and LWC source reference the `OpenSF` namespace (`OpenSF__Board__c`, …),
+so the source deploys only to **scratch orgs created from a Dev Hub linked to the
+`OpenSF` namespace**. Contributors without that access can still run every static
+check above, and CI validates each pull request.
+
+```bash
+# Create and set up a scratch org
+sf org create scratch -f config/project-scratch-def.json -a alex-scratch -y 7 --set-default
+sf project deploy start
+sf org assign permset -n Alex_Admin
+npm run create:sample      # sample board
+sf org open
+
+# Apex tests with coverage
+npm run test:apex
+```
+
+### End-to-end tests (Playwright)
+
+E2E tests run locally against a scratch org (they are not part of CI).
+Specs skip when `SCRATCH_ORG_URL` is not set.
+
+```bash
+npx playwright install chromium
+export SF_TARGET_ORG=alex-scratch
+export SCRATCH_ORG_URL="$(sf org open -o alex-scratch --url-only)"
+
+npx playwright test --project=chromium                              # all suites
+npx playwright test e2e/specs/kanban-board.spec.ts --project=chromium
+npm run test:e2e:headed                                             # watch the browser
+npm run test:e2e:report                                             # last HTML report
+```
+
+### Project structure
 
 ```
 alex-app/
 ├── force-app/main/default/
-│   ├── lwc/              # Lightning Web Components (+ __tests__/ Jest specs)
-│   ├── classes/          # Apex classes and tests
-│   ├── objects/          # Custom objects (Board, Column, Card, Sprint, ...)
-│   ├── reports/          # Kanban report folder + reports
-│   ├── reportTypes/      # Custom report types
-│   ├── customPermissions/# Custom permissions (e.g. ManageCardFields)
-│   ├── tabs/             # Custom tabs
-│   └── permissionsets/   # Alex_Admin / Alex_User permission sets
-├── e2e/                  # Playwright E2E tests (TypeScript)
-├── security-review/      # AppExchange security review scans + notes
-├── scripts/              # Utility scripts (Apex data scripts, tooling)
-└── config/               # Scratch org definitions
+│   ├── classes/            # Apex: controllers, services, selectors, DTOs, tests
+│   ├── lwc/                # Lightning Web Components (+ __tests__/ Jest specs)
+│   ├── objects/            # Board, Column, Card, Sprint, Platform Events, ...
+│   ├── triggers/           # Card, Column and SprintCard triggers
+│   ├── permissionsets/     # Alex_Admin / Alex_User
+│   ├── applications/       # Alex and Alex Console apps
+│   └── reports/, reportTypes/, dashboards/, flexipages/, tabs/, ...
+├── e2e/                    # Playwright E2E tests (TypeScript)
+├── scripts/apex/           # Sample and test data scripts
+├── config/                 # Scratch org definitions
+└── docs/                   # Architecture, quick start, user guide
 ```
 
-### Available Scripts
+### Architecture
 
-- `npm run deploy` - Deploy to Salesforce org
-- `npm run validate` - Validate deployment without committing
-- `npm run lint` - Run ESLint
-- `npm run prettier` - Format code
-- `npm test` - Run unit tests
-- `npm run test:all` - Run all tests (unit + E2E + Apex)
+- **Lightning Web Components** with a Redux-style store (actions, pure reducers, selectors, thunks)
+- **Apex** in layers: Controller → Service → Selector → DTO, all `with sharing` and `USER_MODE`
+- **Platform Events** published by triggers keep every open board in sync, with echo prevention
+- **LexoRank** positions for O(1) reordering
 
-### Scratch Org Development
-
-```bash
-# Create a scratch org
-sf org create scratch --definition-file config/project-scratch-def.json --alias alex-scratch --set-default
-
-# Push source to scratch org
-sf project deploy start
-
-# Assign permission set
-sf org assign permset --name Alex_Admin
-
-# Open scratch org
-sf org open
-
-# Run E2E tests against the scratch org
-export SCRATCH_ORG_URL="$(sf org open --url-only)"
-export SF_TARGET_ORG=alex-scratch
-npm run test:e2e
-```
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Guidance for AI coding
+agents: [AGENTS.md](AGENTS.md).
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on:
-
-- Code of Conduct
-- Development workflow
-- Pull request process
-- Coding standards
-
-## License
-
-This project is dual-licensed -- you may use it under either license at your choice:
-
-- **Apache License 2.0** -- See [LICENSE](LICENSE)
-- **MIT License** -- See [LICENSE-MIT](LICENSE-MIT)
-
-## Acknowledgments
-
-- Built by [Open Systems Foundation](https://github.com/OpenSystemsFoundation)
-- Development assisted by [Claude](https://claude.ai) (Anthropic) -- AI pair programming for architecture, implementation, and testing
-- Inspired by modern Kanban methodology
-- Powered by Salesforce Platform
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/OpenSystemsFoundation/alex-app/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/OpenSystemsFoundation/alex-app/discussions)
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the code
+of conduct, development workflow, coding standards and pull request process.
+Use [Conventional Commits](https://www.conventionalcommits.org/) for PR titles.
 
 ## Roadmap
 
-- [x] CI/CD release pipeline (GitHub Actions for beta/GA package creation)
 - [x] Custom fields on cards (admin-configurable via `CardCustomField__mdt`)
 - [ ] Cycle time & lead time analytics (column history tracking is in place; UI pending)
 - [ ] Auto-create cards from Cases (Flow-driven)
@@ -266,7 +155,24 @@ This project is dual-licensed -- you may use it under either license at your cho
 - [ ] Approval gates on column transitions (Salesforce Approvals integration)
 - [ ] Mobile companion
 
----
+## Support
+
+- **Bugs and feature requests:** [GitHub Issues](https://github.com/OpenSystemsFoundation/alex-app/issues)
+- **Questions and ideas:** [GitHub Discussions](https://github.com/OpenSystemsFoundation/alex-app/discussions)
+- **Security issues:** report privately — see [SECURITY.md](SECURITY.md)
+
+## License
+
+Dual-licensed — use it under either license, at your choice:
+
+- [Apache License 2.0](LICENSE)
+- [MIT License](LICENSE-MIT)
+
+## Acknowledgments
+
+- Built by [Open Systems Foundation](https://github.com/OpenSystemsFoundation)
+- Development assisted by [Claude](https://claude.ai) (Anthropic)
+- Powered by the Salesforce Platform
 
 <div align="center">
   Made with care by the Open Systems Foundation team

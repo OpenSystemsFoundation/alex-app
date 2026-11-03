@@ -483,7 +483,7 @@ sf org create scratch -f config/project-scratch-def.json -a scratch --set-defaul
 sf project deploy start
 sf org assign permset -n Alex_Admin
 sf org open
-npm run test:e2e:scratch
+SCRATCH_ORG_URL="$(sf org open --url-only)" SF_TARGET_ORG=scratch npm run test:e2e
 
 # Utilities
 npm run create:sample     # Create sample data
