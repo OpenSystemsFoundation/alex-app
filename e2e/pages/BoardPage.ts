@@ -58,6 +58,18 @@ export class BoardPage extends BasePage {
         await this.page.waitForLoadState('domcontentloaded');
     }
 
+    /**
+     * Wait until the board's live-update connection reports "Real-time".
+     * Flows that rely on platform events (sprint progress, other users'
+     * changes) should call this before acting, so a slow CometD handshake
+     * doesn't leave the board on its 15s auto-refresh fallback.
+     */
+    async waitForRealtime(): Promise<void> {
+        await expect(
+            this.page.locator('.kanban-topbar .status-text')
+        ).toHaveText('Real-time', { timeout: this.timeout });
+    }
+
     /** Get a column wrapper by its Salesforce column ID. */
     columnWrapper(columnId: string): Locator {
         return this.page.locator(

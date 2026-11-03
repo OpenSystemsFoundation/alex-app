@@ -35,8 +35,14 @@ export const test = base.extend<AlexFixtures>({
         // The undo/redo toolbar controls are dev-gated: kanbanBoard reads
         // localStorage['alex.debug.undoRedo'] in connectedCallback, so the
         // flag must exist before any app code runs on each navigation.
+        // Lightning Web Security sandboxes localStorage per namespace and
+        // stores the component's keys as `LSKey[<namespace>]<key>`.
         await page.addInitScript(() => {
             try {
+                window.localStorage.setItem(
+                    'LSKey[OpenSF]alex.debug.undoRedo',
+                    'true'
+                );
                 window.localStorage.setItem('alex.debug.undoRedo', 'true');
             } catch {
                 // localStorage unavailable -- undo/redo specs will fail visibly

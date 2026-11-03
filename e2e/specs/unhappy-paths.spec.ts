@@ -1,5 +1,9 @@
 import { test, expect } from '../fixtures';
-import { sfApexRun } from '../helpers/sf-data';
+import {
+    createIsolatedBoard,
+    scratchOrgOrigin,
+    sfApexRun
+} from '../helpers/sf-data';
 
 const SF_TIMEOUT = 60_000;
 
@@ -77,40 +81,31 @@ test.describe('Unhappy Paths — Breaking the Board', () => {
     });
 
     test('deleting a card while panel is open does not crash', async ({
-        boardPage,
-        boardData
+        boardPage
     }) => {
-        expect(boardData.cards.length).toBeGreaterThan(0);
-        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        // Own board: this test deletes data
+        const board = createIsolatedBoard('unhappy-del-card');
+        await boardPage.open(scratchOrgOrigin(), board.boardId);
         await boardPage.waitForCards();
 
-        const cardId = boardData.cards[0].Id;
-
-        // Open the card panel
+        const cardId = board.cards[0].Id;
         await boardPage.card(cardId).locator('.kanban-card__body').click();
-
         const panel = boardPage.page.locator('.card-panel');
         await expect(panel).toBeVisible({ timeout: SF_TIMEOUT });
 
-        // Delete the card from backend while panel is open
-        try {
-            sfApexRun(
-                `delete [SELECT Id FROM OpenSF__Card__c WHERE Id = '${cardId}'];`
-            );
-        } catch {
-            test.skip(true, 'Could not delete card via Apex');
-        }
+        // Delete the card from the backend while the panel is open
+        sfApexRun(
+            `delete [SELECT Id FROM OpenSF__Card__c WHERE Id = '${cardId}'];`
+        );
 
-        // Refresh the board — panel should handle the missing card gracefully
+        // The deletion reaches the board (event or refresh) and it keeps working
         await boardPage.refresh();
-        await boardPage.page.waitForTimeout(3000);
-
-        // Board should still be functional
-        await expect(boardPage.boardWrapper).toBeVisible({
+        await expect(boardPage.card(cardId)).toHaveCount(0, {
             timeout: SF_TIMEOUT
         });
+        await expect(boardPage.boardWrapper).toBeVisible();
+        await expect(boardPage.allCards()).toHaveCount(board.cards.length - 1);
     });
-
     test('rapid filter toggling does not break the board', async ({
         boardPage,
         boardData
@@ -216,67 +211,46 @@ test.describe('Unhappy Paths — Breaking the Board', () => {
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.waitForCards();
 
-        // Get live cards from DOM instead of stale fixture data
         const liveCards = boardPage.allCards();
         const cardCount = await liveCards.count();
         expect(cardCount).toBeGreaterThan(0);
 
-        // Rapid open/close cycle using live DOM cards
+        const panel = boardPage.page.locator('.card-panel');
+        const closeBtn = boardPage.page.locator(
+            '.card-panel__header lightning-button-icon'
+        );
+        // Rapid open/close cycle: every click opens the panel, every close
+        // removes it
         for (let i = 0; i < Math.min(3, cardCount); i++) {
             await liveCards.nth(i).locator('.kanban-card__body').click();
-
-            const panel = boardPage.page.locator('.card-panel');
-            const isVisible = await panel
-                .isVisible({ timeout: 5_000 })
-                .catch(() => false);
-
-            if (isVisible) {
-                const closeBtn = boardPage.page.locator(
-                    '.card-panel__header lightning-button-icon'
-                );
-                await closeBtn.click();
-                await boardPage.page.waitForTimeout(300);
-            }
+            await expect(panel).toBeVisible({ timeout: SF_TIMEOUT });
+            await closeBtn.click();
+            await expect(panel).toHaveCount(0);
         }
 
-        // Panel should be closed
-        const panel = boardPage.page.locator('.card-panel');
-        await expect(panel).not.toBeVisible({ timeout: 5_000 });
-
-        // Board should still be functional
-        expect(await boardPage.allCards().count()).toBeGreaterThan(0);
+        await expect(boardPage.allCards()).toHaveCount(cardCount);
     });
-
     test('backend column deletion is handled gracefully on refresh', async ({
-        boardPage,
-        boardData
+        boardPage
     }) => {
-        expect(boardData.columns.length).toBeGreaterThanOrEqual(2);
-        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        // Own board: this test deletes data
+        const board = createIsolatedBoard('unhappy-del-col');
+        await boardPage.open(scratchOrgOrigin(), board.boardId);
         await boardPage.waitForCards();
+        await expect(boardPage.columns).toHaveCount(board.columns.length);
 
-        const columnsBefore = await boardPage.columns.count();
+        const lastColumn = board.columns[board.columns.length - 1];
+        sfApexRun(`
+delete [SELECT Id FROM OpenSF__Card__c WHERE OpenSF__Column__c = '${lastColumn.Id}'];
+delete [SELECT Id FROM OpenSF__Column__c WHERE Id = '${lastColumn.Id}'];
+`);
 
-        // Delete the last column from backend (it should have fewest dependencies)
-        const lastColumn = boardData.columns[boardData.columns.length - 1];
-        try {
-            sfApexRun(`
-                // Delete cards first to avoid FK constraint
-                delete [SELECT Id FROM OpenSF__Card__c WHERE OpenSF__Column__c = '${lastColumn.Id}'];
-                delete [SELECT Id FROM OpenSF__Column__c WHERE Id = '${lastColumn.Id}'];
-            `);
-        } catch {
-            test.skip(true, 'Could not delete column via Apex');
-        }
-
-        // Refresh and verify board still works
         await boardPage.refresh();
-        await boardPage.page.waitForTimeout(3000);
-
-        const columnsAfter = await boardPage.columns.count();
-        expect(columnsAfter).toBe(columnsBefore - 1);
+        await expect(boardPage.columns).toHaveCount(board.columns.length - 1, {
+            timeout: SF_TIMEOUT
+        });
+        await expect(boardPage.columnWrapper(lastColumn.Id)).toHaveCount(0);
     });
-
     test('context menu on board card works', async ({
         boardPage,
         boardData
@@ -343,42 +317,37 @@ test.describe('Unhappy Paths — Breaking the Board', () => {
         boardPage,
         boardData
     }) => {
-        expect(boardData.cards.length).toBeGreaterThan(0);
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.waitForCards();
 
         const totalBefore = await boardPage.allCards().count();
+        expect(totalBefore).toBeGreaterThan(0);
 
-        // Apply all three filter types simultaneously
-        const hideDoneBtn = boardPage.page.locator(
-            'button.filter-toggle[title="Hide cards in Done-category columns"]'
+        // Project boards always offer Hide Done
+        const hideDoneBtn = boardPage.page.getByTitle(
+            'Hide cards in Done-category columns'
         );
-        const hasHideDone = await hideDoneBtn
-            .isVisible({ timeout: 5_000 })
-            .catch(() => false);
+        await expect(hideDoneBtn).toBeVisible();
 
-        if (hasHideDone) {
-            await hideDoneBtn.click();
-        }
-
+        await hideDoneBtn.click();
         await boardPage.priorityFilter.selectOption('High');
         await boardPage.search('Card');
-        await boardPage.page.waitForTimeout(1000);
+        // The filter summary shows while filters are active
+        await expect(
+            boardPage.page.getByText(/\d+ of \d+ cards/)
+        ).toBeVisible();
+        expect(await boardPage.allCards().count()).toBeLessThan(totalBefore);
 
-        // Now clear everything in reverse order
+        // Clear everything in reverse order
         await boardPage.clearSearch();
         await boardPage.priorityFilter.selectOption('All');
+        await hideDoneBtn.click();
 
-        if (hasHideDone) {
-            await hideDoneBtn.click(); // Toggle back
-        }
-
-        await boardPage.page.waitForTimeout(1000);
-
-        const totalAfter = await boardPage.allCards().count();
-        expect(totalAfter).toBe(totalBefore);
+        await expect(boardPage.allCards()).toHaveCount(totalBefore);
+        await expect(boardPage.page.getByText(/\d+ of \d+ cards/)).toHaveCount(
+            0
+        );
     });
-
     test('multiple rapid tab switches do not break the board', async ({
         boardPage,
         boardData

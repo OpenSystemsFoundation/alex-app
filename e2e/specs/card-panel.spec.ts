@@ -7,6 +7,8 @@ import type { BoardPage } from '../pages';
 const SF_TIMEOUT = 60_000;
 // Mirrors DELETE_CONFIRM_TIMEOUT in kanbanCardPanel.js (armed delete resets)
 const DELETE_CONFIRM_TIMEOUT = 3_000;
+// Time for the card form to finish loading after its values render
+const FORM_SETTLE_MS = 3_000;
 
 interface SeededCard {
     cardId: string;
@@ -56,6 +58,8 @@ async function openPanelForCard(
 ): Promise<Locator> {
     await boardPage.open(boardData.baseUrl, boardData.boardId);
     await boardPage.waitForCards();
+    // A polling refresh would re-render the panel mid-edit
+    await boardPage.waitForRealtime();
     await boardPage.card(cardId).locator('.kanban-card__body').click();
 
     const panel = boardPage.page.locator('.card-panel');
@@ -69,10 +73,29 @@ async function openPanelForCard(
  * include Subject__c). Falls back to the input's accessible label "Subject"
  * in case the field-name attribute is not reflected into the DOM.
  */
+/**
+ * Wait for the record-edit-form to finish initializing after its values
+ * appear. Edits made before that are not seen by the dirty check (known
+ * race, see the fixme test below), so dirty-check tests let it settle.
+ */
+async function waitForFormToSettle(boardPage: BoardPage): Promise<void> {
+    await boardPage.page.waitForTimeout(FORM_SETTLE_MS);
+}
+
 function subjectInput(panel: Locator): Locator {
     return panel
         .locator('[field-name="OpenSF__Subject__c"] input')
         .or(panel.getByRole('textbox', { name: 'Subject', exact: true }));
+}
+
+/**
+ * The lightning/confirm dialog. It renders in the overlay container as an
+ * `alertdialog` labelled by its header ("Unsaved changes").
+ */
+function confirmDialog(boardPage: BoardPage, message: string): Locator {
+    return boardPage.page
+        .getByRole('alertdialog', { name: 'Unsaved changes' })
+        .filter({ hasText: message });
 }
 
 test.describe('Card Detail Panel', () => {
@@ -354,6 +377,7 @@ test.describe('Card Detail Panel', () => {
         await expect(input).toHaveValue(seeded.subject, {
             timeout: SF_TIMEOUT
         });
+        await waitForFormToSettle(boardPage);
         await input.fill(`${seeded.subject}-edited`);
 
         const closeBtn = boardPage.page.locator(
@@ -362,9 +386,7 @@ test.describe('Card Detail Panel', () => {
         await closeBtn.click();
 
         // LightningConfirm message from kanbanCardPanel.handleClose
-        const dialog = boardPage.page
-            .locator('section[role="dialog"]')
-            .filter({ hasText: 'Discard and close?' });
+        const dialog = confirmDialog(boardPage, 'Discard and close?');
         await expect(dialog).toBeVisible({ timeout: SF_TIMEOUT });
 
         // Cancel keeps the panel open
@@ -398,6 +420,7 @@ test.describe('Card Detail Panel', () => {
         await expect(input).toHaveValue(seeded.subject, {
             timeout: SF_TIMEOUT
         });
+        await waitForFormToSettle(boardPage);
         await input.fill(`${seeded.subject}-edited`);
 
         // Click a different (read-only fixture) card while dirty
@@ -408,9 +431,7 @@ test.describe('Card Detail Panel', () => {
             .click();
 
         // LightningConfirm message from cardOperations.handleCardClick
-        const dialog = boardPage.page
-            .locator('section[role="dialog"]')
-            .filter({ hasText: 'Discard and switch cards?' });
+        const dialog = confirmDialog(boardPage, 'Discard and switch cards?');
         await expect(dialog).toBeVisible({ timeout: SF_TIMEOUT });
 
         // Cancel keeps the first card's panel open
@@ -441,9 +462,34 @@ test.describe('Card Detail Panel', () => {
         // closed panel plus zero dialogs proves the clean-close path
         await expect(panel).not.toBeVisible({ timeout: SF_TIMEOUT });
         await expect(
-            boardPage.page
-                .locator('section[role="dialog"]')
-                .filter({ hasText: 'You have unsaved changes' })
+            confirmDialog(boardPage, 'You have unsaved changes')
         ).toHaveCount(0);
+    });
+
+    // Known bug: an edit made as soon as the form shows its values is not
+    // detected, so closing discards it without asking. Remove fixme once
+    // kanbanCardPanel's dirty snapshot is reliable.
+    test.fixme('an edit made right after the panel opens is still protected', async ({
+        boardPage,
+        boardData
+    }) => {
+        const seeded = seedPanelCard(boardData, 'Panel-Early');
+        const panel = await openPanelForCard(
+            boardPage,
+            boardData,
+            seeded.cardId
+        );
+        const input = subjectInput(panel);
+        await expect(input).toHaveValue(seeded.subject, {
+            timeout: SF_TIMEOUT
+        });
+        await input.fill(`${seeded.subject}-edited`);
+        await boardPage.page
+            .locator('.card-panel__header lightning-button-icon')
+            .click();
+
+        await expect(
+            confirmDialog(boardPage, 'Discard and close?')
+        ).toBeVisible({ timeout: 10_000 });
     });
 });

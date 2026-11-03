@@ -100,32 +100,17 @@ test.describe('Board Toolbar', () => {
         await expect(statusIndicator).toBeAttached({ timeout: SF_TIMEOUT });
     });
 
-    test('sprint header shows on sprint-type board', async ({
+    test('sprint header is not shown on a Project board', async ({
         boardPage,
         boardData
     }) => {
+        // The fixture board is a Project (Kanban) board; sprint boards are
+        // covered in sprint-management and sprint-lifecycle
         await boardPage.open(boardData.baseUrl, boardData.boardId);
         await boardPage.waitForCards();
 
-        // Sprint header only renders when isSprintBoard is true
-        const sprintHeader = boardPage.page.locator(
-            '.sprint-inline, c-kanban-sprint-header, opensf-kanban-sprint-header'
-        );
-        // Just verify it's attached (may be invisible if board type is Project)
-        const isAttached = await sprintHeader
-            .isVisible({ timeout: 5_000 })
-            .catch(() => false);
-
-        if (!isAttached) {
-            // Expected for non-sprint boards — not an error
-            test.skip(
-                true,
-                'Board is not a sprint board — sprint header not rendered'
-            );
-            return;
-        }
-
-        await expect(sprintHeader).toBeAttached({ timeout: SF_TIMEOUT });
+        await expect(boardPage.page.locator('.kanban-topbar')).toBeVisible();
+        await expect(boardPage.page.locator('.sprint-inline')).toHaveCount(0);
     });
 
     test('tab switching updates active state CSS class', async ({

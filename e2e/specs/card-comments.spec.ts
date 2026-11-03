@@ -2,7 +2,7 @@ import type { Locator } from '@playwright/test';
 import { test, expect } from '../fixtures';
 import type { BoardDataFixture } from '../fixtures';
 import type { BoardPage } from '../pages';
-import { sfApexRun } from '../helpers/sf-data';
+import { seedCard, seedComment, sfApexRun, sfQuery } from '../helpers/sf-data';
 
 const SF_TIMEOUT = 60_000;
 
@@ -30,6 +30,23 @@ async function openCardPanel(
     return { panel, cardId, commentsSection };
 }
 
+/** Open the panel for a specific card id and wait for its comments. */
+async function openCardPanelById(
+    boardPage: BoardPage,
+    boardData: BoardDataFixture,
+    cardId: string
+) {
+    await boardPage.open(boardData.baseUrl, boardData.boardId);
+    await boardPage.waitForCards();
+    await boardPage.card(cardId).locator('.kanban-card__body').click();
+    const panel = boardPage.page.locator('.card-panel');
+    await expect(panel).toBeVisible({ timeout: SF_TIMEOUT });
+    await expect(panel.locator('.comments-section')).toBeVisible({
+        timeout: SF_TIMEOUT
+    });
+    return { panel };
+}
+
 /**
  * Create a comment via Apex CLI (bypasses LWC interactions).
  */
@@ -54,9 +71,26 @@ async function postCommentViaUI(panel: Locator, text: string) {
 
     const postBtn = panel.locator('[data-id="post-comment-btn"]');
     await postBtn.click();
+}
 
-    // Wait for the Apex call to complete
-    await panel.page().waitForTimeout(3000);
+/** Comment bodies stored for a card, newest first. */
+function storedCommentBodies(cardId: string): string[] {
+    return sfQuery(
+        `SELECT OpenSF__Body__c FROM OpenSF__CardComment__c WHERE OpenSF__Card__c = '${cardId}' ORDER BY CreatedDate DESC`
+    ).map((r) => r.OpenSF__Body__c as string);
+}
+
+const SF_POLL = { timeout: 45_000, intervals: [2_000, 3_000, 5_000] };
+
+/** Seed a card of our own, so comment tests never share state. */
+function seedOwnCard(boardData: BoardDataFixture, label: string) {
+    const card = seedCard({
+        boardId: boardData.boardId,
+        columnId: boardData.columns[1].Id,
+        status: boardData.columns[1].header,
+        subject: `${label}-${Date.now()}`
+    });
+    return { card };
 }
 
 test.describe('Card Comments', () => {
@@ -212,27 +246,85 @@ test.describe('Card Comments', () => {
     });
 
     test('can post a comment via UI', async ({ boardPage, boardData }) => {
-        expect(boardData.cards.length).toBeGreaterThan(4);
-        const { panel } = await openCardPanel(boardPage, boardData, 4);
+        const { card } = seedOwnCard(boardData, 'Cmt-Post');
+        const { panel } = await openCardPanelById(
+            boardPage,
+            boardData,
+            card.Id
+        );
+        await expect(panel.getByText('No comments yet')).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
 
-        await postCommentViaUI(panel, 'UI-posted comment');
+        const text = `UI-posted comment ${Date.now()}`;
+        await postCommentViaUI(panel, text);
 
-        // Check if comment appeared OR if we got an error toast
-        const commentBody = panel.locator('.comment-body');
-        const hasComment = await commentBody
-            .first()
-            .isVisible({ timeout: 10_000 })
-            .catch(() => false);
+        await expect(panel.locator('.comment-body').first()).toHaveText(text, {
+            timeout: SF_TIMEOUT
+        });
+        await expect(
+            panel.locator('textarea[data-id="comment-input"]')
+        ).toHaveValue('');
+        await expect
+            .poll(() => storedCommentBodies(card.Id), SF_POLL)
+            .toEqual([text]);
+    });
 
-        if (hasComment) {
-            await expect(commentBody.first()).toContainText(
-                'UI-posted comment'
-            );
-        } else {
-            // If UI posting doesn't work (e.g., due to Locker Service),
-            // verify the textarea and button are at least functional
-            const textarea = panel.locator('textarea[data-id="comment-input"]');
-            await expect(textarea).toBeVisible();
-        }
+    test('can edit own comment', async ({ boardPage, boardData }) => {
+        const { card } = seedOwnCard(boardData, 'Cmt-Edit');
+        seedComment(card.Id, 'Before edit');
+        const { panel } = await openCardPanelById(
+            boardPage,
+            boardData,
+            card.Id
+        );
+
+        const item = panel.locator('.comment-item', { hasText: 'Before edit' });
+        await expect(item).toBeVisible({ timeout: SF_TIMEOUT });
+
+        // Cancel leaves the comment unchanged
+        await item.getByRole('button', { name: 'Comment actions' }).click();
+        await item.getByRole('menuitem', { name: 'Edit' }).click();
+        const editor = item.getByRole('textbox', { name: 'Edit comment' });
+        await expect(editor).toHaveValue('Before edit');
+        await editor.fill('Discarded edit');
+        await item.getByRole('button', { name: 'Cancel' }).click();
+        await expect(item.locator('.comment-body')).toHaveText('Before edit');
+
+        await item.getByRole('button', { name: 'Comment actions' }).click();
+        await item.getByRole('menuitem', { name: 'Edit' }).click();
+        await editor.fill('After edit');
+        await item.getByRole('button', { name: 'Save' }).click();
+
+        await expect(
+            panel.locator('.comment-item .comment-body', {
+                hasText: 'After edit'
+            })
+        ).toBeVisible({ timeout: SF_TIMEOUT });
+        await expect
+            .poll(() => storedCommentBodies(card.Id), SF_POLL)
+            .toEqual(['After edit']);
+    });
+
+    test('can delete own comment', async ({ boardPage, boardData }) => {
+        const { card } = seedOwnCard(boardData, 'Cmt-Del');
+        seedComment(card.Id, 'Keep me');
+        seedComment(card.Id, 'Delete me');
+        const { panel } = await openCardPanelById(
+            boardPage,
+            boardData,
+            card.Id
+        );
+
+        const item = panel.locator('.comment-item', { hasText: 'Delete me' });
+        await expect(item).toBeVisible({ timeout: SF_TIMEOUT });
+        await item.getByRole('button', { name: 'Comment actions' }).click();
+        await item.getByRole('menuitem', { name: 'Delete' }).click();
+
+        await expect(item).toHaveCount(0, { timeout: SF_TIMEOUT });
+        await expect(panel.locator('.comment-body')).toHaveText(['Keep me']);
+        await expect
+            .poll(() => storedCommentBodies(card.Id), SF_POLL)
+            .toEqual(['Keep me']);
     });
 });

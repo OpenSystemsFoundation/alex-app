@@ -1,5 +1,11 @@
 import { test, expect } from '../fixtures';
-import { createIsolatedBoard, sfApexRun } from '../helpers/sf-data';
+import {
+    createIsolatedBoard,
+    scratchOrgOrigin,
+    seedSprint,
+    sfApexRun,
+    sfQuery
+} from '../helpers/sf-data';
 
 const SF_TIMEOUT = 60_000;
 
@@ -74,49 +80,31 @@ test.describe('Backlog View', () => {
         await expect(badge).toHaveText(/\d+/);
     });
 
-    test('empty backlog shows "No backlog cards" message', async ({
-        boardPage,
-        boardData
+    test('empty backlog shows the empty state with a Create Card button', async ({
+        boardPage
     }) => {
-        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        // Fresh board: every seeded card sits in a column, so the backlog
+        // is guaranteed empty (the shared worker board gains backlog cards)
+        const board = createIsolatedBoard('backlog-empty');
+        await boardPage.open(scratchOrgOrigin(), board.boardId);
+        await expect(
+            boardPage.page.locator('[data-tab-id="backlog"] .tab-badge')
+        ).toHaveText('0', { timeout: SF_TIMEOUT });
         await boardPage.switchToBacklogTab();
 
-        // The empty state h3 text is "No backlog cards"
-        const emptyMessage = boardPage.page.getByText('No backlog cards');
-        // This may not be visible if there are backlog cards — use a short timeout
-        const isEmpty = await emptyMessage
-            .isVisible({ timeout: 5_000 })
-            .catch(() => false);
+        await expect(boardPage.page.getByText('No backlog cards')).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
+        const createButton = boardPage.page.getByRole('button', {
+            name: 'Create Card'
+        });
+        await expect(createButton).toBeVisible();
 
-        if (!isEmpty) {
-            test.skip(true, 'Backlog has cards — empty state not shown');
-            return;
-        }
-
-        await expect(emptyMessage).toBeVisible({ timeout: SF_TIMEOUT });
-    });
-
-    test('empty backlog shows "Create Card" button', async ({
-        boardPage,
-        boardData
-    }) => {
-        await boardPage.open(boardData.baseUrl, boardData.boardId);
-        await boardPage.switchToBacklogTab();
-
-        // The "Create Card" button is a lightning-button in the empty state
-        const createButton = boardPage.page.locator(
-            'lightning-button[label="Create Card"]'
-        );
-        const isEmpty = await createButton
-            .isVisible({ timeout: 5_000 })
-            .catch(() => false);
-
-        if (!isEmpty) {
-            test.skip(true, 'Backlog has cards — empty state not shown');
-            return;
-        }
-
-        await expect(createButton).toBeVisible({ timeout: SF_TIMEOUT });
+        // Create Card opens the inline create form
+        await createButton.click();
+        await expect(
+            boardPage.page.getByPlaceholder('What needs to be done?')
+        ).toBeVisible();
     });
 
     test('New Card button is visible in toolbar', async ({
@@ -483,62 +471,51 @@ insert sprint;
     });
 
     test('drag card to sprint header moves it to sprint', async ({
-        boardPage,
-        boardData
+        boardPage
     }) => {
-        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        const board = createIsolatedBoard('backlog-drag', 'Sprint');
+        const sprintId = seedSprint({
+            boardId: board.boardId,
+            status: 'Planning',
+            goal: 'Drag target'
+        });
+        const cardId = createBacklogCardViaApex(
+            board.boardId,
+            `E2E drag ${Date.now()}`,
+            'Medium'
+        );
+        await boardPage.open(scratchOrgOrigin(), board.boardId);
         await boardPage.switchToBacklogTab();
 
-        // This test requires a sprint board with planning sprints
-        const sprintHeader = boardPage.page
-            .locator('.sprint-header-row:not(.backlog-header-row)')
-            .first();
-        const hasSprintHeader = await sprintHeader
-            .isVisible({ timeout: 5000 })
-            .catch(() => false);
-
-        if (!hasSprintHeader) {
-            test.skip(
-                true,
-                'No planning sprints available — skipping drag test'
-            );
-            return;
-        }
-
-        // Find a backlog card (ungrouped section)
-        const backlogCard = boardPage.page
-            .locator('.backlog-header-row ~ .backlog-row')
-            .first();
-        const hasBacklogCard = await backlogCard
-            .isVisible({ timeout: 5000 })
-            .catch(() => false);
-
-        if (!hasBacklogCard) {
-            test.skip(true, 'No ungrouped backlog cards — skipping');
-            return;
-        }
-
-        // Get sprint card count before drag
-        const statsText = await sprintHeader
-            .locator('.sprint-header__stats')
-            .textContent();
-        const countBefore = parseInt(
-            statsText?.match(/(\d+) cards/)?.[1] ?? '0',
-            10
+        const page = boardPage.page;
+        const sprintHeader = page.locator(
+            `.sprint-header-row[data-sprint-id="${sprintId}"]`
         );
+        const sprintSection = page.locator('.backlog-section', {
+            has: sprintHeader
+        });
+        const row = page.locator(`.backlog-row[data-card-id="${cardId}"]`);
+        await expect(
+            sprintHeader.locator('.sprint-header__stats')
+        ).toContainText('0 cards', { timeout: SF_TIMEOUT });
+        await expect(row).toBeVisible();
 
-        // Drag the backlog card to the sprint header
-        await backlogCard.dragTo(sprintHeader);
-        await boardPage.page.waitForTimeout(2000);
+        await row.dragTo(sprintHeader);
 
-        // Sprint card count should increase
-        const newStatsText = await sprintHeader
-            .locator('.sprint-header__stats')
-            .textContent();
-        const countAfter = parseInt(
-            newStatsText?.match(/(\d+) cards/)?.[1] ?? '0',
-            10
-        );
-        expect(countAfter).toBe(countBefore + 1);
+        await expect(
+            sprintSection.locator(`.backlog-row[data-card-id="${cardId}"]`)
+        ).toBeVisible({ timeout: SF_TIMEOUT });
+        await expect(
+            sprintHeader.locator('.sprint-header__stats')
+        ).toContainText('1 cards');
+        await expect
+            .poll(
+                () =>
+                    sfQuery(
+                        `SELECT Id FROM OpenSF__SprintCard__c WHERE OpenSF__Sprint__c = '${sprintId}' AND OpenSF__Card__c = '${cardId}' AND OpenSF__RemovedDate__c = NULL`
+                    ).length,
+                { timeout: 45_000, intervals: [2_000, 3_000, 5_000] }
+            )
+            .toBe(1);
     });
 });

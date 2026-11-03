@@ -6,7 +6,7 @@ import { execSync } from 'child_process';
  */
 
 interface SfQueryResult {
-    result?: { records?: Record<string, unknown>[] };
+    result?: { records?: Record<string, unknown>[]; url?: string };
 }
 
 export interface BoardData {
@@ -151,13 +151,23 @@ function queryBoardData(boardId: string): BoardData {
  * Returns the raw stdout (debug log) from the execution.
  */
 export function sfApexRun(code: string): string {
-    const raw = execSync(`sf apex run --target-org ${TARGET_ORG} --json`, {
-        input: code,
-        encoding: 'utf8',
-        timeout: 60_000,
-        env: SF_ENV
-    });
-    return raw;
+    try {
+        return execSync(`sf apex run --target-org ${TARGET_ORG} --json`, {
+            input: code,
+            encoding: 'utf8',
+            timeout: 60_000,
+            env: SF_ENV
+        });
+    } catch (err) {
+        // sf exits non-zero on compile errors and uncaught exceptions;
+        // surface the Apex message instead of a bare "Command failed"
+        const stdout = String((err as { stdout?: unknown }).stdout ?? '');
+        const detail =
+            stdout
+                .match(/"(?:compileProblem|exceptionMessage)":\s*"([^"]+)"/g)
+                ?.join('; ') || stdout.substring(0, 800);
+        throw new Error(`Anonymous Apex failed: ${detail}`);
+    }
 }
 
 /**
@@ -290,4 +300,163 @@ System.debug('E2E_BOARD_ID:' + board.Id);
 
     const boardId = match[1];
     return queryBoardData(boardId);
+}
+
+/**
+ * A fresh frontdoor login URL for an org alias or username. These URLs are
+ * single-use, so generate one per browser login.
+ */
+export function sfFrontdoorUrl(org: string): string {
+    const raw = execSync(`sf org open --target-org ${org} --url-only --json`, {
+        encoding: 'utf8',
+        timeout: 60_000,
+        env: SF_ENV
+    });
+    const url = (parseJsonFromOutput(raw).result as { url?: string })?.url;
+    if (!url) throw new Error(`No login URL for ${org}: ${raw.slice(0, 300)}`);
+    return url;
+}
+
+/** Escape a value for use inside a single-quoted Apex string literal. */
+export function apexString(value: string): string {
+    return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+/** Origin (https://host) of the scratch org, from SCRATCH_ORG_URL. */
+export function scratchOrgOrigin(): string {
+    const loginUrl = process.env.SCRATCH_ORG_URL || '';
+    return loginUrl ? new URL(loginUrl).origin : '';
+}
+
+/**
+ * Run anonymous Apex that ends with `System.debug('<marker>:' + value)`
+ * and return the logged value.
+ */
+function runApexForValue(code: string, marker: string): string {
+    const output = sfApexRun(code);
+    const match = output.match(new RegExp(`${marker}:([A-Za-z0-9|:-]+)`));
+    if (!match) {
+        throw new Error(
+            `Failed to parse ${marker} from Apex output: ${output.substring(0, 800)}`
+        );
+    }
+    return match[1];
+}
+
+export interface SeedCardOptions {
+    boardId: string;
+    subject: string;
+    /** Column to place the card in; omit for a backlog card. */
+    columnId?: string;
+    /** Status to set; defaults to nothing for backlog cards. */
+    status?: string;
+    cardType?: string;
+    priority?: string;
+    storyPoints?: number;
+    needsRefinement?: boolean;
+    epicId?: string;
+    description?: string;
+}
+
+export interface SeededCard {
+    Id: string;
+    Name: string;
+    Subject: string;
+}
+
+/**
+ * Insert a card via anonymous Apex. Returns its Id and auto-number Name.
+ */
+export function seedCard(opts: SeedCardOptions): SeededCard {
+    const fields: string[] = [
+        `OpenSF__Board__c = '${opts.boardId}'`,
+        `OpenSF__Subject__c = '${apexString(opts.subject)}'`,
+        'OpenSF__SequenceNumber__c = 1'
+    ];
+    if (opts.columnId) fields.push(`OpenSF__Column__c = '${opts.columnId}'`);
+    if (opts.status)
+        fields.push(`OpenSF__Status__c = '${apexString(opts.status)}'`);
+    if (opts.cardType) fields.push(`OpenSF__CardType__c = '${opts.cardType}'`);
+    if (opts.priority) fields.push(`OpenSF__Priority__c = '${opts.priority}'`);
+    if (opts.storyPoints !== undefined)
+        fields.push(`OpenSF__StoryPoints__c = ${opts.storyPoints}`);
+    if (opts.needsRefinement !== undefined)
+        fields.push(`OpenSF__NeedsRefinement__c = ${opts.needsRefinement}`);
+    if (opts.epicId) fields.push(`OpenSF__Epic__c = '${opts.epicId}'`);
+    if (opts.description)
+        fields.push(
+            `OpenSF__Description__c = '${apexString(opts.description)}'`
+        );
+
+    const value = runApexForValue(
+        `
+OpenSF__Card__c card = new OpenSF__Card__c(
+    ${fields.join(',\n    ')}
+);
+insert card;
+card = [SELECT Id, Name FROM OpenSF__Card__c WHERE Id = :card.Id];
+System.debug('E2E_SEED_CARD:' + card.Id + '|' + card.Name);
+`,
+        'E2E_SEED_CARD'
+    );
+    const [Id, Name] = value.split('|');
+    return { Id, Name, Subject: opts.subject };
+}
+
+export interface SeedSprintOptions {
+    boardId: string;
+    status: 'Planning' | 'Active' | 'Completed';
+    goal?: string;
+    /** Days from today; omit for no date. */
+    startOffsetDays?: number;
+    endOffsetDays?: number;
+    /** Cards to attach to the sprint via SprintCard__c junctions. */
+    cardIds?: string[];
+}
+
+/**
+ * Insert a sprint (and optional SprintCard__c junctions) via anonymous Apex.
+ * Returns the sprint Id.
+ */
+export function seedSprint(opts: SeedSprintOptions): string {
+    const fields: string[] = [
+        `OpenSF__Board__c = '${opts.boardId}'`,
+        `OpenSF__Status__c = '${opts.status}'`
+    ];
+    if (opts.goal) fields.push(`OpenSF__Goal__c = '${apexString(opts.goal)}'`);
+    if (opts.startOffsetDays !== undefined)
+        fields.push(
+            `OpenSF__StartDate__c = Date.today().addDays(${opts.startOffsetDays})`
+        );
+    if (opts.endOffsetDays !== undefined)
+        fields.push(
+            `OpenSF__EndDate__c = Date.today().addDays(${opts.endOffsetDays})`
+        );
+    const cardIds = (opts.cardIds || []).map((id) => `'${id}'`).join(', ');
+
+    return runApexForValue(
+        `
+OpenSF__Sprint__c sprint = new OpenSF__Sprint__c(
+    ${fields.join(',\n    ')}
+);
+insert sprint;
+List<Id> cardIds = new List<Id>{ ${cardIds} };
+if (!cardIds.isEmpty()) {
+    // Same path the app uses: junctions + sprint point totals
+    OpenSF.SprintService.addCardsToSprint(sprint.Id, cardIds);
+}
+System.debug('E2E_SEED_SPRINT:' + sprint.Id);
+`,
+        'E2E_SEED_SPRINT'
+    );
+}
+
+/** Insert a comment on a card via anonymous Apex. */
+export function seedComment(cardId: string, body: string): void {
+    sfApexRun(`
+insert new OpenSF__CardComment__c(
+    OpenSF__Card__c = '${cardId}',
+    OpenSF__Body__c = '${apexString(body)}'
+);
+`);
 }
