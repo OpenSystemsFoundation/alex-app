@@ -39,6 +39,9 @@ jobs:
             - name: ESLint
               run: npm run lint
 
+            - name: ESLint (E2E TypeScript)
+              run: npm run lint:e2e
+
             - name: E2E TypeScript type-check
               run: npm run type-check:e2e
 

@@ -11,6 +11,7 @@
     "license": "(Apache-2.0 OR MIT)",
     "scripts": {
         "lint": "eslint **/{aura,lwc}/**/*.js",
+        "lint:e2e": "eslint \"e2e/**/*.ts\" playwright.config.ts",
         "test": "npm run test:unit",
         "test:all": "npm run test:apex && npm run test:unit",
         "test:unit": "sfdx-lwc-jest",
@@ -44,6 +45,8 @@
         "@salesforce/eslint-plugin-lightning": "^1.0.1",
         "@salesforce/sfdx-lwc-jest": "^7.3.0",
         "@types/node": "^25.5.0",
+        "@typescript-eslint/eslint-plugin": "^8.45.0",
+        "@typescript-eslint/parser": "^8.45.0",
         "baseline-browser-mapping": "^2.10.9",
         "eslint": "^8.57.0",
         "eslint-plugin-import": "^2.25.4",
@@ -51,7 +54,8 @@
         "husky": "9.1.7",
         "lint-staged": "^15.1.0",
         "prettier": "^3.3.3",
-        "prettier-plugin-apex": "2.1.5"
+        "prettier-plugin-apex": "2.1.5",
+        "typescript": "^5.9.3"
     },
     "lint-staged": {
         "**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}": [
