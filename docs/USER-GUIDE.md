@@ -618,6 +618,12 @@ This section is for users with **Alex Admin**.
 The **Admin** tab opens the **Admin Management** page, which has three sub-tabs:
 **Boards**, **Card Fields** and **Settings**.
 
+After a package upgrade, a **Finish upgrading Alex** card may appear at the top.
+It lists steps the upgrade couldn't do automatically, such as adding new
+picklist values or deactivating old flows, each with a link to the right Setup
+page. Click **Check again** after each change; the card disappears when you're
+done. See the [upgrade guide](UPGRADING.md).
+
 Until setup is complete, a **Getting Started** checklist shows three steps:
 **Create a Board**, **Set Up Columns** and **Assign Users**, with a button for the
 next step.
@@ -627,7 +633,7 @@ next step.
 On the **Boards** sub-tab:
 
 - Click **New Board** (or **Create Your First Board**). Enter a **Board Name**, an
-  optional **Description** and a **Board Type** (Project, Personal or Team). Leave
+  optional **Description** and a **Board Type** (Project, Personal, Team or Sprint; Sprint turns on sprint features). Leave
   **Create with default columns (To Do, In Progress, In Review, Done)** checked to
   start with a working board, then click **Create**.
 - Click **Open Board** on a board to open it.

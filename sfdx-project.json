@@ -7,8 +7,11 @@
             "path": "force-app",
             "default": true,
             "package": "Alex - A Kanban App",
-            "versionDescription": "Alex 2.0: Kanban and Scrum boards for Salesforce. Sprints, backlog, burndown, velocity, cumulative flow and cycle time analytics, with real-time collaboration. Install for Admins Only, then assign the Alex Admin and Alex User permission sets.",
-            "definitionFile": "config/project-scratch-def.json"
+            "versionDescription": "Alex 2.0: Kanban and Scrum boards for Salesforce. Install for Admins Only, then assign the Alex Admin and Alex User permission sets.",
+            "definitionFile": "config/project-scratch-def.json",
+            "apexTestAccess": {
+                "permissionSets": ["Alex_Admin"]
+            }
         }
     ],
     "name": "OpenSF",
@@ -25,9 +28,8 @@
         "Alex - A Kanban App@1.0.0-1": "04tWV0000002COTYA2",
         "Alex - A Kanban App@1.1.0-1": "04tWV0000002L1xYAE",
         "Alex - A Kanban App@1.1.1-1": "04tWV00000036gnYAA",
-        "Alex - A Kanban App@1.2.0-1": "04tWV00000039wPYAQ"
-    },
-    "apexTestAccess": {
-        "permissionSets": ["Alex_Admin"]
+        "Alex - A Kanban App@1.2.0-1": "04tWV00000039wPYAQ",
+        "Alex - A Kanban App@2.0.0-1": "04tTt0000001KG1IAM",
+        "Alex - A Kanban App@2.0.0-2": "04tTt0000001KHdIAM"
     }
 }

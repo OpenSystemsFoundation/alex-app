@@ -25,8 +25,56 @@ public class TestFactory {
             OpenSF__EmailNotifications__c = true,
             OpenSF__SalesforceNotifications__c = true
         );
-        insert board;
+        try {
+            insert board;
+        } catch (DmlException e) {
+            throw new DmlDiagnosticException(describeDmlFailure(e));
+        }
         return board;
+    }
+
+    /** Thrown with a readable explanation of a failed test-data insert. */
+    public class DmlDiagnosticException extends Exception {
+    }
+
+    /**
+     * Explains a DML failure in test setup: the inaccessible fields, the
+     * running user, their profile and permission sets. Package version
+     * creation only reports exception messages, so this is the only way to
+     * see why setup data could not be inserted there.
+     */
+    public static String describeDmlFailure(DmlException e) {
+        List<String> permSets = new List<String>();
+        for (PermissionSetAssignment psa : [
+            SELECT PermissionSet.Name, PermissionSet.NamespacePrefix
+            FROM PermissionSetAssignment
+            WHERE AssigneeId = :UserInfo.getUserId()
+        ]) {
+            permSets.add(
+                (String.isBlank(psa.PermissionSet.NamespacePrefix)
+                    ? ''
+                    : psa.PermissionSet.NamespacePrefix + '__') +
+                psa.PermissionSet.Name
+            );
+        }
+        User runner = [
+            SELECT Profile.Name, UserType
+            FROM User
+            WHERE Id = :UserInfo.getUserId()
+        ];
+        return e.getMessage() +
+            ' | type=' +
+            e.getDmlType(0) +
+            ' | fields=' +
+            e.getDmlFieldNames(0) +
+            ' | user=' +
+            UserInfo.getUserName() +
+            ' (' +
+            runner.UserType +
+            ', profile ' +
+            runner.Profile?.Name +
+            ') | permission sets=' +
+            String.join(permSets, ', ');
     }
 
     /**

@@ -36,6 +36,9 @@ Alex is distributed as a managed package with the namespace `OpenSF`.
 4. Wait for the confirmation email or for the package to appear under
    **Setup → Installed Packages**.
 
+Upgrading an org that already has Alex? Follow the [upgrade guide](UPGRADING.md)
+after installing: a few settings need an admin.
+
 ## 2. Assign permission sets
 
 Nobody, including admins, can use Alex until they have one of its permission sets.

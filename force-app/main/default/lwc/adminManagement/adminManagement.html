@@ -20,6 +20,71 @@
             </div>
         </div>
 
+        <template lwc:if={hasUpgradeIssues}>
+            <div
+                class="upgrade-check slds-m-bottom_medium"
+                data-id="upgrade-check"
+            >
+                <lightning-card
+                    title="Finish upgrading Alex"
+                    icon-name="utility:warning"
+                >
+                    <lightning-button
+                        slot="actions"
+                        label="Check again"
+                        onclick={handleRecheckUpgrade}
+                        disabled={isCheckingUpgrade}
+                    ></lightning-button>
+                    <div class="slds-p-horizontal_medium">
+                        <p class="slds-m-bottom_small">
+                            A package upgrade can't add new
+                            picklist values or switch off
+                            old flows, so these steps need
+                            an admin. See the
+                            <a
+                                href={upgradeGuideUrl}
+                                target="_blank"
+                                >upgrade guide</a
+                            >
+                            for details.
+                        </p>
+                        <ul
+                            class="slds-has-dividers_top-space"
+                        >
+                            <template
+                                for:each={upgradeIssues}
+                                for:item="issue"
+                            >
+                                <li
+                                    key={issue.key}
+                                    class="slds-item"
+                                    data-key={issue.key}
+                                >
+                                    <p
+                                        class="slds-text-title_bold"
+                                    >
+                                        {issue.title}
+                                    </p>
+                                    <p
+                                        class="slds-text-body_small"
+                                    >
+                                        {issue.detail}
+                                        (since
+                                        {issue.sinceVersion})
+                                    </p>
+                                    <a
+                                        href={issue.setupUrl}
+                                        target="_blank"
+                                        >{issue.actionLabel}</a
+                                    >
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </lightning-card>
+            </div>
+        </template>
+
         <template lwc:if={showOnboarding}>
             <div class="onboarding-banner">
                 <lightning-card>

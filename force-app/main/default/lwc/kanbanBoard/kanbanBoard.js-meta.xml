@@ -23,6 +23,12 @@
                 label="Height (Optional)"
                 description="Fixed height (e.g., 600px). Leave blank for dynamic height that adapts to viewport."
             />
+            <property
+                name="maxHeight"
+                type="String"
+                label="Max Height (Deprecated)"
+                description="DEPRECATED: kept only because it was released in version 1.1.1. Has no effect; use Height instead."
+            />
             <supportedFormFactors>
                 <supportedFormFactor type="Large" />
                 <supportedFormFactor type="Small" />

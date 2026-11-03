@@ -11,6 +11,10 @@ import getCardCustomFields from '@salesforce/apex/AdminController.getCardCustomF
 import saveCardCustomField from '@salesforce/apex/AdminController.saveCardCustomField';
 import deactivateCardCustomField from '@salesforce/apex/AdminController.deactivateCardCustomField';
 import getAvailableCardFields from '@salesforce/apex/AdminController.getAvailableCardFields';
+import getUpgradeIssues from '@salesforce/apex/AdminController.getUpgradeIssues';
+
+const UPGRADE_GUIDE_URL =
+    'https://github.com/OpenSystemsFoundation/alex-app/blob/main/docs/UPGRADING.md';
 
 const BOARD_TYPE_OPTIONS = [
     { label: 'Project', value: 'Project' },
@@ -33,6 +37,10 @@ const FIELD_TYPE_OPTIONS = [
 export default class AdminManagement extends NavigationMixin(LightningElement) {
     @track boards = [];
     @track onboardingStatus = {};
+    /** @type {Array<{key: string, title: string, detail: string, sinceVersion: string, setupUrl: string, actionLabel: string}>} */
+    @track upgradeIssues = [];
+    isCheckingUpgrade = false;
+    upgradeGuideUrl = UPGRADE_GUIDE_URL;
     @track boardForm = {};
     @track cardFields = [];
     @track availableCardFields = [];
@@ -58,6 +66,30 @@ export default class AdminManagement extends NavigationMixin(LightningElement) {
 
     connectedCallback() {
         this.loadData();
+        this.loadUpgradeIssues();
+    }
+
+    /**
+     * Post-upgrade steps the package upgrade couldn't apply. Loaded on its
+     * own so a failing check never blocks the rest of the page.
+     */
+    async loadUpgradeIssues() {
+        this.isCheckingUpgrade = true;
+        try {
+            this.upgradeIssues = (await getUpgradeIssues()) || [];
+        } catch (error) {
+            this.upgradeIssues = [];
+        } finally {
+            this.isCheckingUpgrade = false;
+        }
+    }
+
+    get hasUpgradeIssues() {
+        return this.upgradeIssues.length > 0;
+    }
+
+    handleRecheckUpgrade() {
+        this.loadUpgradeIssues();
     }
 
     async loadData() {

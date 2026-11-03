@@ -162,13 +162,14 @@ SOQL and run `WITH USER_MODE`. DTOs shape data for LWC.
 | :--------- | :--------------------------- | :--------------------------------------------------------------------------------------------------------------------- |
 | Controller | `KanbanBoardController`      | Board load, card CRUD and moves, backlog, epics, sprints, analytics, comments, files, polling, config.                  |
 |            | `ColumnManagementController` | Column CRUD, reorder, default column templates.                                                                        |
-|            | `AdminController`            | Board CRUD, onboarding status, card custom-field configuration (Metadata API).                                         |
+|            | `AdminController`            | Board CRUD, onboarding status, upgrade check, card custom-field configuration (Metadata API).                                         |
 | Service    | `KanbanBoardService`         | Assembles board data, column moves, incremental updates for polling, modal settings, card-type icons, runtime config.  |
 |            | `KanbanCardService`          | Card create/update/move/delete, column status and done-date rules, LexoRank backfill.                                  |
 |            | `SprintService`              | Sprint lifecycle (create, start, complete, delete, reorder), sprint membership, snapshots, burndown, velocity.          |
 |            | `AnalyticsService`           | Cycle time and cumulative flow from `CardColumnHistory__c`.                                                            |
 |            | `EpicService`                | Epic summaries and progress.                                                                                           |
 |            | `CardCommentService`         | Card comment CRUD.                                                                                                     |
+|            | `UpgradeCheckService`        | Post-upgrade checks for the Admin page: required picklist values and retired flows still active (see [UPGRADING.md](UPGRADING.md)). |
 | Selector   | `KanbanBoardSelector`        | Board, column, card, backlog, epic and user queries; shared field lists (`CARD_FIELDS`, `COLUMN_FIELDS`).               |
 |            | `BoardSelector`              | Board lists and onboarding counts.                                                                                     |
 |            | `SprintSelector`             | Sprint, sprint-card and snapshot queries.                                                                              |
