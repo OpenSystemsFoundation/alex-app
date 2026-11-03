@@ -11,6 +11,7 @@
                 class="kanban-filter-bar__search-input"
                 placeholder={searchPlaceholder}
                 value={_searchValue}
+                data-value={_searchValue}
                 oninput={handleSearchInput}
             />
         </div>
@@ -68,6 +69,7 @@
                 class="kanban-filter-bar__select"
                 onchange={handleViewChange}
                 value={viewValue}
+                data-value={viewValue}
             >
                 <template
                     for:each={viewOptions}
@@ -88,6 +90,7 @@
                 class="kanban-filter-bar__select"
                 onchange={handlePriorityChange}
                 value={priorityValue}
+                data-value={priorityValue}
             >
                 <template
                     for:each={priorityOptions}
@@ -108,6 +111,7 @@
                 class="kanban-filter-bar__select"
                 onchange={handleCardTypeChange}
                 value={cardTypeValue}
+                data-value={cardTypeValue}
             >
                 <template
                     for:each={cardTypeOptions}
@@ -128,6 +132,7 @@
                 class="kanban-filter-bar__select"
                 onchange={handleEpicChange}
                 value={epicValue}
+                data-value={epicValue}
             >
                 <template
                     for:each={epicOptions}
@@ -148,6 +153,7 @@
                 class="kanban-filter-bar__select"
                 onchange={handleSwimlaneChange}
                 value={swimlaneValue}
+                data-value={swimlaneValue}
             >
                 <template
                     for:each={swimlaneOptions}

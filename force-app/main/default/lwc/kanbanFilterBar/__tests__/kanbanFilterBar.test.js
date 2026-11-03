@@ -348,4 +348,24 @@ describe('c-kanban-filter-bar', () => {
             expect(removeSpy).toHaveBeenCalledWith('click', added[1]);
         });
     });
+
+    it('re-syncs a select when its value is reset after a user change', async () => {
+        const element = createBar({
+            showPriorityFilter: true,
+            priorityOptions: OPTIONS,
+            priorityValue: ''
+        });
+        await Promise.resolve();
+        const select = element.shadowRoot.querySelector(
+            'select.kanban-filter-bar__select'
+        );
+        // User picks High, the parent applies it...
+        select.value = 'High';
+        element.priorityValue = 'High';
+        await Promise.resolve();
+        // ...then "Clear all filters" resets it
+        element.priorityValue = '';
+        await Promise.resolve();
+        expect(select.value).toBe('');
+    });
 });
