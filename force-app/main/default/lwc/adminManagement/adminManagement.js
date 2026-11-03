@@ -210,9 +210,11 @@ export default class AdminManagement extends NavigationMixin(LightningElement) {
     }
 
     handleBoardAction(event) {
-        const action = event.detail.value;
-        const boardId =
-            event.target.dataset.boardId || event.currentTarget.dataset.boardId;
+        // Bound to each lightning-menu-item's click: a click event's detail
+        // is the click count, so read the action from the item itself
+        const item = event.currentTarget;
+        const action = item.value;
+        const boardId = item.dataset.boardId;
         const board = this.boards.find((candidate) => candidate.Id === boardId);
 
         switch (action) {
