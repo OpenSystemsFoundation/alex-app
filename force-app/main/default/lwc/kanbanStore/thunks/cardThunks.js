@@ -28,8 +28,9 @@ import {
     setBacklogSyncing,
     setBacklogCards
 } from '../state/actions';
-import { findColumn } from '../state/selectors';
+import { findColumn, getActiveSprint, getBoardId } from '../state/selectors';
 import { calculateCardPosition } from '../utils/positionCalculator';
+import { loadSprintDataAsync } from './sprintThunks';
 
 /**
  * Move a card to a new column/position
@@ -88,6 +89,17 @@ export const moveCardAsync = (
             // If there's an active drag, commit it
             if (state.isDragging) {
                 dispatch(commitDrag());
+            }
+
+            // The server marks sprint cards complete/incomplete from the
+            // target column's category; refresh sprint data so this user's
+            // sprint progress doesn't depend on the platform event round trip
+            const boardId = getBoardId(state);
+            if (getActiveSprint(state) && boardId) {
+                dispatch(loadSprintDataAsync(boardId)).catch(() => {
+                    // Logged in loadSprintDataAsync; the next sprint event
+                    // or refresh brings progress up to date
+                });
             }
 
             return {
