@@ -65,7 +65,7 @@ function getWipLimit(columnId: string): number | null {
         `SELECT OpenSF__WipLimit__c FROM OpenSF__Column__c WHERE Id = '${columnId}'`
     )[0];
     const value = rec?.OpenSF__WipLimit__c;
-    return value == null ? null : Number(value);
+    return value === null || value === undefined ? null : Number(value);
 }
 
 /** Server-side column header for a column. */

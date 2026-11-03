@@ -2,12 +2,12 @@
     "packageDirectories": [
         {
             "versionName": "ver 2.0",
-            "versionNumber": "2.0.1.NEXT",
+            "versionNumber": "2.0.0.NEXT",
             "ancestorVersion": "HIGHEST",
             "path": "force-app",
             "default": true,
             "package": "Alex - A Kanban App",
-            "versionDescription": "Manage your workflows with Alex, a Kanban App. Install for Admin only and assign Alex permission sets to Admins/Users.",
+            "versionDescription": "Alex 2.0: Kanban and Scrum boards for Salesforce. Sprints, backlog, burndown, velocity, cumulative flow and cycle time analytics, with real-time collaboration. Install for Admins Only, then assign the Alex Admin and Alex User permission sets.",
             "definitionFile": "config/project-scratch-def.json"
         }
     ],

@@ -72,6 +72,7 @@ public with sharing class KanbanBoardService {
      * Populate custom field values on CardDTOs by dynamically querying
      * the configured fields from Card__c records.
      */
+    @TestVisible
     private static void populateCustomFieldValues(
         List<KanbanBoardDTO.CardDTO> cardDTOs,
         List<OpenSF__Card__c> cards,
@@ -166,11 +167,14 @@ public with sharing class KanbanBoardService {
                 OpenSF__LexoRankPosition__c = newPosition
             );
 
-            update Security.stripInaccessible(
-                    AccessType.UPDATABLE,
-                    new List<OpenSF__Column__c>{ column }
-                )
-                .getRecords();
+            Database.update(
+                Security.stripInaccessible(
+                        AccessType.UPDATABLE,
+                        new List<OpenSF__Column__c>{ column }
+                    )
+                    .getRecords(),
+                AccessLevel.USER_MODE
+            );
 
             // Return updated column as DTO
             OpenSF__Column__c updatedColumn = KanbanBoardSelector.getColumnById(

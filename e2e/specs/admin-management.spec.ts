@@ -1,16 +1,32 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../fixtures';
+import { sfQuery } from '../helpers/sf-data';
 
 const SF_TIMEOUT = 45_000;
 
-async function openAdmin(page: Page, baseUrl: string) {
-    await page.goto(`${baseUrl}/lightning/n/OpenSF__Admin_Management`, {
+const ADMIN_TAB_PATH = 'n/OpenSF__Admin_Management';
+
+/**
+ * Open the Admin Management tab. `app` pins the Lightning app context so
+ * both shells (standard nav and console) are exercised explicitly.
+ */
+async function openAdmin(
+    page: Page,
+    baseUrl: string,
+    app: 'OpenSF__Alex' | 'OpenSF__AlexConsole' = 'OpenSF__Alex'
+) {
+    await page.goto(`${baseUrl}/lightning/app/${app}/${ADMIN_TAB_PATH}`, {
         waitUntil: 'domcontentloaded',
         timeout: SF_TIMEOUT
     });
-    await expect(page.locator('.admin-container')).toBeVisible({
-        timeout: SF_TIMEOUT
-    });
+    const admin = page.locator('.admin-container');
+    await expect(admin).toBeVisible({ timeout: SF_TIMEOUT });
+    return admin;
+}
+
+/** Escape a string for safe use inside a RegExp. */
+function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 test.describe('Admin Management', () => {
@@ -20,24 +36,41 @@ test.describe('Admin Management', () => {
         }
     });
 
-    test('admin page loads the management component', async ({
-        boardPage,
-        boardData
-    }) => {
-        await openAdmin(boardPage.page, boardData.baseUrl);
-    });
+    for (const app of ['OpenSF__Alex', 'OpenSF__AlexConsole'] as const) {
+        test(`admin page loads the management component (${app})`, async ({
+            boardPage,
+            boardData
+        }) => {
+            const admin = await openAdmin(
+                boardPage.page,
+                boardData.baseUrl,
+                app
+            );
+            await expect(
+                admin.getByRole('heading', { name: 'Admin Management' })
+            ).toBeVisible();
+        });
+    }
 
     test('admin page shows the reduced tab model', async ({
         boardPage,
         boardData
     }) => {
-        await openAdmin(boardPage.page, boardData.baseUrl);
+        const admin = await openAdmin(boardPage.page, boardData.baseUrl);
 
-        await expect(boardPage.page.getByText('Boards')).toBeVisible();
-        await expect(boardPage.page.getByText('Card Fields')).toBeVisible();
-        await expect(boardPage.page.getByText('Settings')).toBeVisible();
+        // lightning-tab renders <a role="tab" data-label="...">
+        const tabs = admin.getByRole('tab');
+        await expect(tabs).toHaveCount(3);
+        await expect(admin.getByRole('tab', { name: 'Boards' })).toBeVisible();
         await expect(
-            boardPage.page.getByText('Column Manager', { exact: true })
+            admin.getByRole('tab', { name: 'Card Fields' })
+        ).toBeVisible();
+        await expect(
+            admin.getByRole('tab', { name: 'Settings' })
+        ).toBeVisible();
+        // Column management moved to the board record page
+        await expect(
+            admin.getByRole('tab', { name: 'Column Manager' })
         ).toHaveCount(0);
     });
 
@@ -45,139 +78,200 @@ test.describe('Admin Management', () => {
         boardPage,
         boardData
     }) => {
-        await openAdmin(boardPage.page, boardData.baseUrl);
+        const admin = await openAdmin(boardPage.page, boardData.baseUrl);
 
-        const adminComponent = boardPage.page.locator('.admin-container');
-        await expect(adminComponent.locator('.board-card').first()).toBeVisible(
-            {
-                timeout: SF_TIMEOUT
-            }
-        );
+        await expect(admin.locator('.board-card').first()).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
         await expect(
-            adminComponent.locator('button:has-text("Open Board")').first()
+            admin
+                .locator('.board-card')
+                .first()
+                .getByRole('button', { name: 'Open Board' })
         ).toBeVisible();
     });
 
-    test('new board button opens modal', async ({ boardPage, boardData }) => {
-        await openAdmin(boardPage.page, boardData.baseUrl);
-
-        await boardPage.page
-            .locator('.admin-container button:has-text("New Board")')
-            .click();
-
-        await expect(
-            boardPage.page.locator('.admin-container .slds-modal')
-        ).toBeVisible({
-            timeout: 10_000
-        });
-    });
-
-    test('can create a new board via modal', async ({
+    test('new board button opens the create modal', async ({
         boardPage,
         boardData
     }) => {
-        await openAdmin(boardPage.page, boardData.baseUrl);
+        const admin = await openAdmin(boardPage.page, boardData.baseUrl);
 
-        const adminComponent = boardPage.page.locator('.admin-container');
-        const boardCards = adminComponent.locator('.board-card');
-        const countBefore = await boardCards.count();
+        await admin.getByRole('button', { name: 'New Board' }).click();
 
-        await adminComponent.locator('button:has-text("New Board")').click();
-
-        const modal = adminComponent.locator('.slds-modal');
+        const modal = admin.getByRole('dialog', { name: 'New Board' });
         await expect(modal).toBeVisible({ timeout: 10_000 });
+        await expect(
+            modal.getByRole('button', { name: 'Create', exact: true })
+        ).toBeVisible();
 
-        await modal
-            .locator('input[data-field="name"]')
-            .fill(`E2E Board ${Date.now()}`);
-        await modal.locator('button:has-text("Create")').click();
-
-        await expect(modal).not.toBeVisible({ timeout: SF_TIMEOUT });
-        await expect(boardCards).toHaveCount(countBefore + 1, {
-            timeout: SF_TIMEOUT
-        });
-    });
-
-    test('onboarding points column setup to the board record page', async ({
-        boardPage,
-        boardData
-    }) => {
-        await openAdmin(boardPage.page, boardData.baseUrl);
-
-        const onboardingText = boardPage.page.getByText('board record page', {
-            exact: false
-        });
-        const exists = await onboardingText
-            .isVisible({ timeout: 5_000 })
-            .catch(() => false);
-
-        if (exists) {
-            await expect(onboardingText).toBeVisible();
+        // Board Type offers the four supported types, including Sprint
+        await modal.getByRole('combobox', { name: 'Board Type' }).click();
+        for (const type of ['Project', 'Personal', 'Team', 'Sprint']) {
             await expect(
-                boardPage.page.getByText('Columns', { exact: true })
+                modal.getByRole('option', { name: type, exact: true })
             ).toBeVisible();
         }
+        await boardPage.page.keyboard.press('Escape');
+
+        await modal.getByRole('button', { name: 'Cancel' }).click();
+        await expect(modal).toHaveCount(0);
+    });
+
+    test('can create a new project board via modal', async ({
+        boardPage,
+        boardData
+    }) => {
+        const admin = await openAdmin(boardPage.page, boardData.baseUrl);
+
+        await admin.getByRole('button', { name: 'New Board' }).click();
+        const modal = admin.getByRole('dialog', { name: 'New Board' });
+        await expect(modal).toBeVisible({ timeout: 10_000 });
+
+        const boardName = `E2E Board ${Date.now()}`;
+        // data-field sits on the lightning-input host, not the native input
+        await modal.locator('[data-field="name"] input').fill(boardName);
+        await modal
+            .getByRole('button', { name: 'Create', exact: true })
+            .click();
+
+        await expect(modal).toHaveCount(0, { timeout: SF_TIMEOUT });
+        const newCard = admin.locator('.board-card', {
+            has: boardPage.page.locator('.board-name', {
+                hasText: new RegExp(`^${escapeRegExp(boardName)}$`)
+            })
+        });
+        await expect(newCard).toBeVisible({ timeout: SF_TIMEOUT });
+        await expect(newCard.locator('.board-meta')).toContainText('Project');
+
+        const rows = sfQuery(
+            `SELECT OpenSF__Type__c FROM OpenSF__Board__c WHERE Name = '${boardName}'`
+        );
+        expect(rows).toHaveLength(1);
+        expect(rows[0].OpenSF__Type__c).toBe('Project');
+    });
+
+    test('can create a Sprint board that enables sprint features', async ({
+        boardPage,
+        boardData
+    }) => {
+        const page = boardPage.page;
+        const admin = await openAdmin(page, boardData.baseUrl);
+
+        await admin.getByRole('button', { name: 'New Board' }).click();
+        const modal = admin.getByRole('dialog', { name: 'New Board' });
+        await expect(modal).toBeVisible({ timeout: 10_000 });
+
+        const boardName = `E2E Sprint Board ${Date.now()}`;
+        await modal.locator('[data-field="name"] input').fill(boardName);
+        await modal.getByRole('combobox', { name: 'Board Type' }).click();
+        await modal
+            .getByRole('option', { name: 'Sprint', exact: true })
+            .click();
+        await expect(
+            modal.getByRole('combobox', { name: 'Board Type' })
+        ).toHaveText(/Sprint/);
+        await modal
+            .getByRole('button', { name: 'Create', exact: true })
+            .click();
+
+        await expect(modal).toHaveCount(0, { timeout: SF_TIMEOUT });
+        const newCard = admin.locator('.board-card', {
+            has: page.locator('.board-name', {
+                hasText: new RegExp(`^${escapeRegExp(boardName)}$`)
+            })
+        });
+        await expect(newCard).toBeVisible({ timeout: SF_TIMEOUT });
+        await expect(newCard.locator('.board-meta')).toContainText('Sprint');
+
+        const rows = sfQuery(
+            `SELECT Id, OpenSF__Type__c FROM OpenSF__Board__c WHERE Name = '${boardName}'`
+        );
+        expect(rows).toHaveLength(1);
+        expect(rows[0].OpenSF__Type__c).toBe('Sprint');
+
+        // Opening the board shows sprint UI: header in the topbar and the
+        // "No Active Sprint" empty state (a new board has no sprint yet)
+        await newCard.getByRole('button', { name: 'Open Board' }).click();
+        await expect(page).toHaveURL(new RegExp(rows[0].Id.slice(0, 15)), {
+            timeout: SF_TIMEOUT
+        });
+        await expect(page.locator('.sprint-inline__empty')).toHaveText(
+            'No active sprint',
+            { timeout: SF_TIMEOUT }
+        );
+        await expect(
+            page.getByRole('heading', { name: 'No Active Sprint' })
+        ).toBeVisible();
+    });
+
+    test('edit board modal uses the Save label', async ({
+        boardPage,
+        boardData
+    }) => {
+        const admin = await openAdmin(boardPage.page, boardData.baseUrl);
+
+        const firstCard = admin.locator('.board-card').first();
+        await expect(firstCard).toBeVisible({ timeout: SF_TIMEOUT });
+        await firstCard.getByRole('button', { name: 'Board Actions' }).click();
+        await firstCard.getByRole('menuitem', { name: 'Edit' }).click();
+
+        const modal = admin.getByRole('dialog', { name: 'Edit Board' });
+        await expect(modal).toBeVisible({ timeout: 10_000 });
+        await expect(
+            modal.getByRole('button', { name: 'Save', exact: true })
+        ).toBeVisible();
+        await expect(
+            modal.getByRole('button', { name: 'Create', exact: true })
+        ).toHaveCount(0);
+
+        await modal.getByRole('button', { name: 'Cancel' }).click();
+        await expect(modal).toHaveCount(0);
     });
 
     test('card fields tab loads add-field flow', async ({
         boardPage,
         boardData
     }) => {
-        await openAdmin(boardPage.page, boardData.baseUrl);
+        const admin = await openAdmin(boardPage.page, boardData.baseUrl);
 
-        await boardPage.page.getByText('Card Fields').click();
+        await admin.getByRole('tab', { name: 'Card Fields' }).click();
 
-        const addFieldButton = boardPage.page.locator(
-            '.admin-container button:has-text("Add Field")'
-        );
+        const addFieldButton = admin
+            .getByRole('button', { name: 'Add Field' })
+            .first();
         await expect(addFieldButton).toBeVisible({ timeout: SF_TIMEOUT });
-
         await addFieldButton.click();
+
+        const modal = admin.getByRole('dialog', { name: 'New Card Field' });
+        await expect(modal).toBeVisible({ timeout: 10_000 });
         await expect(
-            boardPage.page.locator(
-                '.admin-container section[aria-labelledby="card-field-modal-heading"]'
-            )
-        ).toBeVisible({ timeout: 10_000 });
+            modal.getByRole('combobox', { name: /Card Field/ })
+        ).toBeVisible();
     });
 
     test('settings tab shows the shipped permission sets', async ({
         boardPage,
         boardData
     }) => {
-        await openAdmin(boardPage.page, boardData.baseUrl);
+        const admin = await openAdmin(boardPage.page, boardData.baseUrl);
 
-        await boardPage.page.getByText('Settings').click();
+        await admin.getByRole('tab', { name: 'Settings' }).click();
 
-        await expect(
-            boardPage.page.getByText('Alex Admin', { exact: true })
-        ).toBeVisible({ timeout: SF_TIMEOUT });
-        await expect(
-            boardPage.page.getByText('Alex User', { exact: true })
-        ).toBeVisible({ timeout: SF_TIMEOUT });
+        const permSets = admin.locator('.permission-set-item strong');
+        await expect(permSets).toHaveText(['Alex Admin', 'Alex User'], {
+            timeout: SF_TIMEOUT
+        });
     });
 
     test('board record page remains the column-management entry point', async ({
         boardPage,
         boardData
     }) => {
-        await boardPage.page.goto(
-            `${boardData.baseUrl}/lightning/r/OpenSF__Board__c/${boardData.boardId}/view`,
-            {
-                waitUntil: 'domcontentloaded',
-                timeout: SF_TIMEOUT
-            }
-        );
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
 
-        const columnsLabel = boardPage.page.getByText('Columns', {
-            exact: true
-        });
-        const hasColumns = await columnsLabel
-            .isVisible({ timeout: SF_TIMEOUT })
-            .catch(() => false);
-        if (!hasColumns) {
-            test.skip(true, 'Board record page Columns entry not visible');
-        }
-
-        await expect(columnsLabel).toBeVisible();
+        const columnsTab = boardPage.page.locator('[data-tab-id="columns"]');
+        await expect(columnsTab).toBeVisible({ timeout: SF_TIMEOUT });
+        await expect(columnsTab).toHaveText('Columns');
     });
 });

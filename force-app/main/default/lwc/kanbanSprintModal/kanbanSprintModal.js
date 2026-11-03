@@ -9,8 +9,11 @@ const DURATION_OPTIONS = [
     { label: 'Custom', value: 'custom' }
 ];
 
+// Format as YYYY-MM-DD in the user's local calendar. toISOString() would
+// convert to UTC and shift the date by a day for users east of UTC.
 function toDateString(date) {
-    return date.toISOString().split('T')[0];
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 function addDays(dateStr, days) {

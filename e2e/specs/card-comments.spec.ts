@@ -1,4 +1,7 @@
+import type { Locator } from '@playwright/test';
 import { test, expect } from '../fixtures';
+import type { BoardDataFixture } from '../fixtures';
+import type { BoardPage } from '../pages';
 import { sfApexRun } from '../helpers/sf-data';
 
 const SF_TIMEOUT = 60_000;
@@ -7,8 +10,8 @@ const SF_TIMEOUT = 60_000;
  * Helper to open a card panel and wait for comments section
  */
 async function openCardPanel(
-    boardPage: any,
-    boardData: any,
+    boardPage: BoardPage,
+    boardData: BoardDataFixture,
     cardIndex: number = 0
 ) {
     await boardPage.open(boardData.baseUrl, boardData.boardId);
@@ -44,7 +47,7 @@ System.debug('E2E_COMMENT_ID:' + c.Id);
 /**
  * Helper to type into the comment textarea and post via UI.
  */
-async function postCommentViaUI(panel: any, text: string) {
+async function postCommentViaUI(panel: Locator, text: string) {
     const textarea = panel.locator('textarea[data-id="comment-input"]');
     await textarea.waitFor({ state: 'visible', timeout: SF_TIMEOUT });
     await textarea.fill(text);

@@ -52,7 +52,7 @@ function buildEvent(overrides = {}) {
         OpenSF__EventType__c: overrides.eventType || 'update',
         OpenSF__ClientRequestId__c: overrides.clientRequestId || null,
         OpenSF__SequenceNumber__c: overrides.sequenceNumber ?? null,
-        ClientId__c: overrides.clientId || null
+        OpenSF__ClientId__c: overrides.clientId || null
     };
 }
 

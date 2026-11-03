@@ -1,6 +1,14 @@
 import { test, expect, type Page, type CDPSession } from '@playwright/test';
 import { createIsolatedBoard, type BoardData } from '../helpers/sf-data';
 
+type LongTask = { name: string; duration: number; startTime: number };
+
+declare global {
+    interface Window {
+        __longTasks?: LongTask[];
+    }
+}
+
 /**
  * LWC Performance Benchmark Suite
  *
@@ -48,10 +56,10 @@ function metricDelta(
 /** Capture long tasks via PerformanceObserver injection */
 async function startLongTaskObserver(page: Page): Promise<void> {
     await page.evaluate(() => {
-        (window as any).__longTasks = [];
+        window.__longTasks = [];
         const observer = new PerformanceObserver((list) => {
             for (const entry of list.getEntries()) {
-                (window as any).__longTasks.push({
+                window.__longTasks?.push({
                     name: entry.name,
                     duration: entry.duration,
                     startTime: entry.startTime
@@ -65,7 +73,7 @@ async function startLongTaskObserver(page: Page): Promise<void> {
 async function getLongTasks(
     page: Page
 ): Promise<Array<{ name: string; duration: number; startTime: number }>> {
-    return page.evaluate(() => (window as any).__longTasks || []);
+    return page.evaluate(() => window.__longTasks || []);
 }
 
 /** Get navigation timing metrics */

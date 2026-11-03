@@ -43,10 +43,10 @@ function shellQuote(str: string): string {
  * Extract the first valid JSON object from CLI output that may contain
  * warnings, banners, or other non-JSON text before/after the JSON.
  */
-function parseJsonFromOutput(raw: string): SfQueryResult {
+function parseJsonFromOutput(output: string): SfQueryResult {
     // Strip any ANSI escape codes
     // eslint-disable-next-line no-control-regex
-    raw = raw.replace(/\x1B\[[0-9;]*m/g, '');
+    const raw = output.replace(/\x1B\[[0-9;]*m/g, '');
 
     // Try each `{` position until JSON.parse succeeds
     let pos = 0;
@@ -80,6 +80,8 @@ function parseJsonFromOutput(raw: string): SfQueryResult {
 /**
  * Run an SOQL query and return the records array.
  */
+// SOQL rows are dynamic; callers read fields by name.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function sfQuery(query: string): Record<string, any>[] {
     const raw = execSync(
         `sf data query --query ${shellQuote(query)} --target-org ${TARGET_ORG} --json`,
