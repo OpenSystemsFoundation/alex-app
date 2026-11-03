@@ -27,12 +27,14 @@ async function flushPromises() {
     }
 }
 
-/** Today in UTC as YYYY-MM-DD (matches the component's ISO-based default). */
-function utcToday() {
-    return new Date().toISOString().split('T')[0];
+/** Today in the local calendar as YYYY-MM-DD (matches the component's default). */
+function localToday() {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
-/** Add days to a YYYY-MM-DD string using pure UTC arithmetic. */
+/** Add days to a YYYY-MM-DD string (pure calendar arithmetic, timezone-independent). */
 function utcAddDays(dateStr, days) {
     const [y, m, d] = dateStr.split('-').map(Number);
     return new Date(Date.UTC(y, m - 1, d + days)).toISOString().split('T')[0];
@@ -96,7 +98,7 @@ describe('c-kanban-sprint-modal', () => {
             const element = mount();
             await flushPromises();
 
-            const today = utcToday();
+            const today = localToday();
             expect(title(element)).toBe('Create Sprint');
             expect(dateInput(element, 'Start Date').value).toBe(today);
             expect(dateInput(element, 'End Date').value).toBe(
@@ -120,7 +122,7 @@ describe('c-kanban-sprint-modal', () => {
 
             expect(durationCombo(element).value).toBe('21');
             expect(dateInput(element, 'End Date').value).toBe(
-                utcAddDays(utcToday(), 21)
+                utcAddDays(localToday(), 21)
             );
         });
 
@@ -130,7 +132,7 @@ describe('c-kanban-sprint-modal', () => {
 
             expect(durationCombo(element).value).toBe('custom');
             expect(dateInput(element, 'End Date').value).toBe(
-                utcAddDays(utcToday(), 10)
+                utcAddDays(localToday(), 10)
             );
         });
 
@@ -140,7 +142,7 @@ describe('c-kanban-sprint-modal', () => {
 
             expect(durationCombo(element).value).toBe('14');
             expect(dateInput(element, 'End Date').value).toBe(
-                utcAddDays(utcToday(), 14)
+                utcAddDays(localToday(), 14)
             );
         });
 
@@ -346,7 +348,7 @@ describe('c-kanban-sprint-modal', () => {
             });
             await flushPromises();
 
-            const today = utcToday();
+            const today = localToday();
             expect(
                 root(element).querySelector('lightning-textarea').value
             ).toBe('');
