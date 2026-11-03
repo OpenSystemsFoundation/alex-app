@@ -31,7 +31,8 @@ jest.mock('c/kanbanStore', () => ({
 import {
     reorderBacklogCardAsync,
     addCardsToBacklogSprintAsync,
-    removeCardFromBacklogSprintAsync
+    removeCardFromBacklogSprintAsync,
+    bulkReorderBacklogCardsAtIndexAsync
 } from 'c/kanbanStore';
 
 beforeEach(() => jest.clearAllMocks());
@@ -255,6 +256,444 @@ describe('BacklogDragDropHandler', () => {
 
             expect(removeCardFromBacklogSprintAsync).not.toHaveBeenCalled();
             expect(addCardsToBacklogSprintAsync).not.toHaveBeenCalled();
+        });
+    });
+});
+
+// ─── Additional branch coverage ───────────────────────────
+
+describe('BacklogDragDropHandler — edge cases', () => {
+    let rafSpy;
+
+    beforeEach(() => {
+        rafSpy = jest
+            .spyOn(window, 'requestAnimationFrame')
+            .mockImplementation((cb) => {
+                cb();
+                return 1;
+            });
+    });
+
+    afterEach(() => {
+        rafSpy.mockRestore();
+    });
+
+    function rejectingStore(cards = []) {
+        return {
+            getState: () => ({ backlogCards: cards }),
+            dispatch: jest.fn(() => Promise.reject(new Error('boom')))
+        };
+    }
+
+    function lastErrorMessage(host) {
+        const calls = host.dispatchEvent.mock.calls;
+        return calls.length ? calls[calls.length - 1][0].detail.message : null;
+    }
+
+    describe('handleDragStart', () => {
+        it('normalizes "null" sprint id, sets data and adds dragging class via rAF', () => {
+            const host = createHost();
+            const handler = new BacklogDragDropHandler(host);
+            const event = createDragEvent('dragstart', {
+                cardId: 'c1',
+                sprintId: 'null'
+            });
+
+            handler.handleDragStart(event);
+
+            expect(handler._dragSourceSprintId).toBeNull();
+            expect(event.dataTransfer.setData).toHaveBeenCalledWith(
+                'text/plain',
+                'c1'
+            );
+            expect(event.target.classList.add).toHaveBeenCalledWith('dragging');
+        });
+
+        it('keeps a real sprint id as the drag source', () => {
+            const host = createHost();
+            const handler = new BacklogDragDropHandler(host);
+            handler.handleDragStart(
+                createDragEvent('dragstart', { cardId: 'c1', sprintId: 's1' })
+            );
+            expect(handler._dragSourceSprintId).toBe('s1');
+        });
+
+        it('clears an existing selection when dragging an unselected card', () => {
+            const host = createHost({ selectedCards: ['c2'] });
+            const handler = new BacklogDragDropHandler(host);
+            handler.handleDragStart(
+                createDragEvent('dragstart', { cardId: 'c1' })
+            );
+            expect(host.store.dispatch).toHaveBeenCalledWith({
+                type: 'SET_SELECTED_BACKLOG_CARDS',
+                payload: []
+            });
+            expect(handler._dragCardIds).toEqual(['c1']);
+        });
+
+        it('does not dispatch when there is no selection, no store, or undefined selection', () => {
+            const host = createHost({ selectedCards: [] });
+            new BacklogDragDropHandler(host).handleDragStart(
+                createDragEvent('dragstart', { cardId: 'c1' })
+            );
+            expect(host.store.dispatch).not.toHaveBeenCalled();
+
+            const noStoreHost = createHost({
+                selectedCards: ['c2'],
+                store: null
+            });
+            const handler = new BacklogDragDropHandler(noStoreHost);
+            handler.handleDragStart(
+                createDragEvent('dragstart', { cardId: 'c1' })
+            );
+            expect(handler._dragCardIds).toEqual(['c1']);
+
+            const undefHost = createHost({ selectedCards: undefined });
+            const handler2 = new BacklogDragDropHandler(undefHost);
+            handler2.handleDragStart(
+                createDragEvent('dragstart', { cardId: 'c9' })
+            );
+            expect(handler2._dragCardIds).toEqual(['c9']);
+        });
+    });
+
+    describe('handleDragOver', () => {
+        it('returns early (after preventDefault) when nothing is being dragged', () => {
+            const host = createHost();
+            const handler = new BacklogDragDropHandler(host);
+            const event = createDragEvent('dragover', { index: '1' });
+
+            handler.handleDragOver(event);
+
+            expect(event.preventDefault).toHaveBeenCalled();
+            expect(event.dataTransfer.dropEffect).toBe('move');
+            expect(event.currentTarget.classList.add).not.toHaveBeenCalled();
+            expect(host.dragOverIndex).toBeNull();
+        });
+
+        it('shows the "above" indicator when cursor is in the top half', () => {
+            const host = createHost();
+            host.draggedCardId = 'c1';
+            const handler = new BacklogDragDropHandler(host);
+            const event = createDragEvent(
+                'dragover',
+                { index: '2' },
+                { clientY: 5 }
+            );
+
+            handler.handleDragOver(event);
+
+            expect(event.currentTarget.classList.add).toHaveBeenCalledWith(
+                'drag-indicator-above'
+            );
+            expect(host.dragOverIndex).toBe(2);
+            expect(host._dragTargetIndex).toBe(2);
+        });
+
+        it('shows the "below" indicator in the bottom half and clears the previous row', () => {
+            const host = createHost();
+            host.draggedCardId = 'c1';
+            const handler = new BacklogDragDropHandler(host);
+            const first = createDragEvent(
+                'dragover',
+                { index: '0' },
+                { clientY: 5 }
+            );
+            handler.handleDragOver(first);
+
+            const second = createDragEvent(
+                'dragover',
+                { index: '2' },
+                { clientY: 35 }
+            );
+            handler.handleDragOver(second);
+
+            expect(first.currentTarget.classList.remove).toHaveBeenCalledWith(
+                'drag-indicator-above',
+                'drag-indicator-below'
+            );
+            expect(second.currentTarget.classList.add).toHaveBeenCalledWith(
+                'drag-indicator-below'
+            );
+            expect(host.dragOverIndex).toBe(3);
+        });
+
+        it('does nothing when the effective index has not changed', () => {
+            const host = createHost();
+            host.draggedCardId = 'c1';
+            host.dragOverIndex = 1;
+            const handler = new BacklogDragDropHandler(host);
+            const event = createDragEvent(
+                'dragover',
+                { index: '1' },
+                { clientY: 5 }
+            );
+
+            handler.handleDragOver(event);
+
+            expect(event.currentTarget.classList.add).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('handleDragEnd', () => {
+        it('only clears visuals when no drag is in progress', () => {
+            const header = { classList: { remove: jest.fn() } };
+            const host = createHost();
+            host.template.querySelectorAll = jest.fn(() => [header]);
+            host.dragOverIndex = 4;
+            const handler = new BacklogDragDropHandler(host);
+            handler._dragCardIds = ['keep'];
+
+            handler.handleDragEnd(createDragEvent('dragend'));
+
+            expect(header.classList.remove).toHaveBeenCalledWith(
+                'drag-indicator-header'
+            );
+            expect(host.dragOverIndex).toBe(4);
+            expect(handler._dragCardIds).toEqual(['keep']);
+        });
+    });
+
+    describe('section header drag over / leave', () => {
+        it('ignores header dragover when nothing is dragged', () => {
+            const host = createHost();
+            const handler = new BacklogDragDropHandler(host);
+            const event = createDragEvent('dragover');
+            handler.handleSectionHeaderDragOver(event);
+            expect(event.preventDefault).not.toHaveBeenCalled();
+            expect(event.currentTarget.classList.add).not.toHaveBeenCalled();
+        });
+
+        it('highlights the header while dragging and removes it on leave', () => {
+            const host = createHost();
+            host.draggedCardId = 'c1';
+            const handler = new BacklogDragDropHandler(host);
+            const event = createDragEvent('dragover');
+
+            handler.handleSectionHeaderDragOver(event);
+            handler.handleSectionHeaderDragLeave(event);
+
+            expect(event.preventDefault).toHaveBeenCalled();
+            expect(event.dataTransfer.dropEffect).toBe('move');
+            expect(event.currentTarget.classList.add).toHaveBeenCalledWith(
+                'drag-indicator-header'
+            );
+            expect(event.currentTarget.classList.remove).toHaveBeenCalledWith(
+                'drag-indicator-header'
+            );
+        });
+    });
+
+    describe('handleSectionHeaderDrop', () => {
+        it('returns when nothing is being dragged', async () => {
+            const host = createHost();
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleSectionHeaderDrop(
+                createDragEvent('drop', { sprintId: 's1' })
+            );
+            expect(host.store.dispatch).not.toHaveBeenCalled();
+        });
+
+        it('returns when there is no store', async () => {
+            const host = createHost({ store: null });
+            host.draggedCardId = 'c1';
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleSectionHeaderDrop(
+                createDragEvent('drop', { sprintId: 's1' })
+            );
+            expect(host.draggedCardId).toBeNull();
+            expect(addCardsToBacklogSprintAsync).not.toHaveBeenCalled();
+        });
+
+        it('falls back to draggedCardId and adds it to the target sprint', async () => {
+            const host = createHost();
+            host.draggedCardId = 'c1';
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleSectionHeaderDrop(
+                createDragEvent('drop', { sprintId: 's2' })
+            );
+            expect(removeCardFromBacklogSprintAsync).not.toHaveBeenCalled();
+            expect(addCardsToBacklogSprintAsync).toHaveBeenCalledWith('s2', [
+                'c1'
+            ]);
+        });
+
+        it('treats a header without sprint id as the backlog (no-op from backlog)', async () => {
+            const host = createHost();
+            host.draggedCardId = 'c1';
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleSectionHeaderDrop(createDragEvent('drop', {}));
+            expect(host.store.dispatch).not.toHaveBeenCalled();
+        });
+
+        it('dispatches an error event when the move fails', async () => {
+            const host = createHost({ store: rejectingStore() });
+            host.draggedCardId = 'c1';
+            const handler = new BacklogDragDropHandler(host);
+            handler._dragSourceSprintId = 's1';
+            await handler.handleSectionHeaderDrop(
+                createDragEvent('drop', { sprintId: 'ungrouped' })
+            );
+            expect(lastErrorMessage(host)).toBe('Failed to move card');
+        });
+    });
+
+    describe('handleDrop', () => {
+        const cards = [{ Id: 'a' }, { Id: 'b' }, { Id: 'c' }, { Id: 'd' }];
+
+        function dropHost(extra = {}) {
+            const host = createHost({ backlogCards: cards, ...extra });
+            if (!('store' in extra)) {
+                host.store.getState = () => ({ backlogCards: cards });
+            }
+            return host;
+        }
+
+        it('returns when nothing is being dragged', async () => {
+            const host = dropHost();
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleDrop(createDragEvent('drop', {}));
+            expect(host.store.dispatch).not.toHaveBeenCalled();
+        });
+
+        it('returns when there is no store', async () => {
+            const host = dropHost({ store: null });
+            host.draggedCardId = 'a';
+            host._dragTargetIndex = 1;
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleDrop(createDragEvent('drop', {}));
+            expect(host._dragTargetIndex).toBeNull();
+            expect(reorderBacklogCardAsync).not.toHaveBeenCalled();
+        });
+
+        it('dispatches error when a cross-section move fails', async () => {
+            const host = dropHost({ store: rejectingStore(cards) });
+            host.draggedCardId = 'a';
+            host._dragTargetIndex = 0;
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleDrop(
+                createDragEvent('drop', { sprintId: 's1', cardId: 'b' })
+            );
+            expect(lastErrorMessage(host)).toBe('Failed to move card');
+        });
+
+        it('removes from source sprint when dropping into the backlog', async () => {
+            const host = dropHost();
+            host.draggedCardId = 'a';
+            host._dragTargetIndex = 0;
+            const handler = new BacklogDragDropHandler(host);
+            handler._dragSourceSprintId = 's1';
+            await handler.handleDrop(
+                createDragEvent('drop', { sprintId: 'null', cardId: 'b' })
+            );
+            expect(removeCardFromBacklogSprintAsync).toHaveBeenCalledWith(
+                's1',
+                'a'
+            );
+            expect(addCardsToBacklogSprintAsync).not.toHaveBeenCalled();
+            expect(reorderBacklogCardAsync).not.toHaveBeenCalled();
+        });
+
+        it('returns when there is no target index', async () => {
+            const host = dropHost();
+            host.draggedCardId = 'a';
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleDrop(createDragEvent('drop', { cardId: 'b' }));
+            expect(host.store.dispatch).not.toHaveBeenCalled();
+        });
+
+        it('returns when the dragged card is not in the backlog state', async () => {
+            const host = createHost();
+            host.store.getState = () => ({});
+            host.draggedCardId = 'zzz';
+            host._dragTargetIndex = 0;
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleDrop(createDragEvent('drop', { cardId: 'b' }));
+            expect(host.store.dispatch).not.toHaveBeenCalled();
+        });
+
+        it('uses the last index when the anchor card is unknown', async () => {
+            const host = dropHost();
+            host.draggedCardId = 'a';
+            host._dragTargetIndex = 1;
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleDrop(
+                createDragEvent('drop', { cardId: 'unknown' })
+            );
+            expect(reorderBacklogCardAsync).toHaveBeenCalledWith('a', 3);
+        });
+
+        it('adjusts the anchor index when moving a single card down', async () => {
+            const host = dropHost();
+            host.draggedCardId = 'a';
+            host._dragTargetIndex = 2;
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleDrop(createDragEvent('drop', { cardId: 'c' }));
+            expect(reorderBacklogCardAsync).toHaveBeenCalledWith('a', 1);
+        });
+
+        it('keeps the anchor index when moving a single card up', async () => {
+            const host = dropHost();
+            host.draggedCardId = 'd';
+            host._dragTargetIndex = 1;
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleDrop(createDragEvent('drop', { cardId: 'b' }));
+            expect(reorderBacklogCardAsync).toHaveBeenCalledWith('d', 1);
+        });
+
+        it('bulk-reorders at the raw anchor index for a multi-card drop', async () => {
+            const host = dropHost();
+            host.draggedCardId = 'a';
+            host._dragTargetIndex = 2;
+            const handler = new BacklogDragDropHandler(host);
+            handler._dragCardIds = ['a', 'b'];
+            await handler.handleDrop(createDragEvent('drop', { cardId: 'c' }));
+            expect(bulkReorderBacklogCardsAtIndexAsync).toHaveBeenCalledWith(
+                ['a', 'b'],
+                2
+            );
+            expect(reorderBacklogCardAsync).not.toHaveBeenCalled();
+        });
+
+        it('drops at the end when target index is past the visible cards', async () => {
+            const host = dropHost();
+            host.draggedCardId = 'b';
+            host._dragTargetIndex = 4;
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleDrop(createDragEvent('drop', {}));
+            expect(reorderBacklogCardAsync).toHaveBeenCalledWith('b', 3);
+        });
+
+        it('resolves the anchor from visible cards when no anchor id is given', async () => {
+            const host = dropHost();
+            host.draggedCardId = 'a';
+            host._dragTargetIndex = 3;
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleDrop(createDragEvent('drop', {}));
+            // anchor 'd' at index 3, moving down → 2
+            expect(reorderBacklogCardAsync).toHaveBeenCalledWith('a', 2);
+        });
+
+        it('keeps the visible anchor index for multi-drops and upward moves', async () => {
+            const host = dropHost();
+            host.draggedCardId = 'c';
+            host._dragTargetIndex = 1;
+            const handler = new BacklogDragDropHandler(host);
+            handler._dragCardIds = ['c', 'd'];
+            await handler.handleDrop(createDragEvent('drop', {}));
+            expect(bulkReorderBacklogCardsAtIndexAsync).toHaveBeenCalledWith(
+                ['c', 'd'],
+                1
+            );
+        });
+
+        it('dispatches an error event when saving the position fails', async () => {
+            const host = dropHost({ store: rejectingStore(cards) });
+            host.draggedCardId = 'a';
+            host._dragTargetIndex = 2;
+            const handler = new BacklogDragDropHandler(host);
+            await handler.handleDrop(createDragEvent('drop', { cardId: 'c' }));
+            expect(lastErrorMessage(host)).toBe('Failed to save card position');
         });
     });
 });
