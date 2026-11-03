@@ -59,6 +59,17 @@ describe('LifecycleManager', () => {
             spy.mockRestore();
         });
 
+        it('routes window focus events to handleWindowFocus', () => {
+            const spy = jest
+                .spyOn(manager, 'handleWindowFocus')
+                .mockImplementation(() => {});
+
+            manager.initialize();
+            window.dispatchEvent(new CustomEvent('focus'));
+
+            expect(spy).toHaveBeenCalledTimes(1);
+        });
+
         it('loads board data when recordId is set', () => {
             manager.initialize();
 

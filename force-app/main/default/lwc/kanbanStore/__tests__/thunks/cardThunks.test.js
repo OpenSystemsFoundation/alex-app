@@ -491,3 +491,374 @@ describe('bulkReorderBacklogCardsAtIndexAsync', () => {
         expect(revertAction).toBeDefined();
     });
 });
+
+describe('cardThunks — error paths and edge branches', () => {
+    let consoleErrorSpy;
+
+    beforeEach(() => {
+        consoleErrorSpy = jest
+            .spyOn(console, 'error')
+            .mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        consoleErrorSpy.mockRestore();
+    });
+
+    // Env whose backlogCards change in response to UPDATE_BACKLOG_CARD,
+    // so sequential loops see the persisted positions.
+    function createBacklogEnv(backlogCards) {
+        const dispatched = [];
+        let state = buildInitialState({ backlogCards });
+        const dispatch = jest.fn((action) => {
+            dispatched.push(action);
+            if (action.type === 'UPDATE_BACKLOG_CARD') {
+                state = {
+                    ...state,
+                    backlogCards: state.backlogCards.map((c) => {
+                        if (c.Id !== action.payload.cardId) return c;
+                        return { ...c, ...action.payload.updates };
+                    })
+                };
+            }
+            return action;
+        });
+        const getState = jest.fn(() => state);
+        return { dispatch, getState, dispatched };
+    }
+
+    it('moveCardAsync handles a target column without a cards array', async () => {
+        const { dispatch, getState, dispatched } = createThunkEnv({
+            columns: [{ Id: 'col1' }]
+        });
+        moveCardApex.mockResolvedValue({ ok: true });
+
+        const result = await moveCardAsync('c1', 'col1', 0)(dispatch, getState);
+
+        expect(result).toEqual({ success: true, result: { ok: true } });
+        expect(moveCardApex).toHaveBeenCalledWith({
+            cardId: 'c1',
+            targetColumnId: 'col1',
+            previousCardPosition: null,
+            nextCardPosition: null
+        });
+        expect(dispatched.map((a) => a.type)).toEqual(['MOVE_CARD']);
+    });
+
+    it('createCardAsync places the card after the last card and omits optional ids', async () => {
+        const col = buildColumn({
+            Id: 'col1',
+            cards: [
+                buildCard({ Id: 'c1', position: '1000' }),
+                buildCard({ Id: 'c2', position: '2000' })
+            ]
+        });
+        const { dispatch, getState, dispatched } = createThunkEnv({
+            columns: [col]
+        });
+        const newCard = { Id: 'new1', subject: 'Hello' };
+        createCardApex.mockResolvedValue(newCard);
+
+        await createCardAsync('col1', 'Hello')(dispatch, getState);
+
+        expect(createCardApex).toHaveBeenCalledWith({
+            columnId: 'col1',
+            subject: 'Hello',
+            previousCardPosition: '2000',
+            nextCardPosition: null
+        });
+        expect(dispatched).toEqual([
+            { type: 'ADD_CARD', payload: { card: newCard, columnId: 'col1' } }
+        ]);
+    });
+
+    it('createCardAsync handles a column without a cards array', async () => {
+        const { dispatch, getState } = createThunkEnv({
+            columns: [{ Id: 'col1' }]
+        });
+        createCardApex.mockResolvedValue({ Id: 'new1' });
+
+        await createCardAsync('col1', 'X')(dispatch, getState);
+
+        expect(createCardApex).toHaveBeenCalledWith(
+            expect.objectContaining({ previousCardPosition: null })
+        );
+    });
+
+    it('createCardAsync rethrows Apex errors without dispatching', async () => {
+        const col = buildColumn({ Id: 'col1', cards: [] });
+        const { dispatch, getState } = createThunkEnv({ columns: [col] });
+        const error = new Error('create failed');
+        createCardApex.mockRejectedValue(error);
+
+        await expect(
+            createCardAsync('col1', 'X')(dispatch, getState)
+        ).rejects.toBe(error);
+        expect(dispatch).not.toHaveBeenCalled();
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+            'Error creating card:',
+            error
+        );
+    });
+
+    it('updateCardAsync skips the server re-apply when Apex returns nothing', async () => {
+        const { dispatch, dispatched } = createThunkEnv();
+        updateCardApex.mockResolvedValue(null);
+
+        const result = await updateCardAsync('c1', { subject: 'S' })(dispatch);
+
+        expect(result).toEqual({ success: true, card: null });
+        expect(updateCardApex).toHaveBeenCalledWith({
+            cardId: 'c1',
+            updates: { subject: 'S' }
+        });
+        expect(dispatched).toEqual([
+            {
+                type: 'UPDATE_CARD',
+                payload: { cardId: 'c1', updates: { subject: 'S' } }
+            }
+        ]);
+    });
+
+    it('createBacklogCardAsync forwards all card fields and dispatches the new card', async () => {
+        const { dispatch, dispatched } = createThunkEnv();
+        const newCard = { Id: 'bg1' };
+        createBacklogCardApex.mockResolvedValue(newCard);
+
+        await createBacklogCardAsync('board1', {
+            subject: 'Item',
+            cardType: 'Bug',
+            priority: 'High',
+            storyPoints: 5
+        })(dispatch);
+
+        expect(createBacklogCardApex).toHaveBeenCalledWith({
+            boardId: 'board1',
+            subject: 'Item',
+            cardType: 'Bug',
+            priority: 'High',
+            storyPoints: 5
+        });
+        expect(dispatched).toEqual([
+            { type: 'ADD_BACKLOG_CARD', payload: newCard }
+        ]);
+    });
+
+    it('createBacklogCardAsync rethrows Apex errors without dispatching', async () => {
+        const { dispatch } = createThunkEnv();
+        createBacklogCardApex.mockRejectedValue(new Error('backlog failed'));
+
+        await expect(
+            createBacklogCardAsync('board1', { subject: 'X' })(dispatch)
+        ).rejects.toThrow('backlog failed');
+        expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('updateBacklogCardAsync rethrows Apex errors after the optimistic update', async () => {
+        const { dispatch, dispatched } = createThunkEnv();
+        updateCardApex.mockRejectedValue(new Error('update failed'));
+
+        await expect(
+            updateBacklogCardAsync('c1', { priority: 'Low' })(dispatch)
+        ).rejects.toThrow('update failed');
+        expect(dispatched).toEqual([
+            {
+                type: 'UPDATE_BACKLOG_CARD',
+                payload: { cardId: 'c1', updates: { priority: 'Low' } }
+            }
+        ]);
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+            'Error updating backlog card:',
+            expect.any(Error)
+        );
+    });
+
+    it('deleteCardAsync rethrows Apex errors without removing the card', async () => {
+        const { dispatch } = createThunkEnv();
+        deleteCardApex.mockRejectedValue(new Error('delete failed'));
+
+        await expect(deleteCardAsync('c1')(dispatch)).rejects.toThrow(
+            'delete failed'
+        );
+        expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('reorderBacklogCardAsync sends both neighbor positions for a middle card', async () => {
+        // The reducer is not applied, so c2 stays at index 1 of 3
+        const cards = [
+            buildCard({ Id: 'c1', position: '1000' }),
+            buildCard({ Id: 'c2', position: '2000' }),
+            buildCard({ Id: 'c3', position: '3000' })
+        ];
+        const { dispatch, getState, dispatched } = createBacklogEnv(cards);
+        reorderBacklogCardApex.mockResolvedValue('2500');
+
+        const result = await reorderBacklogCardAsync('c2', 1)(
+            dispatch,
+            getState
+        );
+
+        expect(result).toEqual({ success: true });
+        expect(reorderBacklogCardApex).toHaveBeenCalledWith({
+            cardId: 'c2',
+            previousCardPosition: '1000',
+            nextCardPosition: '3000'
+        });
+        expect(dispatched.map((a) => a.type)).toEqual([
+            'REORDER_BACKLOG',
+            'SET_BACKLOG_SYNCING',
+            'UPDATE_BACKLOG_CARD',
+            'SET_BACKLOG_SYNCING'
+        ]);
+        expect(dispatched[2].payload).toEqual({
+            cardId: 'c2',
+            updates: { position: '2500' }
+        });
+    });
+
+    it('reorderBacklogCardAsync skips the position update when Apex returns nothing', async () => {
+        const cards = [buildCard({ Id: 'c1', position: '1000' })];
+        const { dispatch, getState, dispatched } = createBacklogEnv(cards);
+        reorderBacklogCardApex.mockResolvedValue(null);
+
+        await reorderBacklogCardAsync('c1', 0)(dispatch, getState);
+
+        expect(reorderBacklogCardApex).toHaveBeenCalledWith({
+            cardId: 'c1',
+            previousCardPosition: null,
+            nextCardPosition: null
+        });
+        expect(dispatched.map((a) => a.type)).not.toContain(
+            'UPDATE_BACKLOG_CARD'
+        );
+        expect(dispatched.map((a) => a.type)).not.toContain(
+            'SET_BACKLOG_CARDS'
+        );
+    });
+
+    it('reorderBacklogCardAsync tolerates a missing backlog array', async () => {
+        const { dispatch, getState, dispatched } = createThunkEnv({
+            backlogCards: undefined
+        });
+
+        const result = await reorderBacklogCardAsync('c1', 0)(
+            dispatch,
+            getState
+        );
+
+        expect(result).toEqual({ success: true });
+        expect(reorderBacklogCardApex).not.toHaveBeenCalled();
+        expect(dispatched[dispatched.length - 1]).toEqual({
+            type: 'SET_BACKLOG_SYNCING',
+            payload: false
+        });
+    });
+
+    it.each([
+        ['bulkMoveBacklogCardsAsync', bulkMoveBacklogCardsAsync, 'top'],
+        [
+            'bulkReorderBacklogCardsAtIndexAsync',
+            bulkReorderBacklogCardsAtIndexAsync,
+            1
+        ]
+    ])(
+        '%s persists positions sequentially using updated neighbors',
+        async (_name, thunkCreator, target) => {
+            const cards = [
+                buildCard({ Id: 'c1', position: '1000' }),
+                buildCard({ Id: 'c2', position: '2000' }),
+                buildCard({ Id: 'c3', position: '3000' })
+            ];
+            const { dispatch, getState, dispatched } = createBacklogEnv(cards);
+            reorderBacklogCardApex
+                .mockResolvedValueOnce('1500')
+                .mockResolvedValueOnce(null);
+
+            await thunkCreator(['c2', 'missing', 'c3'], target)(
+                dispatch,
+                getState
+            );
+
+            // 'missing' is skipped; c3 sees c2's persisted position
+            expect(reorderBacklogCardApex).toHaveBeenCalledTimes(2);
+            expect(reorderBacklogCardApex).toHaveBeenNthCalledWith(1, {
+                cardId: 'c2',
+                previousCardPosition: '1000',
+                nextCardPosition: '3000'
+            });
+            expect(reorderBacklogCardApex).toHaveBeenNthCalledWith(2, {
+                cardId: 'c3',
+                previousCardPosition: '1500',
+                nextCardPosition: null
+            });
+            const updates = dispatched.filter(
+                (a) => a.type === 'UPDATE_BACKLOG_CARD'
+            );
+            expect(updates).toEqual([
+                {
+                    type: 'UPDATE_BACKLOG_CARD',
+                    payload: { cardId: 'c2', updates: { position: '1500' } }
+                }
+            ]);
+            const syncing = dispatched.filter(
+                (a) => a.type === 'SET_BACKLOG_SYNCING'
+            );
+            expect(syncing.map((a) => a.payload)).toEqual([true, false]);
+            expect(dispatched.map((a) => a.type)).not.toContain(
+                'SET_BACKLOG_CARDS'
+            );
+        }
+    );
+
+    it.each([
+        ['bulkMoveBacklogCardsAsync', bulkMoveBacklogCardsAsync, 'bottom'],
+        [
+            'bulkReorderBacklogCardsAtIndexAsync',
+            bulkReorderBacklogCardsAtIndexAsync,
+            0
+        ]
+    ])(
+        '%s tolerates a missing backlog array',
+        async (_name, thunkCreator, target) => {
+            const { dispatch, getState, dispatched } = createThunkEnv({
+                backlogCards: undefined
+            });
+
+            await thunkCreator(['c1'], target)(dispatch, getState);
+
+            expect(reorderBacklogCardApex).not.toHaveBeenCalled();
+            expect(dispatched[dispatched.length - 1]).toEqual({
+                type: 'SET_BACKLOG_SYNCING',
+                payload: false
+            });
+        }
+    );
+
+    it.each([
+        ['bulkMoveBacklogCardsAsync', bulkMoveBacklogCardsAsync, 'top'],
+        [
+            'bulkReorderBacklogCardsAtIndexAsync',
+            bulkReorderBacklogCardsAtIndexAsync,
+            0
+        ]
+    ])(
+        '%s restores the original backlog after a failure',
+        async (_name, thunkCreator, target) => {
+            const cards = [
+                buildCard({ Id: 'c1', position: '1000' }),
+                buildCard({ Id: 'c2', position: '2000' })
+            ];
+            const { dispatch, getState, dispatched } = createBacklogEnv(cards);
+            reorderBacklogCardApex.mockRejectedValue(new Error('boom'));
+
+            await expect(
+                thunkCreator(['c2'], target)(dispatch, getState)
+            ).rejects.toThrow('boom');
+
+            expect(dispatched.slice(-2)).toEqual([
+                { type: 'SET_BACKLOG_SYNCING', payload: false },
+                { type: 'SET_BACKLOG_CARDS', payload: cards }
+            ]);
+        }
+    );
+});
