@@ -1,0 +1,90 @@
+name: Bug report
+description: Something in Alex doesn't work as expected
+labels: [bug]
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Thanks for taking the time to report a bug. Please don't include
+              customer data, credentials or login URLs in this issue.
+
+    - type: textarea
+      id: description
+      attributes:
+          label: What happened?
+          description: A clear description of the bug.
+      validations:
+          required: true
+
+    - type: textarea
+      id: steps
+      attributes:
+          label: Steps to reproduce
+          placeholder: |
+              1. Open a board in the Alex app
+              2. Drag a card to the "Done" column
+              3. ...
+      validations:
+          required: true
+
+    - type: textarea
+      id: expected
+      attributes:
+          label: Expected behavior
+      validations:
+          required: true
+
+    - type: input
+      id: version
+      attributes:
+          label: Alex version
+          description: Setup → Installed Packages → "Alex - A Kanban App", or the git commit if you run from source.
+          placeholder: e.g. 1.1.1
+      validations:
+          required: true
+
+    - type: dropdown
+      id: app
+      attributes:
+          label: App
+          options:
+              - Alex (standard navigation)
+              - Alex Console
+              - Both
+              - Not app-specific
+      validations:
+          required: true
+
+    - type: dropdown
+      id: org
+      attributes:
+          label: Org type
+          options:
+              - Production
+              - Sandbox
+              - Developer Edition
+              - Scratch org
+      validations:
+          required: true
+
+    - type: input
+      id: browser
+      attributes:
+          label: Browser
+          placeholder: e.g. Chrome 131, Firefox 133, Safari 18
+
+    - type: dropdown
+      id: permset
+      attributes:
+          label: Permission set of the affected user
+          options:
+              - Alex_Admin
+              - Alex_User
+              - Both
+              - Not sure
+
+    - type: textarea
+      id: logs
+      attributes:
+          label: Screenshots, console errors or debug logs
+          description: Browser console errors and Apex exception messages help a lot. Remove record IDs and personal data first.

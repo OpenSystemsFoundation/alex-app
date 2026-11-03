@@ -1,0 +1,96 @@
+# Static analysis only — no scratch orgs, no secrets, no org-based tests.
+# Org work (Apex tests, E2E, packaging, promotion) runs locally via the
+# global `salesforce-isv` Claude Code skill. See AGENTS.md → CI/CD.
+
+name: CI
+
+on:
+    pull_request:
+        branches: [main]
+    push:
+        branches: [main]
+    workflow_dispatch:
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+jobs:
+    static:
+        name: Format, lint, type-check, Jest
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+
+            - run: npm ci --no-audit --no-fund
+
+            - name: Prettier
+              run: npm run prettier:verify
+
+            - name: ESLint
+              run: npm run lint
+
+            - name: E2E TypeScript type-check
+              run: npm run type-check:e2e
+
+            # Coverage is reported locally (npm run test:unit:coverage); the 80%
+            # threshold in jest.config.js is not met yet, so CI gates on test results only.
+            - name: LWC Jest
+              run: npm run test:unit -- --silent
+
+            - name: npm audit (production deps, report only)
+              if: always()
+              run: npm audit --omit=dev || true
+
+    code-analyzer:
+        name: Salesforce Code Analyzer
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+
+            - name: Install Salesforce CLI + Code Analyzer
+              run: |
+                  npm install -g @salesforce/cli
+                  sf plugins install code-analyzer
+
+            # Gate: AppExchange rules must have no severity 1-2 findings.
+            # Lower-severity findings are listed in the uploaded report.
+            - name: AppExchange rules (gate)
+              run: |
+                  mkdir -p scan-results
+                  sf code-analyzer run \
+                    --rule-selector AppExchange \
+                    --workspace force-app \
+                    --output-file scan-results/appexchange.json \
+                    --output-file scan-results/appexchange.html \
+                    --severity-threshold 2
+
+            - name: Recommended security rules (report only)
+              if: always()
+              run: |
+                  sf code-analyzer run \
+                    --rule-selector Recommended:Security \
+                    --workspace force-app \
+                    --output-file scan-results/recommended-security.json \
+                    --output-file scan-results/recommended-security.html || true
+
+            - uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: code-analyzer
+                  path: scan-results/
+                  retention-days: 7

@@ -6,18 +6,29 @@ Each scenario runs a self-contained Apex script that creates all necessary
 records: boards, columns, cards, sprints, sprint cards, and snapshots.
 
 Usage:
-    python create_test_data_apex.py          # Interactive menu
-    python create_test_data_apex.py --all    # Create all scenarios
-    python create_test_data_apex.py 1 3 5    # Create specific scenarios by number
+    python create_test_data_apex.py -o my-scratch          # Interactive menu
+    python create_test_data_apex.py -o my-scratch --all    # Create all scenarios
+    python create_test_data_apex.py -o my-scratch 1 3 5    # Specific scenarios
+
+The target org defaults to $SF_TARGET_ORG, then to the sf CLI default org.
+Only scratch orgs are accepted unless --allow-non-scratch is given.
 """
 
+import argparse
+import json
+import os
+import shutil
 import subprocess
 import sys
-import os
 
 # Resolve the apex scripts directory relative to this file
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 APEX_DIR = os.path.normpath(os.path.join(SCRIPT_DIR, "..", "apex"))
+
+# On Windows `sf` is a .cmd shim that subprocess can't find by bare name,
+# so resolve the full path once.
+SF = shutil.which("sf")
+SF_ENV = {**os.environ, "NO_COLOR": "1", "FORCE_COLOR": "0"}
 
 SCENARIOS = [
     {
@@ -53,7 +64,42 @@ SCENARIOS = [
 ]
 
 
-def run_apex_script(apex_file):
+def sf_json(*args):
+    """Run an sf CLI command with --json and return the parsed result."""
+    proc = subprocess.run(
+        [SF, *args, "--json"], capture_output=True, text=True, env=SF_ENV
+    )
+    try:
+        return json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return {"status": 1, "message": proc.stderr.strip() or proc.stdout.strip()}
+
+
+def resolve_target_org(requested, allow_non_scratch):
+    """Return the username of the org to use, or exit with a clear message."""
+    org = requested or os.environ.get("SF_TARGET_ORG")
+    display = sf_json("org", "display", *(["--target-org", org] if org else []))
+    if display.get("status") != 0:
+        sys.exit(
+            "ERROR: no usable target org. Pass --target-org <alias> or set "
+            f"SF_TARGET_ORG.\n  sf said: {display.get('message', 'unknown error')}"
+        )
+    info = display["result"]
+    username = info["username"]
+    label = info.get("alias") or username
+
+    scratch = sf_json("org", "list").get("result", {}).get("scratchOrgs", [])
+    is_scratch = any(o.get("username") == username for o in scratch)
+    if not is_scratch and not allow_non_scratch:
+        sys.exit(
+            f"ERROR: '{label}' is not a scratch org. Test data is meant for "
+            "scratch orgs; pass --allow-non-scratch to use it anyway."
+        )
+    print(f"Target org: {label} ({username})")
+    return username
+
+
+def run_apex_script(apex_file, target_org):
     """Execute an Apex anonymous script via sf CLI."""
     filepath = os.path.join(APEX_DIR, apex_file)
 
@@ -61,7 +107,7 @@ def run_apex_script(apex_file):
         print(f"  ERROR: Apex script not found: {filepath}")
         return False
 
-    command = ["sf", "apex", "run", "--file", filepath]
+    command = [SF, "apex", "run", "--file", filepath, "--target-org", target_org]
 
     try:
         result = subprocess.run(
@@ -69,6 +115,7 @@ def run_apex_script(apex_file):
             capture_output=True,
             text=True,
             timeout=120,
+            env=SF_ENV,
         )
 
         if result.returncode != 0:
@@ -120,7 +167,7 @@ def print_menu():
     print()
 
 
-def run_scenarios(scenario_ids):
+def run_scenarios(scenario_ids, target_org):
     """Run the specified scenarios."""
     selected = [s for s in SCENARIOS if s["id"] in scenario_ids]
 
@@ -135,7 +182,7 @@ def run_scenarios(scenario_ids):
 
     for s in selected:
         print(f"[{s['id']}/{len(SCENARIOS)}] {s['name']}...")
-        if run_apex_script(s["file"]):
+        if run_apex_script(s["file"], target_org):
             success += 1
             print(f"  OK\n")
         else:
@@ -147,17 +194,27 @@ def run_scenarios(scenario_ids):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Create Alex test data in a scratch org.")
+    parser.add_argument("scenarios", nargs="*", type=int, help="scenario numbers (1-5)")
+    parser.add_argument("--all", action="store_true", help="create all scenarios")
+    parser.add_argument("-o", "--target-org", help="org alias or username")
+    parser.add_argument(
+        "--allow-non-scratch",
+        action="store_true",
+        help="allow running against an org that is not a scratch org",
+    )
+    args = parser.parse_args()
+
+    if not SF:
+        sys.exit("ERROR: Salesforce CLI (sf) not found on PATH.")
+    target_org = resolve_target_org(args.target_org, args.allow_non_scratch)
+
     # CLI arguments mode
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "--all":
-            run_scenarios([s["id"] for s in SCENARIOS])
-        else:
-            try:
-                ids = [int(arg) for arg in sys.argv[1:]]
-                run_scenarios(ids)
-            except ValueError:
-                print(f"Usage: {sys.argv[0]} [--all | <scenario numbers...>]")
-                sys.exit(1)
+    if args.all:
+        run_scenarios([s["id"] for s in SCENARIOS], target_org)
+        return
+    if args.scenarios:
+        run_scenarios(args.scenarios, target_org)
         return
 
     # Interactive mode
@@ -169,13 +226,13 @@ def main():
             print("Bye!")
             break
         elif choice == "a":
-            run_scenarios([s["id"] for s in SCENARIOS])
+            run_scenarios([s["id"] for s in SCENARIOS], target_org)
         else:
             try:
                 ids = [int(c.strip()) for c in choice.replace(",", " ").split()]
                 valid_ids = [i for i in ids if 1 <= i <= len(SCENARIOS)]
                 if valid_ids:
-                    run_scenarios(valid_ids)
+                    run_scenarios(valid_ids, target_org)
                 else:
                     print("Invalid selection. Enter numbers 1-5, 'A' for all, or 'Q' to quit.")
             except ValueError:

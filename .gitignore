@@ -89,3 +89,8 @@ trace.zip
 apex-test-results.json
 e2e/.auth/
 e2e/specs/*-snapshots/
+
+# Maintainer-only material — never commit (repo is public)
+security-review/
+*.bundle
+sfdx_auth*.txt

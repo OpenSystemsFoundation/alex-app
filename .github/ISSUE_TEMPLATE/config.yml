@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+    - name: Questions and ideas
+      url: https://github.com/OpenSystemsFoundation/alex-app/discussions
+      about: Ask how to use Alex or discuss ideas before opening a feature request.
+    - name: Report a security vulnerability
+      url: https://github.com/OpenSystemsFoundation/alex-app/security/advisories/new
+      about: Please report security issues privately, not as a public issue.

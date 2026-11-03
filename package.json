@@ -8,7 +8,7 @@
         "type": "git",
         "url": "https://github.com/OpenSystemsFoundation/alex-app"
     },
-    "license": "MIT",
+    "license": "(Apache-2.0 OR MIT)",
     "scripts": {
         "lint": "eslint **/{aura,lwc}/**/*.js",
         "test": "npm run test:unit",
@@ -24,7 +24,7 @@
         "prepush": "lint-staged",
         "deploy": "sf project deploy start --source-dir force-app --ignore-conflicts",
         "create:sample": "sf apex run --file scripts/apex/CreateBoard.apex",
-        "create:testdata": "node scripts/create-test-data.js",
+        "create:testdata": "node scripts/js/create-test-data.js",
         "validate": "sf project deploy validate --source-dir force-app/main/default",
         "alexadmin": "sf org assign permset --name Alex_Admin",
         "test:e2e": "npx playwright test",
