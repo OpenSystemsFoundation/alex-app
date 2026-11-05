@@ -164,9 +164,9 @@ Dual-licensed — use it under either license, at your choice:
 ## Acknowledgments
 
 - Built by [Open Systems Foundation](https://github.com/OpenSystemsFoundation)
-- Development assisted by [Claude](https://claude.ai) (Anthropic)
+- Development assisted by [Claude](https://claude.ai)
 - Powered by the Salesforce Platform
 
 <div align="center">
-  Made with care by the Open Systems Foundation team
+  Made with care
 </div>
