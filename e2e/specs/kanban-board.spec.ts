@@ -200,4 +200,30 @@ test.describe('Alex Kanban Board', () => {
             boardPage.page.getByRole('tab', { name: /e2e-/ }).first()
         ).toBeVisible();
     });
+
+    test('an idle board stays real-time and still receives changes', async ({
+        boardPage,
+        boardData
+    }) => {
+        // The board used to treat about a minute without events as a broken
+        // connection and fall back to polling
+        test.setTimeout(240_000);
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.waitForCards();
+        await boardPage.waitForRealtime();
+
+        // Stay idle for longer than the old threshold (two 30 s checks)
+        await boardPage.page.waitForTimeout(75_000);
+        const status = boardPage.page.locator('.kanban-topbar .status-text');
+        await expect(status).toHaveText('Real-time');
+
+        // A change made elsewhere arrives live, without a refresh
+        const card = boardData.cards[boardData.cards.length - 1];
+        const subject = `Idle-Live-${Date.now()}`;
+        sfUpdate('OpenSF__Card__c', card.Id, `OpenSF__Subject__c=${subject}`);
+        await expect(boardPage.card(card.Id)).toContainText(subject, {
+            timeout: 30_000
+        });
+        await expect(status).toHaveText('Real-time');
+    });
 });
