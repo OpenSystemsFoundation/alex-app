@@ -13,6 +13,11 @@ jest.mock(
     { virtual: true }
 );
 jest.mock(
+    '@salesforce/apex/KanbanBoardController.updateSprint',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
     '@salesforce/apex/KanbanBoardController.startSprint',
     () => ({ default: jest.fn() }),
     { virtual: true }
@@ -66,6 +71,7 @@ jest.mock(
 import getSprintDataApex from '@salesforce/apex/KanbanBoardController.getSprintData';
 import createSprintApex from '@salesforce/apex/KanbanBoardController.createSprint';
 import startSprintApex from '@salesforce/apex/KanbanBoardController.startSprint';
+import updateSprintApex from '@salesforce/apex/KanbanBoardController.updateSprint';
 import completeSprintApex from '@salesforce/apex/KanbanBoardController.completeSprint';
 import deleteSprintApex from '@salesforce/apex/KanbanBoardController.deleteSprint';
 import reorderSprintApex from '@salesforce/apex/KanbanBoardController.reorderSprint';
@@ -80,6 +86,7 @@ import {
     loadSprintDataAsync,
     createSprintAsync,
     startSprintAsync,
+    updateSprintAsync,
     completeSprintAsync,
     deleteSprintAsync,
     reorderSprintAsync,
@@ -286,6 +293,48 @@ describe('createSprintAsync', () => {
             'Error creating sprint:',
             expect.any(Error)
         );
+    });
+});
+
+describe('updateSprintAsync', () => {
+    it('updates the sprint in place in the sprints list', async () => {
+        const other = buildSprint({ Id: 's2', goal: 'Other' });
+        const updated = buildSprint({ Id: 's1', goal: 'New goal' });
+        updateSprintApex.mockResolvedValue(updated);
+        const { dispatch, getState, dispatched } = createThunkEnv({
+            sprints: [buildSprint({ Id: 's1', goal: 'Old goal' }), other]
+        });
+
+        const result = await updateSprintAsync(
+            's1',
+            'New goal',
+            '2026-01-05',
+            '2026-01-19'
+        )(dispatch, getState);
+
+        expect(updateSprintApex).toHaveBeenCalledWith({
+            sprintId: 's1',
+            goal: 'New goal',
+            startDate: '2026-01-05',
+            endDate: '2026-01-19'
+        });
+        expect(result).toEqual({ success: true, sprint: updated });
+        expect(dispatched).toHaveLength(1);
+        expect(dispatched[0].type).toBe(types.SET_SPRINTS);
+        expect(dispatched[0].payload.map((x) => [x.Id, x.goal])).toEqual([
+            ['s1', 'New goal'],
+            ['s2', 'Other']
+        ]);
+    });
+
+    it('rethrows on Apex failure', async () => {
+        updateSprintApex.mockRejectedValue(new Error('update failed'));
+        const { dispatch, getState } = createThunkEnv();
+
+        await expect(
+            updateSprintAsync('s1', 'x', null, null)(dispatch, getState)
+        ).rejects.toThrow('update failed');
+        expect(dispatch).not.toHaveBeenCalled();
     });
 });
 

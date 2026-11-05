@@ -1,5 +1,9 @@
 import { LightningElement, api, track } from 'lwc';
-import { createSprintAsync, startSprintAsync } from 'c/kanbanStore';
+import {
+    createSprintAsync,
+    updateSprintAsync,
+    startSprintAsync
+} from 'c/kanbanStore';
 
 const DURATION_OPTIONS = [
     { label: '1 week', value: '7' },
@@ -136,9 +140,49 @@ export default class KanbanSprintModal extends LightningElement {
         this.duration = match ? String(diffDays) : 'custom';
     }
 
+    /** True when the goal or dates differ from the sprint being edited. */
+    get hasEdits() {
+        if (!this.sprint) return false;
+        return (
+            (this.goal || '') !== (this.sprint.goal || '') ||
+            (this.startDate || '') !== (this.sprint.startDate || '') ||
+            (this.endDate || '') !== (this.sprint.endDate || '')
+        );
+    }
+
+    _saveEdits() {
+        return this.store.dispatch(
+            updateSprintAsync(
+                this.sprint.Id,
+                this.goal,
+                this.startDate || null,
+                this.endDate || null
+            )
+        );
+    }
+
     async handleSave() {
         if (this.isProcessing || !this.store) return;
         this.isProcessing = true;
+
+        if (this.isEditMode) {
+            // Editing a planned sprint updates it; creating a new one here
+            // would leave a duplicate sprint behind
+            try {
+                const result = await this._saveEdits();
+                this.dispatchEvent(
+                    new CustomEvent('sprintupdated', {
+                        detail: { sprint: result.sprint }
+                    })
+                );
+                this.handleClose();
+            } catch (error) {
+                console.error('Error updating sprint:', error);
+            } finally {
+                this.isProcessing = false;
+            }
+            return;
+        }
 
         try {
             const result = await this.store.dispatch(
@@ -167,6 +211,10 @@ export default class KanbanSprintModal extends LightningElement {
         this.isProcessing = true;
 
         try {
+            // Keep the goal and dates the user set in this dialog
+            if (this.hasEdits) {
+                await this._saveEdits();
+            }
             await this.store.dispatch(startSprintAsync(this.sprint.Id));
             this.dispatchEvent(new CustomEvent('sprintstarted'));
             this.handleClose();

@@ -176,6 +176,96 @@ test.describe('Sprint Lifecycle', () => {
         expect(started[0].OpenSF__StartDate__c).toBeTruthy();
     });
 
+    test('Save in the sprint dialog edits the planned sprint', async ({
+        boardPage
+    }) => {
+        const board = newSprintBoard('sprint-edit');
+        const sprintId = seedSprint({
+            boardId: board.boardId,
+            status: 'Planning',
+            goal: 'Before edit'
+        });
+        const page = await openBacklog(boardPage, board);
+
+        const header = sectionHeader(page, sprintId);
+        await expect(header).toBeVisible({ timeout: SF_TIMEOUT });
+        await header.getByRole('button', { name: 'Start Sprint' }).click();
+        const dialog = page.locator('section[role="dialog"]', {
+            has: page.locator('h2', { hasText: 'Edit Sprint' })
+        });
+        await expect(dialog).toBeVisible({ timeout: 10_000 });
+        await dialog
+            .getByRole('textbox', { name: 'Sprint Goal' })
+            .fill('After edit');
+        await dialog
+            .locator('.slds-modal__footer')
+            .getByRole('button', { name: 'Save', exact: true })
+            .click();
+        await expect(dialog).toHaveCount(0, { timeout: SF_TIMEOUT });
+
+        await expect(header.locator('.sprint-header__goal')).toContainText(
+            'After edit',
+            { timeout: SF_TIMEOUT }
+        );
+        // Edited in place: still one planned sprint, nothing duplicated
+        await expect(
+            page.locator(
+                '.sprint-header-row:has(.sprint-status-badge--planning)'
+            )
+        ).toHaveCount(1);
+        const sprints = sfQuery(
+            `SELECT Id, OpenSF__Goal__c, OpenSF__Status__c FROM OpenSF__Sprint__c WHERE OpenSF__Board__c = '${board.boardId}'`
+        );
+        expect(sprints).toHaveLength(1);
+        expect(sprints[0]).toMatchObject({
+            Id: sprintId,
+            OpenSF__Goal__c: 'After edit',
+            OpenSF__Status__c: 'Planning'
+        });
+    });
+
+    test('starting a sprint keeps the goal and dates set in the dialog', async ({
+        boardPage
+    }) => {
+        const board = newSprintBoard('sprint-start-edit');
+        // No dates: the dialog proposes today + the board's default duration
+        const sprintId = seedSprint({
+            boardId: board.boardId,
+            status: 'Planning',
+            goal: 'Original goal'
+        });
+        const page = await openBacklog(boardPage, board);
+
+        const header = sectionHeader(page, sprintId);
+        await expect(header).toBeVisible({ timeout: SF_TIMEOUT });
+        await header.getByRole('button', { name: 'Start Sprint' }).click();
+        const dialog = page.locator('section[role="dialog"]', {
+            has: page.locator('h2', { hasText: 'Edit Sprint' })
+        });
+        await expect(dialog).toBeVisible({ timeout: 10_000 });
+        await dialog
+            .getByRole('textbox', { name: 'Sprint Goal' })
+            .fill('Goal set while starting');
+        await dialog
+            .locator('.slds-modal__footer')
+            .getByRole('button', { name: 'Start Sprint' })
+            .click();
+        await expect(dialog).toHaveCount(0, { timeout: SF_TIMEOUT });
+
+        await expect(page.locator('.sprint-inline__goal')).toHaveText(
+            'Goal set while starting',
+            { timeout: SF_TIMEOUT }
+        );
+        await expect(page.getByText(/\d+d remaining/)).toBeVisible();
+        await expect.poll(() => sprintStatus(sprintId), SF_POLL).toBe('Active');
+        const sprint = sfQuery(
+            `SELECT OpenSF__Goal__c, OpenSF__StartDate__c, OpenSF__EndDate__c FROM OpenSF__Sprint__c WHERE Id = '${sprintId}'`
+        )[0];
+        expect(sprint.OpenSF__Goal__c).toBe('Goal set while starting');
+        expect(sprint.OpenSF__StartDate__c).toBeTruthy();
+        expect(sprint.OpenSF__EndDate__c).toBeTruthy();
+    });
+
     test('Start Sprint is hidden while another sprint is active', async ({
         boardPage
     }) => {

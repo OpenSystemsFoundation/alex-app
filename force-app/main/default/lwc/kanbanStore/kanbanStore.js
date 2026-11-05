@@ -60,6 +60,7 @@ export {
 export {
     loadSprintDataAsync,
     createSprintAsync,
+    updateSprintAsync,
     startSprintAsync,
     completeSprintAsync,
     deleteSprintAsync,

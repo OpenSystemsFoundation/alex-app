@@ -72,6 +72,58 @@ public with sharing class SprintService {
     }
 
     /**
+     * Update the goal and dates of a sprint in Planning status
+     */
+    public static KanbanBoardDTO.SprintDTO updateSprint(
+        Id sprintId,
+        String goal,
+        Date startDate,
+        Date endDate
+    ) {
+        OpenSF__Sprint__c sprint = SprintSelector.getSprintById(sprintId);
+
+        if (
+            sprint.OpenSF__Status__c !=
+            KanbanEnums.sprintStatusValue(KanbanEnums.SprintStatus.PLANNING)
+        ) {
+            throw new AuraHandledException(
+                'Only sprints in Planning status can be edited.'
+            );
+        }
+        if (startDate != null && endDate != null && endDate < startDate) {
+            throw new AuraHandledException(
+                'The end date cannot be before the start date.'
+            );
+        }
+
+        // Id plus the edited fields only: never re-send the master-detail
+        // Board__c on update
+        OpenSF__Sprint__c changes = new OpenSF__Sprint__c(
+            Id = sprintId,
+            OpenSF__Goal__c = goal,
+            OpenSF__StartDate__c = startDate,
+            OpenSF__EndDate__c = endDate
+        );
+        Database.update(
+            Security.stripInaccessible(
+                    AccessType.UPDATABLE,
+                    new List<OpenSF__Sprint__c>{ changes }
+                )
+                .getRecords(),
+            AccessLevel.USER_MODE
+        );
+
+        OpenSF__Sprint__c updated = SprintSelector.getSprintById(sprintId);
+        publishSprintEvent(
+            KanbanEnums.sprintEventTypeValue(
+                KanbanEnums.SprintEventType.SPRINT_UPDATED
+            ),
+            updated
+        );
+        return new KanbanBoardDTO.SprintDTO(updated);
+    }
+
+    /**
      * Start a sprint - validates no other active sprint exists
      */
     public static KanbanBoardDTO.SprintDTO startSprint(Id sprintId) {

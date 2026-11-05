@@ -752,6 +752,43 @@ private class KanbanBoardControllerTest {
     }
 
     @isTest
+    static void testUpdateSprint() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(
+            board.Id,
+            'Planning'
+        );
+
+        Test.startTest();
+        KanbanBoardDTO.SprintDTO result = KanbanBoardController.updateSprint(
+            sprint.Id,
+            'Controller goal',
+            Date.today(),
+            Date.today().addDays(14)
+        );
+        Test.stopTest();
+
+        Assert.areEqual('Controller goal', result.goal);
+    }
+
+    @isTest
+    static void testUpdateSprintWrapsErrors() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(board.Id, 'Active');
+
+        String message;
+        Test.startTest();
+        try {
+            KanbanBoardController.updateSprint(sprint.Id, 'x', null, null);
+        } catch (AuraHandledException e) {
+            message = e.getMessage();
+        }
+        Test.stopTest();
+
+        Assert.isNotNull(message, 'Editing an active sprint must fail');
+    }
+
+    @isTest
     static void testStartSprint() {
         OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
         OpenSF__Sprint__c sprint = TestFactory.createSprint(

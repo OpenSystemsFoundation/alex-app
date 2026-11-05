@@ -1,6 +1,10 @@
 import { createElement } from 'lwc';
 import KanbanSprintModal from 'c/kanbanSprintModal';
-import { createSprintAsync, startSprintAsync } from 'c/kanbanStore';
+import {
+    createSprintAsync,
+    updateSprintAsync,
+    startSprintAsync
+} from 'c/kanbanStore';
 
 jest.mock('c/kanbanStore', () => {
     const actual = jest.requireActual('c/kanbanStore');
@@ -9,6 +13,13 @@ jest.mock('c/kanbanStore', () => {
         createSprintAsync: jest.fn((boardId, goal, startDate, endDate) => ({
             type: 'MOCK_CREATE_SPRINT',
             boardId,
+            goal,
+            startDate,
+            endDate
+        })),
+        updateSprintAsync: jest.fn((sprintId, goal, startDate, endDate) => ({
+            type: 'MOCK_UPDATE_SPRINT',
+            sprintId,
             goal,
             startDate,
             endDate
@@ -81,6 +92,7 @@ const planningSprint = {
 
 describe('c-kanban-sprint-modal', () => {
     afterEach(() => {
+        jest.clearAllMocks();
         while (document.body.firstChild) {
             document.body.removeChild(document.body.firstChild);
         }
@@ -391,6 +403,62 @@ describe('c-kanban-sprint-modal', () => {
             await flushPromises();
 
             expect(footerButton(element, 'Start Sprint')).toBeUndefined();
+        });
+
+        it('Save updates the planned sprint instead of creating another', async () => {
+            const store = createMockStore();
+            const element = mount({ store, sprint: planningSprint });
+            const updated = jest.fn();
+            const created = jest.fn();
+            element.addEventListener('sprintupdated', updated);
+            element.addEventListener('sprintcreated', created);
+            await flushPromises();
+
+            const goal = root(element).querySelector('lightning-textarea');
+            goal.value = 'New goal';
+            goal.dispatchEvent(new CustomEvent('change'));
+            footerButton(element, 'Save').click();
+            await flushPromises();
+
+            expect(createSprintAsync).not.toHaveBeenCalled();
+            expect(updateSprintAsync).toHaveBeenCalledWith(
+                'sprint-1',
+                'New goal',
+                '2026-01-05',
+                '2026-01-19'
+            );
+            expect(updated).toHaveBeenCalledTimes(1);
+            expect(created).not.toHaveBeenCalled();
+        });
+
+        it('saves edited goal and dates before starting the sprint', async () => {
+            const store = createMockStore();
+            const element = mount({ store, sprint: planningSprint });
+            await flushPromises();
+
+            changeInput(dateInput(element, 'End Date'), '2026-01-26');
+            footerButton(element, 'Start Sprint').click();
+            await flushPromises();
+
+            const types = store.dispatch.mock.calls.map(([a]) => a.type);
+            expect(types).toEqual(['MOCK_UPDATE_SPRINT', 'MOCK_START_SPRINT']);
+            expect(updateSprintAsync).toHaveBeenCalledWith(
+                'sprint-1',
+                'Existing goal',
+                '2026-01-05',
+                '2026-01-26'
+            );
+        });
+
+        it('starts an unedited sprint without updating it', async () => {
+            const store = createMockStore();
+            const element = mount({ store, sprint: planningSprint });
+            await flushPromises();
+
+            footerButton(element, 'Start Sprint').click();
+            await flushPromises();
+
+            expect(updateSprintAsync).not.toHaveBeenCalled();
         });
 
         it('starts the sprint and closes', async () => {

@@ -9,6 +9,7 @@
 import getSprintDataApex from '@salesforce/apex/KanbanBoardController.getSprintData';
 import createSprintApex from '@salesforce/apex/KanbanBoardController.createSprint';
 import startSprintApex from '@salesforce/apex/KanbanBoardController.startSprint';
+import updateSprintApex from '@salesforce/apex/KanbanBoardController.updateSprint';
 import completeSprintApex from '@salesforce/apex/KanbanBoardController.completeSprint';
 import deleteSprintApex from '@salesforce/apex/KanbanBoardController.deleteSprint';
 import reorderSprintApex from '@salesforce/apex/KanbanBoardController.reorderSprint';
@@ -94,6 +95,30 @@ export const createSprintAsync = (boardId, goal, startDate, endDate) => {
             return { success: true, sprint };
         } catch (error) {
             console.error('Error creating sprint:', error);
+            throw error;
+        }
+    };
+};
+
+/**
+ * Update a planned sprint's goal and dates
+ */
+export const updateSprintAsync = (sprintId, goal, startDate, endDate) => {
+    return async (dispatch, getState) => {
+        try {
+            const sprint = await updateSprintApex({
+                sprintId,
+                goal,
+                startDate,
+                endDate
+            });
+            const sprints = (getState().sprints || []).map((s) => {
+                return s.Id === sprint.Id ? { ...s, ...sprint } : s;
+            });
+            dispatch(setSprints(sprints));
+            return { success: true, sprint };
+        } catch (error) {
+            console.error('Error updating sprint:', error);
             throw error;
         }
     };
