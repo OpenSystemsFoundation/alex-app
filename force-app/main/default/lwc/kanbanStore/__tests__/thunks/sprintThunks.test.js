@@ -194,7 +194,11 @@ describe('loadSprintDataAsync', () => {
             { type: types.SET_SPRINT, payload: activeSprint },
             { type: types.SET_SPRINTS, payload: data.sprints },
             { type: types.SET_SPRINT_CARDS, payload: data.sprintCards },
-            { type: types.SET_BACKLOG_CARDS, payload: data.backlogCards },
+            {
+                type: types.SET_BACKLOG_CARDS,
+                payload: data.backlogCards,
+                meta: { requestedAtVersion: 0 }
+            },
             {
                 type: types.SET_PLANNING_SPRINT_CARDS,
                 payload: data.planningSprintCards

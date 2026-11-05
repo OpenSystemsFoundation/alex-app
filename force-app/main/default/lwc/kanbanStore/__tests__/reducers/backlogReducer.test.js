@@ -30,6 +30,31 @@ describe('backlogReducer', () => {
             expect(next.backlogCards).toEqual(cards);
         });
 
+        it('ignores a server load requested before a local backlog change', () => {
+            const local = [buildCard({ Id: 'moved' })];
+            const state = buildInitialState({
+                backlogCards: local,
+                backlogVersion: 1
+            });
+            const next = backlogReducer(state, {
+                type: types.SET_BACKLOG_CARDS,
+                payload: [],
+                meta: { requestedAtVersion: 0 }
+            });
+            expect(next.backlogCards).toBe(local);
+        });
+
+        it('applies a server load when the backlog has not changed since', () => {
+            const cards = [buildCard()];
+            const state = buildInitialState({ backlogVersion: 3 });
+            const next = backlogReducer(state, {
+                type: types.SET_BACKLOG_CARDS,
+                payload: cards,
+                meta: { requestedAtVersion: 3 }
+            });
+            expect(next.backlogCards).toEqual(cards);
+        });
+
         it('is blocked when syncing counter > 0', () => {
             const existing = [buildCard()];
             const state = buildInitialState({

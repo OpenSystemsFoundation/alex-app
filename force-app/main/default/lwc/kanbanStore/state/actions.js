@@ -280,9 +280,17 @@ export const reorderSprints = (sprints) => ({
 // Backlog Action Creators
 // ===================================================================
 
-export const setBacklogCards = (cards) => ({
+/**
+ * @param {Array} cards
+ * @param {number} [requestedAtVersion] state.backlogVersion when the server
+ *   load started; the result is ignored if the backlog changed locally since
+ */
+export const setBacklogCards = (cards, requestedAtVersion) => ({
     type: types.SET_BACKLOG_CARDS,
-    payload: cards
+    payload: cards,
+    ...(requestedAtVersion !== undefined
+        ? { meta: { requestedAtVersion } }
+        : {})
 });
 
 export const addBacklogCard = (card) => ({

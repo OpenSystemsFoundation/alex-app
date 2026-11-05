@@ -50,6 +50,34 @@ describe('domain reducer re-exports', () => {
 });
 
 describe('rootReducer', () => {
+    it('bumps backlogVersion on local backlog changes, not on server loads', () => {
+        let state = buildInitialState();
+        ({ state } = rootReducer(state, actions.setBacklogCards([])));
+        expect(state.backlogVersion).toBe(0);
+        ({ state } = rootReducer(
+            state,
+            actions.addBacklogCard({ Id: 'b1', subject: 'x' })
+        ));
+        expect(state.backlogVersion).toBe(1);
+    });
+
+    it('keeps a card moved to the backlog while the initial load is in flight', () => {
+        const card = { Id: 'c1', subject: 'Moved' };
+        let state = buildInitialState({
+            columns: [{ Id: 'col1', cards: [card], cardCount: 1 }]
+        });
+        // Board load reads the version, then requests the backlog...
+        const requestedAt = state.backlogVersion;
+        // ...meanwhile the user moves the card to the backlog
+        ({ state } = rootReducer(state, actions.moveCardToBacklog('c1')));
+        // ...and the (stale, empty) backlog response arrives
+        ({ state } = rootReducer(
+            state,
+            actions.setBacklogCards([], requestedAt)
+        ));
+        expect(state.backlogCards.map((c) => c.Id)).toEqual(['c1']);
+    });
+
     it('returns initialState and clears drag position on RESET', () => {
         const state = buildInitialState({ boardId: 'b1', isLoading: true });
         const result = rootReducer(state, { type: types.RESET }, 'col-1-0');

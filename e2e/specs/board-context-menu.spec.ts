@@ -111,9 +111,8 @@ test.describe('Board Card Context Menu', () => {
             });
     });
 
-    // Known intermittent app bug (about 1 run in 3 under load): the card
-    // leaves the board and the database is correct, but the backlog badge
-    // and list drop it until the page is reloaded.
+    // Regression: moving a card right after the board loads used to lose it
+    // from the backlog list when the board's own backlog request returned
     test('Move to Backlog takes the card off the board', async ({
         boardPage
     }) => {

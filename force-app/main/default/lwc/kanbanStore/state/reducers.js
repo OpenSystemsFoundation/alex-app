@@ -45,6 +45,7 @@ export const initialState = {
     sprints: [],
     backlogCards: [],
     backlogSyncing: 0, // counter: >0 while backlog reorder(s) are in-flight
+    backlogVersion: 0, // bumped on every local backlog change (see rootReducer)
     sprintCards: [],
     planningSprintCards: [], // SprintCard junctions for Planning sprints
     backlogVisible: false,
@@ -98,6 +99,18 @@ export const rootReducer = (state, action, lastDragPosition) => {
 
     // Backlog actions
     newState = backlogReducer(newState, action);
+
+    // Any local change to the backlog list makes in-flight server loads of
+    // the backlog stale; SET_BACKLOG_CARDS compares against this version
+    if (
+        action.type !== types.SET_BACKLOG_CARDS &&
+        newState.backlogCards !== state.backlogCards
+    ) {
+        newState = {
+            ...newState,
+            backlogVersion: (state.backlogVersion || 0) + 1
+        };
+    }
 
     // Drag actions (special handling for lastDragPosition)
     const dragResult = dragReducer(newState, action, lastDragPosition);

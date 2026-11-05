@@ -40,12 +40,13 @@ import { calculateCardPosition } from '../utils/positionCalculator';
  * Load sprint data for a board
  */
 export const loadSprintDataAsync = (boardId) => {
-    return async (dispatch) => {
+    return async (dispatch, getState) => {
         if (!boardId) {
             throw new Error('Board ID is required');
         }
 
         try {
+            const version = getState?.()?.backlogVersion || 0;
             const data = await getSprintDataApex({ boardId });
 
             if (data.activeSprint) {
@@ -58,7 +59,7 @@ export const loadSprintDataAsync = (boardId) => {
                 dispatch(setSprintCards(data.sprintCards));
             }
             if (data.backlogCards) {
-                dispatch(setBacklogCards(data.backlogCards));
+                dispatch(setBacklogCards(data.backlogCards, version));
             }
             if (data.planningSprintCards) {
                 dispatch(setPlanningSprintCards(data.planningSprintCards));

@@ -88,6 +88,7 @@ export const buildInitialState = (overrides = {}) => ({
     sprints: [],
     backlogCards: [],
     backlogSyncing: 0,
+    backlogVersion: 0,
     sprintCards: [],
     planningSprintCards: [],
     backlogVisible: false,
