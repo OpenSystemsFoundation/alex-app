@@ -256,4 +256,31 @@ test.describe('Alex Kanban Board', () => {
                 .locator(`article[data-card-id="${card.Id}"]`)
         ).toBeVisible({ timeout: 30_000 });
     });
+
+    test('a card dragged in one tab moves in another tab without a refresh', async ({
+        boardPage,
+        boardData
+    }) => {
+        // Drag-and-drop sends a request and client id with the move; the
+        // other tab must still apply it
+        const tabB = new BoardPage(await boardPage.page.context().newPage());
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await tabB.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.waitForCards();
+        await tabB.waitForCards();
+        await boardPage.waitForRealtime();
+        await tabB.waitForRealtime();
+
+        // Use a seeded card that no sibling test moves
+        const card = boardData.cards[10];
+        const target = boardData.columns[1];
+        await boardPage.dragCardWithMouse(card.Id, target.Id);
+
+        const inTarget = (tab: BoardPage) =>
+            tab
+                .columnWrapper(target.Id)
+                .locator(`article[data-card-id="${card.Id}"]`);
+        await expect(inTarget(boardPage)).toBeVisible({ timeout: 15_000 });
+        await expect(inTarget(tabB)).toBeVisible({ timeout: 30_000 });
+    });
 });
