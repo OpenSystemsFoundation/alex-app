@@ -3,7 +3,7 @@
 <div align="center">
   <img src="assets/images/alex-app-logo-large.png" alt="Alex logo" width="200"/>
 
-**Real-time, collaborative Kanban and sprint boards — native to Salesforce.**
+**Real-time collaboration — native to Salesforce.**
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE-MIT)
