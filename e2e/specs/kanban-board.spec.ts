@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures';
 import { sfUpdate } from '../helpers/sf-data';
+import { BoardPage } from '../pages';
 
 const SF_TIMEOUT = 60_000;
 
@@ -225,5 +226,34 @@ test.describe('Alex Kanban Board', () => {
             timeout: 30_000
         });
         await expect(status).toHaveText('Real-time');
+    });
+
+    test('a card moved in one tab moves in another tab without a refresh', async ({
+        boardPage,
+        boardData
+    }) => {
+        const tabB = new BoardPage(await boardPage.page.context().newPage());
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await tabB.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.waitForCards();
+        await tabB.waitForCards();
+        await boardPage.waitForRealtime();
+        await tabB.waitForRealtime();
+
+        // Use a seeded card that no sibling test moves
+        const card = boardData.cards[2];
+        const target = boardData.columns[4];
+        await boardPage.card(card.Id).click({ button: 'right' });
+        const menu = boardPage.page.locator('.context-menu[role="menu"]');
+        await menu.getByRole('menuitem', { name: 'Move to Column' }).click();
+        await menu
+            .getByRole('menuitem', { name: target.header, exact: true })
+            .click();
+
+        await expect(
+            tabB
+                .columnWrapper(target.Id)
+                .locator(`article[data-card-id="${card.Id}"]`)
+        ).toBeVisible({ timeout: 30_000 });
     });
 });

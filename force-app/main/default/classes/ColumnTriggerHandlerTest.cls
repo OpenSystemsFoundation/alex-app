@@ -11,6 +11,34 @@ private class ColumnTriggerHandlerTest {
     }
 
     @isTest
+    static void testColumnEventsPublishOnInsertUpdateAndDelete() {
+        // Regression: the event's required fields kept from 1.1.1 were not
+        // filled, so every publish failed
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        TestSettings.skipPlatformEvents = false;
+
+        Test.startTest();
+        OpenSF__Column__c column = new OpenSF__Column__c(
+            OpenSF__ColumnHeader__c = 'Events',
+            OpenSF__Board__c = board.Id,
+            OpenSF__LexoRankPosition__c = '0|h00000:'
+        );
+        insert column;
+        update new OpenSF__Column__c(
+            Id = column.Id,
+            OpenSF__ColumnHeader__c = 'Events edited'
+        );
+        delete new OpenSF__Column__c(Id = column.Id);
+        Test.stopTest();
+
+        Assert.areEqual(
+            0,
+            ColumnTriggerHandler.publishFailures,
+            'Every ColumnUpdateEvent__e must publish successfully'
+        );
+    }
+
+    @isTest
     static void testAfterInsert() {
         OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
 

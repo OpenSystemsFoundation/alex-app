@@ -12,6 +12,34 @@ private class CardTriggerHandlerTest {
     }
 
     @isTest
+    static void testCardEventsPublishOnInsertUpdateAndDelete() {
+        // Regression: the event's required fields kept from 1.1.1 were not
+        // filled, so every publish failed and live sync silently stopped
+        OpenSF__Column__c column = [SELECT Id FROM OpenSF__Column__c LIMIT 1];
+        TestSettings.skipPlatformEvents = false;
+
+        Test.startTest();
+        OpenSF__Card__c card = new OpenSF__Card__c(
+            OpenSF__Subject__c = 'Event Card',
+            OpenSF__Column__c = column.Id,
+            OpenSF__LexoRankPosition__c = '0|h00000:'
+        );
+        insert card;
+        update new OpenSF__Card__c(
+            Id = card.Id,
+            OpenSF__Subject__c = 'Event Card edited'
+        );
+        delete new OpenSF__Card__c(Id = card.Id);
+        Test.stopTest();
+
+        Assert.areEqual(
+            0,
+            CardTriggerHandler.publishFailures,
+            'Every CardUpdateEvent__e must publish successfully'
+        );
+    }
+
+    @isTest
     static void testAfterInsert() {
         OpenSF__Column__c column = [SELECT Id FROM OpenSF__Column__c LIMIT 1];
 
