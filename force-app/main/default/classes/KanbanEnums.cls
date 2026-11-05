@@ -109,7 +109,8 @@ public inherited sharing class KanbanEnums {
         CARDS_ADDED,
         CARD_REMOVED,
         CARD_ADDED,
-        CARD_UPDATED
+        CARD_UPDATED,
+        SPRINT_UPDATED
     }
 
     /**
@@ -328,6 +329,9 @@ public inherited sharing class KanbanEnums {
             }
             when CARD_UPDATED {
                 return 'card_updated';
+            }
+            when SPRINT_UPDATED {
+                return 'sprint_updated';
             }
             when else {
                 return null;

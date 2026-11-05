@@ -329,6 +329,8 @@ test.describe('LWC Performance Benchmarks', () => {
             .waitFor({ state: 'visible', timeout: SF_TIMEOUT });
         await page.waitForTimeout(2000);
 
+        // Measure retained memory, not garbage that hasn't been collected yet
+        await cdp.send('HeapProfiler.collectGarbage');
         const metricsFirst = await getCdpMetrics(cdp);
         const heapFirst = metricsFirst.JSHeapUsedSize ?? 0;
 
@@ -345,6 +347,7 @@ test.describe('LWC Performance Benchmarks', () => {
             .waitFor({ state: 'visible', timeout: SF_TIMEOUT });
         await page.waitForTimeout(2000);
 
+        await cdp.send('HeapProfiler.collectGarbage');
         const metricsSecond = await getCdpMetrics(cdp);
         const heapSecond = metricsSecond.JSHeapUsedSize ?? 0;
 

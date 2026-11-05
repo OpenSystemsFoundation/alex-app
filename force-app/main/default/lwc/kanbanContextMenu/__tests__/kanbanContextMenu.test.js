@@ -142,6 +142,20 @@ describe('c-kanban-context-menu', () => {
         expect(menu.style.top).toBe('130px');
     });
 
+    it('focuses the menu once positioned so Escape reaches it', async () => {
+        const element = createMenu();
+        element.show(200, 150);
+        await flushPromises();
+
+        const menu = getMenu(element);
+        menu.getBoundingClientRect = () => rect(-9999, -9999);
+        const focusSpy = jest.spyOn(menu, 'focus');
+        expect(menu.getAttribute('tabindex')).toBe('-1');
+
+        flushRaf();
+        expect(focusSpy).toHaveBeenCalled();
+    });
+
     it('keeps the menu within the viewport on the second frame', async () => {
         const element = createMenu();
         element.show(window.innerWidth - 20, window.innerHeight - 20);
@@ -324,6 +338,22 @@ describe('c-kanban-context-menu', () => {
             'contextmenu',
             expect.any(Function)
         );
+        expect(removeSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
+    });
+
+    it('closes on Escape pressed anywhere while open', async () => {
+        const element = createMenu();
+        element.show(0, 0);
+        await flushPromises();
+        jest.runAllTimers();
+
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+        await flushPromises();
+        expect(getMenu(element)).not.toBeNull();
+
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        await flushPromises();
+        expect(getMenu(element)).toBeNull();
     });
 
     it.each([

@@ -44,7 +44,7 @@ flowchart TB
         UI["kanbanBoard + child LWCs"]
         Store["kanbanStore<br/>(actions, reducers, selectors)"]
         Thunks["Thunks"]
-        Sub["subscriptionManager<br/>(EMP API, retry, health monitor)"]
+        Sub["subscriptionManager<br/>(EMP API, retry)"]
         UI -- "dispatch" --> Store
         UI -- "dispatch" --> Thunks
         Thunks -- "dispatch" --> Store
@@ -231,7 +231,7 @@ App Builder; everything else is composed by them.
 | `kanbanAnalytics`             | Cycle-time analytics; hosts `kanbanCumulativeFlowDiagram`.                             |
 | `columnManagement`            | Column CRUD and ordering (embedded in the board and exposed on app pages).             |
 | `adminManagement`             | Board administration and card custom-field configuration.                              |
-| `subscriptionManager`         | EMP API subscription with `retryManager` and `eventHealthMonitor`.                     |
+| `subscriptionManager`         | EMP API subscription with `retryManager`.                                              |
 | `connectionStatusIndicator`   | Displays the real-time connection status.                                              |
 | `kanbanStore`                 | The client store (service module, no UI).                                              |
 | `storeSubscriptionMixin`      | `applyStoreSubscription()` helper for components that consume the store.               |
@@ -385,9 +385,10 @@ events only) and reports status changes (`connecting`, `connected`, `error`,
 `disconnected`, `polling`) to the store and `connectionStatusIndicator`.
 
 - **Retry:** on a subscribe failure or an `empApi` error, `retryManager`
-  retries after 2 s and then 4 s; on the third failure it requests polling.
-- **Health monitor:** every 30 s, `eventHealthMonitor` checks whether an event
-  arrived in the last 10 s. After 2 failed checks it switches to polling.
+  retries after 2 s and then 4 s; on the third failure the status becomes
+  `polling` and the board falls back to polling.
+- **Quiet boards:** a connected board with no activity receives no events, so
+  the absence of events is not treated as a failure; only `empApi` errors are.
 - **Polling fallback:** `boardDataLoader.startPolling()` calls
   `getIncrementalUpdates(boardId, lastSyncTime)` every 15 s and applies the
   modified cards with `UPDATE_CARD`. Polling stops when the subscription
@@ -538,16 +539,13 @@ Apex tests, deployments and packaging need an org and are run locally.
   tabs of the same user; the trigger-maintained `SequenceNumber__c` gives a
   monotonic version per card, so stale or duplicate events are dropped
   regardless of arrival order.
-- **Polling fallback.** If the event stream fails or goes quiet, the board
-  polls for modified cards instead of silently going stale.
+- **Polling fallback.** If the event stream fails, the board polls for
+  modified cards instead of silently going stale.
 
 ## Known limitations
 
 - **Polling is partial.** `getIncrementalUpdates` returns modified cards only.
   Cards created or deleted elsewhere appear after the next full reload.
-- **Quiet boards switch to polling.** The health monitor treats about a minute
-  without events as unhealthy, so idle boards poll every 15 s until the next
-  event arrives.
 - **Column events are not consumed.** `ColumnUpdateEvent__e` is published,
   but no component subscribes to it; other users see column changes after a
   reload.

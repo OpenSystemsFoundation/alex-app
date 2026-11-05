@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures';
+import { seedCard, sfQuery } from '../helpers/sf-data';
 
 const SF_TIMEOUT = 60_000;
 
@@ -132,5 +133,55 @@ test.describe('Card File Attachments', () => {
         const filesHeader = panel.locator('.card-panel__files h3');
         await expect(filesHeader).toBeVisible({ timeout: SF_TIMEOUT });
         await expect(filesHeader).toContainText('Files');
+    });
+
+    test('uploading a file attaches it to the card', async ({
+        boardPage,
+        boardData
+    }) => {
+        const card = seedCard({
+            boardId: boardData.boardId,
+            columnId: boardData.columns[2].Id,
+            status: boardData.columns[2].header,
+            subject: `Files-Upload-${Date.now()}`
+        });
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.waitForCards();
+        await boardPage.card(card.Id).locator('.kanban-card__body').click();
+        const panel = boardPage.page.locator('.card-panel');
+        await expect(panel.getByText('No files attached')).toBeVisible({
+            timeout: SF_TIMEOUT
+        });
+
+        const fileName = `e2e-notes-${Date.now()}.txt`;
+        await panel
+            .locator('lightning-file-upload input[type="file"]')
+            .setInputFiles({
+                name: fileName,
+                mimeType: 'text/plain',
+                buffer: Buffer.from('Alex E2E upload')
+            });
+        // lightning-file-upload reports progress in its own dialog
+        const uploadDialog = boardPage.page.getByRole('dialog', {
+            name: 'Upload Files'
+        });
+        await uploadDialog
+            .getByRole('button', { name: 'Done' })
+            .click({ timeout: SF_TIMEOUT });
+
+        const title = fileName.replace(/\.txt$/, '');
+        await expect(
+            panel.locator('.card-file-item', { hasText: title })
+        ).toBeVisible({ timeout: SF_TIMEOUT });
+        await expect(panel.getByText('No files attached')).toHaveCount(0);
+        await expect
+            .poll(
+                () =>
+                    sfQuery(
+                        `SELECT ContentDocument.Title FROM ContentDocumentLink WHERE LinkedEntityId = '${card.Id}'`
+                    ).map((r) => r.ContentDocument.Title),
+                { timeout: 45_000, intervals: [2_000, 3_000, 5_000] }
+            )
+            .toEqual([title]);
     });
 });

@@ -58,6 +58,18 @@ export class BoardPage extends BasePage {
         await this.page.waitForLoadState('domcontentloaded');
     }
 
+    /**
+     * Wait until the board's live-update connection reports "Real-time".
+     * Flows that rely on platform events (sprint progress, other users'
+     * changes) should call this before acting, so a slow CometD handshake
+     * doesn't leave the board on its 15s auto-refresh fallback.
+     */
+    async waitForRealtime(): Promise<void> {
+        await expect(
+            this.page.locator('.kanban-topbar .status-text')
+        ).toHaveText('Real-time', { timeout: this.timeout });
+    }
+
     /** Get a column wrapper by its Salesforce column ID. */
     columnWrapper(columnId: string): Locator {
         return this.page.locator(
@@ -104,6 +116,31 @@ export class BoardPage extends BasePage {
         await expect(source).toBeVisible({ timeout: this.timeout });
         await expect(target).toBeVisible({ timeout: this.timeout });
         await source.dragTo(target);
+    }
+
+    /**
+     * Drag a card to a column with real mouse steps, the way a person does.
+     * (Playwright's one-shot dragTo doesn't always trigger the board's
+     * HTML5 drag-and-drop.)
+     */
+    async dragCardWithMouse(
+        cardId: string,
+        targetColumnId: string
+    ): Promise<void> {
+        const source = await this.card(cardId).boundingBox();
+        const target = await this.columnWrapper(targetColumnId).boundingBox();
+        if (!source || !target) {
+            throw new Error('Card or target column is not on screen');
+        }
+        const startX = source.x + source.width / 2;
+        const startY = source.y + source.height / 2;
+        await this.page.mouse.move(startX, startY);
+        await this.page.mouse.down();
+        await this.page.mouse.move(startX + 20, startY, { steps: 5 });
+        await this.page.mouse.move(target.x + target.width / 2, target.y + 40, {
+            steps: 20
+        });
+        await this.page.mouse.up();
     }
 
     /** Click the add card button for a specific column (by index). */

@@ -222,4 +222,41 @@ test.describe('Board Filters', () => {
         const afterClear = await boardPage.allCards().count();
         expect(afterClear).toBe(afterFilter);
     });
+
+    test('filter summary counts cards and the clear button resets every filter', async ({
+        boardPage,
+        boardData
+    }) => {
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.waitForCards();
+        const total = await boardPage.allCards().count();
+        const page = boardPage.page;
+        const clear = page.getByTitle('Clear all filters');
+        await expect(clear).toHaveCount(0);
+
+        await boardPage.priorityFilter.selectOption('High');
+        await boardPage.typeFilter.selectOption('Story');
+        const shown = await boardPage.allCards().count();
+        expect(shown).toBeGreaterThan(0);
+        expect(shown).toBeLessThan(total);
+        await expect(
+            page.getByText(`${shown} of ${total} cards`)
+        ).toBeVisible();
+
+        await clear.click();
+        await expect(boardPage.allCards()).toHaveCount(total);
+        await expect(boardPage.priorityFilter).toHaveValue('All');
+        await expect(boardPage.typeFilter).toHaveValue('All');
+        await expect(clear).toHaveCount(0);
+    });
+
+    test('search matches the card number', async ({ boardPage, boardData }) => {
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.waitForCards();
+        const card = boardData.cards[3];
+
+        await boardPage.search(card.Name);
+        await expect(boardPage.allCards()).toHaveCount(1);
+        await expect(boardPage.card(card.Id)).toBeVisible();
+    });
 });

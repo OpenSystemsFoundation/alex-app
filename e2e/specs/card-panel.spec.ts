@@ -56,6 +56,8 @@ async function openPanelForCard(
 ): Promise<Locator> {
     await boardPage.open(boardData.baseUrl, boardData.boardId);
     await boardPage.waitForCards();
+    // A polling refresh would re-render the panel mid-edit
+    await boardPage.waitForRealtime();
     await boardPage.card(cardId).locator('.kanban-card__body').click();
 
     const panel = boardPage.page.locator('.card-panel');
@@ -73,6 +75,16 @@ function subjectInput(panel: Locator): Locator {
     return panel
         .locator('[field-name="OpenSF__Subject__c"] input')
         .or(panel.getByRole('textbox', { name: 'Subject', exact: true }));
+}
+
+/**
+ * The lightning/confirm dialog. It renders in the overlay container as an
+ * `alertdialog` labelled by its header ("Unsaved changes").
+ */
+function confirmDialog(boardPage: BoardPage, message: string): Locator {
+    return boardPage.page
+        .getByRole('alertdialog', { name: 'Unsaved changes' })
+        .filter({ hasText: message });
 }
 
 test.describe('Card Detail Panel', () => {
@@ -362,9 +374,7 @@ test.describe('Card Detail Panel', () => {
         await closeBtn.click();
 
         // LightningConfirm message from kanbanCardPanel.handleClose
-        const dialog = boardPage.page
-            .locator('section[role="dialog"]')
-            .filter({ hasText: 'Discard and close?' });
+        const dialog = confirmDialog(boardPage, 'Discard and close?');
         await expect(dialog).toBeVisible({ timeout: SF_TIMEOUT });
 
         // Cancel keeps the panel open
@@ -408,9 +418,7 @@ test.describe('Card Detail Panel', () => {
             .click();
 
         // LightningConfirm message from cardOperations.handleCardClick
-        const dialog = boardPage.page
-            .locator('section[role="dialog"]')
-            .filter({ hasText: 'Discard and switch cards?' });
+        const dialog = confirmDialog(boardPage, 'Discard and switch cards?');
         await expect(dialog).toBeVisible({ timeout: SF_TIMEOUT });
 
         // Cancel keeps the first card's panel open
@@ -441,9 +449,117 @@ test.describe('Card Detail Panel', () => {
         // closed panel plus zero dialogs proves the clean-close path
         await expect(panel).not.toBeVisible({ timeout: SF_TIMEOUT });
         await expect(
-            boardPage.page
-                .locator('section[role="dialog"]')
-                .filter({ hasText: 'You have unsaved changes' })
+            confirmDialog(boardPage, 'You have unsaved changes')
         ).toHaveCount(0);
+    });
+
+    test('Escape closes a panel without changes', async ({
+        boardPage,
+        boardData
+    }) => {
+        const panel = await openPanelForCard(
+            boardPage,
+            boardData,
+            boardData.cards[0].Id
+        );
+        await expect(subjectInput(panel)).toBeVisible({ timeout: SF_TIMEOUT });
+
+        await subjectInput(panel).focus();
+        await boardPage.page.keyboard.press('Escape');
+        await expect(panel).toHaveCount(0, { timeout: SF_TIMEOUT });
+    });
+
+    test('changing priority and saving updates the card and the database', async ({
+        boardPage,
+        boardData
+    }) => {
+        const seeded = seedPanelCard(boardData, 'Panel-Priority');
+        const panel = await openPanelForCard(
+            boardPage,
+            boardData,
+            seeded.cardId
+        );
+        await expect(subjectInput(panel)).toHaveValue(seeded.subject, {
+            timeout: SF_TIMEOUT
+        });
+        await expect(
+            boardPage.card(seeded.cardId).locator('.priority-pill')
+        ).toHaveText(/medium/i);
+
+        const priority = panel.getByRole('combobox', { name: 'Priority' });
+        await priority.click();
+        await panel.getByRole('option', { name: 'High', exact: true }).click();
+        await expect(priority).toHaveText(/High/);
+        await panel
+            .locator('.card-panel__footer')
+            .getByRole('button', { name: 'Save' })
+            .click();
+
+        await expect(panel).toHaveCount(0, { timeout: SF_TIMEOUT });
+        await expect(
+            boardPage.card(seeded.cardId).locator('.priority-pill')
+        ).toHaveText(/high/i, { timeout: SF_TIMEOUT });
+        const rows = sfQuery(
+            `SELECT OpenSF__Priority__c FROM OpenSF__Card__c WHERE Id = '${seeded.cardId}'`
+        );
+        expect(rows[0].OpenSF__Priority__c).toBe('High');
+    });
+
+    test('Apply Template fills the description for the card type', async ({
+        boardPage,
+        boardData
+    }) => {
+        // Seeded panel cards are Tasks
+        const seeded = seedPanelCard(boardData, 'Panel-Template');
+        const panel = await openPanelForCard(
+            boardPage,
+            boardData,
+            seeded.cardId
+        );
+        await expect(subjectInput(panel)).toHaveValue(seeded.subject, {
+            timeout: SF_TIMEOUT
+        });
+
+        await panel.getByRole('button', { name: 'Apply Template' }).click();
+        const description = panel.getByRole('group', { name: 'Description' });
+        await expect(description).toContainText('Done When');
+
+        await panel
+            .locator('.card-panel__footer')
+            .getByRole('button', { name: 'Save' })
+            .click();
+        await expect(panel).toHaveCount(0, { timeout: SF_TIMEOUT });
+
+        const rows = sfQuery(
+            `SELECT OpenSF__Description__c FROM OpenSF__Card__c WHERE Id = '${seeded.cardId}'`
+        );
+        expect(rows[0].OpenSF__Description__c).toContain('<h2>Task</h2>');
+        expect(rows[0].OpenSF__Description__c).toContain('Done When');
+    });
+
+    // Regression: the form shows the record a moment before it reports load,
+    // and an edit in that window used to be discarded without asking
+    test('an edit made right after the panel opens is still protected', async ({
+        boardPage,
+        boardData
+    }) => {
+        const seeded = seedPanelCard(boardData, 'Panel-Early');
+        const panel = await openPanelForCard(
+            boardPage,
+            boardData,
+            seeded.cardId
+        );
+        const input = subjectInput(panel);
+        await expect(input).toHaveValue(seeded.subject, {
+            timeout: SF_TIMEOUT
+        });
+        await input.fill(`${seeded.subject}-edited`);
+        await boardPage.page
+            .locator('.card-panel__header lightning-button-icon')
+            .click();
+
+        await expect(
+            confirmDialog(boardPage, 'Discard and close?')
+        ).toBeVisible({ timeout: 10_000 });
     });
 });

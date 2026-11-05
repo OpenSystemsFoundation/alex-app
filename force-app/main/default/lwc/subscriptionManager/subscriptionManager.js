@@ -1,6 +1,5 @@
 import { LightningElement, api } from 'lwc';
 import { subscribe, unsubscribe, onError } from 'lightning/empApi';
-import EventHealthMonitor from './eventHealthMonitor';
 import RetryManager from './retryManager';
 
 /**
@@ -43,7 +42,6 @@ export default class SubscriptionManager extends LightningElement {
     subscriptionStatus = 'disconnected';
 
     // Subcomponents
-    healthMonitor = new EventHealthMonitor();
     retryManager = new RetryManager(
         () => this.subscribe(),
         (error) => this._onMaxRetriesExceeded(error)
@@ -65,8 +63,6 @@ export default class SubscriptionManager extends LightningElement {
                 this.channelName,
                 -1,
                 (eventResponse) => {
-                    this.healthMonitor.recordEvent();
-
                     if (this.subscriptionStatus !== 'connected') {
                         this._setStatus('connected');
                         this.retryManager.reset();
@@ -81,9 +77,9 @@ export default class SubscriptionManager extends LightningElement {
                 this._setStatus('connected');
             }
             this.retryManager.reset();
-
-            // Start health monitoring
-            this.healthMonitor.start((reason) => this._switchToPolling(reason));
+            // Connection failures arrive through empApi's onError (see
+            // registerErrorListener). A quiet board receives no events at
+            // all, so the absence of events is not treated as a failure.
         } catch (error) {
             this._setStatus('error');
             this._handleSubscriptionError(error);
@@ -102,7 +98,6 @@ export default class SubscriptionManager extends LightningElement {
             });
         }
 
-        this.healthMonitor.stop();
         this.retryManager.clearTimeout();
     }
 
@@ -112,7 +107,6 @@ export default class SubscriptionManager extends LightningElement {
      */
     @api
     resubscribe() {
-        this.healthMonitor.stop();
         this.retryManager.clearTimeout();
 
         if (this.subscription && this.subscription.channel) {
@@ -246,14 +240,13 @@ export default class SubscriptionManager extends LightningElement {
     /**
      * Switch to polling mode (fallback)
      */
-    _switchToPolling(reason) {
+    _switchToPolling(reason, error) {
         this._setStatus('polling');
-        this.healthMonitor.stop();
 
         // Dispatch event to notify parent that polling should start
         this.dispatchEvent(
             new CustomEvent('pollingrequired', {
-                detail: { reason }
+                detail: error ? { error, reason } : { reason }
             })
         );
     }
@@ -262,12 +255,9 @@ export default class SubscriptionManager extends LightningElement {
      * Handle max retries exceeded
      */
     _onMaxRetriesExceeded(error) {
-        // Dispatch event to notify parent that polling should start
-        this.dispatchEvent(
-            new CustomEvent('pollingrequired', {
-                detail: { error, reason: 'subscription_failed' }
-            })
-        );
+        // Live updates are unavailable: fall back to auto-refresh, and show
+        // it as such rather than as a lasting error
+        this._switchToPolling('subscription_failed', error);
     }
 
     _handleSubscriptionError(error) {

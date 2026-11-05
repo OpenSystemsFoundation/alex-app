@@ -11,7 +11,6 @@ jest.mock('lightning/empApi', () => ({
 }));
 
 const CHANNEL = '/event/OpenSF__CardUpdateEvent__e';
-const HEALTH_INTERVAL = 30000;
 
 // Test-only subclass to reach internal state that the public API cannot.
 class SubscriptionManagerProbe extends SubscriptionManager {
@@ -147,7 +146,7 @@ describe('c-subscription-manager', () => {
     });
 
     describe('subscribe', () => {
-        it('transitions connecting -> connected and starts health monitoring', async () => {
+        it('transitions connecting -> connected without background timers', async () => {
             const { element, events } = createManager({
                 props: { channelName: CHANNEL }
             });
@@ -160,8 +159,8 @@ describe('c-subscription-manager', () => {
                 'connected'
             ]);
             expect(element.isConnected()).toBe(true);
-            // Health-check interval is running
-            expect(jest.getTimerCount()).toBe(1);
+            // No inactivity timer: a quiet board is not a broken connection
+            expect(jest.getTimerCount()).toBe(0);
         });
 
         it('is a no-op while a subscription is active', async () => {
@@ -243,7 +242,7 @@ describe('c-subscription-manager', () => {
             const callback = lastEventCallback();
 
             for (let i = 0; i < 4; i++) {
-                jest.advanceTimersByTime(HEALTH_INTERVAL - 1000);
+                jest.advanceTimersByTime(29000);
                 callback({ data: { payload: { i } } });
                 jest.advanceTimersByTime(1000);
             }
@@ -253,41 +252,31 @@ describe('c-subscription-manager', () => {
         });
     });
 
-    describe('health monitoring fallback', () => {
-        it('switches to polling after repeated failed health checks', async () => {
+    describe('quiet boards', () => {
+        it('stays connected when no events arrive for a long time', async () => {
             const { element, events } = createManager({
                 props: { channelName: CHANNEL }
             });
             await element.subscribe();
 
-            jest.advanceTimersByTime(HEALTH_INTERVAL);
+            jest.advanceTimersByTime(10 * 60 * 1000);
+
             expect(events.pollingrequired).toEqual([]);
-
-            jest.advanceTimersByTime(HEALTH_INTERVAL);
-
-            expect(events.pollingrequired).toEqual([
-                { reason: 'health_check_failed' }
-            ]);
-            expect(element.getStatus()).toBe('polling');
-            // Monitoring stopped once in polling mode
-            expect(jest.getTimerCount()).toBe(0);
+            expect(element.getStatus()).toBe('connected');
         });
 
-        it('returns to connected when an event arrives during polling', async () => {
+        it('returns to connected when an event arrives after an error', async () => {
             const { element, events } = createManager({
                 props: { channelName: CHANNEL }
             });
             await element.subscribe();
-            jest.advanceTimersByTime(HEALTH_INTERVAL * 2);
-            expect(element.getStatus()).toBe('polling');
+            const callback = lastEventCallback();
+            onError.mock.calls[0][0]({ error: 'blip' });
+            expect(element.getStatus()).toBe('error');
 
-            lastEventCallback()({ data: { payload: { late: true } } });
+            callback({ data: { payload: { late: true } } });
 
             expect(element.getStatus()).toBe('connected');
-            expect(statuses(events).slice(-2)).toEqual([
-                'polling',
-                'connected'
-            ]);
             expect(events.message).toEqual([{ payload: { late: true } }]);
         });
     });
@@ -340,7 +329,8 @@ describe('c-subscription-manager', () => {
             expect(events.pollingrequired).toEqual([
                 { error, reason: 'subscription_failed' }
             ]);
-            expect(element.getStatus()).toBe('error');
+            // Shown as Auto-refresh: the board keeps checking for changes
+            expect(element.getStatus()).toBe('polling');
 
             // No further retries are scheduled
             jest.advanceTimersByTime(60000);
@@ -365,7 +355,7 @@ describe('c-subscription-manager', () => {
                 { channel: CHANNEL, id: 'sub-1' },
                 expect.any(Function)
             );
-            // Health interval cleared; one retry timeout pending
+            // One retry timeout pending
             expect(jest.getTimerCount()).toBe(1);
 
             // empApi confirms unsubscribe, then the retry reconnects

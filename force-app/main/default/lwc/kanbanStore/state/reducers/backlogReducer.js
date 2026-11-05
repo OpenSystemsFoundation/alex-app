@@ -8,6 +8,15 @@ export const backlogReducer = (state, action) => {
             if (state.backlogSyncing > 0) {
                 return state;
             }
+            // Skip a server load that was requested before a local change
+            // (e.g. Move to Backlog while the board was still loading): its
+            // list predates that change and would drop the card
+            if (
+                action.meta?.requestedAtVersion !== undefined &&
+                action.meta.requestedAtVersion !== (state.backlogVersion || 0)
+            ) {
+                return state;
+            }
             return {
                 ...state,
                 backlogCards: action.payload || []

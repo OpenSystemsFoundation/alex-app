@@ -42,6 +42,8 @@ export default class KanbanContextMenu extends LightningElement {
 
                 this.posX = this._targetX - offsetX;
                 this.posY = this._targetY - offsetY;
+                // Take focus so Escape (handled on the menu) closes it
+                menu.focus();
 
                 // Ensure menu doesn't go off screen (second frame)
                 // eslint-disable-next-line @lwc/lwc/no-async-operation
@@ -61,6 +63,12 @@ export default class KanbanContextMenu extends LightningElement {
         // eslint-disable-next-line @lwc/lwc/no-async-operation
         setTimeout(() => {
             this._clickOutsideHandler = (evt) => {
+                if (evt.type === 'keydown') {
+                    if (evt.key === 'Escape') {
+                        this.hide();
+                    }
+                    return;
+                }
                 // In LWC synthetic shadow, stopPropagation inside the
                 // shadow tree does not prevent composed events from
                 // reaching window. Check if click is inside the menu.
@@ -80,6 +88,8 @@ export default class KanbanContextMenu extends LightningElement {
             };
             window.addEventListener('click', this._clickOutsideHandler);
             window.addEventListener('contextmenu', this._clickOutsideHandler);
+            // Escape closes the menu wherever focus currently is
+            window.addEventListener('keydown', this._clickOutsideHandler);
         }, 0);
     }
 
@@ -93,6 +103,7 @@ export default class KanbanContextMenu extends LightningElement {
                 'contextmenu',
                 this._clickOutsideHandler
             );
+            window.removeEventListener('keydown', this._clickOutsideHandler);
             this._clickOutsideHandler = null;
         }
     }

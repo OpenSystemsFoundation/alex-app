@@ -40,6 +40,91 @@ private class SprintServiceTest {
     }
 
     @isTest
+    static void testUpdatePlannedSprint() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(
+            board.Id,
+            'Planning'
+        );
+        Date startDate = Date.today().addDays(1);
+
+        Test.startTest();
+        KanbanBoardDTO.SprintDTO result = SprintService.updateSprint(
+            sprint.Id,
+            'Edited goal',
+            startDate,
+            startDate.addDays(7)
+        );
+        Test.stopTest();
+
+        Assert.areEqual('Edited goal', result.goal, 'Goal should be updated');
+        OpenSF__Sprint__c saved = [
+            SELECT
+                OpenSF__Goal__c,
+                OpenSF__StartDate__c,
+                OpenSF__EndDate__c,
+                OpenSF__Status__c
+            FROM OpenSF__Sprint__c
+            WHERE Id = :sprint.Id
+        ];
+        Assert.areEqual('Edited goal', saved.OpenSF__Goal__c);
+        Assert.areEqual(startDate, saved.OpenSF__StartDate__c);
+        Assert.areEqual(startDate.addDays(7), saved.OpenSF__EndDate__c);
+        Assert.areEqual(
+            'Planning',
+            saved.OpenSF__Status__c,
+            'Editing must not start the sprint'
+        );
+        Assert.areEqual(
+            1,
+            [SELECT COUNT() FROM OpenSF__Sprint__c],
+            'Editing must not create another sprint'
+        );
+    }
+
+    @isTest
+    static void testUpdateSprintRejectsActiveSprint() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(board.Id, 'Active');
+
+        Boolean blocked = false;
+        Test.startTest();
+        try {
+            SprintService.updateSprint(sprint.Id, 'Nope', null, null);
+        } catch (AuraHandledException e) {
+            blocked = true;
+        }
+        Test.stopTest();
+
+        Assert.isTrue(blocked, 'Only Planning sprints can be edited');
+    }
+
+    @isTest
+    static void testUpdateSprintRejectsEndBeforeStart() {
+        OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
+        OpenSF__Sprint__c sprint = TestFactory.createSprint(
+            board.Id,
+            'Planning'
+        );
+
+        Boolean blocked = false;
+        Test.startTest();
+        try {
+            SprintService.updateSprint(
+                sprint.Id,
+                'Bad dates',
+                Date.today(),
+                Date.today().addDays(-1)
+            );
+        } catch (AuraHandledException e) {
+            blocked = true;
+        }
+        Test.stopTest();
+
+        Assert.isTrue(blocked, 'End date before start date must be rejected');
+    }
+
+    @isTest
     static void testStartSprint() {
         OpenSF__Board__c board = [SELECT Id FROM OpenSF__Board__c LIMIT 1];
         OpenSF__Sprint__c sprint = TestFactory.createSprint(

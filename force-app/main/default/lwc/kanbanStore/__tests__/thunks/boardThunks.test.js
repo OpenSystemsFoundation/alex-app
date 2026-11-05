@@ -193,7 +193,11 @@ describe('loadBoardData — edge branches', () => {
                 payload: expect.objectContaining({ customFieldConfigs: [] })
             },
             { type: 'SET_COLUMNS', payload: [] },
-            { type: 'SET_BACKLOG_CARDS', payload: [{ Id: 'bg1' }] }
+            {
+                type: 'SET_BACKLOG_CARDS',
+                payload: [{ Id: 'bg1' }],
+                meta: { requestedAtVersion: 0 }
+            }
         ]);
     });
 });

@@ -347,6 +347,8 @@ describe('c-kanban-card-panel', () => {
             const [subject, description] = inputFields(element);
             expect(description.value).toContain('<h2>Bug Report</h2>');
             expect(subject.value).toBeUndefined();
+            // Applying a template is an unsaved edit
+            expect(element.hasPendingChanges()).toBe(true);
         });
 
         it('uses the namespaced card type field when cardType is missing', async () => {
@@ -1220,6 +1222,12 @@ describe('c-kanban-card-panel', () => {
     });
 
     describe('close and dirty check', () => {
+        /** A user edit: the field changes and fires change (loads don't). */
+        function editField(field, value) {
+            field.value = value;
+            field.dispatchEvent(new CustomEvent('change'));
+        }
+
         async function renderLoadedForm() {
             const element = await createRenderedPanel();
             await emitFields(['Subject__c', 'Status__c']);
@@ -1257,7 +1265,7 @@ describe('c-kanban-card-panel', () => {
         it('asks for confirmation with unsaved changes and stays open when declined', async () => {
             LightningConfirm.open.mockResolvedValue(false);
             const element = await renderLoadedForm();
-            inputFields(element)[1].value = 'Done';
+            editField(inputFields(element)[1], 'Done');
             expect(element.hasPendingChanges()).toBe(true);
             const closed = collectEvents(element, 'close');
 
@@ -1275,22 +1283,40 @@ describe('c-kanban-card-panel', () => {
         it('closes when the user confirms discarding changes', async () => {
             LightningConfirm.open.mockResolvedValue(true);
             const element = await renderLoadedForm();
-            inputFields(element)[0].value = 'Changed';
+            editField(inputFields(element)[0], 'Changed');
             const closed = collectEvents(element, 'close');
 
             buttonByLabel(element, 'Cancel').click();
             await flushPromises();
 
             expect(closed).toHaveLength(1);
-            // Snapshot is discarded on close
+            // The edit flag is discarded on close
             expect(element.hasPendingChanges()).toBe(false);
         });
 
-        it('resets the dirty snapshot when the card changes', async () => {
-            const element = await renderLoadedForm();
-            inputFields(element)[0].value = 'Changed';
+        it('detects an edit made before the form reports load', async () => {
+            // The fields show the record shortly before load fires; an edit
+            // in that window must still count as unsaved
+            const element = await createRenderedPanel();
+            await emitFields(['Subject__c']);
+            editField(inputFields(element)[0], 'Typed early');
+            query(element, 'lightning-record-edit-form').dispatchEvent(
+                new CustomEvent('load')
+            );
             expect(element.hasPendingChanges()).toBe(true);
+        });
+
+        it('keeps unsaved edits when the store re-sends the same card', async () => {
+            const element = await renderLoadedForm();
+            editField(inputFields(element)[0], 'Changed');
             element.card = { ...STORY_CARD };
+            expect(element.hasPendingChanges()).toBe(true);
+        });
+
+        it('discards the edit flag when a different card is opened', async () => {
+            const element = await renderLoadedForm();
+            editField(inputFields(element)[0], 'Changed');
+            element.card = { ...STORY_CARD, Id: 'a0B000000000099' };
             expect(element.hasPendingChanges()).toBe(false);
         });
 

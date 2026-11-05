@@ -88,6 +88,25 @@ private class SprintPermissionTest {
     }
 
     @isTest
+    static void standardUserCanReadCardTypeIcons() {
+        // Loading a board reads CardTypeIcon__mdt; without access in the
+        // Alex_User permission set the board fails to load for non-admins
+        User alexUser = createAlexUser();
+
+        Map<String, String> icons;
+        System.runAs(alexUser) {
+            Test.startTest();
+            icons = KanbanBoardService.getCardTypeIcons();
+            Test.stopTest();
+        }
+
+        Assert.isFalse(
+            icons.isEmpty(),
+            'Alex_User must be able to read the card type icon mappings'
+        );
+    }
+
+    @isTest
     static void standardUserCannotStartSprint() {
         OpenSF__Sprint__c sprint = [
             SELECT Id

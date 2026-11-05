@@ -248,9 +248,11 @@ function menuItem(element, boardId, value) {
     );
 }
 
+// A real click's detail is the click count, not the menu value; the
+// handler must read the action from the menu item itself
 function clickMenuItem(element, boardId, value) {
     menuItem(element, boardId, value).dispatchEvent(
-        new CustomEvent('click', { detail: { value } })
+        new CustomEvent('click', { detail: 1 })
     );
 }
 
@@ -465,10 +467,9 @@ describe('c-admin-management board actions', () => {
     it('ignores unknown menu actions', async () => {
         const { element } = await renderAdmin();
         const item = menuItem(element, 'a00000000000001', 'open');
+        item.value = 'archive';
 
-        item.dispatchEvent(
-            new CustomEvent('click', { detail: { value: 'archive' } })
-        );
+        item.dispatchEvent(new CustomEvent('click', { detail: 1 }));
         await flushPromises();
 
         expect(mockNavigate).not.toHaveBeenCalled();

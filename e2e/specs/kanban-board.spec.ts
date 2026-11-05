@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures';
 import { sfUpdate } from '../helpers/sf-data';
+import { BoardPage } from '../pages';
 
 const SF_TIMEOUT = 60_000;
 
@@ -180,5 +181,106 @@ test.describe('Alex Kanban Board', () => {
         await expect(boardPage.columns.first()).toBeVisible({
             timeout: SF_TIMEOUT
         });
+    });
+
+    test('board loads in the Alex Console app', async ({
+        boardPage,
+        boardData
+    }) => {
+        await boardPage.goto(
+            `${boardData.baseUrl}/lightning/app/OpenSF__AlexConsole/r/OpenSF__Board__c/${boardData.boardId}/view`
+        );
+        await boardPage.waitForComponent('.kanban-board-wrapper');
+
+        await expect(boardPage.columns).toHaveCount(boardData.columns.length, {
+            timeout: SF_TIMEOUT
+        });
+        await expect(boardPage.card(boardData.cards[0].Id)).toBeVisible();
+        // Console navigation opens the board in a workspace tab
+        await expect(
+            boardPage.page.getByRole('tab', { name: /e2e-/ }).first()
+        ).toBeVisible();
+    });
+
+    test('an idle board stays real-time and still receives changes', async ({
+        boardPage,
+        boardData
+    }) => {
+        // The board used to treat about a minute without events as a broken
+        // connection and fall back to polling
+        test.setTimeout(240_000);
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.waitForCards();
+        await boardPage.waitForRealtime();
+
+        // Stay idle for longer than the old threshold (two 30 s checks)
+        await boardPage.page.waitForTimeout(75_000);
+        const status = boardPage.page.locator('.kanban-topbar .status-text');
+        await expect(status).toHaveText('Real-time');
+
+        // A change made elsewhere arrives live, without a refresh
+        const card = boardData.cards[boardData.cards.length - 1];
+        const subject = `Idle-Live-${Date.now()}`;
+        sfUpdate('OpenSF__Card__c', card.Id, `OpenSF__Subject__c=${subject}`);
+        await expect(boardPage.card(card.Id)).toContainText(subject, {
+            timeout: 30_000
+        });
+        await expect(status).toHaveText('Real-time');
+    });
+
+    test('a card moved in one tab moves in another tab without a refresh', async ({
+        boardPage,
+        boardData
+    }) => {
+        const tabB = new BoardPage(await boardPage.page.context().newPage());
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await tabB.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.waitForCards();
+        await tabB.waitForCards();
+        await boardPage.waitForRealtime();
+        await tabB.waitForRealtime();
+
+        // Use a seeded card that no sibling test moves
+        const card = boardData.cards[2];
+        const target = boardData.columns[4];
+        await boardPage.card(card.Id).click({ button: 'right' });
+        const menu = boardPage.page.locator('.context-menu[role="menu"]');
+        await menu.getByRole('menuitem', { name: 'Move to Column' }).click();
+        await menu
+            .getByRole('menuitem', { name: target.header, exact: true })
+            .click();
+
+        await expect(
+            tabB
+                .columnWrapper(target.Id)
+                .locator(`article[data-card-id="${card.Id}"]`)
+        ).toBeVisible({ timeout: 30_000 });
+    });
+
+    test('a card dragged in one tab moves in another tab without a refresh', async ({
+        boardPage,
+        boardData
+    }) => {
+        // Drag-and-drop sends a request and client id with the move; the
+        // other tab must still apply it
+        const tabB = new BoardPage(await boardPage.page.context().newPage());
+        await boardPage.open(boardData.baseUrl, boardData.boardId);
+        await tabB.open(boardData.baseUrl, boardData.boardId);
+        await boardPage.waitForCards();
+        await tabB.waitForCards();
+        await boardPage.waitForRealtime();
+        await tabB.waitForRealtime();
+
+        // Use a seeded card that no sibling test moves
+        const card = boardData.cards[10];
+        const target = boardData.columns[1];
+        await boardPage.dragCardWithMouse(card.Id, target.Id);
+
+        const inTarget = (tab: BoardPage) =>
+            tab
+                .columnWrapper(target.Id)
+                .locator(`article[data-card-id="${card.Id}"]`);
+        await expect(inTarget(boardPage)).toBeVisible({ timeout: 15_000 });
+        await expect(inTarget(tabB)).toBeVisible({ timeout: 30_000 });
     });
 });

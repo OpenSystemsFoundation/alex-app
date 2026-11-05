@@ -23,7 +23,7 @@ import { loadSprintDataAsync } from './sprintThunks';
  * @returns {Function} Thunk function
  */
 export const loadBoardData = (boardId) => {
-    return async (dispatch) => {
+    return async (dispatch, getState) => {
         if (!boardId) {
             throw new Error('Board ID is required');
         }
@@ -60,8 +60,9 @@ export const loadBoardData = (boardId) => {
             } else {
                 // Non-sprint boards: load backlog cards (unassigned cards)
                 try {
+                    const version = getState?.()?.backlogVersion || 0;
                     const backlogCards = await getBacklogCardsApex({ boardId });
-                    dispatch(setBacklogCards(backlogCards));
+                    dispatch(setBacklogCards(backlogCards, version));
                 } catch (backlogError) {
                     console.error('Error loading backlog cards:', backlogError);
                 }

@@ -3,6 +3,10 @@
  * Publishes platform events for column changes with JSON payload
  */
 public with sharing class ColumnTriggerHandler extends TriggerHandler {
+    /** Platform events that failed to publish in this transaction. */
+    @TestVisible
+    private static Integer publishFailures = 0;
+
     private List<OpenSF__Column__c> newColumns;
     private List<OpenSF__Column__c> oldColumns;
     private Map<Id, OpenSF__Column__c> newColumnMap;
@@ -73,6 +77,17 @@ public with sharing class ColumnTriggerHandler extends TriggerHandler {
                 }
 
                 OpenSF__ColumnUpdateEvent__e event = new OpenSF__ColumnUpdateEvent__e(
+                    // Required fields kept from 1.1.1 (force-app/deprecated):
+                    // the event can't be published without them
+                    OpenSF__BoardId__c = column.OpenSF__Board__c,
+                    OpenSF__ColumnId__c = column.Id,
+                    OpenSF__ColumnName__c = column.Name != null
+                        ? column.Name
+                        : String.valueOf(column.Id),
+                    OpenSF__LastModifiedDate__c = column.LastModifiedDate !=
+                        null
+                        ? column.LastModifiedDate
+                        : Datetime.now(),
                     OpenSF__EventType__c = eventType,
                     OpenSF__Payload__c = jsonPayload
                 );
@@ -93,17 +108,18 @@ public with sharing class ColumnTriggerHandler extends TriggerHandler {
         if (!events.isEmpty()) {
             List<Database.SaveResult> results = EventBus.publish(events);
 
-            // Log results
-            Integer successCount = 0;
-            Integer failureCount = 0;
-            for (Integer i = 0; i < results.size(); i++) {
-                if (results[i].isSuccess()) {
-                    successCount++;
-                } else {
-                    failureCount++;
+            // A failed publish never reaches other clients; don't fail the
+            // user's DML for it, but make it visible
+            for (Database.SaveResult result : results) {
+                if (!result.isSuccess()) {
+                    publishFailures++;
+                    System.debug(
+                        LoggingLevel.ERROR,
+                        'ColumnUpdateEvent__e publish failed: ' +
+                        result.getErrors()
+                    );
                 }
             }
-        } else {
         }
     }
 

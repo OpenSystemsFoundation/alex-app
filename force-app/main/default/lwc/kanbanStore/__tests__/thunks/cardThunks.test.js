@@ -33,8 +33,14 @@ jest.mock(
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
+jest.mock(
+    '@salesforce/apex/KanbanBoardController.getSprintData',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
 
 import moveCardApex from '@salesforce/apex/KanbanBoardController.moveCard';
+import getSprintDataApex from '@salesforce/apex/KanbanBoardController.getSprintData';
 import createCardApex from '@salesforce/apex/KanbanBoardController.createCard';
 import createBacklogCardApex from '@salesforce/apex/KanbanBoardController.createBacklogCard';
 import updateCardApex from '@salesforce/apex/KanbanBoardController.updateCard';
@@ -105,6 +111,43 @@ describe('moveCardAsync', () => {
         );
         // dispatch called for moveCard + commitDrag
         expect(dispatch).toHaveBeenCalledTimes(2);
+    });
+
+    it('refreshes sprint data when the board has an active sprint', async () => {
+        const card = buildCard({ Id: 'c1', position: '1000' });
+        const col = buildColumn({ Id: 'col1', cards: [card] });
+        const { dispatch, getState } = createThunkEnv({
+            boardId: 'board1',
+            columns: [col],
+            activeSprint: { Id: 'sprint1', status: 'Active' }
+        });
+        moveCardApex.mockResolvedValue({ success: true });
+        getSprintDataApex.mockResolvedValue({
+            activeSprint: {
+                Id: 'sprint1',
+                status: 'Active',
+                completedStoryPoints: 3
+            }
+        });
+
+        await moveCardAsync('c1', 'col1', 0)(dispatch, getState);
+
+        expect(getSprintDataApex).toHaveBeenCalledWith({ boardId: 'board1' });
+    });
+
+    it('does not load sprint data without an active sprint', async () => {
+        const card = buildCard({ Id: 'c1', position: '1000' });
+        const col = buildColumn({ Id: 'col1', cards: [card] });
+        const { dispatch, getState } = createThunkEnv({
+            boardId: 'board1',
+            columns: [col]
+        });
+        moveCardApex.mockResolvedValue({ success: true });
+        getSprintDataApex.mockClear();
+
+        await moveCardAsync('c1', 'col1', 0)(dispatch, getState);
+
+        expect(getSprintDataApex).not.toHaveBeenCalled();
     });
 
     it('throws when target column not found', async () => {

@@ -359,6 +359,30 @@ public with sharing class KanbanBoardController {
     }
 
     /**
+     * Update a planned sprint's goal and dates
+     */
+    @AuraEnabled
+    public static KanbanBoardDTO.SprintDTO updateSprint(
+        Id sprintId,
+        String goal,
+        Date startDate,
+        Date endDate
+    ) {
+        try {
+            return SprintService.updateSprint(
+                sprintId,
+                goal,
+                startDate,
+                endDate
+            );
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Error updating sprint: ' + e.getMessage()
+            );
+        }
+    }
+
+    /**
      * Start a sprint
      */
     @AuraEnabled

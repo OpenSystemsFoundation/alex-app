@@ -10,7 +10,9 @@ const SYNC_TIMEOUT = 30_000;
 
 test.describe('Card Sync — real-time collaboration', () => {
     test.beforeEach(async () => {
-        if (!process.env.USER_A_LOGIN_URL || !process.env.USER_B_LOGIN_URL) {
+        // User A defaults to the scratch org admin (see fixtures/multi-user)
+        const hasUserB = process.env.USER_B_ORG || process.env.USER_B_LOGIN_URL;
+        if (!process.env.SCRATCH_ORG_URL || !hasUserB) {
             test.skip(true, 'Multi-user login URLs not set — skipping');
         }
     });

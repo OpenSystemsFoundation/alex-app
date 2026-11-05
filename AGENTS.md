@@ -118,6 +118,21 @@ export SCRATCH_ORG_URL="$(sf org open -o e2e-test --url-only)"
 npx playwright test e2e/specs/<suite>.spec.ts --project=chromium
 ```
 
+The real-time specs (`card-sync`, `drag-drop-sync`) also need a second user
+with only **Alex User**, so they exercise the non-admin permission path:
+
+```bash
+sf org create user -o e2e-test -a e2e-user-b --set-unique-username \
+  username=e2e-userb@alex.test profileName="Standard User" LastName=UserB
+sf org assign permset -n Alex_User -o e2e-test --on-behalf-of <user-b-username>
+# Set a password once (Apex: System.setPassword) or the first login stops
+# at "Change Your Password"
+export USER_B_ORG=e2e-user-b
+```
+
+The fixture mints a fresh frontdoor URL per test from `USER_B_ORG`
+(`sf org open --url-only` URLs are one-time).
+
 - Never land a Playwright change you haven't run against a real org.
 - No `isVisible().catch(() => false)` / `if (visible)` guards around assertions — they hide failures.
 - In a namespaced org, component tags render as `opensf-…`, not `c-…`; prefer role and `data-*` locators.

@@ -30,6 +30,10 @@
     </customMetadataTypeAccesses>
     <customMetadataTypeAccesses>
         <enabled>true</enabled>
+        <name>CardTypeIcon__mdt</name>
+    </customMetadataTypeAccesses>
+    <customMetadataTypeAccesses>
+        <enabled>true</enabled>
         <name>KanbanBoardSettings__mdt</name>
     </customMetadataTypeAccesses>
     <customPermissions>

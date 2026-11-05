@@ -100,6 +100,19 @@ export default class KanbanFilterBar extends LightningElement {
         }
     }
 
+    renderedCallback() {
+        // The template's value={...} on <select> only takes effect on the
+        // first render; keep each select's selection in sync afterwards,
+        // e.g. when "Clear all filters" resets the values to All
+        this.template
+            .querySelectorAll('select[data-value]')
+            .forEach((select) => {
+                if (select.value !== select.dataset.value) {
+                    select.value = select.dataset.value;
+                }
+            });
+    }
+
     disconnectedCallback() {
         if (typeof window !== 'undefined' && this._windowClickHandler) {
             window.removeEventListener('click', this._windowClickHandler);

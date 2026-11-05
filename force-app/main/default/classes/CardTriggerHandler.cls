@@ -4,6 +4,10 @@
  * Updates column card counts
  */
 public with sharing class CardTriggerHandler extends TriggerHandler {
+    /** Platform events that failed to publish in this transaction. */
+    @TestVisible
+    private static Integer publishFailures = 0;
+
     private List<OpenSF__Card__c> newCards;
     private List<OpenSF__Card__c> oldCards;
     private Map<Id, OpenSF__Card__c> newCardMap;
@@ -243,6 +247,12 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
                 String clientId = card.OpenSF__LastClientId__c;
 
                 OpenSF__CardUpdateEvent__e event = new OpenSF__CardUpdateEvent__e(
+                    // Required fields kept from 1.1.1 (force-app/deprecated):
+                    // the event can't be published without them
+                    OpenSF__CardId__c = card.Id,
+                    OpenSF__CardName__c = card.Name != null
+                        ? card.Name
+                        : String.valueOf(card.Id),
                     OpenSF__EventType__c = eventType,
                     OpenSF__Payload__c = jsonPayload,
                     OpenSF__ClientRequestId__c = clientRequestId,
@@ -266,17 +276,18 @@ public with sharing class CardTriggerHandler extends TriggerHandler {
         if (!events.isEmpty()) {
             List<Database.SaveResult> results = EventBus.publish(events);
 
-            // Log results
-            Integer successCount = 0;
-            Integer failureCount = 0;
-            for (Integer i = 0; i < results.size(); i++) {
-                if (results[i].isSuccess()) {
-                    successCount++;
-                } else {
-                    failureCount++;
+            // A failed publish never reaches other clients; don't fail the
+            // user's DML for it, but make it visible
+            for (Database.SaveResult result : results) {
+                if (!result.isSuccess()) {
+                    publishFailures++;
+                    System.debug(
+                        LoggingLevel.ERROR,
+                        'CardUpdateEvent__e publish failed: ' +
+                        result.getErrors()
+                    );
                 }
             }
-        } else {
         }
     }
 

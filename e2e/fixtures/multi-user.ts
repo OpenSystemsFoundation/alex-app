@@ -5,7 +5,7 @@ import {
     type BrowserContext
 } from '@playwright/test';
 import { BoardPage } from '../pages';
-import { createIsolatedBoard } from '../helpers/sf-data';
+import { createIsolatedBoard, sfFrontdoorUrl } from '../helpers/sf-data';
 import type { BoardDataFixture } from './index';
 
 /**
@@ -14,10 +14,26 @@ import type { BoardDataFixture } from './index';
  * Each test gets its own isolated board created via SF CLI Apex.
  * This eliminates shared state and serial dependencies between tests.
  *
- * Required env vars:
- *   USER_A_LOGIN_URL - frontdoor.jsp URL for User A (admin)
- *   USER_B_LOGIN_URL - frontdoor.jsp URL for User B (standard user)
+ * User B (an Alex User) is required, either as
+ *   USER_B_ORG       - sf CLI alias/username of the second user (preferred:
+ *                      a fresh login URL is generated for every test), or
+ *   USER_B_LOGIN_URL - a frontdoor.jsp URL (one-time `otp=` URLs from
+ *                      `sf org open --url-only` work for a single test only)
+ * User A defaults to the scratch org admin (SF_TARGET_ORG); override with
+ *   USER_A_ORG or USER_A_LOGIN_URL.
  */
+
+/** Login URL for a user: fresh from the CLI alias when available. */
+export function loginUrlFor(user: 'A' | 'B'): string | undefined {
+    const orgAlias =
+        process.env[`USER_${user}_ORG`] ||
+        (user === 'A' ? process.env.SF_TARGET_ORG : undefined);
+    if (orgAlias) return sfFrontdoorUrl(orgAlias);
+    return (
+        process.env[`USER_${user}_LOGIN_URL`] ||
+        (user === 'A' ? process.env.SCRATCH_ORG_URL : undefined)
+    );
+}
 
 export interface UserFixture {
     page: Page;
@@ -40,25 +56,21 @@ async function sfLogin(page: Page, loginUrl: string): Promise<void> {
         waitUntil: 'domcontentloaded',
         timeout: 60_000
     });
-
-    // Wait for SF redirect chain to settle (frontdoor -> setup -> lightning)
-    // Poll until URL stops changing
-    let lastUrl = '';
-    for (let i = 0; i < 10; i++) {
-        await page.waitForTimeout(2000);
-        const currentUrl = page.url();
-        if (currentUrl === lastUrl) break;
-        lastUrl = currentUrl;
-    }
+    // frontdoor -> (setup) -> Lightning; landing anywhere else (the login
+    // form) means the one-time URL was rejected
+    await page.waitForURL(/\/lightning\//, { timeout: 60_000 });
 }
 
 export const test = base.extend<MultiUserFixtures>({
     userA: async ({ browser }, use) => {
-        const loginUrl =
-            process.env.USER_A_LOGIN_URL || process.env.SCRATCH_ORG_URL;
-        if (!loginUrl) throw new Error('USER_A_LOGIN_URL not set');
+        const loginUrl = loginUrlFor('A');
+        if (!loginUrl) throw new Error('No login for User A');
 
-        const context = await browser.newContext();
+        // Start from an empty session: browser.newContext() would otherwise
+        // inherit the admin storageState from playwright.config.ts
+        const context = await browser.newContext({
+            storageState: { cookies: [], origins: [] }
+        });
         const page = await context.newPage();
         await sfLogin(page, loginUrl);
 
@@ -68,10 +80,12 @@ export const test = base.extend<MultiUserFixtures>({
     },
 
     userB: async ({ browser }, use) => {
-        const loginUrl = process.env.USER_B_LOGIN_URL;
-        if (!loginUrl) throw new Error('USER_B_LOGIN_URL not set');
+        const loginUrl = loginUrlFor('B');
+        if (!loginUrl) throw new Error('USER_B_ORG / USER_B_LOGIN_URL not set');
 
-        const context = await browser.newContext();
+        const context = await browser.newContext({
+            storageState: { cookies: [], origins: [] }
+        });
         const page = await context.newPage();
         await sfLogin(page, loginUrl);
 
@@ -83,8 +97,7 @@ export const test = base.extend<MultiUserFixtures>({
     boardData: async ({}, use) => {
         // Each test gets a completely fresh board — no shared state
         const data = createIsolatedBoard('multi-user');
-        const loginUrl =
-            process.env.USER_A_LOGIN_URL || process.env.SCRATCH_ORG_URL;
+        const loginUrl = process.env.SCRATCH_ORG_URL;
         const baseUrl = loginUrl ? new URL(loginUrl).origin : '';
         await use({ ...data, baseUrl });
     }
