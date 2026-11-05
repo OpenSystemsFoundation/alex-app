@@ -128,7 +128,11 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
         const previousId = this._card?.Id;
         this._card = value;
         this.epicDetail = null;
-        this._fieldSnapshot = null;
+        // The store hands over a fresh object on every update of the same
+        // card; only switching to a different card discards the edit flag
+        if (value?.Id !== previousId) {
+            this._hasUserEdits = false;
+        }
 
         // Force form remount when switching to a different card
         // so lightning-input-field values reset to the new record
@@ -232,38 +236,24 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     }
 
     /**
-     * Called when lightning-record-edit-form finishes loading the record.
-     * Snapshots field values so we can detect dirty state later.
+     * A form field changed because the user edited it. Loading the record
+     * fills the fields without firing change, so this only tracks real edits.
+     *
+     * Comparing against a snapshot taken on the form's load event missed
+     * edits: the fields show the record a moment before load fires, so an
+     * edit made in that window became part of the "original" values.
      */
-    handleFormLoad() {
-        const inputFields = this.template.querySelectorAll(
-            'lightning-input-field'
-        );
-        this._fieldSnapshot = new Map();
-        inputFields.forEach((field) => {
-            this._fieldSnapshot.set(field.fieldName, field.value);
-        });
+    handleFieldChange() {
+        this._hasUserEdits = true;
     }
 
     /**
-     * Check if any form fields have been modified since the card was loaded.
+     * Whether the user changed any field since the card was opened.
      * @returns {boolean}
      */
     @api
     hasPendingChanges() {
-        if (!this._fieldSnapshot) {
-            return false;
-        }
-        const inputFields = this.template.querySelectorAll(
-            'lightning-input-field'
-        );
-        for (const field of inputFields) {
-            const original = this._fieldSnapshot.get(field.fieldName);
-            if (field.value !== original) {
-                return true;
-            }
-        }
-        return false;
+        return !!this._hasUserEdits;
     }
 
     processFields(fieldNames) {
@@ -435,6 +425,7 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
         for (const field of descInput) {
             if (field.fieldName === 'OpenSF__Description__c') {
                 field.value = template;
+                this._hasUserEdits = true;
                 break;
             }
         }
@@ -916,7 +907,7 @@ export default class KanbanCardPanel extends NavigationMixin(LightningElement) {
     _closePanel() {
         this.deleteConfirmState = false;
         this._lastLoadedCardId = null;
-        this._fieldSnapshot = null;
+        this._hasUserEdits = false;
         this.comments = [];
         this.files = [];
         this._filesLoaded = false;

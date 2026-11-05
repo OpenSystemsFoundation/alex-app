@@ -7,8 +7,6 @@ import type { BoardPage } from '../pages';
 const SF_TIMEOUT = 60_000;
 // Mirrors DELETE_CONFIRM_TIMEOUT in kanbanCardPanel.js (armed delete resets)
 const DELETE_CONFIRM_TIMEOUT = 3_000;
-// Time for the card form to finish loading after its values render
-const FORM_SETTLE_MS = 3_000;
 
 interface SeededCard {
     cardId: string;
@@ -73,15 +71,6 @@ async function openPanelForCard(
  * include Subject__c). Falls back to the input's accessible label "Subject"
  * in case the field-name attribute is not reflected into the DOM.
  */
-/**
- * Wait for the record-edit-form to finish initializing after its values
- * appear. Edits made before that are not seen by the dirty check (known
- * race, see the fixme test below), so dirty-check tests let it settle.
- */
-async function waitForFormToSettle(boardPage: BoardPage): Promise<void> {
-    await boardPage.page.waitForTimeout(FORM_SETTLE_MS);
-}
-
 function subjectInput(panel: Locator): Locator {
     return panel
         .locator('[field-name="OpenSF__Subject__c"] input')
@@ -377,7 +366,6 @@ test.describe('Card Detail Panel', () => {
         await expect(input).toHaveValue(seeded.subject, {
             timeout: SF_TIMEOUT
         });
-        await waitForFormToSettle(boardPage);
         await input.fill(`${seeded.subject}-edited`);
 
         const closeBtn = boardPage.page.locator(
@@ -420,7 +408,6 @@ test.describe('Card Detail Panel', () => {
         await expect(input).toHaveValue(seeded.subject, {
             timeout: SF_TIMEOUT
         });
-        await waitForFormToSettle(boardPage);
         await input.fill(`${seeded.subject}-edited`);
 
         // Click a different (read-only fixture) card while dirty
@@ -550,10 +537,9 @@ test.describe('Card Detail Panel', () => {
         expect(rows[0].OpenSF__Description__c).toContain('Done When');
     });
 
-    // Known bug: an edit made as soon as the form shows its values is not
-    // detected, so closing discards it without asking. Remove fixme once
-    // kanbanCardPanel's dirty snapshot is reliable.
-    test.fixme('an edit made right after the panel opens is still protected', async ({
+    // Regression: the form shows the record a moment before it reports load,
+    // and an edit in that window used to be discarded without asking
+    test('an edit made right after the panel opens is still protected', async ({
         boardPage,
         boardData
     }) => {

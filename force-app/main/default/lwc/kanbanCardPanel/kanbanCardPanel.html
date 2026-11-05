@@ -54,7 +54,6 @@
                     <lightning-record-edit-form
                         object-api-name="OpenSF__Card__c"
                         record-id={card.Id}
-                        onload={handleFormLoad}
                     >
                         <div
                             class="slds-form slds-form_stacked"
@@ -73,6 +72,7 @@
                                         <lightning-input-field
                                             field-name={field.fieldName}
                                             variant="label-stacked"
+                                            onchange={handleFieldChange}
                                         ></lightning-input-field>
                                     </div>
                                 </template>
@@ -104,6 +104,7 @@
                                         <lightning-input-field
                                             field-name={descriptionField.fieldName}
                                             variant="label-hidden"
+                                            onchange={handleFieldChange}
                                         ></lightning-input-field>
                                     </div>
                                 </template>
